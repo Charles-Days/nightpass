@@ -1,0 +1,16 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <mask id="ticketWithMoonCutout">
+      <rect width="1024" height="1024" fill="black"/>
+      <rect x="96" y="176" width="832" height="672" rx="88" fill="white"/>
+      <circle cx="96" cy="512" r="68" fill="black"/>
+      <circle cx="928" cy="512" r="68" fill="black"/>
+      <circle cx="512" cy="512" r="185" fill="black"/>
+      <circle cx="560" cy="512" r="176" fill="white"/>
+    </mask>
+  </defs>
+
+  <rect width="1024" height="1024" fill="#1A0B2E"/>
+
+  <rect width="1024" height="1024" fill="#A855F7" mask="url(#ticketWithMoonCutout)"/>
+</svg>

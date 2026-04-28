@@ -1,0 +1,224 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  VENUE_OWNER
+  VENUE_STAFF
+  CUSTOMER
+}
+
+enum VenueStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELED
+}
+
+model User {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         Role     @default(CUSTOMER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  mustChangePassword Boolean   @default(false)
+
+  refreshTokens     RefreshToken[]
+  ownedVenues       VenueOwner[]
+  applications      VenueApplication[] @relation("ApplicantApps")
+  reviewedApps      VenueApplication[] @relation("ReviewerApps")
+  staffMemberships  VenueStaff[]       @relation("staffMemberships")
+  sentInvites       VenueStaff[]       @relation("sentInvites")
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  userId     String    @db.Uuid
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  userAgent  String?
+  ipAddress  String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Venue {
+  id        String      @id @default(uuid(7)) @db.Uuid
+  slug      String      @unique
+  name      String
+  city      String
+  address   String?
+  phone     String?
+  status    VenueStatus @default(ACTIVE)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  description    String?
+  capacity       Int?
+  priceFromCents Int?
+  currency       String?
+  latitude       Float?
+  longitude      Float?
+  coverImageUrl  String?
+  categories     String[]
+  openHours      Json?
+
+  owners  VenueOwner[]
+  staff   VenueStaff[]
+  photos  Photo[]
+  events  Event[]
+
+  @@index([city])
+  @@index([status, createdAt])
+  @@map("venues")
+}
+
+model VenueOwner {
+  userId    String   @db.Uuid
+  venueId   String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@id([userId, venueId])
+  @@index([venueId])
+  @@map("venue_owners")
+}
+
+model VenueApplication {
+  id              String            @id @default(uuid(7)) @db.Uuid
+  applicantUserId String            @db.Uuid
+  venueName       String
+  city            String
+  address         String?
+  phone           String?
+  message         String?
+  status          ApplicationStatus @default(PENDING)
+  rejectionReason String?
+  reviewedById    String?           @db.Uuid
+  reviewedAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  applicant User  @relation("ApplicantApps", fields: [applicantUserId], references: [id], onDelete: Cascade)
+  reviewer  User? @relation("ReviewerApps", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([applicantUserId, status])
+  @@index([status, createdAt])
+  @@map("venue_applications")
+}
+
+enum VenueStaffRole {
+  MANAGER
+  SCANNER
+}
+
+enum VenueStaffStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+}
+
+model VenueStaff {
+  id          String           @id @default(uuid(7)) @db.Uuid
+  venueId     String           @db.Uuid
+  userId      String           @db.Uuid
+  invitedById String           @db.Uuid
+  staffRole   VenueStaffRole   @default(SCANNER)
+  status      VenueStaffStatus @default(PENDING)
+  invitedAt   DateTime         @default(now())
+  joinedAt    DateTime?
+
+  venue     Venue @relation(fields: [venueId], references: [id])
+  user      User  @relation("staffMemberships", fields: [userId], references: [id])
+  invitedBy User  @relation("sentInvites", fields: [invitedById], references: [id])
+
+  @@unique([venueId, userId])
+  @@index([userId])
+  @@index([venueId, status])
+  @@map("venue_staff")
+}
+
+model Photo {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  venueId   String?  @db.Uuid
+  eventId   String?  @db.Uuid
+  url       String
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  venue     Venue?   @relation(fields: [venueId], references: [id])
+  event     Event?   @relation(fields: [eventId], references: [id])
+
+  @@index([venueId])
+  @@index([eventId])
+  @@map("photos")
+}
+
+model Event {
+  id            String      @id @default(uuid(7)) @db.Uuid
+  venueId       String      @db.Uuid
+  slug          String
+  title         String
+  description   String?
+  startsAt      DateTime
+  endsAt        DateTime
+  coverImageUrl String?
+  status        EventStatus @default(DRAFT)
+  capacity      Int?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  venue  Venue       @relation(fields: [venueId], references: [id])
+  tiers  EventTier[]
+  photos Photo[]
+
+  @@unique([venueId, slug])
+  @@index([venueId, status])
+  @@index([startsAt])
+  @@map("events")
+}
+
+model EventTier {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  eventId    String   @db.Uuid
+  name       String
+  priceCents Int
+  currency   String   @default("EUR")
+  capacity   Int?
+  position   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("event_tiers")
+}

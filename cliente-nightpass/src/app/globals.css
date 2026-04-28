@@ -1,0 +1,414 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* Light mode — admin claro con primario morado NightPass */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.495 0.255 296.5); /* #9333EA hero2 */
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.95 0.03 296.5);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.62 0.245 296.5); /* #A855F7 hero */
+  --chart-1: oklch(0.62 0.245 296.5);
+  --chart-2: oklch(0.495 0.255 296.5);
+  --chart-3: oklch(0.7 0.18 26);
+  --chart-4: oklch(0.75 0.15 158);
+  --chart-5: oklch(0.78 0.18 70);
+}
+
+.dark {
+  /* Dark mode — el default; replica fondo NightPass #0A0A0F */
+  --background: oklch(0.078 0.005 280);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.13 0.01 280);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.13 0.01 280);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.62 0.245 296.5); /* #A855F7 */
+  --primary-foreground: oklch(0.13 0.01 280);
+  --secondary: oklch(0.22 0.015 280);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.22 0.015 280);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.28 0.06 296.5);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.62 0.245 296.5);
+  --chart-1: oklch(0.62 0.245 296.5);
+  --chart-2: oklch(0.5 0.22 296.5);
+  --chart-3: oklch(0.7 0.18 26);
+  --chart-4: oklch(0.75 0.15 158);
+  --chart-5: oklch(0.78 0.18 70);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+  }
+}
+
+/* ==========================================================================
+   Lava lamp background — vivo + GPU-friendly
+   Reglas estrictas:
+     - SOLO transform (translate3d, scale, rotate) y rotacion de conic-gradient
+     - CERO filter:blur, CERO filter:url, CERO mix-blend-mode en animados
+     - Las texturas se rasterizan una vez; el GPU solo translada/rota/escala
+   ========================================================================== */
+
+/* --- Aurora: conic-gradient rasterizado una vez, rotando lento ------------- */
+.lava-aurora {
+  position: absolute;
+  inset: -25%;
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    transparent 0deg,
+    oklch(0.55 0.25 296.5 / 0.18) 50deg,
+    transparent 110deg,
+    oklch(0.5 0.27 330 / 0.16) 180deg,
+    transparent 230deg,
+    oklch(0.5 0.24 280 / 0.18) 290deg,
+    transparent 360deg
+  );
+  border-radius: 50%;
+  animation: lava-spin 90s linear infinite;
+  will-change: transform;
+}
+
+/* --- Blobs grandes: translate + scale + rotate (todo GPU) ------------------ */
+.lava-blob {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.lava-blob-1 {
+  top: -15%;
+  left: -10%;
+  width: 50rem;
+  height: 50rem;
+  background: radial-gradient(
+    circle,
+    oklch(0.55 0.25 296.5 / 0.55) 0%,
+    oklch(0.5 0.25 296.5 / 0.25) 35%,
+    transparent 65%
+  );
+  animation: lava-1 38s ease-in-out infinite;
+}
+
+.lava-blob-2 {
+  top: 0%;
+  right: -15%;
+  width: 45rem;
+  height: 45rem;
+  background: radial-gradient(
+    circle,
+    oklch(0.5 0.27 330 / 0.5) 0%,
+    oklch(0.45 0.25 320 / 0.22) 35%,
+    transparent 65%
+  );
+  animation: lava-2 46s ease-in-out infinite;
+}
+
+.lava-blob-3 {
+  bottom: -20%;
+  left: 5%;
+  width: 55rem;
+  height: 55rem;
+  background: radial-gradient(
+    circle,
+    oklch(0.45 0.24 280 / 0.5) 0%,
+    oklch(0.4 0.22 285 / 0.22) 35%,
+    transparent 65%
+  );
+  animation: lava-3 52s ease-in-out infinite;
+}
+
+.lava-blob-4 {
+  bottom: -10%;
+  right: 0%;
+  width: 38rem;
+  height: 38rem;
+  background: radial-gradient(
+    circle,
+    oklch(0.55 0.26 310 / 0.5) 0%,
+    oklch(0.48 0.24 315 / 0.22) 35%,
+    transparent 65%
+  );
+  animation: lava-4 42s ease-in-out infinite;
+}
+
+/* --- Sparks: pequeños, rapiditos, dan ritmo visual sin costo --------------- */
+.lava-spark {
+  position: absolute;
+  width: 14rem;
+  height: 14rem;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.lava-spark-1 {
+  top: 18%;
+  left: 30%;
+  background: radial-gradient(
+    circle,
+    oklch(0.7 0.27 296.5 / 0.45) 0%,
+    transparent 60%
+  );
+  animation: spark-1 22s ease-in-out infinite;
+}
+
+.lava-spark-2 {
+  top: 60%;
+  right: 22%;
+  background: radial-gradient(
+    circle,
+    oklch(0.68 0.27 330 / 0.4) 0%,
+    transparent 60%
+  );
+  animation: spark-2 26s ease-in-out infinite;
+}
+
+.lava-spark-3 {
+  top: 45%;
+  left: 12%;
+  width: 10rem;
+  height: 10rem;
+  background: radial-gradient(
+    circle,
+    oklch(0.72 0.25 270 / 0.4) 0%,
+    transparent 60%
+  );
+  animation: spark-3 18s ease-in-out infinite;
+}
+
+/* --- Vineta estatica ------------------------------------------------------- */
+.lava-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 90% 80% at 50% 50%,
+    transparent 40%,
+    oklch(0.078 0.005 280 / 0.55) 80%,
+    oklch(0.078 0.005 280 / 0.9) 100%
+  );
+}
+
+/* --- Keyframes (todos transform-only) -------------------------------------- */
+@keyframes lava-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes lava-1 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+  33% { transform: translate3d(7rem, 5rem, 0) scale(1.12) rotate(60deg); }
+  66% { transform: translate3d(-3rem, 9rem, 0) scale(0.92) rotate(180deg); }
+}
+
+@keyframes lava-2 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+  40% { transform: translate3d(-9rem, 7rem, 0) scale(1.15) rotate(-80deg); }
+  75% { transform: translate3d(-4rem, -5rem, 0) scale(0.9) rotate(-200deg); }
+}
+
+@keyframes lava-3 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+  35% { transform: translate3d(6rem, -7rem, 0) scale(1.1) rotate(70deg); }
+  70% { transform: translate3d(-5rem, -3rem, 0) scale(0.95) rotate(180deg); }
+}
+
+@keyframes lava-4 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+  50% { transform: translate3d(-7rem, -6rem, 0) scale(1.18) rotate(140deg); }
+}
+
+@keyframes spark-1 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(5rem, -3rem, 0) scale(1.3); }
+  66% { transform: translate3d(-2rem, 4rem, 0) scale(0.85); }
+}
+
+@keyframes spark-2 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-6rem, -4rem, 0) scale(1.4); }
+}
+
+@keyframes spark-3 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  40% { transform: translate3d(4rem, 5rem, 0) scale(1.25); }
+  75% { transform: translate3d(-3rem, 2rem, 0) scale(0.9); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lava-aurora,
+  .lava-blob,
+  .lava-spark {
+    animation: none !important;
+  }
+}
+
+/* Demo dialog progress bar */
+@keyframes demo-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   Landing animations — solo transform/opacity (GPU-friendly)
+   ========================================================================== */
+
+@keyframes np-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes np-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+}
+
+.np-rise {
+  opacity: 0;
+  animation: np-rise 800ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+.np-zoom-in {
+  opacity: 0;
+  animation: np-zoom-in 1000ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+.np-reveal {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+  transition:
+    opacity 800ms cubic-bezier(0.2, 0.7, 0.3, 1),
+    transform 800ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.np-reveal.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.np-card-hover {
+  transition:
+    transform 280ms cubic-bezier(0.2, 0.7, 0.3, 1),
+    border-color 280ms ease-out,
+    background-color 280ms ease-out;
+}
+
+.np-card-hover:hover {
+  transform: translate3d(0, -4px, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .np-rise,
+  .np-zoom-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .np-reveal {
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .np-card-hover {
+    transition: none !important;
+  }
+  .np-card-hover:hover {
+    transform: none !important;
+  }
+}

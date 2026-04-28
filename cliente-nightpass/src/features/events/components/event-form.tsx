@@ -1,0 +1,141 @@
+'use client';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/core/components/ui/button';
+import { Input } from '@/core/components/ui/input';
+import { Field } from '@/core/components/ui/field';
+import { ImageUploader } from '@/core/components/image-uploader';
+import { createEventSchema, type CreateEventInput } from '../schemas/event.schema';
+import { useCreateEvent } from '../hooks/use-create-event';
+import { useUpdateEvent } from '../hooks/use-update-event';
+
+interface EventFormProps {
+  venueId: string;
+  onSuccess?: () => void;
+  defaultValues?: Partial<CreateEventInput>;
+  eventId?: string;
+}
+
+export function EventForm({ venueId, onSuccess, defaultValues, eventId }: EventFormProps) {
+  const create = useCreateEvent(venueId);
+  const update = useUpdateEvent(venueId);
+  const isPending = create.isPending || update.isPending;
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<CreateEventInput>({
+    resolver: zodResolver(createEventSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      startsAt: '',
+      endsAt: '',
+      coverImageUrl: '',
+      status: 'DRAFT',
+      ...defaultValues,
+    },
+  });
+
+  const onSubmit = handleSubmit((values) => {
+    const payload = {
+      ...values,
+      description: values.description || undefined,
+      coverImageUrl: values.coverImageUrl || undefined,
+    };
+    if (eventId) {
+      update.mutate({ id: eventId, ...payload }, { onSuccess: () => onSuccess?.() });
+    } else {
+      create.mutate({ venueId, ...payload }, { onSuccess: () => onSuccess?.() });
+    }
+  });
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <Field label="Título" htmlFor="ev-title" error={errors.title?.message}>
+        <Input id="ev-title" placeholder="Nombre del evento" {...register('title')} />
+      </Field>
+
+      <Field label="Descripción" htmlFor="ev-description" error={errors.description?.message}>
+        <textarea
+          id="ev-description"
+          rows={3}
+          placeholder="Descripción opcional…"
+          className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 resize-none"
+          {...register('description')}
+        />
+      </Field>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Inicio" htmlFor="ev-starts-at" error={errors.startsAt?.message}>
+          <input
+            id="ev-starts-at"
+            type="datetime-local"
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            {...register('startsAt')}
+          />
+        </Field>
+
+        <Field label="Fin" htmlFor="ev-ends-at" error={errors.endsAt?.message}>
+          <input
+            id="ev-ends-at"
+            type="datetime-local"
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            {...register('endsAt')}
+          />
+        </Field>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Estado" htmlFor="ev-status" error={errors.status?.message}>
+          <select
+            id="ev-status"
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            {...register('status')}
+          >
+            <option value="DRAFT">Borrador</option>
+            <option value="PUBLISHED">Publicado</option>
+            <option value="CANCELED">Cancelado</option>
+          </select>
+        </Field>
+
+        <Field label="Capacidad" htmlFor="ev-capacity" error={errors.capacity?.message}>
+          <Input
+            id="ev-capacity"
+            type="number"
+            min={1}
+            placeholder="Sin límite"
+            {...register('capacity')}
+          />
+        </Field>
+      </div>
+
+      <Controller
+        name="coverImageUrl"
+        control={control}
+        render={({ field }) => (
+          <ImageUploader
+            kind="event"
+            value={field.value || undefined}
+            onChange={(url) => field.onChange(url ?? '')}
+            label="Portada del evento"
+          />
+        )}
+      />
+
+      <div className="flex justify-end">
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="rounded-full shadow-lg shadow-primary/30"
+        >
+          {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+          {isPending ? 'Guardando…' : eventId ? 'Guardar cambios' : 'Crear evento'}
+        </Button>
+      </div>
+    </form>
+  );
+}
