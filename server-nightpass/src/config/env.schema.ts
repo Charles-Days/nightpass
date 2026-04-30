@@ -30,6 +30,11 @@ export const envSchema = z.object({
   ADMIN_NOTIFICATION_EMAIL: z.string().email().optional(),
   ADMIN_WEB_URL: z.string().url().default('http://localhost:7100'),
 
+  // Storage
+  STORAGE_DRIVER: z.enum(['local', 'r2']).default('local'),
+  LOCAL_UPLOADS_PATH: z.string().default('./uploads'),
+  LOCAL_UPLOADS_URL: z.string().url().default('http://localhost:7101/uploads'),
+
   // Cloudflare R2 (opcional — para upload de imágenes)
   R2_ACCOUNT_ID: z.string().optional(),
   R2_ACCESS_KEY_ID: z.string().optional(),

@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Plus } from 'lucide-react';
+import { Button } from '@/core/components/ui/button';
 import { serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import type { PaginatedVenues, VenueStatus } from '@/core/types/api';
@@ -30,11 +32,19 @@ export default async function VenuesListPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="font-display text-3xl font-bold tracking-tight">Locales</h1>
-        <p className="text-sm text-muted-foreground">
-          Todos los locales registrados en NightPass.
-        </p>
+      <header className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="font-display text-3xl font-bold tracking-tight">Locales</h1>
+          <p className="text-sm text-muted-foreground">
+            Todos los locales registrados en NightPass.
+          </p>
+        </div>
+        <Button asChild size="sm">
+          <Link href={paths.adminVenuesCreate} className="gap-1.5">
+            <Plus className="size-4" />
+            Nuevo Local
+          </Link>
+        </Button>
       </header>
 
       <nav className="flex flex-wrap gap-2 border-b pb-2">

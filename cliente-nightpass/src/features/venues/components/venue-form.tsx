@@ -1,0 +1,420 @@
+'use client';
+
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { 
+  Loader2, Plus, Trash2, Globe, Instagram, Facebook, Music, 
+  Clock, MapPin, Info, Camera, BookOpen, X, Upload 
+} from 'lucide-react';
+import { Button } from '@/core/components/ui/button';
+import { Input } from '@/core/components/ui/input';
+import { Field } from '@/core/components/ui/field';
+import { Textarea } from '@/core/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/core/components/ui/card';
+import { toast } from 'sonner';
+import { venueSchema, type VenueInput } from '../schemas/venue.schema';
+import { uploadFile } from '@/core/lib/upload';
+
+const MUSIC_TYPES = [
+  'Reggaeton',
+  'Electrónica',
+  'Pop',
+  'Hip-Hop',
+  'Techno',
+  'House',
+  'Rock',
+  'Latina',
+  'Comercial',
+];
+
+interface Props {
+  initialData?: Partial<VenueInput>;
+  onSubmit: (data: VenueInput) => void;
+  isPending: boolean;
+  submitLabel?: string;
+}
+
+export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Guardar' }: Props) {
+  const [isUploadingCover, setIsUploadingCover] = React.useState(false);
+  const [isUploadingImages, setIsUploadingImages] = React.useState(false);
+  const coverInputRef = React.useRef<HTMLInputElement>(null);
+  const imagesInputRef = React.useRef<HTMLInputElement>(null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<VenueInput>({
+    resolver: zodResolver(venueSchema),
+    defaultValues: {
+      name: '',
+      city: '',
+      address: '',
+      phone: '',
+      description: '',
+      musicTypes: [],
+      categories: [],
+      images: [],
+      ...initialData,
+      openHours: initialData?.openHours || {
+        monday: { open: '22:00', close: '05:00', closed: false },
+        tuesday: { open: '22:00', close: '05:00', closed: true },
+        wednesday: { open: '22:00', close: '05:00', closed: true },
+        thursday: { open: '22:00', close: '05:00', closed: false },
+        friday: { open: '22:00', close: '05:00', closed: false },
+        saturday: { open: '22:00', close: '05:00', closed: false },
+        sunday: { open: '22:00', close: '05:00', closed: true },
+      },
+      socialLinks: initialData?.socialLinks || {
+        instagram: '',
+        facebook: '',
+        tiktok: '',
+      },
+    },
+  });
+
+  const selectedMusic = watch('musicTypes') || [];
+  const openHours = watch('openHours') || {};
+  const images = watch('images') || [];
+  const coverImageUrl = watch('coverImageUrl');
+
+  const toggleMusic = (genre: string) => {
+    const current = [...selectedMusic];
+    const index = current.indexOf(genre);
+    if (index > -1) {
+      current.splice(index, 1);
+    } else {
+      current.push(genre);
+    }
+    setValue('musicTypes', current, { shouldDirty: true });
+  };
+
+  const handleHourChange = (day: string, field: string, value: any) => {
+    const current = { ...openHours };
+    current[day] = { ...current[day], [field]: value };
+    setValue('openHours', current, { shouldDirty: true, shouldValidate: true });
+  };
+
+  const onCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploadingCover(true);
+      const url = await uploadFile(file, 'venue');
+      setValue('coverImageUrl', url, { shouldDirty: true });
+      toast.success('Imagen de portada subida');
+    } catch (error) {
+      toast.error('Error al subir la imagen');
+    } finally {
+      setIsUploadingCover(false);
+    }
+  };
+
+  const onImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    try {
+      setIsUploadingImages(true);
+      const urls = await Promise.all(files.map(f => uploadFile(f, 'venue')));
+      setValue('images', [...images, ...urls], { shouldDirty: true });
+      toast.success(`${urls.length} fotos añadidas`);
+    } catch (error) {
+      toast.error('Error al subir algunas imágenes');
+    } finally {
+      setIsUploadingImages(false);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = [...images];
+    newImages.splice(index, 1);
+    setValue('images', newImages, { shouldDirty: true });
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-20">
+      {/* Sección: Información Básica */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Info className="size-5 text-primary" />
+            Información Básica
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-2">
+          <Field label="Nombre del Establecimiento" error={errors.name?.message}>
+            <Input {...register('name')} placeholder="Ej: Velour Club" />
+          </Field>
+          <Field label="Ciudad" error={errors.city?.message}>
+            <Input {...register('city')} placeholder="Ej: CDMX" />
+          </Field>
+          <Field label="Dirección" error={errors.address?.message}>
+            <Input {...register('address')} placeholder="Calle y número..." />
+          </Field>
+          <Field label="Teléfono" error={errors.phone?.message}>
+            <Input {...register('phone')} placeholder="+52 ..." />
+          </Field>
+          <Field label="Descripción" className="md:col-span-2" error={errors.description?.message}>
+            <Textarea {...register('description')} rows={4} placeholder="Describe el ambiente, el concepto..." />
+          </Field>
+        </CardContent>
+      </Card>
+
+      {/* Sección: Operación y Concepto */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Music className="size-5 text-primary" />
+            Operación y Concepto
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-3">
+            <Field label="Capacidad (personas)" error={errors.capacity?.message}>
+              <Input type="number" {...register('capacity')} />
+            </Field>
+            <Field label="Edad Mínima" error={errors.minAge?.message}>
+              <Input type="number" {...register('minAge')} />
+            </Field>
+            <Field label="Código de Vestimenta" error={errors.dressCode?.message}>
+              <Input {...register('dressCode')} placeholder="Ej: Casual Elegante" />
+            </Field>
+          </div>
+
+          <Field label="Tipo de Música">
+            <div className="mt-2 flex flex-wrap gap-2">
+              {MUSIC_TYPES.map((genre) => (
+                <button
+                  key={genre}
+                  type="button"
+                  onClick={() => toggleMusic(genre)}
+                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                    selectedMusic.includes(genre)
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted hover:bg-muted/80'
+                  }`}
+                >
+                  {genre}
+                </button>
+              ))}
+            </div>
+          </Field>
+        </CardContent>
+      </Card>
+
+      {/* Sección: Horarios */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Clock className="size-5 text-primary" />
+            Horarios de Apertura
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="divide-y rounded-lg border">
+            {Object.entries(openHours).map(([day, config]: [string, any]) => (
+              <div key={day} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-32 capitalize font-medium">{day}</div>
+                <div className="flex flex-wrap items-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!config.closed}
+                      onChange={(e) => handleHourChange(day, 'closed', !e.target.checked)}
+                      className="rounded border-muted bg-background text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm">Abierto</span>
+                  </label>
+                  {!config.closed && (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="time"
+                        value={config.open || '22:00'}
+                        onChange={(e) => handleHourChange(day, 'open', e.target.value)}
+                        className="w-32"
+                      />
+                      <span className="text-muted-foreground">a</span>
+                      <Input
+                        type="time"
+                        value={config.close || '05:00'}
+                        onChange={(e) => handleHourChange(day, 'close', e.target.value)}
+                        className="w-32"
+                      />
+                    </div>
+                  )}
+                  {config.closed && <span className="text-sm text-muted-foreground italic">Cerrado</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sección: Galería de Fotos */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Camera className="size-5 text-primary" />
+            Galería de Fotos
+          </CardTitle>
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm" 
+            onClick={() => imagesInputRef.current?.click()}
+            disabled={isUploadingImages}
+          >
+            {isUploadingImages ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+            Subir Fotos
+          </Button>
+          <input 
+            type="file" 
+            ref={imagesInputRef} 
+            onChange={onImagesUpload} 
+            multiple 
+            accept="image/*" 
+            className="hidden" 
+          />
+        </CardHeader>
+        <CardContent>
+           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+             {images.map((url, idx) => (
+               <div key={idx} className="group relative aspect-square overflow-hidden rounded-lg border bg-muted">
+                 <img src={url} alt={`Foto ${idx}`} className="h-full w-full object-cover" />
+                 <button
+                   type="button"
+                   onClick={() => removeImage(idx)}
+                   className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-500"
+                 >
+                   <X className="size-4" />
+                 </button>
+               </div>
+             ))}
+             {images.length === 0 && !isUploadingImages && (
+               <div 
+                 className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed text-muted-foreground hover:bg-muted/50"
+                 onClick={() => imagesInputRef.current?.click()}
+               >
+                 <Upload className="mb-2 size-6" />
+                 <span className="text-xs">Añadir fotos</span>
+               </div>
+             )}
+           </div>
+        </CardContent>
+      </Card>
+
+      {/* Sección: Portada y Links */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <BookOpen className="size-5 text-primary" />
+            Portada y Enlaces
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-2">
+          <Field label="Imagen de Portada">
+            <div className="flex flex-col gap-4">
+               {coverImageUrl ? (
+                 <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-muted">
+                   <img src={coverImageUrl} alt="Portada" className="h-full w-full object-cover" />
+                   <button
+                     type="button"
+                     onClick={() => setValue('coverImageUrl', '', { shouldDirty: true })}
+                     className="absolute right-2 top-2 rounded-full bg-black/50 p-1.5 text-white hover:bg-red-500"
+                   >
+                     <X className="size-4" />
+                   </button>
+                 </div>
+               ) : (
+                 <div 
+                   className="flex aspect-video w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed text-muted-foreground hover:bg-muted/50"
+                   onClick={() => coverInputRef.current?.click()}
+                 >
+                   {isUploadingCover ? <Loader2 className="size-8 animate-spin" /> : <Upload className="mb-2 size-8" />}
+                   <span>Subir imagen de portada</span>
+                 </div>
+               )}
+               <input 
+                 type="file" 
+                 ref={coverInputRef} 
+                 onChange={onCoverUpload} 
+                 accept="image/*" 
+                 className="hidden" 
+               />
+               <Input {...register('coverImageUrl')} placeholder="O pega un link directo..." />
+            </div>
+          </Field>
+
+          <div className="space-y-6">
+            <Field label="URL de la Carta/Menú (PDF)" error={errors.menuUrl?.message}>
+               <Input {...register('menuUrl')} placeholder="https://..." />
+            </Field>
+
+            <div className="grid gap-4">
+              <Field label="Instagram">
+                <div className="relative">
+                  <Instagram className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    className="pl-9"
+                    placeholder="@usuario"
+                    value={watch('socialLinks')?.instagram || ''}
+                    onChange={(e) => {
+                      const links = { ...watch('socialLinks') };
+                      links.instagram = e.target.value;
+                      setValue('socialLinks', links, { shouldDirty: true });
+                    }}
+                  />
+                </div>
+              </Field>
+              <Field label="Facebook">
+                <div className="relative">
+                  <Facebook className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    className="pl-9"
+                    placeholder="Link..."
+                    value={watch('socialLinks')?.facebook || ''}
+                    onChange={(e) => {
+                      const links = { ...watch('socialLinks') };
+                      links.facebook = e.target.value;
+                      setValue('socialLinks', links, { shouldDirty: true });
+                    }}
+                  />
+                </div>
+              </Field>
+              <Field label="TikTok">
+                <div className="relative">
+                  <Globe className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    className="pl-9"
+                    placeholder="@usuario"
+                    value={watch('socialLinks')?.tiktok || ''}
+                    onChange={(e) => {
+                      const links = { ...watch('socialLinks') };
+                      links.tiktok = e.target.value;
+                      setValue('socialLinks', links, { shouldDirty: true });
+                    }}
+                  />
+                </div>
+              </Field>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end gap-4">
+        <Button type="button" variant="outline" onClick={() => window.history.back()} disabled={isPending}>
+          Cancelar
+        </Button>
+        <Button type="submit" disabled={isPending} className="px-8 font-bold">
+          {isPending ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+          {submitLabel}
+        </Button>
+      </div>
+    </form>
+  );
+}

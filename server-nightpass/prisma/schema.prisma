@@ -89,6 +89,13 @@ model Venue {
   categories     String[]
   openHours      Json?
 
+  // Additional operational fields
+  menuUrl     String?
+  musicTypes  String[]
+  socialLinks Json?
+  dressCode   String?
+  minAge      Int?
+
   owners  VenueOwner[]
   staff   VenueStaff[]
   photos  Photo[]

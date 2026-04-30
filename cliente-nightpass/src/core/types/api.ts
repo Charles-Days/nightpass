@@ -79,6 +79,11 @@ export interface Venue {
   openHours?: Record<string, unknown> | null;
   events?: Event[];
   photos?: Array<{ id: string; url: string; position: number }>;
+  menuUrl?: string | null;
+  musicTypes?: string[];
+  socialLinks?: Record<string, any> | null;
+  dressCode?: string | null;
+  minAge?: number | null;
 }
 
 export interface PaginatedVenues {

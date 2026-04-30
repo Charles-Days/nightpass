@@ -19,8 +19,11 @@ export class RolesGuard implements CanActivate {
     );
     if (!required || required.length === 0) return true;
 
-    const request = ctx.switchToHttp().getRequest<{ user?: { role?: Role } }>();
+    const request = ctx.switchToHttp().getRequest<{ user?: { role?: Role, email?: string } }>();
     const role = request.user?.role;
+    
+    console.log(`[RolesGuard] Path: ${ctx.switchToHttp().getRequest().url} | User: ${request.user?.email} | Role: ${role} | Required: ${required}`);
+
     if (!role || !required.includes(role)) {
       throw new ForbiddenException('Insufficient role');
     }

@@ -5,3 +5,8 @@ export async function GET(req: NextRequest) {
   const search = req.nextUrl.search;
   return proxyToApi(req, `/venues${search}`, { method: 'GET' });
 }
+
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  return proxyToApi(req, '/venues', { method: 'POST', body });
+}

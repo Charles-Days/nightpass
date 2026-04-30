@@ -3,11 +3,13 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, VenueStatus, VenueStaffStatus } from '@prisma/client';
+import { Role, Prisma, VenueStatus, VenueStaffStatus } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListVenuesQuery } from './dto/list-venues.query';
+import { CreateVenueDto } from './dto/create-venue.dto';
 import { UpdateVenueDto } from './dto/update-venue.dto';
+import { AuthUser } from '../auth/decorators/current-user.decorator';
 
 interface CreateWithOwnerInput {
   name: string;
@@ -54,6 +56,9 @@ export class VenuesService {
     const venue = await this.prisma.venue.findUnique({
       where: { id },
       include: {
+        photos: {
+          orderBy: { position: 'asc' },
+        },
         owners: {
           include: {
             user: {
@@ -90,13 +95,87 @@ export class VenuesService {
     return memberships.map((m) => m.venue);
   }
 
-  async update(id: string, dto: UpdateVenueDto) {
-    await this.ensureExists(id);
-    const data: Prisma.VenueUpdateInput = {};
-    if (dto.name !== undefined) data.name = dto.name.trim();
-    if (dto.city !== undefined) data.city = dto.city.trim();
-    if (dto.address !== undefined) data.address = dto.address.trim() || null;
-    if (dto.phone !== undefined) data.phone = dto.phone.trim() || null;
+  async create(dto: CreateVenueDto) {
+    const baseSlug = this.toSlug(dto.name);
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const slug = attempt === 0 ? baseSlug : `${baseSlug}-${this.randomSuffix()}`;
+      try {
+        const { ownerUserId, images, ...venueData } = dto;
+        const venue = await this.prisma.venue.create({
+          data: {
+            ...venueData,
+            slug,
+            name: dto.name.trim(),
+            city: dto.city.trim(),
+            address: dto.address?.trim() || null,
+            phone: dto.phone?.trim() || null,
+            owners: ownerUserId
+              ? { create: { userId: ownerUserId } }
+              : undefined,
+            photos: images?.length
+              ? {
+                  create: images.map((url, i) => ({ url, position: i })),
+                }
+              : undefined,
+          },
+        });
+        return venue;
+      } catch (err) {
+        lastError = err;
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          'code' in err &&
+          (err as { code: string }).code === 'P2002'
+        ) {
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new InternalServerErrorException(
+      `No se pudo generar un slug único para el local "${dto.name}"`,
+      { cause: lastError instanceof Error ? lastError : undefined },
+    );
+  }
+
+  async update(id: string, dto: UpdateVenueDto, user?: AuthUser) {
+    const venue = await this.prisma.venue.findUnique({
+      where: { id },
+      include: { owners: { select: { userId: true } } },
+    });
+    if (!venue) throw new NotFoundException('Local no encontrado');
+
+    // Permisos: ADMIN o dueño del local
+    if (user && user.role !== Role.ADMIN) {
+      const isOwner = venue.owners.some((o) => o.userId === user.id);
+      if (!isOwner) throw new NotFoundException('Local no encontrado'); // Usamos 404 para no revelar existencia
+    }
+
+    const { images, ...rest } = dto;
+
+    const data: Prisma.VenueUpdateInput = {
+      ...rest,
+      name: rest.name?.trim(),
+      city: rest.city?.trim(),
+      address: rest.address?.trim() || (rest.address === '' ? null : undefined),
+      phone: rest.phone?.trim() || (rest.phone === '' ? null : undefined),
+    };
+
+    if (images !== undefined) {
+      data.photos = {
+        deleteMany: {},
+        create: images.map((url, i) => ({ url, position: i })),
+      };
+    }
+
+    // Clean undefined values from dto spread
+    Object.keys(data).forEach(
+      (key) => (data as any)[key] === undefined && delete (data as any)[key],
+    );
+
     return this.prisma.venue.update({ where: { id }, data });
   }
 

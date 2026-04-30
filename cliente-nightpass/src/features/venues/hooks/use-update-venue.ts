@@ -18,15 +18,9 @@ export function useUpdateVenue(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: UpdateVenueInput) => {
-      const payload: Record<string, string> = {
-        name: input.name,
-        city: input.city,
-      };
-      if (input.address) payload.address = input.address;
-      if (input.phone) payload.phone = input.phone;
       return clientFetch<Venue>(`/api/venues/${id}`, {
         method: 'PATCH',
-        body: payload,
+        body: input,
       });
     },
     onSuccess: () => {

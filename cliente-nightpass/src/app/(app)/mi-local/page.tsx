@@ -146,8 +146,14 @@ export default async function MiLocalPage() {
           </div>
           <div className="mt-4 flex gap-3 border-t border-white/5 pt-4">
             <Link
-              href={paths.miLocalEventos}
+              href={paths.miLocalEditar}
               className="rounded-full bg-primary/15 px-4 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/25"
+            >
+              Editar información
+            </Link>
+            <Link
+              href={paths.miLocalEventos}
+              className="rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-accent-foreground"
             >
               Ver eventos
             </Link>

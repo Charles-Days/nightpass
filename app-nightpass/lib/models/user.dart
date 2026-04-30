@@ -2,15 +2,39 @@ class User {
   final String id;
   final String email;
   final String? name;
+  final String role;
+  final bool mustChangePassword;
+  final DateTime createdAt;
 
-  const User({required this.id, required this.email, this.name});
+  const User({
+    required this.id,
+    required this.email,
+    this.name,
+    required this.role,
+    required this.mustChangePassword,
+    required this.createdAt,
+  });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] as String,
       email: json['email'] as String,
       name: json['name'] as String?,
+      role: json['role'] as String,
+      mustChangePassword: json['mustChangePassword'] as bool,
+      createdAt: DateTime.parse(json['createdAt'] as String),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'email': email,
+      'name': name,
+      'role': role,
+      'mustChangePassword': mustChangePassword,
+      'createdAt': createdAt.toIso8601String(),
+    };
   }
 }
 

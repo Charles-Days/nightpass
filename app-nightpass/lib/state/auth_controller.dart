@@ -161,6 +161,31 @@ class AuthController extends StateNotifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
+  Future<void> refreshMe() async {
+    try {
+      final user = await api.me();
+      state = state.copyWith(user: user);
+    } catch (_) {
+      // If refresh fails, we don't necessarily want to log out
+      // but we could if it's a 401
+    }
+  }
+
+  Future<bool> updateProfile({String? name}) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final user = await api.updateMe(name: name);
+      state = state.copyWith(user: user, isLoading: false);
+      return true;
+    } on DioException catch (e) {
+      state = state.copyWith(isLoading: false, error: _readError(e));
+      return false;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Unexpected error: $e');
+      return false;
+    }
+  }
+
   Future<bool> _tryRefresh() async {
     final refresh = await storage.readRefresh();
     if (refresh == null) return false;

@@ -5,7 +5,10 @@ import {
 } from '@nestjs/platform-fastify';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { join } from 'path';
 import helmet from '@fastify/helmet';
+import fastifyStatic from '@fastify/static';
+import fastifyMultipart from '@fastify/multipart';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -17,6 +20,15 @@ async function bootstrap() {
     }),
   );
 
+  // Permitir subida de archivos binarios (imágenes) sin procesar para el modo local
+  const fastifyInstance = app.getHttpAdapter().getInstance();
+  fastifyInstance.addContentTypeParser(
+    ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+    (req, payload, done) => {
+      done(null, payload);
+    },
+  );
+
   await app.register(helmet, {
     contentSecurityPolicy: false,
   });
@@ -24,9 +36,29 @@ async function bootstrap() {
   const config = app.get(ConfigService);
   const corsOrigins = config.get<string>('CORS_ORIGINS');
   app.enableCors({
-    origin: corsOrigins ? corsOrigins.split(',').map((o) => o.trim()) : true,
+    origin: corsOrigins ? corsOrigins.split(',').map((o: string) => o.trim()) : true,
     credentials: true,
   });
+
+  // Servir archivos estáticos (uploads)
+  const uploadsPath = config.get<string>('LOCAL_UPLOADS_PATH') || './uploads';
+  const absoluteUploadsPath = join(process.cwd(), uploadsPath);
+  
+  await app.register(fastifyStatic, {
+    root: absoluteUploadsPath,
+    prefix: '/uploads/',
+    decorateReply: false,
+    allowedPath: (pathName) => {
+      // Opcional: registrar logs para depuración si fuera necesario
+      return true;
+    },
+    setHeaders: (res) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+  });
+
+  await app.register(fastifyMultipart);
 
   app.useGlobalPipes(
     new ValidationPipe({

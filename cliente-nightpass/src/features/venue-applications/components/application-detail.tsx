@@ -195,12 +195,25 @@ function ApprovalSuccess({
           Le enviamos las credenciales de acceso a{' '}
           <span className="font-medium text-foreground">{applicantEmail}</span>.
         </p>
+        <div className="mt-4 rounded-lg bg-yellow-500/10 p-4 border border-yellow-500/20">
+          <p className="text-sm text-yellow-500 font-medium">
+            ⚠️ El establecimiento ha sido creado con datos básicos. 
+            Es necesario completar el perfil (horarios, fotos, descripción) para que sea funcional.
+          </p>
+        </div>
       </div>
 
-      <Button type="button" variant="outline" onClick={onBack}>
-        <ArrowLeft className="size-4" />
-        Volver a la lista
-      </Button>
+      <div className="flex flex-wrap justify-center gap-3">
+        <Button type="button" variant="outline" onClick={onBack}>
+          <ArrowLeft className="size-4" />
+          Volver a la lista
+        </Button>
+        <Button asChild>
+          <Link href={`${paths.adminVenuesCreate}?applicationId=${result.id}`}>
+            Completar Registro de Establecimiento
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }

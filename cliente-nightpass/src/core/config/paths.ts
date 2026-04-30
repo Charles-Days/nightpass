@@ -6,8 +6,10 @@ export const paths = {
   adminApplications: '/admin/solicitudes',
   adminUsers: '/admin/usuarios',
   adminVenues: '/admin/locales',
+  adminVenuesCreate: '/admin/locales/nuevo',
   cambiarPassword: '/cambiar-password',
   miLocal: '/mi-local',
+  miLocalEditar: '/mi-local/editar',
   miLocalEventos: '/mi-local/eventos',
   miLocalStaff: '/mi-local/staff',
 } as const;

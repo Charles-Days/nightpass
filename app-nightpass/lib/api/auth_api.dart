@@ -48,4 +48,14 @@ class AuthApi {
     final res = await _api.dio.get<Map<String, dynamic>>('/auth/me');
     return User.fromJson(res.data!);
   }
+
+  Future<User> updateMe({String? name}) async {
+    final res = await _api.dio.patch<Map<String, dynamic>>(
+      '/auth/me',
+      data: {
+        if (name != null) 'name': name,
+      },
+    );
+    return User.fromJson(res.data!);
+  }
 }

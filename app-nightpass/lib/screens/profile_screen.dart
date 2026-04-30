@@ -52,47 +52,65 @@ class ProfileScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.only(top: 8, bottom: 110),
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [NPColors.hero, NPColors.magenta],
-                          ),
-                          boxShadow: [BoxShadow(color: NPColors.hero.withValues(alpha: 0.5), blurRadius: 28)],
-                        ),
-                        child: Center(
-                          child: Text(
-                            _initials(user?.name ?? user?.email),
-                            style: NPTextStyles.display(22),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(user?.name ?? 'Guest', style: NPTextStyles.display(20)),
-                            const SizedBox(height: 2),
-                            Text(
-                              user?.email ?? 'Member · CDMX',
-                              style: NPTextStyles.body(12, color: NPColors.textDim),
-                              overflow: TextOverflow.ellipsis,
+                GestureDetector(
+                  onTap: () => _showEditProfileModal(context, ref, user?.name ?? ''),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [NPColors.hero, NPColors.magenta],
                             ),
-                            const SizedBox(height: 8),
-                            const NPChip(tone: NPChipTone.hero, child: Text('INSIDER · TIER II')),
-                          ],
+                            boxShadow: [
+                              BoxShadow(
+                                  color: NPColors.hero.withValues(alpha: 0.5),
+                                  blurRadius: 28)
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              _initials(user?.name ?? user?.email),
+                              style: NPTextStyles.display(22),
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(user?.name ?? 'Guest',
+                                      style: NPTextStyles.display(20)),
+                                  const SizedBox(width: 6),
+                                  Icon(Icons.edit_outlined,
+                                      size: 14, color: NPColors.textFaint),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                user?.email ?? 'Member · CDMX',
+                                style: NPTextStyles.body(12,
+                                    color: NPColors.textDim),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              const NPChip(
+                                  tone: NPChipTone.hero,
+                                  child: Text('INSIDER · TIER II')),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Padding(
@@ -385,6 +403,74 @@ class ProfileScreen extends ConsumerWidget {
     return first.length >= 2
         ? first.substring(0, 2).toUpperCase()
         : first[0].toUpperCase();
+  }
+
+  void _showEditProfileModal(
+      BuildContext context, WidgetRef ref, String currentName) {
+    final controller = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.7),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: NPGlass(
+          blur: true,
+          radius: 24,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Editar Perfil', style: NPTextStyles.display(20)),
+              const SizedBox(height: 4),
+              Text('¿Cómo quieres que te llamemos?',
+                  style: NPTextStyles.body(13, color: NPColors.textDim)),
+              const SizedBox(height: 24),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                style: NPTextStyles.heading(16),
+                decoration: InputDecoration(
+                  labelText: 'Nombre',
+                  labelStyle: TextStyle(color: NPColors.hero.withValues(alpha: 0.7)),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: NPColors.hairline),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: NPColors.hero),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              NPPrimary(
+                full: true,
+                onPressed: () async {
+                  final name = controller.text.trim();
+                  Navigator.of(ctx).pop();
+                  if (name != currentName) {
+                    await ref
+                        .read(authProvider.notifier)
+                        .updateProfile(name: name);
+                  }
+                },
+                child: const Text('Guardar cambios'),
+              ),
+              const SizedBox(height: 12),
+              NPGhost(
+                full: true,
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Cancelar'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
