@@ -14,6 +14,7 @@ import '../screens/signup_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/stories_feed_screen.dart';
 import '../screens/story_viewer_screen.dart';
+import '../models/venue.dart';
 import '../state/auth_controller.dart';
 import '../widgets/np_tab_bar.dart';
 
@@ -49,7 +50,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/signup', builder: (_, __) => const SignupScreen()),
       GoRoute(path: '/stories', builder: (_, __) => const StoriesFeedScreen()),
       GoRoute(path: '/story', builder: (_, __) => const StoryViewerScreen()),
-      GoRoute(path: '/bar', builder: (_, __) => const BarDetailScreen()),
+      GoRoute(
+        path: '/bar',
+        builder: (context, state) => BarDetailScreen(venue: state.extra as Venue),
+      ),
       GoRoute(path: '/event', builder: (_, __) => const EventDetailScreen()),
       GoRoute(path: '/checkout', builder: (_, __) => const CheckoutScreen()),
       GoRoute(path: '/friends', builder: (_, __) => const FriendsInviteScreen()),

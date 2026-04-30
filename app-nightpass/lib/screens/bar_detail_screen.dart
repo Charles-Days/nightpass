@@ -8,12 +8,28 @@ import '../widgets/np_capacity.dart';
 import '../widgets/np_chip.dart';
 import '../widgets/np_glass.dart';
 import '../widgets/np_photo.dart';
+import '../models/venue.dart';
 
-class BarDetailScreen extends StatelessWidget {
-  const BarDetailScreen({super.key});
+class BarDetailScreen extends StatefulWidget {
+  final Venue venue;
+  const BarDetailScreen({super.key, required this.venue});
+
+  @override
+  State<BarDetailScreen> createState() => _BarDetailScreenState();
+}
+
+class _BarDetailScreenState extends State<BarDetailScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
 
   @override
   Widget build(BuildContext context) {
+    final v = widget.venue;
+    final photos = [
+      if (v.coverImageUrl != null) v.coverImageUrl!,
+      ...v.photos.map((p) => p.url),
+    ];
+
     return Scaffold(
       body: Stack(
         children: [
@@ -28,24 +44,38 @@ class BarDetailScreen extends StatelessWidget {
                     height: 320,
                     child: Stack(
                       children: [
-                        const NPPhoto(
-                          label: 'lumen.hero.jpg',
-                          height: 320,
-                          hue: 280,
-                          borderRadius: BorderRadius.zero,
-                        ),
+                        if (photos.isEmpty)
+                          const NPPhoto(
+                            height: 320,
+                            hue: 280,
+                            borderRadius: BorderRadius.zero,
+                          )
+                        else
+                          PageView.builder(
+                            controller: _pageController,
+                            onPageChanged: (i) => setState(() => _currentPage = i),
+                            itemCount: photos.length,
+                            itemBuilder: (context, i) => NPPhoto(
+                              imageUrl: photos[i],
+                              height: 320,
+                              hue: 280,
+                              borderRadius: BorderRadius.zero,
+                            ),
+                          ),
                         Positioned.fill(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.black.withValues(alpha: 0.4),
-                                  Colors.transparent,
-                                  NPColors.base,
-                                ],
-                                stops: const [0.0, 0.30, 1.0],
+                          child: IgnorePointer(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.4),
+                                    Colors.transparent,
+                                    NPColors.base,
+                                  ],
+                                  stops: const [0.0, 0.30, 1.0],
+                                ),
                               ),
                             ),
                           ),
@@ -65,20 +95,46 @@ class BarDetailScreen extends StatelessWidget {
                                 children: [
                                   _circleBtn(Icons.ios_share_rounded, NPColors.text),
                                   const SizedBox(width: 8),
-                                  _circleBtn(Icons.favorite, NPColors.magenta),
+                                  _circleBtn(Icons.favorite_border, NPColors.text),
                                 ],
                               ),
                             ],
                           ),
                         ),
-                        const Positioned(
+                        Positioned(
                           top: 56,
                           left: 0,
                           right: 0,
                           child: Center(
-                            child: NPChip(tone: NPChipTone.live, child: Text('● OPEN · LIVE')),
+                            child: NPChip(
+                              tone: NPChipTone.live, 
+                              child: Text('● OPEN · LIVE · CDMX'),
+                            ),
                           ),
                         ),
+                        if (photos.length > 1)
+                          Positioned(
+                            bottom: 70,
+                            left: 0,
+                            right: 0,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                photos.length,
+                                (i) => Container(
+                                  width: 6,
+                                  height: 6,
+                                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: _currentPage == i
+                                        ? Colors.white
+                                        : Colors.white.withValues(alpha: 0.3),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -89,7 +145,7 @@ class BarDetailScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Lumen', style: NPTextStyles.display(32, letterSpacing: -0.025)),
+                          Text(v.name, style: NPTextStyles.display(32, letterSpacing: -0.025)),
                           const SizedBox(height: 6),
                           Row(
                             children: [
@@ -97,7 +153,7 @@ class BarDetailScreen extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text('4.8 · 1.2k', style: NPTextStyles.body(13, color: NPColors.textDim)),
                               const SizedBox(width: 14),
-                              Text('· Rooftop · Cocktails', style: NPTextStyles.body(13, color: NPColors.textDim)),
+                              Text('· ${v.categories.join(' · ')}', style: NPTextStyles.body(13, color: NPColors.textDim)),
                             ],
                           ),
                           const SizedBox(height: 6),
@@ -107,22 +163,43 @@ class BarDetailScreen extends StatelessWidget {
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  'Av. Álvaro Obregón 185, Roma Norte · 0.4 km',
+                                  '${v.address ?? v.city} · 0.4 km',
                                   style: NPTextStyles.body(13, color: NPColors.textDim),
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 14),
-                          const Wrap(
+                          Wrap(
                             spacing: 6,
+                            runSpacing: 6,
                             children: [
-                              NPChip(tone: NPChipTone.hero, child: Text('TRENDING #2')),
-                              NPChip(child: Text('21+')),
-                              NPChip(child: Text('SMART CASUAL')),
+                              ...v.musicTypes.map((m) => NPChip(
+                                tone: NPChipTone.hero, 
+                                child: Text(m.toUpperCase())
+                              )),
+                              if (v.minAge != null)
+                                NPChip(child: Text('${v.minAge}+')),
+                              if (v.dressCode != null)
+                                NPChip(child: Text(v.dressCode!.toUpperCase())),
                             ],
                           ),
                           const SizedBox(height: 20),
+                          if (v.menuUrl != null) ...[
+                            NPGhost(
+                              full: true,
+                              onPressed: () {}, // TODO: Launch menuUrl
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.restaurant_menu_outlined, size: 18),
+                                  const SizedBox(width: 10),
+                                  const Text('View full menu'),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
                           NPGlass(
                             radius: 18,
                             child: Column(
@@ -137,7 +214,7 @@ class BarDetailScreen extends StatelessWidget {
                                         children: [
                                           Text('LIVE CAPACITY', style: NPTextStyles.label(spacing: 0.1)),
                                           const SizedBox(height: 4),
-                                          Text('72% full · ~12 min wait',
+                                          Text('${v.capacity ?? 0}% full · ~12 min wait',
                                               style: NPTextStyles.heading(20, w: FontWeight.w600)),
                                         ],
                                       ),
@@ -146,7 +223,7 @@ class BarDetailScreen extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 14),
-                                const NPCapacity(pct: 72, label: ''),
+                                NPCapacity(pct: v.capacity ?? 0, label: ''),
                                 const SizedBox(height: 14),
                                 Row(
                                   children: [
@@ -156,20 +233,47 @@ class BarDetailScreen extends StatelessWidget {
                                     const SizedBox(width: 18),
                                     Icon(Icons.access_time, size: 14, color: NPColors.textDim),
                                     const SizedBox(width: 4),
-                                    Text('Closes 03:00', style: NPTextStyles.body(12, color: NPColors.textDim)),
+                                    Text('Open today until 03:00', style: NPTextStyles.body(12, color: NPColors.textDim)),
                                   ],
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 24),
+                          Text('Opening Hours', style: NPTextStyles.heading(14, w: FontWeight.w600)),
+                          const SizedBox(height: 10),
+                          NPGlass(
+                            radius: 16,
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            child: Column(
+                              children: _buildHoursRows(v.openHours),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
                           Text('About', style: NPTextStyles.heading(14, w: FontWeight.w600)),
                           const SizedBox(height: 8),
                           Text(
-                            'Twelve floors above Roma. House cocktails, slow electronic, panoramic skyline. House DJs Thu–Sat from 22h.',
+                            v.description ?? 'No description available for this venue.',
                             style: NPTextStyles.body(14, color: NPColors.textDim, height: 1.55),
                           ),
                           const SizedBox(height: 22),
+                          if (v.socialLinks != null) ...[
+                            Text('Connect', style: NPTextStyles.heading(14, w: FontWeight.w600)),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                if (v.socialLinks!['instagram'] != null)
+                                  _socialBtn(Icons.camera_alt_outlined),
+                                if (v.socialLinks!['facebook'] != null)
+                                  _socialBtn(Icons.facebook),
+                                if (v.socialLinks!['website'] != null)
+                                  _socialBtn(Icons.language),
+                                if (v.phone != null)
+                                  _socialBtn(Icons.phone_outlined),
+                              ],
+                            ),
+                            const SizedBox(height: 22),
+                          ],
                           Text('Tonight', style: NPTextStyles.heading(14, w: FontWeight.w600)),
                           const SizedBox(height: 10),
                           GestureDetector(
@@ -254,7 +358,7 @@ class BarDetailScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.baseline,
                               textBaseline: TextBaseline.alphabetic,
                               children: [
-                                Text('\$180', style: NPTextStyles.display(22)),
+                                Text('\$${(v.priceFromCents ?? 0) ~/ 100}', style: NPTextStyles.display(22)),
                                 const SizedBox(width: 4),
                                 Text('· tonight',
                                     style: NPTextStyles.body(13, color: NPColors.textDim, w: FontWeight.w500)),
@@ -294,5 +398,48 @@ class BarDetailScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _socialBtn(IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: _circleBtn(icon, NPColors.text),
+    );
+  }
+
+  List<Widget> _buildHoursRows(Map<String, dynamic>? hours) {
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    final rows = <Widget>[];
+
+    for (var i = 0; i < days.length; i++) {
+      final day = days[i];
+      final dayData = hours?[day];
+      final isActuallyClosed = dayData == null || 
+                              dayData['closed'] == true || 
+                              dayData['open'] == null;
+      final isOpen = !isActuallyClosed;
+
+      rows.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Text(day.substring(0, 3).toUpperCase(),
+                  style: NPTextStyles.label(size: 11, spacing: 0.1, color: NPColors.textDim)),
+              const Spacer(),
+              Text(
+                isOpen ? '${dayData['open']} – ${dayData['close']}' : 'CLOSED',
+                style: NPTextStyles.body(12, color: isOpen ? NPColors.text : NPColors.textFaint),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (i < days.length - 1) {
+        rows.add(Divider(color: Colors.white.withValues(alpha: 0.05), height: 12));
+      }
+    }
+
+    return rows;
   }
 }

@@ -3,7 +3,7 @@ import '../services/token_storage.dart';
 
 const String apiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'http://10.0.2.2:7101/api/v1',
+  defaultValue: 'http://192.168.1.111:7101/api/v1',
 );
 
 class ApiClient {

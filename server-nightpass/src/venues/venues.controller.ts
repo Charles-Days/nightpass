@@ -25,11 +25,11 @@ import { UpdateVenueDto } from './dto/update-venue.dto';
 import { VenuesService } from './venues.service';
 
 @Controller('venues')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class VenuesController {
   constructor(private readonly service: VenuesService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   create(@Body() dto: CreateVenueDto) {
@@ -37,24 +37,28 @@ export class VenuesController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF, Role.CUSTOMER)
   list(@Query() query: ListVenuesQuery) {
     return this.service.list(query);
   }
 
   @Get('my')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.VENUE_OWNER, Role.VENUE_STAFF)
   getMyVenues(@CurrentUser() user: AuthUser) {
     return this.service.getMyVenues(user.id);
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF, Role.CUSTOMER)
   getOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.getById(id);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.VENUE_OWNER)
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -65,6 +69,7 @@ export class VenuesController {
   }
 
   @Post(':id/suspend')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   suspend(@Param('id', ParseUUIDPipe) id: string) {
@@ -72,6 +77,7 @@ export class VenuesController {
   }
 
   @Post(':id/reactivate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   reactivate(@Param('id', ParseUUIDPipe) id: string) {

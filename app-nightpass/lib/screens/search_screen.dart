@@ -1,33 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../theme/np_theme.dart';
 import '../widgets/np_backdrop.dart';
 import '../widgets/np_button.dart';
 import '../widgets/np_chip.dart';
 import '../widgets/np_glass.dart';
 import '../widgets/np_photo.dart';
+import '../state/venue_controller.dart';
+import '../models/venue.dart';
 
-class SearchScreen extends StatelessWidget {
+class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
-  static const _filters = [
-    {'label': 'Rooftop', 'on': true},
-    {'label': 'Cocktails', 'on': true},
-    {'label': 'Live music', 'on': false},
-    {'label': 'Open late', 'on': true},
-    {'label': 'Dance floor', 'on': false},
-    {'label': 'Speakeasy', 'on': false},
-  ];
+  @override
+  ConsumerState<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends ConsumerState<SearchScreen> {
+  final TextEditingController _searchController = TextEditingController();
 
   static const _distance = ['<1km', '1–3km', '3–5km', 'Anywhere'];
+  
+  // Potential Vibe filters (music types)
+  static const _vibes = ['Electronic', 'Reggaeton', 'Pop', 'Jazz', 'Rock', 'Techno'];
 
-  static const _results = [
-    {'name': 'Lumen', 'tag': 'Rooftop · Roma Norte · 0.4 km', 'cap': 72, 'hue': 280.0},
-    {'name': 'Velour', 'tag': 'Cocktails · Condesa · 1.1 km', 'cap': 38, 'hue': 310.0},
-    {'name': 'Cinco Sur', 'tag': 'Rooftop · Juárez · 1.6 km', 'cap': 23, 'hue': 260.0},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      ref.read(venueProvider.notifier).setSearchQuery(_searchController.text);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final venueState = ref.watch(venueProvider);
+    final results = venueState.filteredVenues;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -42,16 +58,28 @@ class SearchScreen extends StatelessWidget {
                   child: NPGlass(
                     radius: 14,
                     borderColor: NPColors.hero2,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
                     child: Row(
                       children: [
                         const Icon(Icons.search_rounded, size: 18, color: NPColors.hero),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text('rooftop in roma',
-                              style: NPTextStyles.body(15)),
+                          child: TextField(
+                            controller: _searchController,
+                            style: NPTextStyles.body(15),
+                            decoration: InputDecoration(
+                              hintText: 'Search bars or cities...',
+                              hintStyle: NPTextStyles.body(15, color: NPColors.textDim),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
                         ),
-                        Icon(Icons.close_rounded, size: 14, color: NPColors.textDim),
+                        if (_searchController.text.isNotEmpty)
+                          GestureDetector(
+                            onTap: () => _searchController.clear(),
+                            child: Icon(Icons.close_rounded, size: 14, color: NPColors.textDim),
+                          ),
                       ],
                     ),
                   ),
@@ -62,34 +90,37 @@ class SearchScreen extends StatelessWidget {
                   child: Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: _filters.map((f) {
-                      final on = f['on'] as bool;
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: on ? NPColors.hero.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.03),
-                          border: Border.all(
-                              color: on ? NPColors.hero : Colors.white.withValues(alpha: 0.10)),
-                          borderRadius: BorderRadius.circular(999),
-                          boxShadow: on
-                              ? [
-                                  BoxShadow(
-                                      color: NPColors.hero.withValues(alpha: 0.5),
-                                      blurRadius: 18,
-                                      spreadRadius: -4),
-                                ]
-                              : null,
-                        ),
-                        child: Text(
-                          f['label'] as String,
-                          style: NPTextStyles.heading(13, w: FontWeight.w500,
-                              color: on ? NPColors.heroSoft : NPColors.text),
+                    children: _vibes.map((vibe) {
+                      final on = venueState.selectedMusicType == vibe;
+                      return GestureDetector(
+                        onTap: () => ref.read(venueProvider.notifier).setMusicType(vibe),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: on ? NPColors.hero.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.03),
+                            border: Border.all(
+                                color: on ? NPColors.hero : Colors.white.withValues(alpha: 0.10)),
+                            borderRadius: BorderRadius.circular(999),
+                            boxShadow: on
+                                ? [
+                                    BoxShadow(
+                                        color: NPColors.hero.withValues(alpha: 0.5),
+                                        blurRadius: 18,
+                                        spreadRadius: -4),
+                                  ]
+                                : null,
+                          ),
+                          child: Text(
+                            vibe,
+                            style: NPTextStyles.heading(13, w: FontWeight.w500,
+                                color: on ? NPColors.heroSoft : NPColors.text),
+                          ),
                         ),
                       );
                     }).toList(),
                   ),
                 ),
-                _label('COVER'),
+                _label('COVER (STATIC)'),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
                   child: NPGlass(
@@ -154,7 +185,7 @@ class SearchScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                _label('DISTANCE'),
+                _label('DISTANCE (STATIC)'),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
                   child: NPGlass(
@@ -190,7 +221,7 @@ class SearchScreen extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                   child: Row(
                     children: [
-                      Expanded(child: Text('23 RESULTS', style: NPTextStyles.label(spacing: 0.1))),
+                      Expanded(child: Text('${results.length} RESULTS', style: NPTextStyles.label(spacing: 0.1))),
                       Text('Sort: Trending ↓',
                           style: NPTextStyles.heading(12, w: FontWeight.w600, color: NPColors.hero)),
                     ],
@@ -199,43 +230,46 @@ class SearchScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
-                    children: _results
-                        .map((r) => Padding(
+                    children: results
+                        .map((v) => Padding(
                               padding: const EdgeInsets.only(bottom: 10),
-                              child: NPGlass(
-                                padding: const EdgeInsets.all(10),
-                                radius: 14,
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 56,
-                                      height: 56,
-                                      child: NPPhoto(
-                                        label: '',
+                              child: GestureDetector(
+                                onTap: () => context.go('/bar', extra: v),
+                                child: NPGlass(
+                                  padding: const EdgeInsets.all(10),
+                                  radius: 14,
+                                  child: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 56,
                                         height: 56,
-                                        hue: r['hue'] as double,
-                                        borderRadius: BorderRadius.circular(12),
+                                        child: NPPhoto(
+                                          imageUrl: v.coverImageUrl,
+                                          height: 56,
+                                          hue: 280,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(r['name'] as String,
-                                              style: NPTextStyles.heading(14, w: FontWeight.w600)),
-                                          const SizedBox(height: 2),
-                                          Text(r['tag'] as String,
-                                              style: NPTextStyles.body(11, color: NPColors.textDim)),
-                                        ],
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(v.name,
+                                                style: NPTextStyles.heading(14, w: FontWeight.w600)),
+                                            const SizedBox(height: 2),
+                                            Text('${v.categories.take(1).join()} · ${v.city} · 0.4 km',
+                                                style: NPTextStyles.body(11, color: NPColors.textDim)),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    NPChip(
-                                      tone: (r['cap'] as int) > 85 ? NPChipTone.magenta : NPChipTone.live,
-                                      fontSize: 10,
-                                      child: Text('${r['cap']}%'),
-                                    ),
-                                  ],
+                                      NPChip(
+                                        tone: (v.capacity ?? 0) > 85 ? NPChipTone.magenta : NPChipTone.live,
+                                        fontSize: 10,
+                                        child: Text('${v.capacity ?? 0}%'),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ))
@@ -244,7 +278,11 @@ class SearchScreen extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                  child: NPPrimary(full: true, child: const Text('Apply filters · 23 venues')),
+                  child: NPPrimary(
+                    full: true, 
+                    onPressed: () {}, // No explicit filter application needed as it's real-time
+                    child: Text('Apply filters · ${results.length} venues'),
+                  ),
                 ),
               ],
             ),

@@ -4,13 +4,15 @@ import '../theme/np_theme.dart';
 
 class NPPhoto extends StatelessWidget {
   final String label;
+  final String? imageUrl;
   final double? height;
   final double hue;
   final BorderRadius? borderRadius;
 
   const NPPhoto({
     super.key,
-    this.label = 'photo.jpg',
+    this.label = '',
+    this.imageUrl,
     this.height = 180,
     this.hue = 280,
     this.borderRadius,
@@ -40,6 +42,14 @@ class NPPhoto extends StatelessWidget {
                 ),
               ),
             ),
+            if (imageUrl != null)
+              Positioned.fill(
+                child: Image.network(
+                  imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                ),
+              ),
             Positioned.fill(
               child: Opacity(
                 opacity: 0.35,
