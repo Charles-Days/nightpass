@@ -8,7 +8,6 @@ import '../widgets/np_chip.dart';
 import '../widgets/np_glass.dart';
 import '../widgets/np_photo.dart';
 import '../state/venue_controller.dart';
-import '../models/venue.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});

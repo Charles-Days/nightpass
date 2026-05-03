@@ -42,6 +42,7 @@ dependencies:
   flutter_stripe: ^11.5.0
   qr_flutter: ^4.1.0
   mobile_scanner: ^6.0.10
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:

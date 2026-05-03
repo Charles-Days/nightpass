@@ -66,7 +66,6 @@ class VenueController extends StateNotifier<VenueState> {
         isLoading: false,
       );
     } catch (e) {
-      print('Error fetching venues: $e');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }

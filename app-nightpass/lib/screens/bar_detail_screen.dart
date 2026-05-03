@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../theme/np_theme.dart';
 import '../widgets/np_backdrop.dart';
 import '../widgets/np_button.dart';
-import '../widgets/np_capacity.dart';
 import '../widgets/np_chip.dart';
 import '../widgets/np_glass.dart';
 import '../widgets/np_photo.dart';
@@ -167,24 +166,31 @@ class _BarDetailScreenState extends ConsumerState<BarDetailScreen> {
                         children: [
                           Text(v.name, style: NPTextStyles.display(32, letterSpacing: -0.025)),
                           const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              const Icon(Icons.star, size: 14, color: NPColors.warning),
-                              const SizedBox(width: 4),
-                              Text('4.8 · 1.2k', style: NPTextStyles.body(13, color: NPColors.textDim)),
-                              const SizedBox(width: 14),
-                              Text('· ${v.categories.join(' · ')}', style: NPTextStyles.body(13, color: NPColors.textDim)),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
+                          if (v.categories.isNotEmpty) ...[
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    v.categories.join(' · '),
+                                    style: NPTextStyles.body(13, color: NPColors.textDim),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                          ],
                           Row(
                             children: [
                               Icon(Icons.location_on_outlined, size: 14, color: NPColors.textDim),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  '${v.address ?? v.city} · 0.4 km',
+                                  v.address ?? v.city,
                                   style: NPTextStyles.body(13, color: NPColors.textDim),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -220,43 +226,25 @@ class _BarDetailScreenState extends ConsumerState<BarDetailScreen> {
                             ),
                             const SizedBox(height: 20),
                           ],
-                          NPGlass(
-                            radius: 18,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text('LIVE CAPACITY', style: NPTextStyles.label(spacing: 0.1)),
-                                          const SizedBox(height: 4),
-                                          Text('${v.capacity ?? 0}% full · ~12 min wait',
-                                              style: NPTextStyles.heading(20, w: FontWeight.w600)),
-                                        ],
-                                      ),
+                          if (v.capacity != null)
+                            NPGlass(
+                              radius: 18,
+                              child: Row(
+                                children: [
+                                  Icon(Icons.people_outline, size: 18, color: NPColors.textDim),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('AFORO', style: NPTextStyles.label(spacing: 0.1)),
+                                        const SizedBox(height: 2),
+                                        Text('${v.capacity} personas',
+                                            style: NPTextStyles.heading(16, w: FontWeight.w600)),
+                                      ],
                                     ),
-                                    const NPChip(tone: NPChipTone.live, child: Text('● UPDATING')),
-                                  ],
-                                ),
-                                const SizedBox(height: 14),
-                                NPCapacity(pct: v.capacity ?? 0, label: ''),
-                                const SizedBox(height: 14),
-                                Row(
-                                  children: [
-                                    Icon(Icons.people_outline, size: 14, color: NPColors.textDim),
-                                    const SizedBox(width: 4),
-                                    Text('312 / 430', style: NPTextStyles.body(12, color: NPColors.textDim)),
-                                    const SizedBox(width: 18),
-                                    Icon(Icons.access_time, size: 14, color: NPColors.textDim),
-                                    const SizedBox(width: 4),
-                                    Text('Open today until 03:00', style: NPTextStyles.body(12, color: NPColors.textDim)),
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                ],
                             ),
                           ),
                           const SizedBox(height: 24),

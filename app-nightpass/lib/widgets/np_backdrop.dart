@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../theme/np_theme.dart';
 
@@ -158,8 +159,13 @@ class NPBackdrop extends StatelessWidget {
 }
 
 /// Static film-grain texture. Pseudo-random distribution, three tint families
-/// (neutral / cool violet / warm amber) at very low alphas. Painted once and
-/// cached — `shouldRepaint` returns false.
+/// (neutral / cool violet / warm amber) at very low alphas.
+///
+/// Performance: the 1500 drawCircle calls are recorded to a [ui.Picture] once
+/// per device size and cached process-wide. Subsequent screens reuse the
+/// cached picture via `canvas.drawPicture` — a near-free op. So even though
+/// every screen mounts a fresh NPBackdrop, the heavy grain rasterization
+/// happens only on the first paint after a size change.
 class _GrainPainter extends CustomPainter {
   const _GrainPainter();
 
@@ -168,8 +174,12 @@ class _GrainPainter extends CustomPainter {
   static const Color _coolTint = Color(0xFFB266FF);
   static const Color _warmTint = Color(0xFFFFA94D);
 
-  @override
-  void paint(Canvas canvas, Size size) {
+  static ui.Picture? _cached;
+  static Size _cachedSize = Size.zero;
+
+  static ui.Picture _record(Size size) {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder, Offset.zero & size);
     final rand = math.Random(_seed);
     final paint = Paint()..isAntiAlias = false;
 
@@ -178,7 +188,6 @@ class _GrainPainter extends CustomPainter {
       final y = rand.nextDouble() * size.height;
       final r = 0.4 + rand.nextDouble() * 0.7;
 
-      // 70% neutral, 20% cool (violet), 10% warm (amber)
       final tint = rand.nextDouble();
       final Color base;
       if (tint < 0.70) {
@@ -192,6 +201,17 @@ class _GrainPainter extends CustomPainter {
       paint.color = base.withValues(alpha: alpha);
       canvas.drawCircle(Offset(x, y), r, paint);
     }
+    return recorder.endRecording();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (_cached == null || _cachedSize != size) {
+      _cached?.dispose();
+      _cached = _record(size);
+      _cachedSize = size;
+    }
+    canvas.drawPicture(_cached!);
   }
 
   @override

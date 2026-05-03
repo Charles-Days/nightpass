@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/np_theme.dart';
@@ -44,10 +45,13 @@ class NPPhoto extends StatelessWidget {
             ),
             if (imageUrl != null)
               Positioned.fill(
-                child: Image.network(
-                  imageUrl!,
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl!,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                  fadeInDuration: const Duration(milliseconds: 220),
+                  fadeOutDuration: const Duration(milliseconds: 120),
+                  placeholder: (_, __) => const SizedBox.shrink(),
+                  errorWidget: (_, __, ___) => const SizedBox.shrink(),
                 ),
               ),
             Positioned.fill(

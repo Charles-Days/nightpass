@@ -68,7 +68,10 @@ class HomeScreen extends ConsumerWidget {
                       children: [
                         NPChip(tone: NPChipTone.live, child: Text('● LIVE · ${venues.length} VENUES OPEN')),
                         const SizedBox(width: 8),
-                        const NPChip(tone: NPChipTone.hero, child: Text('21:48')),
+                        NPChip(
+                          tone: NPChipTone.hero,
+                          child: Text(_currentTimeLabel()),
+                        ),
                       ],
                     ),
                   ),
@@ -152,65 +155,7 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    _section('Exclusive tonight'),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                      child: GestureDetector(
-                        onTap: () => context.go('/event'),
-                        child: NPGlass(
-                          padding: EdgeInsets.zero,
-                          radius: 22,
-                          child: Stack(
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  const NPPhoto(
-                                    label: 'event.kairos.jpg',
-                                    height: 150,
-                                    hue: 320,
-                                    borderRadius: BorderRadius.zero,
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text('KAIROS — opening night',
-                                            style: NPTextStyles.heading(18, w: FontWeight.w600)),
-                                        const SizedBox(height: 3),
-                                        Text('Sat · 23:00 · 200 covers left',
-                                            style: NPTextStyles.body(13, color: NPColors.textDim)),
-                                        const SizedBox(height: 12),
-                                        Row(
-                                          children: [
-                                            Text('\$450',
-                                                style: NPTextStyles.body(11, color: NPColors.textFaint).copyWith(
-                                                    decoration: TextDecoration.lineThrough)),
-                                            const SizedBox(width: 8),
-                                            Text('\$270',
-                                                style: NPTextStyles.display(22, color: NPColors.magenta)),
-                                            const Spacer(),
-                                            Text('View →',
-                                                style: NPTextStyles.heading(13, w: FontWeight.w600, color: NPColors.hero)),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const Positioned(
-                                top: 12,
-                                left: 12,
-                                child: NPChip(tone: NPChipTone.magenta, child: Text('EXCLUSIVE · 40% OFF')),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    _section('Near you'),
+                    _section('Cerca de ti'),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
@@ -278,6 +223,13 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _currentTimeLabel() {
+    final now = DateTime.now();
+    final hh = now.hour.toString().padLeft(2, '0');
+    final mm = now.minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
   }
 
   Widget _section(String title, {String? action}) {
