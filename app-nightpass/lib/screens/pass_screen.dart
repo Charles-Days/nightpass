@@ -1,13 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import '../models/pass.dart';
+import '../state/orders_providers.dart';
 import '../theme/np_theme.dart';
 import '../widgets/np_backdrop.dart';
 import '../widgets/np_button.dart';
 import '../widgets/np_chip.dart';
-import '../widgets/np_logo.dart';
+import '../widgets/np_glass.dart';
 
-class PassScreen extends StatelessWidget {
-  const PassScreen({super.key});
+class PassScreen extends ConsumerStatefulWidget {
+  /// Si viene `passId`, muestra el detalle de ese pase. Si no, lista mis pases.
+  final String? passId;
+
+  const PassScreen({super.key, this.passId});
+
+  @override
+  ConsumerState<PassScreen> createState() => _PassScreenState();
+}
+
+class _PassScreenState extends ConsumerState<PassScreen> {
+  late Future<dynamic> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<dynamic> _load() {
+    final api = ref.read(passesApiProvider);
+    if (widget.passId != null && widget.passId!.isNotEmpty) {
+      return api.getById(widget.passId!);
+    }
+    return api.listMine();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,227 +43,261 @@ class PassScreen extends StatelessWidget {
       body: Stack(
         children: [
           const NPBackdrop(),
-          Positioned(
-            top: 100,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                width: 460,
-                height: 460,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [NPColors.hero.withValues(alpha: 0.45), Colors.transparent],
-                    stops: const [0, 0.6],
-                  ),
-                ),
-              ),
-            ),
-          ),
           SafeArea(
-            bottom: false,
-            child: ListView(
-              padding: const EdgeInsets.only(top: 8, bottom: 130),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Your pass', style: NPTextStyles.display(22)),
-                      const NPChip(tone: NPChipTone.live, child: Text('● ACTIVE')),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _passCard(),
-                ),
-                const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: NPGhost(
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.ios_share, size: 14),
-                              SizedBox(width: 6),
-                              Text('Share'),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: NPGhost(
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.location_on_outlined, size: 14),
-                              SizedBox(width: 6),
-                              Text('Directions'),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            child: FutureBuilder<dynamic>(
+              future: _future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: NPColors.hero),
+                  );
+                }
+                if (snapshot.hasError) {
+                  return _ErrorBlock(
+                    message: snapshot.error.toString(),
+                    onRetry: () => setState(() => _future = _load()),
+                  );
+                }
+
+                final data = snapshot.data;
+                if (data is Pass) {
+                  return _PassDetail(pass: data);
+                }
+                if (data is List<Pass>) {
+                  if (data.isEmpty) return const _EmptyState();
+                  return _PassList(
+                    passes: data,
+                    onTap: (p) => context.push('/pass-detail?passId=${p.id}'),
+                  );
+                }
+                return const _EmptyState();
+              },
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _passCard() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [NPColors.deep2, NPColors.deep, NPColors.base2],
-          stops: [0, 0.6, 1],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: NPColors.hero),
-        boxShadow: [
-          BoxShadow(
-            color: NPColors.hero.withValues(alpha: 0.55),
-            offset: const Offset(0, 30),
-            blurRadius: 60,
-            spreadRadius: -12,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(22, 20, 22, 14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('NIGHTPASS · VIP', style: NPTextStyles.label(spacing: 0.12)),
-                      const SizedBox(height: 4),
-                      Text('KAIROS', style: NPTextStyles.display(24)),
-                      const SizedBox(height: 2),
-                      Text('Lumen · Roma Norte', style: NPTextStyles.body(12, color: NPColors.textDim)),
-                    ],
-                  ),
-                ),
-                const NPLogo(size: 28, withWord: false),
-              ],
-            ),
-          ),
-          _perforation(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(22, 16, 22, 8),
-            child: Center(
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  color: NPColors.text,
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [BoxShadow(color: NPColors.hero.withValues(alpha: 0.5), blurRadius: 32)],
-                ),
-                padding: const EdgeInsets.all(12),
-                child: CustomPaint(painter: _QrPainter()),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
-            child: GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 14,
-              childAspectRatio: 3.5,
-              children: [
-                _meta('DATE', 'Sat 26 Apr'),
-                _meta('DOORS', '23:00'),
-                _meta('HOLDER', 'Alex Moreno'),
-                _meta('CODE', 'NP-K9F2-AX', mono: true),
-              ],
-            ),
-          ),
-          Container(height: 1, color: NPColors.hairline, margin: const EdgeInsets.symmetric(horizontal: 22)),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(22, 14, 22, 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.access_time, size: 12, color: NPColors.textDim),
-                    const SizedBox(width: 6),
-                    Text('Show this at the door',
-                        style: NPTextStyles.body(11, color: NPColors.textDim)),
-                  ],
-                ),
-                Text('Add to Wallet →',
-                    style: NPTextStyles.heading(11, w: FontWeight.w600, color: NPColors.hero)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+// ── Detalle individual ────────────────────────────────────────────────────
 
-  Widget _meta(String k, String v, {bool mono = false}) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(k, style: NPTextStyles.label(size: 10, spacing: 0.12)),
-          const SizedBox(height: 3),
-          Text(
-            v,
-            style: mono
-                ? GoogleFonts.firaCode(
-                    fontSize: 13, color: NPColors.hero, fontWeight: FontWeight.w600, letterSpacing: 1.3)
-                : NPTextStyles.heading(14, w: FontWeight.w600),
-          ),
-        ],
-      );
+class _PassDetail extends StatelessWidget {
+  final Pass pass;
+  const _PassDetail({required this.pass});
 
-  Widget _perforation() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: SizedBox(
-        height: 1,
-        child: Stack(
-          clipBehavior: Clip.none,
+  @override
+  Widget build(BuildContext context) {
+    final used = pass.isUsed;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 130),
+      children: [
+        Row(
           children: [
-            CustomPaint(painter: _DashedLinePainter(), size: const Size(double.infinity, 1)),
-            Positioned(
-              left: -32,
-              top: -10,
-              child: Container(
-                width: 20,
-                height: 20,
-                decoration: const BoxDecoration(color: NPColors.base, shape: BoxShape.circle),
+            GestureDetector(
+              onTap: () =>
+                  context.canPop() ? context.pop() : context.go('/pass'),
+              child: const Icon(Icons.arrow_back_ios_new_rounded,
+                  size: 20, color: NPColors.text),
+            ),
+            const SizedBox(width: 14),
+            Text('Mi pase', style: NPTextStyles.display(22)),
+          ],
+        ),
+        const SizedBox(height: 24),
+        NPGlass(
+          radius: 22,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          pass.eventTitle ?? 'Evento',
+                          style:
+                              NPTextStyles.heading(18, w: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          [
+                            if (pass.tierName != null) pass.tierName!,
+                            if (pass.venueName != null) pass.venueName!,
+                            if (pass.eventStartsAt != null)
+                              _date(pass.eventStartsAt!),
+                          ].join(' · '),
+                          style:
+                              NPTextStyles.body(12, color: NPColors.textDim),
+                        ),
+                      ],
+                    ),
+                  ),
+                  NPChip(
+                    tone: used ? NPChipTone.magenta : NPChipTone.hero,
+                    child: Text(used ? 'USADO' : 'ACTIVO'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: QrImageView(
+                  data: pass.qrCode,
+                  version: QrVersions.auto,
+                  size: 240,
+                  backgroundColor: Colors.white,
+                  eyeStyle: const QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: Colors.black,
+                  ),
+                  dataModuleStyle: const QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.square,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                pass.id.split('-').first.toUpperCase(),
+                style: NPTextStyles.heading(13,
+                        w: FontWeight.w600, color: NPColors.textDim)
+                    .copyWith(letterSpacing: 2.5),
+              ),
+              if (used && pass.usedAt != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Escaneado: ${_dateTime(pass.usedAt!)}',
+                  style: NPTextStyles.body(11, color: NPColors.magenta),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (pass.venueAddress != null)
+          NPGlass(
+            radius: 14,
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                const Icon(Icons.location_on_outlined,
+                    size: 18, color: NPColors.hero),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    pass.venueAddress!,
+                    style: NPTextStyles.body(12, color: NPColors.text),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 16),
+        NPGhost(
+          onPressed: () => context.go('/pass'),
+          child: const Text('Ver todos mis pases'),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Lista de pases ────────────────────────────────────────────────────────
+
+class _PassList extends StatelessWidget {
+  final List<Pass> passes;
+  final void Function(Pass) onTap;
+
+  const _PassList({required this.passes, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 130),
+      itemCount: passes.length + 1,
+      itemBuilder: (context, i) {
+        if (i == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text('Mis pases', style: NPTextStyles.display(26)),
+          );
+        }
+        final p = passes[i - 1];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: GestureDetector(
+            onTap: () => onTap(p),
+            child: NPGlass(
+              radius: 16,
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          p.eventTitle ?? 'Evento',
+                          style:
+                              NPTextStyles.heading(15, w: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          [
+                            if (p.venueName != null) p.venueName!,
+                            if (p.eventStartsAt != null)
+                              _date(p.eventStartsAt!),
+                          ].join(' · '),
+                          style:
+                              NPTextStyles.body(12, color: NPColors.textDim),
+                        ),
+                      ],
+                    ),
+                  ),
+                  NPChip(
+                    tone: p.isUsed ? NPChipTone.magenta : NPChipTone.hero,
+                    child: Text(p.isUsed ? 'USADO' : 'ACTIVO'),
+                  ),
+                ],
               ),
             ),
-            Positioned(
-              right: -32,
-              top: -10,
-              child: Container(
-                width: 20,
-                height: 20,
-                decoration: const BoxDecoration(color: NPColors.base, shape: BoxShape.circle),
-              ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.confirmation_number_outlined,
+                size: 56, color: NPColors.hero),
+            const SizedBox(height: 12),
+            Text('Aún no tienes pases',
+                style: NPTextStyles.heading(18, w: FontWeight.w600)),
+            const SizedBox(height: 6),
+            Text(
+              'Cuando compres un pase aparecerá aquí con su QR.',
+              textAlign: TextAlign.center,
+              style: NPTextStyles.body(13, color: NPColors.textDim),
             ),
           ],
         ),
@@ -244,62 +306,47 @@ class PassScreen extends StatelessWidget {
   }
 }
 
-class _DashedLinePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = NPColors.hero.withValues(alpha: 0.5)
-      ..strokeWidth = 1;
-    const dash = 6.0;
-    const gap = 6.0;
-    double x = 0;
-    while (x < size.width) {
-      canvas.drawLine(Offset(x, 0), Offset(x + dash, 0), p);
-      x += dash + gap;
-    }
-  }
+class _ErrorBlock extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _ErrorBlock({required this.message, required this.onRetry});
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: NPColors.magenta),
+            const SizedBox(height: 12),
+            Text('No pudimos cargar tus pases',
+                style: NPTextStyles.heading(16, w: FontWeight.w600),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 6),
+            Text(message,
+                style: NPTextStyles.body(11, color: NPColors.textFaint),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 14),
+            NPGhost(onPressed: onRetry, child: const Text('Reintentar')),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _QrPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cell = size.width / 21;
-    final paint = Paint()..color = const Color(0xFF0A0A0F);
-    final purple = Paint()..color = NPColors.hero;
+String _date(DateTime d) {
+  const months = [
+    'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+  ];
+  return '${d.day} ${months[d.month - 1]}';
+}
 
-    int seed(int x, int y) {
-      final v = (x * 73856093) ^ (y * 19349663) ^ ((x + y) * 83492791);
-      return v & 0xFFFFFFFF;
-    }
-
-    for (int y = 0; y < 21; y++) {
-      for (int x = 0; x < 21; x++) {
-        final corner = (x < 7 && y < 7) || (x > 13 && y < 7) || (x < 7 && y > 13);
-        final innerCorner =
-            (x >= 1 && x <= 5 && y >= 1 && y <= 5) ||
-                (x >= 15 && x <= 19 && y >= 1 && y <= 5) ||
-                (x >= 1 && x <= 5 && y >= 15 && y <= 19);
-        final dot = (x >= 2 && x <= 4 && y >= 2 && y <= 4) ||
-            (x >= 16 && x <= 18 && y >= 2 && y <= 4) ||
-            (x >= 2 && x <= 4 && y >= 16 && y <= 18);
-        bool on;
-        if (corner) {
-          on = !innerCorner || dot;
-        } else {
-          on = (seed(x, y) % 100) < 48;
-        }
-        if (on) {
-          canvas.drawRect(Rect.fromLTWH(x * cell, y * cell, cell, cell), paint);
-        }
-      }
-    }
-    canvas.drawRect(Rect.fromLTWH(9 * cell, 9 * cell, cell * 3, cell * 3), paint);
-    canvas.drawRect(Rect.fromLTWH(9.4 * cell, 9.4 * cell, cell * 2.2, cell * 2.2), purple);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+String _dateTime(DateTime d) {
+  final hh = d.hour.toString().padLeft(2, '0');
+  final mm = d.minute.toString().padLeft(2, '0');
+  return '${_date(d)} · $hh:$mm';
 }

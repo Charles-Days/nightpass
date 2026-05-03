@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { BarChart3, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import {
   Dialog,
@@ -13,6 +13,7 @@ import { useEvents } from '../hooks/use-events';
 import { useDeleteEvent } from '../hooks/use-delete-event';
 import { EventStatusBadge } from './event-status-badge';
 import { EventForm } from './event-form';
+import { EventSalesDialog } from './event-sales-dialog';
 import type { Event } from '@/core/types/api';
 import type { CreateEventInput } from '../schemas/event.schema';
 
@@ -32,7 +33,17 @@ function toDefaultValues(event: Event): Partial<CreateEventInput> {
   };
 }
 
-function EventRow({ event, venueId, onEdit }: { event: Event; venueId: string; onEdit: (e: Event) => void }) {
+function EventRow({
+  event,
+  venueId,
+  onEdit,
+  onSales,
+}: {
+  event: Event;
+  venueId: string;
+  onEdit: (e: Event) => void;
+  onSales: (e: Event) => void;
+}) {
   const deleteEvent = useDeleteEvent(venueId);
   return (
     <div className="flex items-center justify-between gap-3 rounded-[14px] border border-white/10 bg-white/[0.025] px-3 py-2 text-sm transition-colors hover:bg-white/[0.04]">
@@ -42,6 +53,16 @@ function EventRow({ event, venueId, onEdit }: { event: Event; venueId: string; o
       </div>
       <EventStatusBadge status={event.status} />
       <div className="flex shrink-0 gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="size-8 p-0"
+          title="Ver ventas"
+          onClick={() => onSales(event)}
+        >
+          <BarChart3 className="size-3.5" />
+        </Button>
         <Button
           type="button"
           variant="ghost"
@@ -76,6 +97,7 @@ export function EventsPanel({ venueId }: { venueId: string }) {
   const { data, isLoading } = useEvents(venueId);
   const [creating, setCreating] = React.useState(false);
   const [editingEvent, setEditingEvent] = React.useState<Event | null>(null);
+  const [salesEvent, setSalesEvent] = React.useState<Event | null>(null);
 
   return (
     <>
@@ -142,11 +164,18 @@ export function EventsPanel({ venueId }: { venueId: string }) {
                 event={event}
                 venueId={venueId}
                 onEdit={setEditingEvent}
+                onSales={setSalesEvent}
               />
             ))}
           </div>
         )}
       </div>
+
+      <EventSalesDialog
+        eventId={salesEvent?.id ?? null}
+        eventTitle={salesEvent?.title}
+        onClose={() => setSalesEvent(null)}
+      />
     </>
   );
 }

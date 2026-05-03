@@ -285,12 +285,24 @@ Gradiente `from-[#9333ea] to-[#a855f7]` con `box-shadow: 0 4px 24px rgba(168,85,
 | `/api/events/[id]/tiers/[tierId]` | ADMIN/OWNER | Proxy con Bearer |
 | `/api/uploads/sign` | ADMIN/OWNER/STAFF | Proxy con Bearer |
 
+## Uploads — Cloudflare R2
+
+Toda imagen (portadas de venue, galería, banners de evento, menús PDF) se sube directo a Cloudflare R2 desde el navegador:
+
+1. Cliente pide presigned URL: `POST /api/uploads/sign` (route handler local) → proxy con Bearer al backend `/uploads/sign` con `{key, contentType}`.
+2. Backend devuelve `{signedUrl, publicUrl}`. `signedUrl` es URL R2 firmada (TTL 5 min); `publicUrl` es URL definitiva del subdominio `pub-xxx.r2.dev`.
+3. Cliente hace `fetch(signedUrl, {method:'PUT', body: file})` directo a Cloudflare — no pasa por el backend.
+4. Cliente persiste `publicUrl` en el campo correspondiente (`venue.coverImage`, `event.banner`, etc.) vía mutación normal.
+
+> Si el upload falla con CORS error, revisar **CORS Policy** del bucket en el dashboard de Cloudflare — debe incluir `http://localhost:7100` en dev.
+
 ## Backend asociado
 
 `../server-nightpass/` — ver su `CLAUDE.md` y `README.md` para endpoints completos.
 - Puerto: 7101
 - Auth: JWT en body (no cookies). El admin los convierte a cookies HttpOnly.
 - Email: Gmail SMTP vía nodemailer (`SMTP_USER`, `SMTP_PASS` en `.env` del backend).
+- Storage: Cloudflare R2 (`STORAGE_DRIVER=r2`, bucket `nightpass-media`).
 
 ## Limitaciones / pendientes
 

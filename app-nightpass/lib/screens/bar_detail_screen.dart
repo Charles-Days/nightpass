@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/np_theme.dart';
 import '../widgets/np_backdrop.dart';
@@ -8,23 +9,42 @@ import '../widgets/np_capacity.dart';
 import '../widgets/np_chip.dart';
 import '../widgets/np_glass.dart';
 import '../widgets/np_photo.dart';
+import '../models/event.dart';
 import '../models/venue.dart';
+import '../state/venue_controller.dart';
 
-class BarDetailScreen extends StatefulWidget {
+class BarDetailScreen extends ConsumerStatefulWidget {
   final Venue venue;
   const BarDetailScreen({super.key, required this.venue});
 
   @override
-  State<BarDetailScreen> createState() => _BarDetailScreenState();
+  ConsumerState<BarDetailScreen> createState() => _BarDetailScreenState();
 }
 
-class _BarDetailScreenState extends State<BarDetailScreen> {
+class _BarDetailScreenState extends ConsumerState<BarDetailScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  Venue? _detail;
+  bool _loadingDetail = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDetail();
+  }
+
+  Future<void> _loadDetail() async {
+    try {
+      final fresh = await ref.read(venueApiProvider).getById(widget.venue.id);
+      if (mounted) setState(() { _detail = fresh; _loadingDetail = false; });
+    } catch (_) {
+      if (mounted) setState(() => _loadingDetail = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final v = widget.venue;
+    final v = _detail ?? widget.venue;
     final photos = [
       if (v.coverImageUrl != null) v.coverImageUrl!,
       ...v.photos.map((p) => p.url),
@@ -274,51 +294,32 @@ class _BarDetailScreenState extends State<BarDetailScreen> {
                             ),
                             const SizedBox(height: 22),
                           ],
-                          Text('Tonight', style: NPTextStyles.heading(14, w: FontWeight.w600)),
+                          Text('Próximos eventos', style: NPTextStyles.heading(14, w: FontWeight.w600)),
                           const SizedBox(height: 10),
-                          GestureDetector(
-                            onTap: () => context.go('/event'),
-                            child: NPGlass(
-                              padding: const EdgeInsets.all(12),
-                              radius: 14,
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 56,
-                                    height: 56,
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [NPColors.hero, NPColors.magenta],
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Center(
-                                      child: Text('SAT',
-                                          style: NPTextStyles.label(color: Colors.white, size: 11, spacing: 0.1)
-                                              .copyWith(fontWeight: FontWeight.w700)),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text('KAIROS — opening night',
-                                            style: NPTextStyles.heading(14, w: FontWeight.w600)),
-                                        const SizedBox(height: 2),
-                                        Text('23:00 · with Mara Linn (b2b)',
-                                            style: NPTextStyles.body(12, color: NPColors.textDim)),
-                                      ],
-                                    ),
-                                  ),
-                                  Text('\$270',
-                                      style: NPTextStyles.heading(14, w: FontWeight.w600, color: NPColors.hero)),
-                                ],
+                          if (_loadingDetail)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              child: Center(
+                                child: SizedBox(
+                                  width: 22, height: 22,
+                                  child: CircularProgressIndicator(color: NPColors.hero, strokeWidth: 2),
+                                ),
                               ),
-                            ),
-                          ),
+                            )
+                          else if (v.events.isEmpty)
+                            NPGlass(
+                              radius: 14,
+                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+                              child: Text(
+                                'Sin eventos programados.',
+                                style: NPTextStyles.body(13, color: NPColors.textDim),
+                              ),
+                            )
+                          else
+                            ...v.events.map((e) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: _eventTile(e),
+                                )),
                           const SizedBox(height: 130),
                         ],
                       ),
@@ -378,6 +379,73 @@ class _BarDetailScreenState extends State<BarDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _eventTile(Event e) {
+    final local = e.startsAt.toLocal();
+    const days = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'];
+    final dayLabel = days[local.weekday - 1];
+    final hh = local.hour.toString().padLeft(2, '0');
+    final mm = local.minute.toString().padLeft(2, '0');
+
+    int? minPrice;
+    String currency = 'MXN';
+    for (final t in e.tiers) {
+      if (minPrice == null || t.priceCents < minPrice) {
+        minPrice = t.priceCents;
+        currency = t.currency;
+      }
+    }
+    final priceLabel = minPrice == null
+        ? 'Gratis'
+        : (currency == 'USD' ? '\$' : '\$') + (minPrice ~/ 100).toString();
+
+    return GestureDetector(
+      onTap: () => context.go('/event', extra: e),
+      child: NPGlass(
+        padding: const EdgeInsets.all(12),
+        radius: 14,
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [NPColors.hero, NPColors.magenta],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(dayLabel,
+                    style: NPTextStyles.label(color: Colors.white, size: 11, spacing: 0.1)
+                        .copyWith(fontWeight: FontWeight.w700)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(e.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: NPTextStyles.heading(14, w: FontWeight.w600)),
+                  const SizedBox(height: 2),
+                  Text('$hh:$mm · ${local.day}/${local.month}/${local.year % 100}',
+                      style: NPTextStyles.body(12, color: NPColors.textDim)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(priceLabel,
+                style: NPTextStyles.heading(14, w: FontWeight.w600, color: NPColors.hero)),
+          ],
+        ),
       ),
     );
   }

@@ -2,8 +2,7 @@
 import * as React from 'react';
 import { Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { clientFetch } from '@/core/lib/api/client-client';
-import type { SignedUploadUrl } from '@/core/types/api';
+import { uploadFile } from '@/core/lib/upload';
 
 interface ImageUploaderProps {
   value?: string;
@@ -23,15 +22,7 @@ export function ImageUploader({ value, onChange, kind, label = 'Imagen' }: Image
     }
     setUploading(true);
     try {
-      const { signedUrl, publicUrl } = await clientFetch<SignedUploadUrl>('/api/uploads/sign', {
-        method: 'POST',
-        body: { filename: file.name, contentType: file.type, kind },
-      });
-      await fetch(signedUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type },
-        body: file,
-      });
+      const publicUrl = await uploadFile(file, kind);
       onChange(publicUrl);
       toast.success('Imagen subida');
     } catch {

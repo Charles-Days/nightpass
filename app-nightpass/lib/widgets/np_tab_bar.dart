@@ -3,13 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/np_theme.dart';
 
-enum NPTab { home, search, ticket, user }
+enum NPTab { home, search, ticket, user, scanner }
 
 class NPTabBar extends StatelessWidget {
   final NPTab active;
   final ValueChanged<NPTab>? onTap;
+  final List<NPTab> tabs;
 
-  const NPTabBar({super.key, required this.active, this.onTap});
+  const NPTabBar({
+    super.key,
+    required this.active,
+    this.onTap,
+    this.tabs = const [NPTab.home, NPTab.search, NPTab.ticket, NPTab.user],
+  });
 
   void _go(BuildContext context, NPTab tab) {
     if (onTap != null) {
@@ -29,17 +35,22 @@ class NPTabBar extends StatelessWidget {
       case NPTab.user:
         context.go('/profile');
         break;
+      case NPTab.scanner:
+        context.go('/scanner');
+        break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      _Item(NPTab.home, 'Discover', Icons.home_outlined),
-      _Item(NPTab.search, 'Search', Icons.search_rounded),
-      _Item(NPTab.ticket, 'My Pass', Icons.confirmation_number_outlined),
-      _Item(NPTab.user, 'Profile', Icons.person_outline),
-    ];
+    final all = {
+      NPTab.scanner: _Item(NPTab.scanner, 'Scanner', Icons.qr_code_scanner_rounded),
+      NPTab.home: _Item(NPTab.home, 'Discover', Icons.home_outlined),
+      NPTab.search: _Item(NPTab.search, 'Search', Icons.search_rounded),
+      NPTab.ticket: _Item(NPTab.ticket, 'My Pass', Icons.confirmation_number_outlined),
+      NPTab.user: _Item(NPTab.user, 'Profile', Icons.person_outline),
+    };
+    final items = tabs.map((t) => all[t]!).toList();
 
     return Positioned(
       bottom: 24,

@@ -1,3 +1,5 @@
+import 'event.dart';
+
 class Photo {
   final String id;
   final String url;
@@ -47,6 +49,11 @@ class Venue {
   final String? dressCode;
   final int? minAge;
   final List<Photo> photos;
+  final String? slug;
+  final List<Event> events;
+
+  String? get displayCoverUrl =>
+      coverImageUrl ?? (photos.isNotEmpty ? photos.first.url : null);
 
   const Venue({
     required this.id,
@@ -69,6 +76,8 @@ class Venue {
     this.dressCode,
     this.minAge,
     this.photos = const [],
+    this.slug,
+    this.events = const [],
   });
 
   factory Venue.fromJson(Map<String, dynamic> json) {
@@ -96,6 +105,11 @@ class Venue {
               ?.map((e) => Photo.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      slug: json['slug'] as String?,
+      events: (json['events'] as List<dynamic>?)
+              ?.map((e) => Event.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
   }
 
@@ -121,6 +135,7 @@ class Venue {
       'dressCode': dressCode,
       'minAge': minAge,
       'photos': photos.map((e) => e.toJson()).toList(),
+      'slug': slug,
     };
   }
 }

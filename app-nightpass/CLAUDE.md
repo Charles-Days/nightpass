@@ -154,6 +154,12 @@ Rutas declaradas en `router/app_router.dart`. Navegación con `context.go('/path
 - Variables/métodos: `camelCase`.
 - Privados: prefijo `_` (ej. `_email`, `_onSignIn`).
 
+## Imágenes del catálogo
+
+Las URLs de fotos (venues, eventos, portadas, galería) que devuelve el backend ya son **absolutas a Cloudflare R2** (`https://pub-xxxxxxx.r2.dev/<key>`). No hay que prefixarlas con `apiBaseUrl`. `Image.network(...)` o `CachedNetworkImage(...)` cargan directo desde R2 sin pasar por el backend.
+
+Si en algún payload llega una URL relativa (`/uploads/...`), es legacy del driver `local` — habrá que prefixarla con `apiBaseUrl.replace('/api/v1', '')`. La migración a R2 fue Fase 2; nuevas subidas siempre devuelven URL absoluta.
+
 ## Cosas a NO hacer
 
 - No llamar a `Dio` directamente desde widgets — siempre vía un service/controller.

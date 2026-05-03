@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { ACCESS_COOKIE, REFRESH_COOKIE } from '@/core/config/cookies';
 
-const PROTECTED_PREFIXES = ['/dashboard', '/admin', '/mi-local', '/cambiar-password'];
+const PROTECTED_PREFIXES = ['/dashboard', '/admin', '/mi-local', '/cambiar-password', '/scanner'];
 const AUTH_PREFIXES = ['/login'];
 
 interface JwtPayload {

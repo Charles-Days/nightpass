@@ -9,6 +9,7 @@ import { ImageUploader } from '@/core/components/image-uploader';
 import { createEventSchema, type CreateEventInput } from '../schemas/event.schema';
 import { useCreateEvent } from '../hooks/use-create-event';
 import { useUpdateEvent } from '../hooks/use-update-event';
+import { TiersSection } from './tiers-section';
 
 interface EventFormProps {
   venueId: string;
@@ -136,6 +137,8 @@ export function EventForm({ venueId, onSuccess, defaultValues, eventId }: EventF
           {isPending ? 'Guardando…' : eventId ? 'Guardar cambios' : 'Crear evento'}
         </Button>
       </div>
+
+      {eventId ? <TiersSection eventId={eventId} /> : null}
     </form>
   );
 }

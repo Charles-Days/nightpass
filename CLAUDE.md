@@ -131,7 +131,8 @@ POST /api/v1/auth/signin          ← server-nightpass
 - **IDs: siempre UUID v7** (`@default(uuid(7)) @db.Uuid`) en todas las tablas — time-ordered, sin fragmentación de índice.
 - **argon2id** (no bcrypt) con parámetros OWASP 2025: `memoryCost: 19456, timeCost: 2`.
 - **Mailer no-op** cuando faltan `SMTP_USER`/`SMTP_PASS` — nunca lanza excepción, solo loguea.
-- **R2 no-op** cuando faltan credenciales R2 — `/uploads/sign` devuelve URLs placeholder.
+- **Storage activo en Cloudflare R2** (`STORAGE_DRIVER=r2`, bucket `nightpass-media`). Toda imagen nueva (venues, eventos, portadas, galería) sube a R2 vía presigned URL desde el cliente. URLs públicas servidas por subdominio `pub-xxx.r2.dev`. Si faltan credenciales R2 o `STORAGE_DRIVER=local`, cae a filesystem `./uploads` — modo legacy. CORS Policy del bucket debe permitir `http://localhost:7100` en dev.
+- **Cleanup obligatorio**: cada `service` que persista URLs de imagen debe borrarlas del storage cuando dejan de referenciarse (en `update()` cuando se reemplaza/quita, en `delete()` siempre). Usar `StorageService.deleteByPublicUrl(url)` o `.deleteByPublicUrls(urls)` — fire-and-forget, errores solo loggean. Sin esto R2 acumula basura. Ver `server-nightpass/CLAUDE.md` → "Cleanup obligatorio" para el pattern exacto y cobertura actual.
 - **Controllers thin, services fat.** Lógica de negocio solo en services.
 - **`migrate dev`** solo en local. **`migrate deploy`** en producción.
 - No usar `console.log` — el logger de Fastify emite JSON estructurado.
@@ -149,7 +150,7 @@ src/
 ├── catalog/           # endpoints públicos para app móvil (sin auth)
 ├── uploads/           # presigned URL para upload directo a R2
 ├── mailer/            # Gmail SMTP + templates HTML branded
-├── storage/           # R2Service (no-op sin credenciales)
+├── storage/           # StorageService — R2 activo (driver `r2`), fallback `local`
 ├── prisma/            # PrismaService @Global
 ├── config/            # env.schema.ts (Zod, falla rápido al boot)
 └── health/            # /health con check de Postgres
@@ -327,12 +328,15 @@ SMTP_USER="nightpass02@gmail.com"      # Gmail SMTP — contraseña de aplicaci�
 SMTP_PASS="xxxx xxxx xxxx xxxx"
 ADMIN_NOTIFICATION_EMAIL="nightpass02@gmail.com"
 ADMIN_WEB_URL="http://localhost:7100"
-# R2 (opcional — sin estas vars /uploads/sign devuelve URLs placeholder)
-R2_ACCOUNT_ID=
-R2_ACCESS_KEY_ID=
-R2_SECRET_ACCESS_KEY=
+# Cloudflare R2 — storage activo en dev/prod. Sin estas vars cae a filesystem local.
+STORAGE_DRIVER=r2
+R2_ACCOUNT_ID=<cloudflare-account-id>
+R2_ACCESS_KEY_ID=<r2-access-key>
+R2_SECRET_ACCESS_KEY=<r2-secret-key>
 R2_BUCKET=nightpass-media
-R2_PUBLIC_URL=
+R2_PUBLIC_URL=https://pub-xxxxxxx.r2.dev
+# CORS Policy del bucket debe permitir el origen del cliente (localhost:7100 en dev).
+LOCAL_UPLOADS_URL=http://localhost:7101/uploads  # solo legacy / fallback
 ```
 
 ### `cliente-nightpass/.env.local`

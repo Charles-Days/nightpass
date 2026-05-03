@@ -9,6 +9,11 @@ class NPColors {
   static const hero = Color(0xFFA855F7);
   static const hero2 = Color(0xFF9333EA);
   static const magenta = Color(0xFFEC4899);
+  static const neonOrange = Color(0xFFFF7A1A);
+  static const neonAmber = Color(0xFFFFA94D);
+  static const neonHot = Color(0xFFFF3D00);
+  static const indigoDeep = Color(0xFF1E1147);
+  static const violetGlow = Color(0xFFB266FF);
   static const cyan = Color(0xFF06B6D4);
   static const text = Color(0xFFF5F3FF);
   static Color textDim = const Color(0xFFF5F3FF).withValues(alpha: 0.62);

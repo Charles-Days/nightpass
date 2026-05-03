@@ -11,3 +11,9 @@
 .env
 .env.local
 .env.*.local
+
+# Agent / AI tooling local
+.agents/
+.claude/
+.kiro/
+skills-lock.json

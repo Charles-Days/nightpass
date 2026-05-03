@@ -3,9 +3,9 @@
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { 
-  Loader2, Plus, Trash2, Globe, Instagram, Facebook, Music, 
-  Clock, MapPin, Info, Camera, BookOpen, X, Upload 
+import {
+  Loader2, Plus, Trash2, Globe, Instagram, Facebook, Music,
+  Clock, MapPin, Info, Camera, BookOpen, X, Upload, Eye
 } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { Input } from '@/core/components/ui/input';
@@ -38,6 +38,7 @@ interface Props {
 export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Guardar' }: Props) {
   const [isUploadingCover, setIsUploadingCover] = React.useState(false);
   const [isUploadingImages, setIsUploadingImages] = React.useState(false);
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
   const coverInputRef = React.useRef<HTMLInputElement>(null);
   const imagesInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -286,10 +287,21 @@ export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Gua
              {images.map((url, idx) => (
                <div key={idx} className="group relative aspect-square overflow-hidden rounded-lg border bg-muted">
                  <img src={url} alt={`Foto ${idx}`} className="h-full w-full object-cover" />
+                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                   <button
+                     type="button"
+                     onClick={() => setPreviewUrl(url)}
+                     className="rounded-full bg-white/15 p-2 text-white backdrop-blur-sm hover:bg-white/30"
+                     aria-label="Ver en grande"
+                   >
+                     <Eye className="size-5" />
+                   </button>
+                 </div>
                  <button
                    type="button"
                    onClick={() => removeImage(idx)}
-                   className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-500"
+                   className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-500"
+                   aria-label="Eliminar"
                  >
                    <X className="size-4" />
                  </button>
@@ -415,6 +427,28 @@ export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Gua
           {submitLabel}
         </Button>
       </div>
+
+      {previewUrl && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-sm p-6"
+          onClick={() => setPreviewUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewUrl(null)}
+            className="absolute right-5 top-5 rounded-full bg-white/10 p-2 text-white hover:bg-white/25"
+            aria-label="Cerrar"
+          >
+            <X className="size-5" />
+          </button>
+          <img
+            src={previewUrl}
+            alt="Vista previa"
+            className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </form>
   );
 }

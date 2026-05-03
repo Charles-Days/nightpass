@@ -1,16 +1,172 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:go_router/go_router.dart';
+import '../models/event.dart';
+import '../models/order.dart';
+import '../state/orders_providers.dart';
 import '../theme/np_theme.dart';
 import '../widgets/np_backdrop.dart';
 import '../widgets/np_button.dart';
 import '../widgets/np_glass.dart';
-import '../widgets/np_photo.dart';
 
-class CheckoutScreen extends StatelessWidget {
-  const CheckoutScreen({super.key});
+/// Datos opcionales de UI inmediato pasados via go_router state.extra.
+class CheckoutExtra {
+  final Event? event;
+  final EventTier? tier;
+
+  const CheckoutExtra({this.event, this.tier});
+}
+
+class CheckoutScreen extends ConsumerStatefulWidget {
+  final String tierId;
+  final String eventId;
+  final CheckoutExtra? extra;
+
+  const CheckoutScreen({
+    super.key,
+    required this.tierId,
+    required this.eventId,
+    this.extra,
+  });
+
+  @override
+  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
+}
+
+enum _CheckoutPhase { initializing, ready, paying, awaitingPass, done, error }
+
+class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
+  _CheckoutPhase _phase = _CheckoutPhase.initializing;
+  String? _orderId;
+  String? _clientSecret;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initOrder());
+  }
+
+  Future<void> _initOrder() async {
+    if (widget.tierId.isEmpty) {
+      setState(() {
+        _phase = _CheckoutPhase.error;
+        _errorMessage = 'Tier no especificado';
+      });
+      return;
+    }
+
+    if (Stripe.publishableKey.isEmpty) {
+      setState(() {
+        _phase = _CheckoutPhase.error;
+        _errorMessage =
+            'Stripe no configurado en la app (STRIPE_PUBLISHABLE_KEY)';
+      });
+      return;
+    }
+
+    try {
+      final api = ref.read(ordersApiProvider);
+      final created = await api.create(widget.tierId);
+      _orderId = created.orderId;
+      _clientSecret = created.clientSecret;
+
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: created.clientSecret,
+          merchantDisplayName: 'NightPass',
+          style: ThemeMode.dark,
+          appearance: const PaymentSheetAppearance(
+            colors: PaymentSheetAppearanceColors(primary: NPColors.hero),
+          ),
+        ),
+      );
+
+      if (!mounted) return;
+      setState(() => _phase = _CheckoutPhase.ready);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _phase = _CheckoutPhase.error;
+        _errorMessage = _formatError(e);
+      });
+    }
+  }
+
+  Future<void> _pay() async {
+    if (_clientSecret == null || _orderId == null) return;
+    setState(() => _phase = _CheckoutPhase.paying);
+
+    try {
+      await Stripe.instance.presentPaymentSheet();
+      if (!mounted) return;
+      setState(() => _phase = _CheckoutPhase.awaitingPass);
+      await _pollForPass(_orderId!);
+    } on StripeException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _phase = _CheckoutPhase.ready;
+        _errorMessage =
+            e.error.localizedMessage ?? e.error.message ?? 'Pago cancelado';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _phase = _CheckoutPhase.ready;
+        _errorMessage = _formatError(e);
+      });
+    }
+  }
+
+  Future<void> _pollForPass(String orderId) async {
+    final api = ref.read(ordersApiProvider);
+    const maxAttempts = 10;
+    for (int i = 0; i < maxAttempts; i++) {
+      try {
+        final order = await api.getById(orderId);
+        if (order.status == OrderStatus.completed && order.passId != null) {
+          if (!mounted) return;
+          setState(() => _phase = _CheckoutPhase.done);
+          context.go('/pass-detail?passId=${order.passId}');
+          return;
+        }
+        if (order.status == OrderStatus.failed ||
+            order.status == OrderStatus.refunded) {
+          if (!mounted) return;
+          setState(() {
+            _phase = _CheckoutPhase.error;
+            _errorMessage = 'El pago no se completó';
+          });
+          return;
+        }
+      } catch (_) {
+        // ignore intermittent
+      }
+      await Future.delayed(const Duration(milliseconds: 1500));
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _phase = _CheckoutPhase.error;
+      _errorMessage =
+          'Pago confirmado pero el pase aún no se generó. Revisa tus pases en unos minutos.';
+    });
+  }
+
+  String _formatError(Object e) {
+    final s = e.toString();
+    if (s.length > 200) return '${s.substring(0, 200)}…';
+    return s;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final tier = widget.extra?.tier;
+    final event = widget.extra?.event;
+    final priceCents = tier?.priceCents;
+    final currency = tier?.currency ?? 'MXN';
+
     return Scaffold(
       body: Stack(
         children: [
@@ -25,8 +181,10 @@ class CheckoutScreen extends StatelessWidget {
                   child: Row(
                     children: [
                       GestureDetector(
-                        onTap: () => context.canPop() ? context.pop() : context.go('/event'),
-                        child: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: NPColors.text),
+                        onTap: () =>
+                            context.canPop() ? context.pop() : context.go('/home'),
+                        child: const Icon(Icons.arrow_back_ios_new_rounded,
+                            size: 20, color: NPColors.text),
                       ),
                       const SizedBox(width: 14),
                       Text('Checkout', style: NPTextStyles.display(22)),
@@ -41,133 +199,69 @@ class CheckoutScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 56,
-                              height: 56,
-                              child: NPPhoto(
-                                label: '',
-                                height: 56,
-                                hue: 320,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('KAIROS — VIP Lounge',
-                                      style: NPTextStyles.heading(15, w: FontWeight.w600)),
-                                  const SizedBox(height: 2),
-                                  Text('Lumen · Sat 26 Apr · 23:00',
-                                      style: NPTextStyles.body(12, color: NPColors.textDim)),
-                                ],
-                              ),
-                            ),
-                          ],
+                        Text(
+                          event?.title ?? 'Evento',
+                          style: NPTextStyles.heading(15, w: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          [
+                            if (event?.venueName != null) event!.venueName!,
+                            if (event?.startsAt != null)
+                              _formatEventDate(event!.startsAt),
+                          ].join(' · '),
+                          style:
+                              NPTextStyles.body(12, color: NPColors.textDim),
                         ),
                         const SizedBox(height: 14),
                         Container(height: 1, color: NPColors.hairline),
-                        _row('VIP Lounge × 1', '\$690.00'),
-                        _row('Service fee', '\$24.00'),
-                        _row('Tax (16%)', '\$110.40'),
+                        _row(
+                          tier?.name ?? 'Pase',
+                          priceCents != null
+                              ? _formatMoney(priceCents, currency)
+                              : '—',
+                        ),
                         Container(height: 1, color: NPColors.hairline),
                         const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Total', style: NPTextStyles.heading(14, w: FontWeight.w600)),
-                            Text('\$824.40', style: NPTextStyles.display(22, color: NPColors.magenta)),
+                            Text('Total',
+                                style: NPTextStyles.heading(14,
+                                    w: FontWeight.w600)),
+                            Text(
+                              priceCents != null
+                                  ? _formatMoney(priceCents, currency)
+                                  : '—',
+                              style: NPTextStyles.display(22,
+                                  color: NPColors.magenta),
+                            ),
                           ],
                         ),
                       ],
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                  child: Text('PAY WITH', style: NPTextStyles.label(spacing: 0.1)),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-                  child: NPGlass(
-                    radius: 16,
-                    borderColor: NPColors.hero,
-                    borderWidth: 1.5,
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 38,
-                          height: 26,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [NPColors.deep2, NPColors.deep],
-                            ),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                          ),
-                          child: const Center(child: Icon(Icons.credit_card, size: 14, color: NPColors.hero)),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('•••• 4827', style: NPTextStyles.heading(14, w: FontWeight.w600)),
-                              Text('Visa · expires 09/28',
-                                  style: NPTextStyles.body(11, color: NPColors.textDim)),
-                            ],
-                          ),
-                        ),
-                        Text('Change',
-                            style: NPTextStyles.heading(12, w: FontWeight.w600, color: NPColors.hero)),
-                      ],
+                if (_errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                    child: NPGlass(
+                      radius: 14,
+                      borderColor: Colors.red.shade400,
+                      borderWidth: 1,
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        _errorMessage!,
+                        style: NPTextStyles.body(12, color: NPColors.text),
+                      ),
                     ),
                   ),
-                ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-                  child: Row(
-                    children: [
-                      Expanded(
-                          child: NPGhost(
-                              child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [Icon(Icons.apple, size: 16), SizedBox(width: 6), Text('Apple Pay')],
-                      ))),
-                      const SizedBox(width: 10),
-                      const Expanded(child: NPGhost(child: Text('+ Add card'))),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
-                  child: NPGlass(
-                    padding: const EdgeInsets.all(12),
-                    radius: 14,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.confirmation_number_outlined, size: 16, color: NPColors.hero),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text('Promo code', style: NPTextStyles.body(13, color: NPColors.textDim)),
-                        ),
-                        Text('Apply',
-                            style: NPTextStyles.heading(12, w: FontWeight.w600, color: NPColors.hero)),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
-                    'By confirming, you accept the venue\'s terms and the NightPass refund policy. Covers are non-transferable.',
-                    style: NPTextStyles.body(11, color: NPColors.textFaint, height: 1.6),
+                    _phaseDescription(),
+                    style: NPTextStyles.body(11,
+                        color: NPColors.textFaint, height: 1.6),
                   ),
                 ),
               ],
@@ -183,27 +277,65 @@ class CheckoutScreen extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, NPColors.base.withValues(alpha: 0.92)],
+                  colors: [
+                    Colors.transparent,
+                    NPColors.base.withValues(alpha: 0.92),
+                  ],
                   stops: const [0, 0.3],
                 ),
               ),
               child: NPPrimary(
                 full: true,
-                onPressed: () => context.go('/pass'),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.lock_outline, size: 14, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text('Pay \$824.40'),
-                  ],
-                ),
+                onPressed: _phase == _CheckoutPhase.ready ? _pay : null,
+                child: _ctaContent(priceCents, currency),
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _ctaContent(int? priceCents, String currency) {
+    switch (_phase) {
+      case _CheckoutPhase.initializing:
+        return const _Loading(text: 'Preparando pago…');
+      case _CheckoutPhase.paying:
+        return const _Loading(text: 'Procesando…');
+      case _CheckoutPhase.awaitingPass:
+        return const _Loading(text: 'Generando pase…');
+      case _CheckoutPhase.done:
+        return const Text('Listo');
+      case _CheckoutPhase.ready:
+      case _CheckoutPhase.error:
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_outline, size: 14, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(priceCents != null
+                ? 'Pagar ${_formatMoney(priceCents, currency)}'
+                : 'Pagar'),
+          ],
+        );
+    }
+  }
+
+  String _phaseDescription() {
+    switch (_phase) {
+      case _CheckoutPhase.initializing:
+        return 'Conectando con Stripe…';
+      case _CheckoutPhase.ready:
+        return 'Al confirmar aceptas los términos del local y la política de NightPass.';
+      case _CheckoutPhase.paying:
+        return 'No cierres la app durante el pago.';
+      case _CheckoutPhase.awaitingPass:
+        return 'Pago confirmado. Generando tu pase con QR…';
+      case _CheckoutPhase.done:
+        return 'Redirigiendo a tu pase…';
+      case _CheckoutPhase.error:
+        return 'Si el cobro pasó, tu pase aparecerá en la pestaña Pases.';
+    }
   }
 
   Widget _row(String k, String v) => Padding(
@@ -216,4 +348,50 @@ class CheckoutScreen extends StatelessWidget {
           ],
         ),
       );
+}
+
+class _Loading extends StatelessWidget {
+  final String text;
+  const _Loading({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(text),
+      ],
+    );
+  }
+}
+
+String _formatMoney(int cents, String currency) {
+  final value = cents / 100;
+  final symbol = currency.toUpperCase() == 'MXN'
+      ? r'$'
+      : currency.toUpperCase() == 'EUR'
+          ? '€'
+          : currency.toUpperCase() == 'USD'
+              ? r'$'
+              : '';
+  return '$symbol${value.toStringAsFixed(2)} ${currency.toUpperCase()}';
+}
+
+String _formatEventDate(DateTime d) {
+  const months = [
+    'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+  ];
+  final hh = d.hour.toString().padLeft(2, '0');
+  final mm = d.minute.toString().padLeft(2, '0');
+  return '${d.day} ${months[d.month - 1]} · $hh:$mm';
 }

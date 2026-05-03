@@ -31,6 +31,13 @@ enum EventStatus {
   CANCELED
 }
 
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  REFUNDED
+  FAILED
+}
+
 model User {
   id           String   @id @default(uuid(7)) @db.Uuid
   email        String   @unique
@@ -48,6 +55,9 @@ model User {
   reviewedApps      VenueApplication[] @relation("ReviewerApps")
   staffMemberships  VenueStaff[]       @relation("staffMemberships")
   sentInvites       VenueStaff[]       @relation("sentInvites")
+  orders            Order[]
+  passes            Pass[]
+  passesScanned     Pass[]             @relation("PassesScanned")
 
   @@map("users")
 }
@@ -96,10 +106,11 @@ model Venue {
   dressCode   String?
   minAge      Int?
 
-  owners  VenueOwner[]
-  staff   VenueStaff[]
-  photos  Photo[]
-  events  Event[]
+  owners        VenueOwner[]
+  staff         VenueStaff[]
+  photos        Photo[]
+  events        Event[]
+  stripeAccount StripeAccount?
 
   @@index([city])
   @@index([status, createdAt])
@@ -206,6 +217,8 @@ model Event {
   venue  Venue       @relation(fields: [venueId], references: [id])
   tiers  EventTier[]
   photos Photo[]
+  orders Order[]
+  passes Pass[]
 
   @@unique([venueId, slug])
   @@index([venueId, status])
@@ -218,14 +231,73 @@ model EventTier {
   eventId    String   @db.Uuid
   name       String
   priceCents Int
-  currency   String   @default("EUR")
+  currency   String   @default("MXN")
   capacity   Int?
   position   Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  orders Order[]
 
   @@index([eventId])
   @@map("event_tiers")
+}
+
+model StripeAccount {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  venueId           String   @unique @db.Uuid
+  stripeAccountId   String   @unique
+  chargesEnabled    Boolean  @default(false)
+  detailsSubmitted  Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@map("stripe_accounts")
+}
+
+model Order {
+  id                     String      @id @default(uuid(7)) @db.Uuid
+  userId                 String      @db.Uuid
+  eventId                String      @db.Uuid
+  tierId                 String      @db.Uuid
+  status                 OrderStatus @default(PENDING)
+  totalCents             Int
+  applicationFeeCents    Int
+  currency               String      @default("MXN")
+  stripePaymentIntentId  String?     @unique
+  stripeEventLastApplied String?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  user  User      @relation(fields: [userId], references: [id])
+  event Event     @relation(fields: [eventId], references: [id])
+  tier  EventTier @relation(fields: [tierId], references: [id])
+  pass  Pass?
+
+  @@index([userId, createdAt])
+  @@index([eventId, status])
+  @@map("orders")
+}
+
+model Pass {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  orderId       String    @unique @db.Uuid
+  userId        String    @db.Uuid
+  eventId       String    @db.Uuid
+  qrCode        String    @unique
+  usedAt        DateTime?
+  usedByStaffId String?   @db.Uuid
+  createdAt     DateTime  @default(now())
+
+  order       Order @relation(fields: [orderId], references: [id])
+  user        User  @relation(fields: [userId], references: [id])
+  event       Event @relation(fields: [eventId], references: [id])
+  usedByStaff User? @relation("PassesScanned", fields: [usedByStaffId], references: [id])
+
+  @@index([userId])
+  @@index([eventId, usedAt])
+  @@map("passes")
 }

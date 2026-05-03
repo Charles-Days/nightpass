@@ -1,6 +1,22 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/np_theme.dart';
 
+/// NightPass app backdrop — concept: "Velvet Midnight".
+///
+/// A near-black canvas saturated with deep velvet purple, anchored by
+/// a single warm ember (a distant sodium lamp through fog) that gives
+/// the composition its emotional center. Static film grain prevents
+/// OLED banding and gives the dark an analog, fabric-like quality.
+///
+/// Composition (back to front):
+///   1. Base       — vertical violet-black wash
+///   2. Velvet TL  — deep2 bloom, top-left, very low alpha
+///   3. Velvet BR  — deep bloom, bottom-right, very low alpha
+///   4. Cool focal — hero-purple glow upper-right
+///   5. THE EMBER  — tight amber bloom lower-left (the signature)
+///   6. Grain      — film texture, cached, mixed warm/cool/neutral tints
+///   7. Vignette   — barely-there edge fall-off to focus content
 class NPBackdrop extends StatelessWidget {
   final Widget? child;
   const NPBackdrop({super.key, this.child});
@@ -10,53 +26,174 @@ class NPBackdrop extends StatelessWidget {
     return RepaintBoundary(
       child: Stack(
         children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: const BoxDecoration(color: NPColors.base),
-            ),
-          ),
-          Positioned.fill(
+          // 1. Base — vertical violet-black
+          const Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(-0.6, -1),
-                  radius: 1.2,
-                  colors: [NPColors.deep2, NPColors.deep2.withValues(alpha: 0)],
-                  stops: const [0, 0.55],
-                ),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(1, -0.6),
-                  radius: 0.85,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                   colors: [
-                    NPColors.hero.withValues(alpha: 0.18),
-                    NPColors.hero.withValues(alpha: 0),
+                    Color(0xFF07050D),
+                    Color(0xFF0C0418),
+                    Color(0xFF030107),
                   ],
-                  stops: const [0, 0.6],
+                  stops: [0, 0.55, 1],
                 ),
               ),
             ),
           ),
+
+          // 2. Velvet bloom — top-left (deep2, ambient depth)
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
-                  center: const Alignment(0, 1),
-                  radius: 1.2,
-                  colors: [NPColors.deep, NPColors.deep.withValues(alpha: 0)],
-                  stops: const [0, 0.6],
+                  center: const Alignment(-0.7, -0.85),
+                  radius: 1.4,
+                  colors: [
+                    NPColors.deep2.withValues(alpha: 0.32),
+                    NPColors.deep2.withValues(alpha: 0.10),
+                    Colors.transparent,
+                  ],
+                  stops: const [0, 0.4, 0.85],
                 ),
               ),
             ),
           ),
+
+          // 3. Velvet bloom — bottom-right (deep, ambient depth)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0.85, 0.95),
+                  radius: 1.2,
+                  colors: [
+                    NPColors.deep.withValues(alpha: 0.42),
+                    NPColors.deep.withValues(alpha: 0.12),
+                    Colors.transparent,
+                  ],
+                  stops: const [0, 0.45, 0.9],
+                ),
+              ),
+            ),
+          ),
+
+          // 4. Cool focal — hero purple glow upper-right
+          // Quietly states the brand color without dominating.
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0.55, -0.55),
+                  radius: 0.75,
+                  colors: [
+                    NPColors.hero.withValues(alpha: 0.075),
+                    NPColors.hero.withValues(alpha: 0.025),
+                    Colors.transparent,
+                  ],
+                  stops: const [0, 0.5, 1],
+                ),
+              ),
+            ),
+          ),
+
+          // 5. THE EMBER — the signature.
+          // A single tight warm bloom: distant sodium lamp through fog.
+          // Lower-left, slightly off-axis. Restrained alpha (~6% peak)
+          // keeps it subtle yet emotionally anchored.
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(-0.35, 0.45),
+                  radius: 0.55,
+                  colors: [
+                    NPColors.neonAmber.withValues(alpha: 0.060),
+                    NPColors.neonOrange.withValues(alpha: 0.030),
+                    Colors.transparent,
+                  ],
+                  stops: const [0, 0.4, 0.85],
+                ),
+              ),
+            ),
+          ),
+
+          // 6. Grain — film-emulsion texture (static, cached).
+          // Breaks OLED banding. Mixed neutral/violet/amber tints sympathetic
+          // to the wash above. shouldRepaint=false → painted once.
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _GrainPainter(),
+                isComplex: true,
+                willChange: false,
+              ),
+            ),
+          ),
+
+          // 7. Vignette — barely-there edge fall-off
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.center,
+                  radius: 1.3,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.20),
+                  ],
+                  stops: const [0.55, 1],
+                ),
+              ),
+            ),
+          ),
+
           if (child != null) Positioned.fill(child: child!),
         ],
       ),
     );
   }
+}
+
+/// Static film-grain texture. Pseudo-random distribution, three tint families
+/// (neutral / cool violet / warm amber) at very low alphas. Painted once and
+/// cached — `shouldRepaint` returns false.
+class _GrainPainter extends CustomPainter {
+  const _GrainPainter();
+
+  static const int _seed = 137;
+  static const int _grainCount = 1500;
+  static const Color _coolTint = Color(0xFFB266FF);
+  static const Color _warmTint = Color(0xFFFFA94D);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rand = math.Random(_seed);
+    final paint = Paint()..isAntiAlias = false;
+
+    for (int i = 0; i < _grainCount; i++) {
+      final x = rand.nextDouble() * size.width;
+      final y = rand.nextDouble() * size.height;
+      final r = 0.4 + rand.nextDouble() * 0.7;
+
+      // 70% neutral, 20% cool (violet), 10% warm (amber)
+      final tint = rand.nextDouble();
+      final Color base;
+      if (tint < 0.70) {
+        base = Colors.white;
+      } else if (tint < 0.90) {
+        base = _coolTint;
+      } else {
+        base = _warmTint;
+      }
+      final alpha = 0.012 + rand.nextDouble() * 0.025;
+      paint.color = base.withValues(alpha: alpha);
+      canvas.drawCircle(Offset(x, y), r, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _GrainPainter oldDelegate) => false;
 }

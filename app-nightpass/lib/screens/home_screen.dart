@@ -80,7 +80,7 @@ class HomeScreen extends ConsumerWidget {
                   else ...[
                     _section('Trending tonight', action: 'See all'),
                     SizedBox(
-                      height: 235,
+                      height: 260,
                       child: ListView.separated(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         scrollDirection: Axis.horizontal,
@@ -99,7 +99,7 @@ class HomeScreen extends ConsumerWidget {
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
                                     NPPhoto(
-                                      imageUrl: v.coverImageUrl,
+                                      imageUrl: v.displayCoverUrl,
                                       height: 130,
                                       hue: 280, // Default hue
                                       borderRadius: BorderRadius.zero,
@@ -112,8 +112,12 @@ class HomeScreen extends ConsumerWidget {
                                           Row(
                                             children: [
                                               Expanded(
-                                                child: Text(v.name,
-                                                    style: NPTextStyles.heading(16, w: FontWeight.w600)),
+                                                child: Text(
+                                                  v.name,
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: NPTextStyles.heading(16, w: FontWeight.w600),
+                                                ),
                                               ),
                                               NPChip(
                                                 tone: (v.capacity ?? 0) > 85 ? NPChipTone.magenta : NPChipTone.live,
@@ -224,7 +228,7 @@ class HomeScreen extends ConsumerWidget {
                                             width: 64,
                                             height: 64,
                                             child: NPPhoto(
-                                              imageUrl: v.coverImageUrl,
+                                              imageUrl: v.displayCoverUrl,
                                               height: 64,
                                               hue: 280,
                                               borderRadius: BorderRadius.circular(12),

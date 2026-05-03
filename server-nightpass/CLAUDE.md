@@ -132,6 +132,59 @@ Lanzar excepciones de Nest (`UnauthorizedException`, `ConflictException`, `BadRe
 - Clases: `PascalCase` (ej. `AuthController`, `SignupDto`).
 - Tests: `*.spec.ts` (unit), `*.e2e-spec.ts` (e2e).
 
+### Storage — Cloudflare R2 activo
+
+- `STORAGE_DRIVER=r2` en `.env` → `StorageService` (en `src/storage/`) firma uploads contra bucket `nightpass-media`.
+- Endpoint `POST /uploads/sign` devuelve `{signedUrl, publicUrl}`. El cliente hace `PUT` directo a R2 con `signedUrl` (5 min TTL); luego guarda `publicUrl` en la DB.
+- Public URL pattern: `https://pub-<hash>.r2.dev/<key>` — el subdominio R2.dev del bucket está habilitado.
+- CORS Policy del bucket debe incluir el origen del cliente (`http://localhost:7100` en dev). Sin CORS, el `PUT` falla con preflight 403.
+- Vars requeridas: `STORAGE_DRIVER`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL`. Si alguna falta, `StorageService` cae a driver `local` (filesystem `./uploads/` servido por `/uploads/local-put/*`).
+- Archivos viejos subidos antes de R2 viven en `./uploads/` y siguen sirviéndose desde `LOCAL_UPLOADS_URL` — no migran solos. Migración sería un script one-off (pendiente).
+
+#### Cleanup obligatorio: cada subida nueva implica un borrado
+
+**Regla del proyecto:** todo `service` que persista una URL de imagen en la DB debe también borrarla del storage cuando deja de referenciarla. Sin esto R2 acumula basura indefinidamente.
+
+`StorageService` expone helpers para esto:
+- `deleteByPublicUrl(url)` — borra un archivo dado su URL pública (R2 o local).
+- `deleteByPublicUrls(urls)` — batch hasta 1000 (DeleteObjects).
+- Errores solo se loggean (warn), nunca se relanzan — el cleanup es fire-and-forget.
+
+**Pattern obligatorio** en `update()` y `delete()` cuando la entidad tiene campo de imagen:
+
+```ts
+// 1. Antes del update/delete: leer el(los) URL(s) actual(es).
+const entity = await this.prisma.X.findUnique({ where: { id }, select: { coverUrl: true } });
+
+// 2. Calcular orphans (URLs que dejarán de referenciarse).
+const oldCover = dto.coverUrl !== undefined && entity.coverUrl && entity.coverUrl !== dto.coverUrl
+  ? entity.coverUrl
+  : null;
+
+// 3. Update DB.
+const updated = await this.prisma.X.update({ ... });
+
+// 4. Fire-and-forget cleanup tras commit (NUNCA bloqueante).
+if (oldCover) this.storage.deleteByPublicUrl(oldCover).catch(() => undefined);
+
+return updated;
+```
+
+**Para colecciones (galería)**: comparar set viejo vs nuevo, recolectar `not in newSet`, llamar `deleteByPublicUrls`. Ver `VenuesService.update()` como referencia.
+
+**Para `delete()` de la entidad**: leer todas las URLs antes del `prisma.delete`, borrar de DB, luego limpiar storage.
+
+#### Cobertura actual
+
+| Entidad | Campos | Cleanup en `update()` | Cleanup en `delete()` |
+|---------|--------|----------------------|-----------------------|
+| `Venue` | `coverImageUrl`, `Photo[]` | ✅ | ✗ (no hay endpoint DELETE) |
+| `Event` | `coverImageUrl` | ✅ | ✅ |
+| `Story` (Fase 4) | `mediaUrl` | pendiente — usar Lifecycle Rule R2 (TTL 24h) |
+| Avatares (futuro) | `User.avatarUrl` | pendiente |
+
+**Cuando agregues una entidad nueva con imagen**: actualiza esta tabla + sigue el pattern. Sin cleanup el PR no debería pasar review.
+
 ## Seguridad — lo que ya está
 
 - **argon2id** con config OWASP 2025: `memoryCost: 19456 (19 MiB), timeCost: 2, parallelism: 1`.

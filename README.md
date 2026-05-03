@@ -136,6 +136,102 @@ Usuarios creados:
 | A1.5   | Panel usuarios (read-only), panel locales (edit + suspend)      | Completa    |
 | A2     | Staff por local, mustChangePassword, eventos + tiers            | Completa    |
 | Fase 2 | Catalogo publico, R2 uploads, endpoints para app movil          | Completa    |
-| Fase 3 | Stripe Connect, Orders, Passes con QR, scanner web              | Pendiente   |
+| Fase 3 | Stripe Connect, Orders, Passes con QR, scanner web              | Completa    |
 | Fase 4 | Social: Friendship, Story, Chat, WebSocket                      | Pendiente   |
 | Fase 5 | FCM push, tests E2E, Railway deploy, Sentry, GDPR               | Pendiente   |
+
+---
+
+## Modelo de pagos — por qué Stripe Connect (no cobramos nosotros)
+
+NightPass **no procesa los pagos directamente**. Cada local conecta su propia cuenta Stripe vía Stripe Connect Standard, y NightPass cobra automáticamente una comisión del 8% sobre cada venta. Esto es deliberado y crítico para el negocio.
+
+### Cómo funciona
+
+```
+Cliente paga $200 MXN
+       │
+       ▼
+Stripe procesa el pago (no lo recibe NightPass)
+       │
+       ├─► $184  → cuenta Stripe del local
+       └─► $16   → cuenta Stripe NightPass (application_fee_amount, 8 %)
+```
+
+El cliente ve el cargo a nombre del **local**, no de NightPass. La factura, el CFDI y el IVA son del local. NightPass solo factura su comisión.
+
+### Modelos descartados
+
+**Modelo A — NightPass como Merchant of Record (MoR) único.** Cobrar todo nosotros y repartir manualmente.
+
+| Implicación | Consecuencia |
+|-------------|--------------|
+| Recibir dinero que no es nuestro | Necesitamos licencia IFPE (Banxico, CNBV) en Mexico |
+| Disputas y chargebacks | Los pagamos nosotros con multa ($25 USD por chargeback) |
+| Volumen contable | Todo el GMV aparece como ingreso nuestro — pagamos IVA e ISR sobre el total, luego deducimos |
+| Facturación electronica | Emitimos CFDI por cada venta de cada local |
+| KYC/AML | Cubrimos a compradores y receptores |
+| Riesgo si un local quiebra antes de pago | Tenemos su dinero, los acreedores nos buscan |
+
+Es el modelo de un proveedor de pagos / fintech, no de un marketplace.
+
+**Modelo B — Stripe Connect Standard (lo que tenemos).** Cada local es MoR de su propia venta.
+
+| Implicación | Consecuencia |
+|-------------|--------------|
+| Procesamiento de tarjeta | Stripe lo hace (tienen las licencias en MX y todo el mundo) |
+| Disputas y chargebacks | Del local, descontados de su balance Stripe |
+| Volumen contable de NightPass | Solo nuestra comision (8 %) — limpio fiscalmente |
+| Facturacion electronica | Cada local emite sus propios CFDIs |
+| KYC | Stripe hace el KYC del local cuando hace onboarding |
+| Cumplimiento PCI | Stripe (no manejamos numeros de tarjeta) |
+
+NightPass queda como **plataforma**, no como fintech. Podemos escalar a 1000 venues sin cambiar el modelo legal.
+
+### Lo unico que NightPass gestiona
+
+1. Catalogo (venues, eventos, tiers).
+2. Identidad de usuarios (clientes, dueños, staff).
+3. Pases digitales con QR firmado HMAC.
+4. Comision automatica via `application_fee_amount` en cada PaymentIntent.
+5. Soporte de la plataforma (UI, app, scanner).
+
+### Lo que NightPass NO toca
+
+- Numeros de tarjeta (Stripe).
+- Depositos a venues (Stripe).
+- Facturacion fiscal del cover (cada venue).
+- Disputas y refunds (venue + Stripe).
+- Cumplimiento de pagos en Mexico (Stripe MX cumple Banxico).
+
+### Analogia rapida
+
+NightPass es a fiestas/bares lo que **Uber Eats** es a restaurantes. Uber no cocina ni vende la comida — el restaurante es el comerciante de su pedido. Uber cobra una comision por orden. Mismo modelo: Mercado Libre con vendedores, Shopify con tiendas, Airbnb con anfitriones.
+
+### Trade-off aceptado
+
+A cambio de toda la simplificacion legal y financiera, **el dueño del local tiene 5 minutos de onboarding inicial en Stripe** (KYC: nombre, RFC, cuenta bancaria, identificacion). Si no completa onboarding, no puede vender pases — pero esto es un beneficio, no un problema: garantiza que cada peso vendido tiene un receptor real e identificado.
+
+### Variables de entorno relacionadas
+
+```bash
+# server-nightpass/.env
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PLATFORM_FEE_PCT=8           # comision NightPass
+STRIPE_CONNECT_COUNTRY=MX
+STRIPE_CONNECT_DEFAULT_CURRENCY=mxn
+PASS_HMAC_SECRET=<openssl rand -hex 32>
+```
+
+Sin estas vars el modulo Stripe arranca en modo no-op y los endpoints de pago devuelven 503. El resto del sistema (auth, catalogo, eventos) sigue funcionando.
+
+
+--------
+
+sojiw44318@inraud.com
+CBdiazcarlos123@
+
+
+gtwv-gxip-jybm-jgwj-qzef

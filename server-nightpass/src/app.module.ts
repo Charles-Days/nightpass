@@ -14,6 +14,9 @@ import { StorageModule } from './storage/storage.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { EventsModule } from './events/events.module';
+import { StripeModule } from './stripe/stripe.module';
+import { OrdersModule } from './orders/orders.module';
+import { PassesModule } from './passes/passes.module';
 import { validateEnv } from './config/env.schema';
 
 @Module({
@@ -41,6 +44,9 @@ import { validateEnv } from './config/env.schema';
     CatalogModule,
     UploadsModule,
     EventsModule,
+    StripeModule,
+    OrdersModule,
+    PassesModule,
   ],
   providers: [
     {

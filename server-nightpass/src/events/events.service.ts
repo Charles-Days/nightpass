@@ -6,6 +6,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -15,7 +16,10 @@ import { UpdateTierDto } from './dto/update-tier.dto';
 
 @Injectable()
 export class EventsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -171,7 +175,7 @@ export class EventsService {
   async update(id: string, dto: UpdateEventDto, user: AuthUser) {
     const event = await this.prisma.event.findUnique({
       where: { id },
-      select: { venueId: true },
+      select: { venueId: true, coverImageUrl: true },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
@@ -186,23 +190,41 @@ export class EventsService {
     if (dto.status !== undefined) data.status = dto.status;
     if (dto.capacity !== undefined) data.capacity = dto.capacity;
 
-    return this.prisma.event.update({
+    const oldCover =
+      dto.coverImageUrl !== undefined &&
+      event.coverImageUrl &&
+      event.coverImageUrl !== dto.coverImageUrl
+        ? event.coverImageUrl
+        : null;
+
+    const updated = await this.prisma.event.update({
       where: { id },
       data,
       include: { tiers: { orderBy: { position: 'asc' } } },
     });
+
+    if (oldCover) {
+      this.storage.deleteByPublicUrl(oldCover).catch(() => undefined);
+    }
+
+    return updated;
   }
 
   async remove(id: string, user: AuthUser) {
     const event = await this.prisma.event.findUnique({
       where: { id },
-      select: { venueId: true },
+      select: { venueId: true, coverImageUrl: true },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
     await this.ensureVenueOwner(event.venueId, user.id, user.role);
 
     await this.prisma.event.delete({ where: { id } });
+
+    if (event.coverImageUrl) {
+      this.storage.deleteByPublicUrl(event.coverImageUrl).catch(() => undefined);
+    }
+
     return { ok: true };
   }
 

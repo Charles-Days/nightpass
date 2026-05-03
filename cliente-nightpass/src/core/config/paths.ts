@@ -12,6 +12,8 @@ export const paths = {
   miLocalEditar: '/mi-local/editar',
   miLocalEventos: '/mi-local/eventos',
   miLocalStaff: '/mi-local/staff',
+  miLocalPagos: '/mi-local/pagos',
+  scanner: '/scanner',
 } as const;
 
 export type AppPath = (typeof paths)[keyof typeof paths];

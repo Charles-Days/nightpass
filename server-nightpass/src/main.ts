@@ -18,6 +18,9 @@ async function bootstrap() {
       logger: true,
       trustProxy: true,
     }),
+    // rawBody: true → Nest expone req.rawBody (Buffer) en cualquier controlador
+    // que use @RawBodyRequest. Necesario para verificar firmas de Stripe webhooks.
+    { rawBody: true },
   );
 
   // Permitir subida de archivos binarios (imágenes) sin procesar para el modo local

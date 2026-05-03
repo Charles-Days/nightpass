@@ -63,7 +63,7 @@ export class CatalogService {
       select: {
         ...VENUE_PUBLIC_SELECT,
         events: {
-          where: { status: EventStatus.PUBLISHED, startsAt: { gte: new Date() } },
+          where: { status: EventStatus.PUBLISHED, endsAt: { gte: new Date() } },
           orderBy: { startsAt: 'asc' },
           select: {
             id: true,

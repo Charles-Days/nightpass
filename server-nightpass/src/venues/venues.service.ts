@@ -4,9 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Role, Prisma, VenueStatus, VenueStaffStatus, Photo } from '@prisma/client';
+import { Role, Prisma, VenueStatus, VenueStaffStatus, Photo, EventStatus } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import { ListVenuesQuery } from './dto/list-venues.query';
 import { CreateVenueDto } from './dto/create-venue.dto';
 import { UpdateVenueDto } from './dto/update-venue.dto';
@@ -27,6 +28,7 @@ export class VenuesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly storage: StorageService,
   ) {
     this.uploadsUrl = this.config.get<string>('LOCAL_UPLOADS_URL') || '';
   }
@@ -78,6 +80,16 @@ export class VenuesService {
             user: {
               select: { id: true, email: true, name: true, role: true },
             },
+          },
+        },
+        events: {
+          where: {
+            status: EventStatus.PUBLISHED,
+            endsAt: { gte: new Date() },
+          },
+          orderBy: { startsAt: 'asc' },
+          include: {
+            tiers: { orderBy: { position: 'asc' } },
           },
         },
       },
@@ -177,7 +189,10 @@ export class VenuesService {
   async update(id: string, dto: UpdateVenueDto, user?: AuthUser) {
     const venue = await this.prisma.venue.findUnique({
       where: { id },
-      include: { owners: { select: { userId: true } } },
+      include: {
+        owners: { select: { userId: true } },
+        photos: { select: { url: true } },
+      },
     });
     if (!venue) throw new NotFoundException('Local no encontrado');
 
@@ -187,20 +202,33 @@ export class VenuesService {
     }
 
     const { images, ...rest } = dto;
+    const newCover = rest.coverImageUrl ? this._stripBaseUrl(rest.coverImageUrl) : undefined;
+    const newPhotoUrls = images?.map(u => this._stripBaseUrl(u));
+
+    const orphanKeys: string[] = [];
+    if (newCover !== undefined && venue.coverImageUrl && venue.coverImageUrl !== newCover) {
+      orphanKeys.push(venue.coverImageUrl);
+    }
+    if (newPhotoUrls !== undefined) {
+      const newSet = new Set(newPhotoUrls);
+      for (const p of venue.photos) {
+        if (!newSet.has(p.url)) orphanKeys.push(p.url);
+      }
+    }
 
     const data: Prisma.VenueUpdateInput = {
       ...rest,
-      coverImageUrl: rest.coverImageUrl ? this._stripBaseUrl(rest.coverImageUrl) : undefined,
+      coverImageUrl: newCover,
       name: rest.name?.trim(),
       city: rest.city?.trim(),
       address: rest.address?.trim() || (rest.address === '' ? null : undefined),
       phone: rest.phone?.trim() || (rest.phone === '' ? null : undefined),
     };
 
-    if (images !== undefined) {
+    if (newPhotoUrls !== undefined) {
       data.photos = {
         deleteMany: {},
-        create: images.map((url, i) => ({ url: this._stripBaseUrl(url), position: i })),
+        create: newPhotoUrls.map((url, i) => ({ url, position: i })),
       };
     }
 
@@ -208,7 +236,13 @@ export class VenuesService {
       (key) => (data as any)[key] === undefined && delete (data as any)[key],
     );
 
-    return this.prisma.venue.update({ where: { id }, data });
+    const updated = await this.prisma.venue.update({ where: { id }, data });
+
+    if (orphanKeys.length) {
+      this.storage.deleteByPublicUrls(orphanKeys).catch(() => undefined);
+    }
+
+    return updated;
   }
 
   async suspend(id: string) {

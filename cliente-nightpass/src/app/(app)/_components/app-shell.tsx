@@ -12,6 +12,8 @@ import {
   Users,
   Sparkles,
   Inbox,
+  QrCode,
+  CreditCard,
   type LucideIcon,
 } from 'lucide-react';
 import { useLogout } from '@/features/auth';
@@ -40,6 +42,8 @@ const PLATFORM_NAV: NavItem[] = [
 const VENUE_NAV: NavItem[] = [
   { href: paths.miLocal, label: 'Mi local', icon: Store, enabled: true, roles: ['VENUE_OWNER', 'VENUE_STAFF'] },
   { href: paths.miLocalEventos, label: 'Eventos', icon: Calendar, enabled: true, roles: ['VENUE_OWNER', 'VENUE_STAFF'] },
+  { href: paths.scanner, label: 'Escanear pase', icon: QrCode, enabled: true, roles: ['VENUE_OWNER', 'VENUE_STAFF', 'ADMIN'] },
+  { href: paths.miLocalPagos, label: 'Pagos', icon: CreditCard, enabled: true, roles: ['VENUE_OWNER'] },
   { href: '/mi-local/pases', label: 'Pases', icon: Ticket, enabled: false, roles: ['VENUE_OWNER'] },
   { href: paths.miLocalStaff, label: 'Staff', icon: Users, enabled: true, roles: ['VENUE_OWNER'] },
 ];

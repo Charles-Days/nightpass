@@ -11,7 +11,11 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { VenueStatus } from '@prisma/client';
+
+const emptyToUndefined = ({ value }: { value: unknown }) =>
+  value === '' || value === null ? undefined : value;
 
 export class CreateVenueDto {
   @IsString()
@@ -59,6 +63,7 @@ export class CreateVenueDto {
   longitude?: number;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsUrl({ require_tld: false })
   coverImageUrl?: string;
 
@@ -72,6 +77,7 @@ export class CreateVenueDto {
   openHours?: any;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsUrl({ require_tld: false })
   menuUrl?: string;
 

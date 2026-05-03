@@ -16,6 +16,7 @@ class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late final AnimationController _intro;
   late final AnimationController _pulse;
+  late final AnimationController _daynight;
 
   static const _title = 'NightPass';
 
@@ -30,12 +31,17 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     )..repeat(reverse: true);
+    _daynight = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..forward();
   }
 
   @override
   void dispose() {
     _intro.dispose();
     _pulse.dispose();
+    _daynight.dispose();
     super.dispose();
   }
 
@@ -50,6 +56,19 @@ class _SplashScreenState extends State<SplashScreen>
       body: Stack(
         children: [
           const NPBackdrop(),
+
+          // Intro veil — "Ember Awakens".
+          // Black veil fades out as a single warm ember ignites in the
+          // same position as the backdrop's permanent ember, so the
+          // transition into NPBackdrop is invisible.
+          AnimatedBuilder(
+            animation: _daynight,
+            builder: (context, _) {
+              return IgnorePointer(
+                child: _VelvetIntroLayer(t: _daynight.value),
+              );
+            },
+          ),
 
           // Halo pulsante detrás del logo
           AnimatedBuilder(
@@ -220,6 +239,124 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
   }
+}
+
+/// Intro veil for splash. Concept: "Ember Awakens".
+///
+/// Sequence over t in [0, 1]:
+///   0.00–0.10  — pure black veil (anticipation)
+///   0.10–0.35  — ember ignites lower-left and grows (easeOut)
+///   0.30–0.48  — single heartbeat pulse on the ember
+///   0.38–0.83  — one ripple radiates outward
+///   0.00–1.00  — black veil fades to transparent revealing NPBackdrop
+///
+/// The ember position matches the backdrop's permanent ember exactly,
+/// so when the veil clears the user sees no jump — just one warm light
+/// that has always been there.
+class _VelvetIntroLayer extends StatelessWidget {
+  final double t;
+  const _VelvetIntroLayer({required this.t});
+
+  static const Alignment _emberCenter = Alignment(-0.35, 0.45);
+
+  @override
+  Widget build(BuildContext context) {
+    // Veil — black covers backdrop initially, eases out by t=1
+    final veilAlpha = (1 - Curves.easeOutCubic.transform(t)).clamp(0.0, 1.0);
+
+    // Ember awakens t=0.10 → 0.35
+    final emberT = ((t - 0.10) / 0.25).clamp(0.0, 1.0);
+    final emberAlpha = Curves.easeOutCubic.transform(emberT);
+
+    // Single heartbeat — one half-sine wave, peaks ~t=0.39
+    final beatT = ((t - 0.30) / 0.18).clamp(0.0, 1.0);
+    final beat = (beatT > 0 && beatT < 1)
+        ? math.sin(beatT * math.pi)
+        : 0.0;
+
+    // Ripple — single wave radiating from ember
+    final rippleT = ((t - 0.38) / 0.45).clamp(0.0, 1.0);
+    final rippleProgress = Curves.easeOut.transform(rippleT);
+    final rippleAlpha = rippleT > 0 ? (1 - rippleT) * 0.22 : 0.0;
+
+    return Stack(
+      children: [
+        // Veil — solid near-black hiding NPBackdrop initially
+        Positioned.fill(
+          child: ColoredBox(
+            color: const Color(0xFF030107).withValues(alpha: veilAlpha),
+          ),
+        ),
+
+        // Ember bloom (with heartbeat scale + alpha modulation)
+        if (emberAlpha > 0)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: _emberCenter,
+                  radius: 0.50 + beat * 0.10,
+                  colors: [
+                    NPColors.neonAmber.withValues(
+                      alpha: (0.22 + beat * 0.12) * emberAlpha,
+                    ),
+                    NPColors.neonOrange.withValues(
+                      alpha: 0.10 * emberAlpha,
+                    ),
+                    Colors.transparent,
+                  ],
+                  stops: const [0, 0.4, 0.85],
+                ),
+              ),
+            ),
+          ),
+
+        // Concentric ripple radiating from ember
+        if (rippleAlpha > 0)
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _RipplePainter(
+                center: _emberCenter,
+                progress: rippleProgress,
+                color: NPColors.neonAmber.withValues(alpha: rippleAlpha),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Soft glowing ring expanding from a center point.
+class _RipplePainter extends CustomPainter {
+  final Alignment center;
+  final double progress; // 0..1, normalized expansion
+  final Color color;
+
+  const _RipplePainter({
+    required this.center,
+    required this.progress,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = (center.x + 1) / 2 * size.width;
+    final cy = (center.y + 1) / 2 * size.height;
+    final maxR = math.max(size.width, size.height) * 0.85;
+    final r = 30 + progress * maxR;
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+    canvas.drawCircle(Offset(cx, cy), r, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RipplePainter old) =>
+      old.progress != progress || old.color != color;
 }
 
 class _PulsingBars extends StatefulWidget {
