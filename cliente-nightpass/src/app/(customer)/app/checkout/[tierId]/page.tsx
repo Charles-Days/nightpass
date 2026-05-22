@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
-import type { User } from '@/core/types/api';
+import type { CatalogTierDetail, User } from '@/core/types/api';
 import { CheckoutClient } from './_components/checkout-client';
 
 export const metadata = { title: 'Comprar pase — NightPass' };
@@ -22,5 +22,12 @@ export default async function CheckoutPage({ params }: Props) {
     throw error;
   }
 
-  return <CheckoutClient tierId={tierId} />;
+  let initialTier: CatalogTierDetail | null = null;
+  try {
+    initialTier = await serverFetch<CatalogTierDetail>(`/catalog/tiers/${tierId}`);
+  } catch {
+    initialTier = null;
+  }
+
+  return <CheckoutClient tierId={tierId} initialTier={initialTier} />;
 }

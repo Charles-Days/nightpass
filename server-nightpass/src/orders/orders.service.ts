@@ -1,6 +1,7 @@
 import {
-  ConflictException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
   Logger,
   NotFoundException,
@@ -32,9 +33,17 @@ export class OrdersService {
     orderId: string;
     clientSecret: string;
     publishableKey: string | undefined;
+    totalCents: number;
+    currency: string;
   }> {
     if (!this.stripe.isEnabled()) {
-      throw new ConflictException('Pagos no configurados en este servidor');
+      throw new HttpException(
+        {
+          message: 'Pagos no configurados en este servidor',
+          errorCode: 'STRIPE_DISABLED',
+        },
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
 
     const tier = await this.prisma.eventTier.findUnique({
@@ -47,21 +56,35 @@ export class OrdersService {
     });
     if (!tier) throw new NotFoundException('Tier no encontrado');
     if (tier.priceCents <= 0) {
-      throw new ConflictException('Tier gratuito — sin pago requerido');
+      throw new HttpException(
+        { message: 'Tier gratuito — sin pago requerido', errorCode: 'FREE_TIER' },
+        HttpStatus.CONFLICT,
+      );
     }
 
     const event = tier.event;
     if (event.status !== 'PUBLISHED') {
-      throw new ConflictException('Evento no publicado');
+      throw new HttpException(
+        { message: 'Evento no publicado', errorCode: 'EVENT_NOT_PUBLISHED' },
+        HttpStatus.CONFLICT,
+      );
     }
     if (event.startsAt.getTime() <= Date.now()) {
-      throw new ConflictException('Evento ya empezó');
+      throw new HttpException(
+        { message: 'Evento ya empezó', errorCode: 'EVENT_STARTED' },
+        HttpStatus.CONFLICT,
+      );
     }
 
     const stripeAccount = event.venue.stripeAccount;
     if (!stripeAccount?.chargesEnabled) {
-      throw new ConflictException(
-        'Local sin pagos configurados — el dueño debe completar Stripe onboarding',
+      throw new HttpException(
+        {
+          message:
+            'Local sin pagos configurados — el dueño debe completar Stripe onboarding',
+          errorCode: 'NO_STRIPE',
+        },
+        HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
 
@@ -71,7 +94,10 @@ export class OrdersService {
         where: { eventId: event.id, order: { tierId: tier.id } },
       });
       if (sold >= tier.capacity) {
-        throw new ConflictException('Tier agotado');
+        throw new HttpException(
+          { message: 'Tier agotado', errorCode: 'TIER_SOLD_OUT' },
+          HttpStatus.CONFLICT,
+        );
       }
     }
 
@@ -80,7 +106,14 @@ export class OrdersService {
       where: { eventId: event.id, userId },
     });
     if (existingPass) {
-      throw new ConflictException('Ya tienes un pase para este evento');
+      throw new HttpException(
+        {
+          message: 'Ya tienes un pase para este evento',
+          errorCode: 'DUPLICATE_PASS',
+          passId: existingPass.id,
+        },
+        HttpStatus.CONFLICT,
+      );
     }
 
     const feePct = this.stripe.getPlatformFeePct();
@@ -121,8 +154,12 @@ export class OrdersService {
     });
 
     if (!pi.client_secret) {
-      throw new ConflictException(
-        'Stripe no devolvió client_secret — revisar configuración de cuenta',
+      throw new HttpException(
+        {
+          message: 'Stripe no devolvió client_secret — revisar configuración de cuenta',
+          errorCode: 'STRIPE_MISSING_CLIENT_SECRET',
+        },
+        HttpStatus.BAD_GATEWAY,
       );
     }
 
@@ -130,6 +167,8 @@ export class OrdersService {
       orderId: order.id,
       clientSecret: pi.client_secret,
       publishableKey: this.stripe.getPublishableKey(),
+      totalCents: tier.priceCents,
+      currency: tier.currency,
     };
   }
 

@@ -223,6 +223,29 @@ export interface OrderCreationResponse {
   currency: string;
 }
 
+export interface CatalogTierDetail {
+  id: string;
+  name: string;
+  priceCents: number;
+  currency: string;
+  capacity: number | null;
+  event: {
+    id: string;
+    slug: string;
+    title: string;
+    startsAt: string;
+    endsAt: string;
+    coverImageUrl: string | null;
+    venue: {
+      id: string;
+      slug: string;
+      name: string;
+      city: string;
+    };
+  };
+  paymentsEnabled: boolean;
+}
+
 export interface Pass {
   id: string;
   orderId: string;

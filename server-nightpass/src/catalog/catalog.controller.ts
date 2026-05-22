@@ -22,4 +22,9 @@ export class CatalogController {
   getEvent(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.getEventById(id);
   }
+
+  @Get('tiers/:tierId')
+  getTier(@Param('tierId', ParseUUIDPipe) tierId: string) {
+    return this.service.getTierById(tierId);
+  }
 }

@@ -107,4 +107,67 @@ export class CatalogService {
     if (!event) throw new NotFoundException('Evento no encontrado');
     return event;
   }
+
+  async getTierById(tierId: string) {
+    const tier = await this.prisma.eventTier.findUnique({
+      where: { id: tierId },
+      select: {
+        id: true,
+        name: true,
+        priceCents: true,
+        currency: true,
+        capacity: true,
+        event: {
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            startsAt: true,
+            endsAt: true,
+            coverImageUrl: true,
+            status: true,
+            venue: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+                city: true,
+                status: true,
+                stripeAccount: { select: { chargesEnabled: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!tier) throw new NotFoundException('Tier no encontrado');
+    if (tier.event.status !== EventStatus.PUBLISHED) {
+      throw new NotFoundException('Evento no disponible');
+    }
+    if (tier.event.venue.status !== 'ACTIVE') {
+      throw new NotFoundException('Local no disponible');
+    }
+    return {
+      id: tier.id,
+      name: tier.name,
+      priceCents: tier.priceCents,
+      currency: tier.currency,
+      capacity: tier.capacity,
+      event: {
+        id: tier.event.id,
+        slug: tier.event.slug,
+        title: tier.event.title,
+        startsAt: tier.event.startsAt,
+        endsAt: tier.event.endsAt,
+        coverImageUrl: tier.event.coverImageUrl,
+        venue: {
+          id: tier.event.venue.id,
+          slug: tier.event.venue.slug,
+          name: tier.event.venue.name,
+          city: tier.event.venue.city,
+        },
+      },
+      paymentsEnabled: tier.event.venue.stripeAccount?.chargesEnabled === true,
+    };
+  }
 }

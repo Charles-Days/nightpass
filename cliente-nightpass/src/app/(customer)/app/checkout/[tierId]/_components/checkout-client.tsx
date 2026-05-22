@@ -16,9 +16,20 @@ import { toast } from 'sonner';
 import { Button } from '@/core/components/ui/button';
 import { clientFetch, ClientApiError } from '@/core/lib/api/client-client';
 import { paths } from '@/core/config/paths';
-import type { Order, OrderCreationResponse } from '@/core/types/api';
+import type { CatalogTierDetail, Order, OrderCreationResponse } from '@/core/types/api';
 
-type Phase = 'creating' | 'paying' | 'processing' | 'success' | 'error' | 'duplicate';
+type Phase =
+  | 'creating'
+  | 'paying'
+  | 'processing'
+  | 'success'
+  | 'duplicate'
+  | 'no_stripe'
+  | 'sold_out'
+  | 'event_started'
+  | 'event_unavailable'
+  | 'free_tier'
+  | 'error';
 
 interface StripeInitState {
   promise: Promise<StripeJs | null>;
@@ -58,29 +69,74 @@ function formatEventDate(iso: string): string {
   }
 }
 
-function extractApiErrorMessage(error: unknown): string {
+interface ApiErrorInfo {
+  message: string;
+  errorCode: string | null;
+  passId: string | null;
+}
+
+function readApiError(error: unknown): ApiErrorInfo {
   if (error instanceof ClientApiError) {
-    const payload = error.payload as { message?: string | string[] } | null;
-    if (payload?.message) {
-      return Array.isArray(payload.message) ? payload.message.join(', ') : payload.message;
-    }
-    return `Error ${error.status}`;
+    const payload = error.payload as
+      | { message?: string | string[]; errorCode?: string; passId?: string }
+      | null;
+    const message = payload?.message
+      ? Array.isArray(payload.message)
+        ? payload.message.join(', ')
+        : payload.message
+      : `Error ${error.status}`;
+    return {
+      message,
+      errorCode: payload?.errorCode ?? null,
+      passId: payload?.passId ?? null,
+    };
   }
-  if (error instanceof Error) return error.message;
-  return 'Ocurrió un error inesperado';
+  if (error instanceof Error) {
+    return { message: error.message, errorCode: null, passId: null };
+  }
+  return { message: 'Ocurrió un error inesperado', errorCode: null, passId: null };
+}
+
+function phaseForErrorCode(code: string | null): Phase {
+  switch (code) {
+    case 'NO_STRIPE':
+    case 'STRIPE_DISABLED':
+    case 'STRIPE_MISSING_CLIENT_SECRET':
+      return 'no_stripe';
+    case 'DUPLICATE_PASS':
+      return 'duplicate';
+    case 'TIER_SOLD_OUT':
+      return 'sold_out';
+    case 'EVENT_STARTED':
+      return 'event_started';
+    case 'EVENT_NOT_PUBLISHED':
+      return 'event_unavailable';
+    case 'FREE_TIER':
+      return 'free_tier';
+    default:
+      return 'error';
+  }
 }
 
 interface CheckoutClientProps {
   tierId: string;
+  initialTier: CatalogTierDetail | null;
 }
 
-export function CheckoutClient({ tierId }: CheckoutClientProps) {
+export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const existingOrderId = searchParams.get('orderId');
 
-  const [phase, setPhase] = useState<Phase>('creating');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [phase, setPhase] = useState<Phase>(
+    initialTier && initialTier.paymentsEnabled === false ? 'no_stripe' : 'creating',
+  );
+  const [errorMessage, setErrorMessage] = useState<string | null>(
+    initialTier && initialTier.paymentsEnabled === false
+      ? 'Este local aún no completó la configuración de pagos. Vuelve más tarde.'
+      : null,
+  );
+  const [duplicatePassId, setDuplicatePassId] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(existingOrderId);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
@@ -91,6 +147,7 @@ export function CheckoutClient({ tierId }: CheckoutClientProps) {
   const createOrder = useCallback(async () => {
     setPhase('creating');
     setErrorMessage(null);
+    setDuplicatePassId(null);
     try {
       const res = await clientFetch<OrderCreationResponse>('/api/orders', {
         method: 'POST',
@@ -99,7 +156,7 @@ export function CheckoutClient({ tierId }: CheckoutClientProps) {
 
       const stripeState = getStripePromise(res.publishableKey);
       if (!stripeState) {
-        setPhase('error');
+        setPhase('no_stripe');
         setErrorMessage(
           'Stripe no está configurado. Falta NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY o publishableKey del backend.',
         );
@@ -117,7 +174,7 @@ export function CheckoutClient({ tierId }: CheckoutClientProps) {
         setOrder({
           id: res.orderId,
           userId: '',
-          eventId: '',
+          eventId: initialTier?.event.id ?? '',
           tierId,
           status: 'PENDING',
           totalCents: res.totalCents,
@@ -131,21 +188,22 @@ export function CheckoutClient({ tierId }: CheckoutClientProps) {
 
       setPhase('paying');
     } catch (error) {
-      if (error instanceof ClientApiError && error.status === 409) {
-        setPhase('duplicate');
-        setErrorMessage(extractApiErrorMessage(error));
-        return;
-      }
-      const message = extractApiErrorMessage(error);
-      setErrorMessage(message);
-      setPhase('error');
-      toast.error(message);
+      const info = readApiError(error);
+      const nextPhase = phaseForErrorCode(info.errorCode);
+      setPhase(nextPhase);
+      setErrorMessage(info.message);
+      if (info.passId) setDuplicatePassId(info.passId);
+      if (nextPhase === 'error') toast.error(info.message);
     }
-  }, [tierId]);
+  }, [initialTier, tierId]);
 
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
+
+    if (initialTier && initialTier.paymentsEnabled === false) {
+      return;
+    }
 
     if (existingOrderId) {
       setOrderId(existingOrderId);
@@ -154,7 +212,7 @@ export function CheckoutClient({ tierId }: CheckoutClientProps) {
     }
 
     void createOrder();
-  }, [createOrder, existingOrderId]);
+  }, [createOrder, existingOrderId, initialTier]);
 
   useEffect(() => {
     if (phase !== 'processing' || !orderId) return;
@@ -207,20 +265,26 @@ export function CheckoutClient({ tierId }: CheckoutClientProps) {
     const tier = order?.eventTier;
     const event = order?.event;
     return {
-      title: event?.title ?? 'Evento',
-      venueName: event?.venue?.name,
-      city: event?.venue?.city,
-      startsAt: event?.startsAt,
-      tierName: tier?.name ?? 'Pase',
-      totalCents: order?.totalCents ?? tier?.priceCents ?? 0,
-      currency: order?.currency ?? tier?.currency ?? 'MXN',
+      title: event?.title ?? initialTier?.event.title ?? 'Evento',
+      venueName: event?.venue?.name ?? initialTier?.event.venue.name,
+      city: event?.venue?.city ?? initialTier?.event.venue.city,
+      startsAt: event?.startsAt ?? initialTier?.event.startsAt,
+      tierName: tier?.name ?? initialTier?.name ?? 'Pase',
+      totalCents:
+        order?.totalCents ?? tier?.priceCents ?? initialTier?.priceCents ?? 0,
+      currency:
+        order?.currency ?? tier?.currency ?? initialTier?.currency ?? 'MXN',
     };
-  }, [order]);
+  }, [order, initialTier]);
+
+  const backToEvent = initialTier
+    ? `${paths.evento}/${initialTier.event.id}`
+    : paths.appHome;
 
   return (
     <div className="mx-auto w-full max-w-md px-5 py-6 sm:py-10">
       <Link
-        href={paths.appHome}
+        href={backToEvent}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
       >
         <ArrowLeft className="size-4" />
@@ -303,18 +367,66 @@ export function CheckoutClient({ tierId }: CheckoutClientProps) {
 
         {phase === 'success' && <PhaseLoader label="Redirigiendo a tu pase…" />}
 
+        {phase === 'no_stripe' && (
+          <StateBlock
+            tone="warn"
+            title="Pagos no disponibles aún"
+            message={
+              errorMessage ??
+              'Este local aún no completó la configuración de pagos. Vuelve más tarde.'
+            }
+            primary={{ label: 'Volver al evento', href: backToEvent }}
+            secondary={{ label: 'Explorar otros locales', href: paths.appHome }}
+          />
+        )}
+
         {phase === 'duplicate' && (
-          <div className="space-y-4 text-center">
-            <p className="text-sm text-muted-foreground">
-              {errorMessage ?? 'Ya tienes un pase para este evento.'}
-            </p>
-            <Link
-              href={paths.pases}
-              className="inline-flex h-10 items-center justify-center rounded-md bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 text-sm font-semibold text-white shadow-[0_4px_24px_rgba(168,85,247,0.35)] transition hover:brightness-110"
-            >
-              Ver mis pases
-            </Link>
-          </div>
+          <StateBlock
+            tone="info"
+            title="Ya tienes un pase"
+            message={errorMessage ?? 'Ya compraste un pase para este evento.'}
+            primary={
+              duplicatePassId
+                ? { label: 'Ver mi pase', href: `${paths.pases}/${duplicatePassId}` }
+                : { label: 'Ver mis pases', href: paths.pases }
+            }
+          />
+        )}
+
+        {phase === 'sold_out' && (
+          <StateBlock
+            tone="warn"
+            title="Pase agotado"
+            message={errorMessage ?? 'Ya no quedan pases de este tipo.'}
+            primary={{ label: 'Volver al evento', href: backToEvent }}
+          />
+        )}
+
+        {phase === 'event_started' && (
+          <StateBlock
+            tone="warn"
+            title="Evento iniciado"
+            message={errorMessage ?? 'Este evento ya comenzó. Las ventas están cerradas.'}
+            primary={{ label: 'Volver al inicio', href: paths.appHome }}
+          />
+        )}
+
+        {phase === 'event_unavailable' && (
+          <StateBlock
+            tone="warn"
+            title="Evento no disponible"
+            message={errorMessage ?? 'Este evento no está publicado.'}
+            primary={{ label: 'Volver al inicio', href: paths.appHome }}
+          />
+        )}
+
+        {phase === 'free_tier' && (
+          <StateBlock
+            tone="info"
+            title="Pase sin costo"
+            message={errorMessage ?? 'Este tier es gratuito — no requiere pago.'}
+            primary={{ label: 'Volver al evento', href: backToEvent }}
+          />
         )}
 
         {phase === 'error' && (
@@ -418,6 +530,42 @@ function PhaseLoader({ label }: { label: string }) {
     <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
       <Loader2 className="size-6 animate-spin text-primary" />
       <p className="text-sm text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+interface StateBlockProps {
+  tone: 'info' | 'warn';
+  title: string;
+  message: string;
+  primary: { label: string; href: string };
+  secondary?: { label: string; href: string };
+}
+
+function StateBlock({ tone, title, message, primary, secondary }: StateBlockProps) {
+  const titleColor = tone === 'warn' ? 'text-amber-300' : 'text-primary';
+  return (
+    <div className="space-y-4 text-center">
+      <div>
+        <p className={`font-display text-base font-semibold ${titleColor}`}>{title}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{message}</p>
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <Link
+          href={primary.href}
+          className="inline-flex h-10 items-center justify-center rounded-md bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 text-sm font-semibold text-white shadow-[0_4px_24px_rgba(168,85,247,0.35)] transition hover:brightness-110"
+        >
+          {primary.label}
+        </Link>
+        {secondary && (
+          <Link
+            href={secondary.href}
+            className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            {secondary.label}
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
