@@ -131,7 +131,7 @@ function Hero() {
               disabled
               aria-disabled
               title="Pronto disponible"
-              className="group relative h-12 rounded-full bg-gradient-to-r from-[#a855f7]/60 to-[#9333ea]/60 px-6 text-base font-semibold text-white shadow-[0_10px_30px_-8px_rgba(168,85,247,0.35)]"
+              className="group relative h-12 cursor-default rounded-full bg-gradient-to-r from-[#a855f7]/60 to-[#9333ea]/60 px-6 text-base font-semibold text-white shadow-[0_10px_30px_-8px_rgba(168,85,247,0.35)] disabled:cursor-default disabled:opacity-100"
             >
               <Apple className="size-5" />
               Descargar app
