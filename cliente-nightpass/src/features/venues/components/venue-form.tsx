@@ -218,40 +218,56 @@ export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Gua
         </CardHeader>
         <CardContent>
           <div className="divide-y rounded-lg border">
-            {Object.entries(openHours).map(([day, config]: [string, any]) => (
-              <div key={day} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-32 capitalize font-medium">{day}</div>
-                <div className="flex flex-wrap items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={!config.closed}
-                      onChange={(e) => handleHourChange(day, 'closed', !e.target.checked)}
-                      className="rounded border-muted bg-background text-primary focus:ring-primary"
-                    />
-                    <span className="text-sm">Abierto</span>
-                  </label>
-                  {!config.closed && (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="time"
-                        value={config.open || '22:00'}
-                        onChange={(e) => handleHourChange(day, 'open', e.target.value)}
-                        className="w-32"
+            {Object.entries(openHours).map(([day, config]: [string, any]) => {
+              const DAY_ES: Record<string, string> = {
+                monday: 'Lunes',
+                tuesday: 'Martes',
+                wednesday: 'Miércoles',
+                thursday: 'Jueves',
+                friday: 'Viernes',
+                saturday: 'Sábado',
+                sunday: 'Domingo',
+              };
+              return (
+                <div
+                  key={day}
+                  className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-32 font-medium">{DAY_ES[day] ?? day}</div>
+                  <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={!config.closed}
+                        onChange={(e) => handleHourChange(day, 'closed', !e.target.checked)}
+                        className="rounded border-muted bg-background text-primary focus:ring-primary"
                       />
-                      <span className="text-muted-foreground">a</span>
-                      <Input
-                        type="time"
-                        value={config.close || '05:00'}
-                        onChange={(e) => handleHourChange(day, 'close', e.target.value)}
-                        className="w-32"
-                      />
-                    </div>
-                  )}
-                  {config.closed && <span className="text-sm text-muted-foreground italic">Cerrado</span>}
+                      <span className="text-sm">Abierto</span>
+                    </label>
+                    {!config.closed && (
+                      <div className="flex w-full items-center gap-2 sm:w-auto">
+                        <Input
+                          type="time"
+                          value={config.open || '22:00'}
+                          onChange={(e) => handleHourChange(day, 'open', e.target.value)}
+                          className="flex-1 sm:w-32 sm:flex-none"
+                        />
+                        <span className="text-muted-foreground">a</span>
+                        <Input
+                          type="time"
+                          value={config.close || '05:00'}
+                          onChange={(e) => handleHourChange(day, 'close', e.target.value)}
+                          className="flex-1 sm:w-32 sm:flex-none"
+                        />
+                      </div>
+                    )}
+                    {config.closed && (
+                      <span className="text-sm italic text-muted-foreground">Cerrado</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -418,11 +434,21 @@ export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Gua
         </CardContent>
       </Card>
 
-      <div className="flex justify-end gap-4">
-        <Button type="button" variant="outline" onClick={() => window.history.back()} disabled={isPending}>
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:gap-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => window.history.back()}
+          disabled={isPending}
+          className="w-full sm:w-auto"
+        >
           Cancelar
         </Button>
-        <Button type="submit" disabled={isPending} className="px-8 font-bold">
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="w-full px-8 font-bold sm:w-auto"
+        >
           {isPending ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
           {submitLabel}
         </Button>
