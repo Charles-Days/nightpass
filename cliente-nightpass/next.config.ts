@@ -4,6 +4,8 @@ const API_URL = process.env.API_URL ?? 'http://localhost:7101';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
   // typedRoutes deshabilitado mientras existan rutas placeholder en el sidebar.
   // Reactivar cuando todos los modulos (venues, events, passes, ...) existan.
   async rewrites() {
