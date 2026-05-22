@@ -1,6 +1,11 @@
 export { LoginForm } from './components/login-form';
 export { ChangePasswordForm } from './components/change-password-form';
+export { CustomerLoginForm } from './components/customer-login-form';
+export { CustomerSignupForm } from './components/customer-signup-form';
 export { useLogin } from './hooks/use-login';
+export { useCustomerLogin } from './hooks/use-customer-login';
+export { useCustomerSignup } from './hooks/use-customer-signup';
 export { useLogout } from './hooks/use-logout';
 export { useSession } from './hooks/use-session';
 export { loginSchema, type LoginInput } from './schemas/login.schema';
+export { signupSchema, type SignupInput } from './schemas/signup.schema';

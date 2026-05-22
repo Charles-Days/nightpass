@@ -194,3 +194,113 @@ export interface SignedUploadUrl {
   signedUrl: string;
   publicUrl: string;
 }
+
+export type OrderStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+
+export interface Order {
+  id: string;
+  userId: string;
+  eventId: string;
+  tierId: string;
+  status: OrderStatus;
+  totalCents: number;
+  applicationFeeCents: number;
+  currency: string;
+  stripePaymentIntentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  passId?: string | null;
+  eventTier?: { id: string; name: string; priceCents: number; currency: string };
+  event?: { id: string; title: string; startsAt: string; venue?: { name: string; city: string } };
+  pass?: { id: string };
+}
+
+export interface OrderCreationResponse {
+  orderId: string;
+  clientSecret: string;
+  publishableKey?: string;
+  totalCents: number;
+  currency: string;
+}
+
+export interface Pass {
+  id: string;
+  orderId: string;
+  userId: string;
+  eventId: string;
+  qrCode: string;
+  usedAt: string | null;
+  createdAt: string;
+  event?: {
+    id: string;
+    title: string;
+    startsAt: string;
+    coverImageUrl: string | null;
+    venue?: { id: string; name: string; city: string; address: string | null };
+  };
+  tier?: { id: string; name: string; priceCents: number; currency: string };
+}
+
+export interface CatalogVenueSummary {
+  id: string;
+  slug: string;
+  name: string;
+  city: string;
+  address: string | null;
+  description: string | null;
+  coverImageUrl: string | null;
+  categories: string[];
+  musicTypes: string[];
+  priceFromCents: number | null;
+  currency: string | null;
+  minAge: number | null;
+  dressCode: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  photos?: Array<{ id: string; url: string; position: number }>;
+}
+
+export interface CatalogVenueDetail extends CatalogVenueSummary {
+  phone: string | null;
+  capacity: number | null;
+  openHours: Record<string, unknown> | null;
+  menuUrl: string | null;
+  socialLinks: Record<string, unknown> | null;
+  events: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    description: string | null;
+    startsAt: string;
+    endsAt: string;
+    coverImageUrl: string | null;
+    tiers?: Array<{ id: string; name: string; priceCents: number; currency: string }>;
+  }>;
+}
+
+export interface CatalogEventDetail {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  startsAt: string;
+  endsAt: string;
+  coverImageUrl: string | null;
+  capacity: number | null;
+  tiers: Array<{
+    id: string;
+    name: string;
+    priceCents: number;
+    currency: string;
+    capacity: number | null;
+    position: number;
+  }>;
+  venue: {
+    id: string;
+    slug: string;
+    name: string;
+    city: string;
+    address: string | null;
+    coverImageUrl: string | null;
+  };
+}

@@ -4,8 +4,8 @@ import { Button } from '@/core/components/ui/button';
 import { paths } from '@/core/config/paths';
 import { Counter } from '@/core/components/counter';
 import { Reveal } from '@/core/components/reveal';
-import { DemoDialog } from './_components/demo-dialog';
-import { PhoneMockup } from './_components/phone-mockup';
+import { DemoDialog } from '../_components/demo-dialog';
+import { PhoneMockup } from '../_components/phone-mockup';
 
 export const metadata = {
   title: 'Vive la noche sin filas',
