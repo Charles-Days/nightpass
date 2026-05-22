@@ -25,8 +25,8 @@ export function StaffTable({ venueId }: { venueId: string }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card/50">
-      <table className="w-full text-left text-sm">
+    <div className="overflow-x-auto rounded-xl border bg-card/50">
+      <table className="w-full min-w-[640px] text-left text-sm">
         <thead className="border-b bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground">
           <tr>
             <th className="px-4 py-3 font-medium">Email</th>

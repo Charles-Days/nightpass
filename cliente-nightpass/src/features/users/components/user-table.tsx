@@ -71,8 +71,8 @@ export function UserTable({ data }: { data: PaginatedUsers }) {
     <>
       <UserModal userId={activeId} onClose={() => setActiveId(null)} />
 
-      <div className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]">
-        <table className="w-full text-left text-sm">
+      <div className="overflow-x-auto rounded-[22px] border border-white/10 bg-white/[0.025]">
+        <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="border-b border-white/8 bg-white/[0.02] text-[11px] uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-4 py-3 font-medium">Email</th>
