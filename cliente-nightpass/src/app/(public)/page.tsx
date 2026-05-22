@@ -126,14 +126,18 @@ function Hero() {
             style={{ animationDelay: '420ms' }}
           >
             <Button
-              asChild
+              type="button"
               size="lg"
-              className="group h-12 rounded-full bg-gradient-to-r from-[#a855f7] to-[#9333ea] px-6 text-base font-semibold text-white shadow-[0_10px_30px_-8px_rgba(168,85,247,0.7)] transition hover:from-[#9333ea] hover:to-[#7e22ce] hover:shadow-[0_14px_40px_-8px_rgba(168,85,247,0.85)]"
+              disabled
+              aria-disabled
+              title="Pronto disponible"
+              className="group relative h-12 rounded-full bg-gradient-to-r from-[#a855f7]/60 to-[#9333ea]/60 px-6 text-base font-semibold text-white shadow-[0_10px_30px_-8px_rgba(168,85,247,0.35)]"
             >
-              <a href="#descargar">
-                <Apple className="size-5" />
-                Descargar para iPhone
-              </a>
+              <Apple className="size-5" />
+              Descargar app
+              <span className="ml-2 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                Pronto
+              </span>
             </Button>
             <Button
               asChild
