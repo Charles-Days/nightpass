@@ -180,11 +180,13 @@ export function DemoDialog() {
       <Button
         type="button"
         size="lg"
-        variant="outline"
-        className="rounded-full"
+        variant="ghost"
+        className="group h-12 rounded-full px-5 text-base font-medium text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
         onClick={start}
       >
-        Ver demo · 90 seg
+        <Play className="size-4 fill-current" />
+        Ver demo
+        <span className="text-xs text-muted-foreground/70 group-hover:text-foreground/70">· 90 s</span>
       </Button>
 
       {open && typeof document !== 'undefined'

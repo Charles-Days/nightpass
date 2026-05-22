@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Check, Plus, Star } from 'lucide-react';
+import { Apple, ArrowRight, Check, Globe, Plus, Star } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { paths } from '@/core/config/paths';
 import { Counter } from '@/core/components/counter';
@@ -8,7 +8,7 @@ import { DemoDialog } from './_components/demo-dialog';
 import { PhoneMockup } from './_components/phone-mockup';
 
 export const metadata = {
-  title: 'Vive la noche sin filas',
+  title: { absolute: 'NightPass' },
   description:
     'NightPass es la app para descubrir bares, comprar tu cover digital y compartir la noche con tus amigos. Sin colas, sin efectivo, sin ticket que perder.',
 };
@@ -122,25 +122,29 @@ function Hero() {
             QR. Sin colas, sin efectivo, sin ticket que perder.
           </p>
           <div
-            className="np-rise mt-8 flex flex-wrap items-center gap-3"
+            className="np-rise mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center"
             style={{ animationDelay: '420ms' }}
           >
             <Button
               asChild
               size="lg"
-              className="rounded-full shadow-[0_10px_30px_-8px_rgba(168,85,247,0.65)]"
+              className="group h-12 rounded-full bg-gradient-to-r from-[#a855f7] to-[#9333ea] px-6 text-base font-semibold text-white shadow-[0_10px_30px_-8px_rgba(168,85,247,0.7)] transition hover:from-[#9333ea] hover:to-[#7e22ce] hover:shadow-[0_14px_40px_-8px_rgba(168,85,247,0.85)]"
             >
-              <a href="#descargar">Descargar para iPhone</a>
+              <a href="#descargar">
+                <Apple className="size-5" />
+                Descargar para iPhone
+              </a>
             </Button>
             <Button
               asChild
               size="lg"
               variant="outline"
-              className="rounded-full border-white/20 bg-white/[0.04] backdrop-blur-md hover:bg-white/[0.08]"
+              className="group h-12 rounded-full border-purple-300/30 bg-purple-500/[0.08] px-6 text-base font-semibold text-white backdrop-blur-md transition hover:border-purple-300/60 hover:bg-purple-500/[0.18]"
             >
               <Link href={paths.appHome}>
+                <Globe className="size-4 text-purple-200" />
                 Versión web
-                <ArrowRight className="size-4" />
+                <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
               </Link>
             </Button>
             <DemoDialog />
