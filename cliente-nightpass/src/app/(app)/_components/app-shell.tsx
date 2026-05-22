@@ -14,10 +14,17 @@ import {
   Inbox,
   QrCode,
   CreditCard,
+  Menu,
   type LucideIcon,
 } from 'lucide-react';
 import { useLogout } from '@/features/auth';
 import { Button } from '@/core/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/core/components/ui/sheet';
 import { paths } from '@/core/config/paths';
 import { clientEnv } from '@/core/config/env';
 import type { Role, User } from '@/core/types/api';
@@ -56,10 +63,12 @@ function NavSection({
   title,
   items,
   pathname,
+  onNavigate,
 }: {
   title: string;
   items: NavItem[];
   pathname: string;
+  onNavigate?: () => void;
 }) {
   if (items.length === 0) return null;
   return (
@@ -91,6 +100,7 @@ function NavSection({
           <Link
             key={item.href}
             href={item.href}
+            onClick={onNavigate}
             className={cn(
               base,
               active
@@ -114,66 +124,154 @@ const ROLE_LABEL: Record<Role, string> = {
   CUSTOMER: 'Cliente',
 };
 
+interface SidebarBodyProps {
+  user: User;
+  platformItems: NavItem[];
+  venueItems: NavItem[];
+  pathname: string;
+  onLogout: () => void;
+  isLoggingOut: boolean;
+  onNavigate?: () => void;
+}
+
+function SidebarBody({
+  user,
+  platformItems,
+  venueItems,
+  pathname,
+  onLogout,
+  isLoggingOut,
+  onNavigate,
+}: SidebarBodyProps) {
+  return (
+    <div className="flex h-full flex-col px-4 py-6">
+      <div className="mb-8 px-2">
+        <span className="bg-gradient-to-r from-white to-purple-300 bg-clip-text font-display text-lg font-bold tracking-tight text-transparent">
+          {clientEnv.NEXT_PUBLIC_APP_NAME}
+        </span>
+        <p className="text-xs text-primary/70 mt-0.5">Panel admin</p>
+      </div>
+      <nav className="flex-1 space-y-6 overflow-y-auto">
+        <NavSection
+          title="Plataforma"
+          items={platformItems}
+          pathname={pathname}
+          onNavigate={onNavigate}
+        />
+        <NavSection
+          title="Mi local"
+          items={venueItems}
+          pathname={pathname}
+          onNavigate={onNavigate}
+        />
+      </nav>
+      <div className="border-t border-white/8 pt-4">
+        <div className="mb-3 px-2">
+          <p className="truncate text-sm font-medium">{user.name ?? user.email}</p>
+          <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+          <p className="mt-1 text-[10px] uppercase tracking-wide text-primary/80">
+            {ROLE_LABEL[user.role]}
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start"
+          disabled={isLoggingOut}
+          onClick={onLogout}
+        >
+          <LogOut className="size-4" />
+          {isLoggingOut ? 'Cerrando...' : 'Cerrar sesion'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function AppShell({ user, children }: { user: User; children: React.ReactNode }) {
   const pathname = usePathname();
   const { mutate: logout, isPending } = useLogout();
+  const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const platformItems = visibleFor(user.role, PLATFORM_NAV);
   const venueItems = visibleFor(user.role, VENUE_NAV);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
-      {/* Subtle bokeh background — same language as landing but dimmer */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div className="relative min-h-screen bg-background">
+      {/* Subtle bokeh background */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 80rem 60rem at 100% 0%, oklch(0.62 0.245 296.5 / 0.07) 0%, transparent 70%)' }} />
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60rem 50rem at 0% 100%, oklch(0.55 0.28 320 / 0.05) 0%, transparent 70%)' }} />
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 50rem 40rem at 20% 40%, oklch(0.45 0.2 260 / 0.03) 0%, transparent 70%)' }} />
       </div>
 
-      {/* Main grid — sits above bokeh */}
-      <div className="relative z-10 grid min-h-screen" style={{ gridTemplateColumns: '260px 1fr' }}>
-      <aside className="flex flex-col border-r border-white/8 bg-white/[0.03] backdrop-blur-xl px-4 py-6">
-        <div className="mb-8 px-2">
-          <span className="bg-gradient-to-r from-white to-purple-300 bg-clip-text font-display text-lg font-bold tracking-tight text-transparent">
-            {clientEnv.NEXT_PUBLIC_APP_NAME}
-          </span>
-          <p className="text-xs text-primary/70 mt-0.5">Panel admin</p>
-        </div>
-        <nav className="flex-1 space-y-6">
-          <NavSection title="Plataforma" items={platformItems} pathname={pathname} />
-          <NavSection title="Mi local" items={venueItems} pathname={pathname} />
-        </nav>
-        <div className="border-t border-white/8 pt-4">
-          <div className="mb-3 px-2">
-            <p className="text-sm font-medium">{user.name ?? user.email}</p>
-            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-            <p className="mt-1 text-[10px] uppercase tracking-wide text-primary/80">
-              {ROLE_LABEL[user.role]}
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start"
-            disabled={isPending}
-            onClick={() => logout()}
-          >
-            <LogOut className="size-4" />
-            {isPending ? 'Cerrando...' : 'Cerrar sesion'}
-          </Button>
-        </div>
+      {/* Desktop sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-[260px] flex-col border-r border-white/8 bg-white/[0.03] backdrop-blur-xl md:flex">
+        <SidebarBody
+          user={user}
+          platformItems={platformItems}
+          venueItems={venueItems}
+          pathname={pathname}
+          onLogout={() => logout()}
+          isLoggingOut={isPending}
+        />
       </aside>
-      <div className="flex flex-col overflow-hidden">
+
+      {/* Mobile drawer */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent
+          side="left"
+          className="w-[280px] border-r border-white/8 bg-background p-0 sm:max-w-[280px]"
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Menú</SheetTitle>
+          </SheetHeader>
+          <SidebarBody
+            user={user}
+            platformItems={platformItems}
+            venueItems={venueItems}
+            pathname={pathname}
+            onLogout={() => logout()}
+            isLoggingOut={isPending}
+            onNavigate={() => setMobileOpen(false)}
+          />
+        </SheetContent>
+      </Sheet>
+
+      {/* Main column */}
+      <div className="relative z-10 flex min-h-screen flex-col md:pl-[260px]">
+        {/* Mobile topbar */}
+        <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-white/8 bg-background/85 px-4 py-3 backdrop-blur-xl md:hidden">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Abrir menú"
+            onClick={() => setMobileOpen(true)}
+          >
+            <Menu className="size-5" />
+          </Button>
+          <Link
+            href={paths.dashboard}
+            className="bg-gradient-to-r from-white to-purple-300 bg-clip-text font-display text-base font-bold tracking-tight text-transparent"
+          >
+            {clientEnv.NEXT_PUBLIC_APP_NAME}
+          </Link>
+        </header>
+
         {user.mustChangePassword ? (
-          <div className="flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-6 py-2.5 text-sm text-amber-300">
+          <div className="flex flex-col items-start gap-2 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-300 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:text-sm">
             <span>Estás usando una contraseña temporal — cámbiala para mayor seguridad.</span>
-            <Link href={paths.cambiarPassword} className="shrink-0 font-semibold underline hover:no-underline">
+            <Link
+              href={paths.cambiarPassword}
+              className="shrink-0 font-semibold underline hover:no-underline"
+            >
               Cambiar ahora
             </Link>
           </div>
         ) : null}
-        <main className="flex-1 overflow-y-auto bg-transparent px-8 py-8">{children}</main>
-      </div>
+
+        <main className="flex-1 bg-transparent px-4 py-6 sm:px-6 md:px-8 md:py-8">{children}</main>
       </div>
     </div>
   );
