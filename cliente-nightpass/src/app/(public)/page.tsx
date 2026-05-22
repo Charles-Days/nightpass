@@ -4,8 +4,8 @@ import { Button } from '@/core/components/ui/button';
 import { paths } from '@/core/config/paths';
 import { Counter } from '@/core/components/counter';
 import { Reveal } from '@/core/components/reveal';
-import { DemoDialog } from '../_components/demo-dialog';
-import { PhoneMockup } from '../_components/phone-mockup';
+import { DemoDialog } from './_components/demo-dialog';
+import { PhoneMockup } from './_components/phone-mockup';
 
 export const metadata = {
   title: 'Vive la noche sin filas',
@@ -131,6 +131,17 @@ function Hero() {
               className="rounded-full shadow-[0_10px_30px_-8px_rgba(168,85,247,0.65)]"
             >
               <a href="#descargar">Descargar para iPhone</a>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="rounded-full border-white/20 bg-white/[0.04] backdrop-blur-md hover:bg-white/[0.08]"
+            >
+              <Link href={paths.appHome}>
+                Versión web
+                <ArrowRight className="size-4" />
+              </Link>
             </Button>
             <DemoDialog />
           </div>

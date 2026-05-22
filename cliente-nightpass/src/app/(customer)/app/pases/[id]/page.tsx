@@ -4,7 +4,7 @@ import { ArrowLeft, Calendar, Check, MapPin, Ticket } from 'lucide-react';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import type { Pass } from '@/core/types/api';
-import { PassQR } from '../../_components/pass-qr';
+import { PassQR } from '../../../_components/pass-qr';
 
 interface Props {
   params: Promise<{ id: string }>;

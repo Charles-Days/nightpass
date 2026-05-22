@@ -12,7 +12,7 @@ export function TopBar({ user }: Props) {
   return (
     <header className="sticky top-0 z-20 border-b border-white/8 bg-background/70 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-        <Link href={paths.home} className="flex items-center gap-2">
+        <Link href={paths.appHome} className="flex items-center gap-2">
           <span className="font-display text-lg font-bold tracking-tight">
             <span className="bg-gradient-to-r from-white to-purple-300 bg-clip-text text-transparent">
               NightPass
@@ -22,7 +22,7 @@ export function TopBar({ user }: Props) {
 
         <div className="hidden md:flex md:items-center md:gap-2">
           <Link
-            href={paths.home}
+            href={paths.appHome}
             className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground"
           >
             Inicio

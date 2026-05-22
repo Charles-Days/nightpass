@@ -220,7 +220,7 @@ export function CheckoutClient({ tierId }: CheckoutClientProps) {
   return (
     <div className="mx-auto w-full max-w-md px-5 py-6 sm:py-10">
       <Link
-        href={paths.home}
+        href={paths.appHome}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
       >
         <ArrowLeft className="size-4" />

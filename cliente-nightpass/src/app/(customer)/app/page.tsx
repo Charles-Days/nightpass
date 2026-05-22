@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Search } from 'lucide-react';
 import { serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
-import { VenueCard } from './_components/venue-card';
+import { VenueCard } from '../_components/venue-card';
 import type { CatalogVenueSummary } from '@/core/types/api';
 
 export const metadata = {

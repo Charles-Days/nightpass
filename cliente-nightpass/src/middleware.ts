@@ -5,11 +5,11 @@ import { ACCESS_COOKIE, REFRESH_COOKIE } from '@/core/config/cookies';
 const ADMIN_PREFIXES = ['/dashboard', '/admin', '/mi-local', '/cambiar-password', '/scanner'];
 
 // Rutas customer que requieren login (cualquier rol autenticado, incluyendo CUSTOMER).
-const CUSTOMER_PROTECTED_PREFIXES = ['/pases', '/perfil', '/checkout'];
+const CUSTOMER_PROTECTED_PREFIXES = ['/app/pases', '/app/perfil', '/app/checkout'];
 
 // Rutas de auth — si ya hay sesion, redirigimos fuera de ellas.
 const AUTH_ROUTES_ADMIN = ['/login'];
-const AUTH_ROUTES_CUSTOMER = ['/iniciar-sesion', '/registro'];
+const AUTH_ROUTES_CUSTOMER = ['/app/iniciar-sesion', '/app/registro'];
 
 interface JwtPayload {
   exp?: number;
@@ -59,13 +59,13 @@ export async function middleware(req: NextRequest) {
 
     // En rutas de auth con sesion ya activa, mandamos al home segun rol.
     if (isAuthRoute) {
-      const target = role === 'CUSTOMER' ? '/' : '/dashboard';
+      const target = role === 'CUSTOMER' ? '/app' : '/dashboard';
       return NextResponse.redirect(new URL(target, req.url));
     }
 
     // CUSTOMER no entra al panel admin.
     if (isAdminRoute && role === 'CUSTOMER') {
-      return NextResponse.redirect(new URL('/', req.url));
+      return NextResponse.redirect(new URL('/app', req.url));
     }
 
     // Forzar cambio de password (solo aplica a roles admin).
@@ -98,7 +98,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Sin auth para una ruta protegida: redirigir al login que corresponde.
-  const loginPath = isAdminRoute ? '/login' : '/iniciar-sesion';
+  const loginPath = isAdminRoute ? '/login' : '/app/iniciar-sesion';
   const loginUrl = new URL(loginPath, req.url);
   loginUrl.searchParams.set('from', pathname);
   return NextResponse.redirect(loginUrl);

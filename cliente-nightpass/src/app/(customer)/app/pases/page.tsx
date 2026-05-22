@@ -52,7 +52,7 @@ export default async function PassesPage() {
             Cuando compres un cover digital aparecerá aquí con su QR listo para escanear.
           </p>
           <Link
-            href={paths.home}
+            href={paths.appHome}
             className="mt-6 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transition hover:brightness-110"
           >
             Explorar bares

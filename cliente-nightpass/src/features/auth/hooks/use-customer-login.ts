@@ -39,7 +39,7 @@ export function useCustomerLogin() {
       toast.success(`Hola${data.user.name ? `, ${data.user.name}` : ''}`);
       const from = params.get('from');
       const safeFrom = from && from.startsWith('/') ? from : null;
-      const fallback = data.user.role === 'CUSTOMER' ? paths.home : paths.dashboard;
+      const fallback = data.user.role === 'CUSTOMER' ? paths.appHome : paths.dashboard;
       router.replace((safeFrom ?? fallback) as never);
       router.refresh();
     },

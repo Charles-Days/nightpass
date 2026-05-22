@@ -6,7 +6,7 @@ import { useLogout } from '@/features/auth';
 import { paths } from '@/core/config/paths';
 
 export function LogoutButton() {
-  const { mutate, isPending } = useLogout({ redirectTo: paths.home });
+  const { mutate, isPending } = useLogout({ redirectTo: paths.appHome });
 
   return (
     <Button

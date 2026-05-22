@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { clientFetch } from '@/core/lib/api/client-client';
 import { Input } from '@/core/components/ui/input';
-import { VenueCard } from '../../_components/venue-card';
+import { VenueCard } from '../../../_components/venue-card';
 import type { CatalogVenueSummary } from '@/core/types/api';
 
 interface CatalogResponse {

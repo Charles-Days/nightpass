@@ -39,7 +39,7 @@ export function useCustomerSignup() {
       toast.success(`Bienvenido a NightPass, ${data.user.name ?? ''}`);
       const from = params.get('from');
       const safeFrom = from && from.startsWith('/') ? from : null;
-      router.replace((safeFrom ?? paths.home) as never);
+      router.replace((safeFrom ?? paths.appHome) as never);
       router.refresh();
     },
     onError: (error) => {
