@@ -197,7 +197,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
   const venueItems = visibleFor(user.role, VENUE_NAV);
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-dvh bg-background">
       {/* Subtle bokeh background */}
       <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 80rem 60rem at 100% 0%, oklch(0.62 0.245 296.5 / 0.07) 0%, transparent 70%)' }} />
@@ -239,9 +239,12 @@ export function AppShell({ user, children }: { user: User; children: React.React
       </Sheet>
 
       {/* Main column */}
-      <div className="relative z-10 flex min-h-screen flex-col md:pl-[260px]">
+      <div className="relative z-10 flex min-h-dvh flex-col md:pl-[260px]">
         {/* Mobile topbar */}
-        <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-white/8 bg-background/85 px-4 py-3 backdrop-blur-xl md:hidden">
+        <header
+          className="sticky top-0 z-10 flex items-center gap-3 border-b border-white/8 bg-background/85 px-4 pb-3 backdrop-blur-xl md:hidden"
+          style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+        >
           <Button
             type="button"
             variant="ghost"

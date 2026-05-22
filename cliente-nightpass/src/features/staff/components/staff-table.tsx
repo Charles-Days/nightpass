@@ -54,6 +54,7 @@ export function StaffTable({ venueId }: { venueId: string }) {
                     type="button"
                     variant="ghost"
                     size="sm"
+                    className="h-10"
                     disabled={revoke.isPending}
                     onClick={() => revoke.mutate(member.userId)}
                   >

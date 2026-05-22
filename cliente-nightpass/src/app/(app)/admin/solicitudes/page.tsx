@@ -25,30 +25,32 @@ export default async function ApplicationsListPage({ searchParams }: PageProps) 
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="font-display text-3xl font-bold tracking-tight">Solicitudes</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">Solicitudes</h1>
         <p className="text-sm text-muted-foreground">
           Revisa y aprueba los locales que quieren registrarse en NightPass.
         </p>
       </header>
 
-      <nav className="flex flex-wrap gap-2 border-b pb-2">
-        {STATUS_FILTERS.map((s) => {
-          const active = filter === s.value;
-          return (
-            <Link
-              key={s.value}
-              href={s.value === 'ALL' ? '/admin/solicitudes' : `/admin/solicitudes?status=${s.value}`}
-              className={
-                active
-                  ? 'rounded-md bg-primary/15 px-3 py-1.5 text-sm font-medium text-primary'
-                  : 'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              }
-            >
-              {s.label}
-            </Link>
-          );
-        })}
-      </nav>
+      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
+        <nav className="flex flex-nowrap gap-2 border-b pb-2 sm:flex-wrap">
+          {STATUS_FILTERS.map((s) => {
+            const active = filter === s.value;
+            return (
+              <Link
+                key={s.value}
+                href={s.value === 'ALL' ? '/admin/solicitudes' : `/admin/solicitudes?status=${s.value}`}
+                className={
+                  active
+                    ? 'rounded-md bg-primary/15 px-3 py-1.5 text-sm font-medium text-primary transition-colors duration-200'
+                    : 'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:bg-accent hover:text-accent-foreground'
+                }
+              >
+                {s.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
 
       <ApplicationsTable data={data} />
 

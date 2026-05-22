@@ -15,7 +15,7 @@ export function VenueCard({ venue }: { venue: CatalogVenueSummary }) {
   return (
     <Link
       href={`${paths.bar}/${venue.slug}`}
-      className="group relative flex flex-col overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025] transition hover:border-white/20 hover:bg-white/[0.05]"
+      className="group relative flex flex-col overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025] transition hover:border-white/20 hover:bg-white/[0.05] active:scale-[0.98]"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-600/10">
         {venue.coverImageUrl ? (

@@ -57,7 +57,7 @@ export function UserTable({ data }: { data: PaginatedUsers }) {
 
   if (data.items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 rounded-[22px] border border-white/10 bg-white/[0.025] py-16 text-center">
+      <div className="flex flex-col items-center justify-center gap-2 rounded-[22px] border border-white/10 bg-white/[0.025] py-10 text-center sm:py-16">
         <UsersRound className="size-8 text-muted-foreground/60" />
         <p className="font-medium">Sin usuarios</p>
         <p className="text-sm text-muted-foreground">
@@ -103,7 +103,7 @@ export function UserTable({ data }: { data: PaginatedUsers }) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="size-8 p-0 text-muted-foreground hover:text-foreground"
+                    className="h-10 w-10 p-0 text-muted-foreground hover:text-foreground"
                     title="Ver detalle"
                     onClick={() => setActiveId(user.id)}
                   >

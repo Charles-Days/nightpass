@@ -55,7 +55,7 @@ export default async function MiLocalPage() {
     return (
       <div className="space-y-6">
         <header className="space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
             Mi local
           </p>
           <h1 className="font-display text-3xl font-bold tracking-tight">Sin local asignado</h1>
@@ -73,7 +73,7 @@ export default async function MiLocalPage() {
   return (
     <div className="space-y-8">
       <header className="space-y-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
           Mi local
         </p>
         <div className="flex items-start gap-3">
@@ -147,19 +147,19 @@ export default async function MiLocalPage() {
           <div className="mt-4 flex gap-3 border-t border-white/5 pt-4">
             <Link
               href={paths.miLocalEditar}
-              className="rounded-full bg-primary/15 px-4 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/25"
+              className="rounded-full bg-primary/15 px-4 py-1.5 text-sm font-medium text-primary transition-colors duration-200 hover:bg-primary/25"
             >
               Editar información
             </Link>
             <Link
               href={paths.miLocalEventos}
-              className="rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-accent-foreground"
+              className="rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:bg-white/[0.06] hover:text-accent-foreground"
             >
               Ver eventos
             </Link>
             <Link
               href={paths.miLocalStaff}
-              className="rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-accent-foreground"
+              className="rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:bg-white/[0.06] hover:text-accent-foreground"
             >
               Gestionar staff
             </Link>

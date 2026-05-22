@@ -52,8 +52,8 @@ export function InviteStaffForm({ venueId }: { venueId: string }) {
           <option value="MANAGER">Manager (gestión completa)</option>
         </select>
       </Field>
-      <div className="flex justify-end">
-        <Button type="submit" disabled={invite.isPending}>
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:gap-4">
+        <Button type="submit" disabled={invite.isPending} className="w-full sm:w-auto">
           {invite.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           {invite.isPending ? 'Invitando…' : 'Invitar al equipo'}
         </Button>

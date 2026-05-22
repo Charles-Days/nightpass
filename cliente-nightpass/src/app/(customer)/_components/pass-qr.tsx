@@ -11,7 +11,7 @@ export function PassQR({ value, usedAt }: PassQRProps) {
   const isUsed = Boolean(usedAt);
 
   return (
-    <div className="relative mx-auto w-full max-w-xs rounded-[24px] bg-white p-4 shadow-[0_20px_60px_-10px_rgba(168,85,247,0.4)] sm:p-6">
+    <div className="relative mx-auto w-full max-w-[280px] rounded-[24px] bg-white p-4 shadow-[0_20px_60px_-10px_rgba(168,85,247,0.4)] sm:max-w-xs sm:p-6">
       <div className="relative aspect-square w-full">
         <QRCodeSVG
           value={value}

@@ -68,7 +68,7 @@ export default async function PassDetailPage({ params }: Props) {
       <section className="mt-6 overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.03] backdrop-blur-xl">
         {/* Top: status pill */}
         <div className="flex items-center justify-between border-b border-white/8 px-5 py-3.5 sm:px-6">
-          <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+          <p className="flex items-center gap-2 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
             <Ticket className="size-3.5" />
             Pase NightPass
           </p>
@@ -86,7 +86,7 @@ export default async function PassDetailPage({ params }: Props) {
         </div>
 
         {/* QR */}
-        <div className="px-5 pb-2 pt-7 sm:px-6 sm:pt-9">
+        <div className="flex min-h-[70vh] flex-col items-center justify-center px-5 pb-2 pt-7 sm:min-h-0 sm:px-6 sm:pt-9">
           <PassQR value={pass.qrCode} usedAt={pass.usedAt} />
 
           {used && pass.usedAt && (

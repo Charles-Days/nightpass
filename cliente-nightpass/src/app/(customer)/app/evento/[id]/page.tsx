@@ -66,7 +66,7 @@ export default async function EventDetailPage({ params }: Props) {
           ) : null}
           <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
               <Calendar className="mr-1 inline size-3" />
               {formatDate(event.startsAt)}
             </p>

@@ -228,7 +228,7 @@ export function CheckoutClient({ tierId }: CheckoutClientProps) {
       </Link>
 
       <header className="mt-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
           Checkout
         </p>
         <h1 className="mt-2 font-display text-2xl font-bold tracking-tight">Confirma tu pase</h1>

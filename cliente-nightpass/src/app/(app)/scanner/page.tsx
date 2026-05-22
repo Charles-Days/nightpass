@@ -23,7 +23,7 @@ export default async function ScannerPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
           Puerta
         </p>
         <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">

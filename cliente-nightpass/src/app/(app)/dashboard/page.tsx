@@ -16,8 +16,8 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <header className="space-y-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Panel de gestión</p>
-        <h1 className="font-display text-3xl font-bold tracking-tight">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Panel de gestión</p>
+        <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
           Bienvenido, {user.name ?? user.email}
         </h1>
         <p className="text-sm text-muted-foreground">

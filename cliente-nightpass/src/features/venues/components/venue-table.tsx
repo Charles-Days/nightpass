@@ -30,7 +30,7 @@ function VenueRowActions({
         type="button"
         variant="ghost"
         size="sm"
-        className="size-8 p-0 text-muted-foreground hover:text-foreground"
+        className="h-10 w-10 p-0 text-muted-foreground hover:text-foreground"
         title="Ver / editar"
         onClick={() => onOpen(venue.id)}
       >
@@ -42,7 +42,7 @@ function VenueRowActions({
           type="button"
           variant="ghost"
           size="sm"
-          className="size-8 p-0 text-destructive/60 hover:text-destructive"
+          className="h-10 w-10 p-0 text-destructive/60 hover:text-destructive"
           title="Suspender"
           disabled={isMutating}
           onClick={() => suspend.mutate()}
@@ -54,7 +54,7 @@ function VenueRowActions({
           type="button"
           variant="ghost"
           size="sm"
-          className="size-8 p-0 text-emerald-500/60 hover:text-emerald-400"
+          className="h-10 w-10 p-0 text-emerald-500/60 hover:text-emerald-400"
           title="Reactivar"
           disabled={isMutating}
           onClick={() => reactivate.mutate()}
@@ -71,7 +71,7 @@ export function VenueTable({ data }: { data: PaginatedVenues }) {
 
   if (data.items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 rounded-[22px] border border-white/10 bg-white/[0.025] py-16 text-center">
+      <div className="flex flex-col items-center justify-center gap-2 rounded-[22px] border border-white/10 bg-white/[0.025] py-10 text-center sm:py-16">
         <Store className="size-8 text-muted-foreground/60" />
         <p className="font-medium">Sin locales</p>
         <p className="text-sm text-muted-foreground">

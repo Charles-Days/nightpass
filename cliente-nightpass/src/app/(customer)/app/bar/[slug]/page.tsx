@@ -59,7 +59,7 @@ export default async function VenueDetailPage({ params }: Props) {
 
       {/* Hero */}
       <section className="mt-5 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]">
-        <div className="relative aspect-[16/8] bg-gradient-to-br from-purple-900/40 to-purple-600/10">
+        <div className="relative aspect-[16/10] bg-gradient-to-br from-purple-900/40 to-purple-600/10 sm:aspect-[16/9]">
           {venue.coverImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img

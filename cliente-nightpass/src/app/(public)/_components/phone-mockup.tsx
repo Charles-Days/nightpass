@@ -21,8 +21,8 @@ export function PhoneMockup({ tilt = -6, scale = 1, className = '' }: PhoneMocku
     <div
       className={className}
       style={{
-        width: 280,
-        height: 580,
+        width: 'min(280px, 80vw)',
+        aspectRatio: '280/580',
         transform: `rotate(${tilt}deg) scale(${scale})`,
         transformOrigin: 'center',
         padding: 8,

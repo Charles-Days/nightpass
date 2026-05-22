@@ -82,10 +82,10 @@ export function QrScanner() {
   }, [stop]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-6 md:grid-cols-2">
       {/* Cámara */}
       <div className="overflow-hidden rounded-[22px] border border-white/10 bg-black/50">
-        <div className="relative aspect-square">
+        <div className="relative aspect-video md:aspect-square">
           <video
             ref={videoRef}
             className="h-full w-full object-cover"

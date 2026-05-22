@@ -199,7 +199,7 @@ export function DemoDialog() {
               onClick={close}
             >
               <div
-                className="relative w-full max-w-4xl overflow-hidden rounded-3xl border border-white/15 bg-[oklch(0.11_0.015_280)] p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9),0_0_60px_-10px_rgba(168,85,247,0.25)] ring-1 ring-purple-500/20 sm:p-10"
+                className="relative max-h-[90dvh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-white/15 bg-[oklch(0.11_0.015_280)] p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9),0_0_60px_-10px_rgba(168,85,247,0.25)] ring-1 ring-purple-500/20 sm:p-10"
                 onClick={(e) => e.stopPropagation()}
               >
             <button
@@ -255,6 +255,7 @@ export function DemoDialog() {
                             animation: paused
                               ? undefined
                               : `demo-progress ${DURATION_MS}ms linear forwards`,
+                            transition: paused ? 'width 0.3s ease-out' : undefined,
                           }}
                         />
                       ) : null}

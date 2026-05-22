@@ -127,11 +127,11 @@ export function EventForm({ venueId, onSuccess, defaultValues, eventId }: EventF
         )}
       />
 
-      <div className="flex justify-end">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:gap-4">
         <Button
           type="submit"
           disabled={isPending}
-          className="rounded-full shadow-lg shadow-primary/30"
+          className="w-full rounded-full shadow-lg shadow-primary/30 sm:w-auto"
         >
           {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           {isPending ? 'Guardando…' : eventId ? 'Guardar cambios' : 'Crear evento'}

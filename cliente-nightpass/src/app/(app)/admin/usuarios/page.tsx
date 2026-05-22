@@ -33,36 +33,38 @@ export default async function UsersListPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="font-display text-3xl font-bold tracking-tight">Usuarios</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">Usuarios</h1>
         <p className="text-sm text-muted-foreground">
           Todos los usuarios del sistema (clientes, dueños, staff y admins).
         </p>
       </header>
 
-      <nav className="flex flex-wrap gap-2 border-b pb-2">
-        {ROLE_FILTERS.map((r) => {
-          const active = filter === r.value;
-          const params = new URLSearchParams();
-          if (r.value !== 'ALL') params.set('role', r.value);
-          if (search) params.set('search', search);
-          const href = params.toString()
-            ? `${paths.adminUsers}?${params.toString()}`
-            : paths.adminUsers;
-          return (
-            <Link
-              key={r.value}
-              href={href}
-              className={
-                active
-                  ? 'rounded-md bg-primary/15 px-3 py-1.5 text-sm font-medium text-primary'
-                  : 'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              }
-            >
-              {r.label}
-            </Link>
-          );
-        })}
-      </nav>
+      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
+        <nav className="flex flex-nowrap gap-2 border-b pb-2 sm:flex-wrap">
+          {ROLE_FILTERS.map((r) => {
+            const active = filter === r.value;
+            const params = new URLSearchParams();
+            if (r.value !== 'ALL') params.set('role', r.value);
+            if (search) params.set('search', search);
+            const href = params.toString()
+              ? `${paths.adminUsers}?${params.toString()}`
+              : paths.adminUsers;
+            return (
+              <Link
+                key={r.value}
+                href={href}
+                className={
+                  active
+                    ? 'rounded-md bg-primary/15 px-3 py-1.5 text-sm font-medium text-primary transition-colors duration-200'
+                    : 'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:bg-accent hover:text-accent-foreground'
+                }
+              >
+                {r.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
 
       <UsersSearchFilter />
 

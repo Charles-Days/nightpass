@@ -36,8 +36,8 @@ function HeroBokeh() {
         style={{
           top: '5%',
           left: '10%',
-          width: 380,
-          height: 380,
+          width: 'clamp(180px, 60vw, 380px)',
+          aspectRatio: '1 / 1',
           filter: 'blur(110px)',
           opacity: 0.55,
           background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)',
@@ -48,8 +48,8 @@ function HeroBokeh() {
         style={{
           top: '40%',
           right: '5%',
-          width: 460,
-          height: 460,
+          width: 'clamp(200px, 65vw, 460px)',
+          aspectRatio: '1 / 1',
           filter: 'blur(130px)',
           opacity: 0.4,
           background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)',
@@ -60,8 +60,8 @@ function HeroBokeh() {
         style={{
           bottom: '-10%',
           left: '40%',
-          width: 420,
-          height: 420,
+          width: 'clamp(190px, 62vw, 420px)',
+          aspectRatio: '1 / 1',
           filter: 'blur(140px)',
           opacity: 0.35,
           background: 'radial-gradient(circle, #4f46e5 0%, transparent 70%)',
@@ -105,7 +105,7 @@ function Hero() {
             <Eyebrow>Nueva forma de salir · Madrid · Barcelona · Valencia</Eyebrow>
           </div>
           <h1
-            className="np-rise mt-5 font-display text-5xl font-bold leading-[0.96] tracking-[-0.035em] sm:text-6xl lg:text-[84px]"
+            className="np-rise mt-5 font-display text-4xl font-bold leading-[0.96] tracking-[-0.035em] sm:text-5xl lg:text-[84px]"
             style={{ animationDelay: '120ms' }}
           >
             Vive la noche
@@ -131,7 +131,7 @@ function Hero() {
               disabled
               aria-disabled
               title="Pronto disponible"
-              className="group relative h-12 cursor-default rounded-full bg-gradient-to-r from-[#a855f7]/60 to-[#9333ea]/60 px-6 text-base font-semibold text-white shadow-[0_10px_30px_-8px_rgba(168,85,247,0.35)] disabled:cursor-default disabled:opacity-100"
+              className="group relative h-12 cursor-default rounded-full bg-gradient-to-r from-[#a855f7]/60 to-[#9333ea]/60 px-6 text-base font-semibold text-white shadow-[0_10px_30px_-8px_rgba(168,85,247,0.35)] transition-transform active:scale-95 disabled:cursor-default disabled:opacity-100"
             >
               <Apple className="size-5" />
               Descargar app
@@ -143,7 +143,7 @@ function Hero() {
               asChild
               size="lg"
               variant="outline"
-              className="group h-12 rounded-full border-purple-300/30 bg-purple-500/[0.08] px-6 text-base font-semibold text-white backdrop-blur-md transition hover:border-purple-300/60 hover:bg-purple-500/[0.18]"
+              className="group h-12 rounded-full border-purple-300/30 bg-purple-500/[0.08] px-6 text-base font-semibold text-white backdrop-blur-md transition hover:border-purple-300/60 hover:bg-purple-500/[0.18] active:scale-95"
             >
               <Link href={paths.appHome}>
                 <Globe className="size-4 text-purple-200" />
@@ -180,7 +180,7 @@ function Hero() {
 function SocialProof() {
   const hues = [280, 320, 260, 300];
   return (
-    <div className="mt-9 flex flex-wrap items-center gap-5">
+    <div className="mt-9 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
       <div className="flex">
         {hues.map((h, i) => (
           <div

@@ -57,7 +57,7 @@ export function ApplicationDetail({ application, onClose, hideHeader = false }: 
       {!hideHeader && (
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="font-display text-3xl font-bold tracking-tight">
+            <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
               {application.venueName}
             </h1>
             <p className="text-sm text-muted-foreground">{application.city}</p>

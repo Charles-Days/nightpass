@@ -42,10 +42,10 @@ export default function CreateVenuePage() {
           <ArrowLeft className="size-5" />
         </Button>
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">Nuevo Establecimiento</h1>
-          <p className="text-muted-foreground">
-            {applicationId 
-              ? `Completando registro desde la solicitud de ${application?.applicant?.name}` 
+          <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">Nuevo Establecimiento</h1>
+          <p className="text-sm text-muted-foreground sm:text-base">
+            {applicationId
+              ? `Completando registro desde la solicitud de ${application?.applicant?.name}`
               : 'Crea un nuevo local desde cero'}
           </p>
         </div>

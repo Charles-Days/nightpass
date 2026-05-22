@@ -147,7 +147,7 @@ export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Gua
             Información Básica
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2">
+        <CardContent className="grid gap-6 sm:grid-cols-2">
           <Field label="Nombre del Establecimiento" error={errors.name?.message}>
             <Input {...register('name')} placeholder="Ej: Velour Club" />
           </Field>
@@ -160,7 +160,7 @@ export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Gua
           <Field label="Teléfono" error={errors.phone?.message}>
             <Input {...register('phone')} placeholder="+52 ..." />
           </Field>
-          <Field label="Descripción" className="md:col-span-2" error={errors.description?.message}>
+          <Field label="Descripción" className="sm:col-span-2" error={errors.description?.message}>
             <Textarea {...register('description')} rows={4} placeholder="Describe el ambiente, el concepto..." />
           </Field>
         </CardContent>
@@ -194,7 +194,7 @@ export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Gua
                   key={genre}
                   type="button"
                   onClick={() => toggleMusic(genre)}
-                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors active:scale-95 transition-transform ${
                     selectedMusic.includes(genre)
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted hover:bg-muted/80'
@@ -303,11 +303,11 @@ export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Gua
              {images.map((url, idx) => (
                <div key={idx} className="group relative aspect-square overflow-hidden rounded-lg border bg-muted">
                  <img src={url} alt={`Foto ${idx}`} className="h-full w-full object-cover" />
-                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                    <button
                      type="button"
                      onClick={() => setPreviewUrl(url)}
-                     className="rounded-full bg-white/15 p-2 text-white backdrop-blur-sm hover:bg-white/30"
+                     className="rounded-full bg-white/15 p-2 text-white backdrop-blur-sm hover:bg-white/30 active:scale-95 transition-transform"
                      aria-label="Ver en grande"
                    >
                      <Eye className="size-5" />
@@ -316,15 +316,21 @@ export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Gua
                  <button
                    type="button"
                    onClick={() => removeImage(idx)}
-                   className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-500"
+                   className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 hover:bg-red-500 active:scale-95"
                    aria-label="Eliminar"
                  >
                    <X className="size-4" />
                  </button>
                </div>
              ))}
+             {isUploadingImages && (
+               <>
+                 <div className="aspect-square animate-pulse rounded-lg bg-muted/50" />
+                 <div className="aspect-square animate-pulse rounded-lg bg-muted/50" />
+               </>
+             )}
              {images.length === 0 && !isUploadingImages && (
-               <div 
+               <div
                  className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed text-muted-foreground hover:bg-muted/50"
                  onClick={() => imagesInputRef.current?.click()}
                >
@@ -470,7 +476,7 @@ export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Gua
           <img
             src={previewUrl}
             alt="Vista previa"
-            className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+            className="max-h-[90dvh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />
         </div>

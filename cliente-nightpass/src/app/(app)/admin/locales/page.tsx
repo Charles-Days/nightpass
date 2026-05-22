@@ -34,7 +34,7 @@ export default async function VenuesListPage({ searchParams }: PageProps) {
     <div className="space-y-6">
       <header className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="font-display text-3xl font-bold tracking-tight">Locales</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">Locales</h1>
           <p className="text-sm text-muted-foreground">
             Todos los locales registrados en NightPass.
           </p>
@@ -47,30 +47,32 @@ export default async function VenuesListPage({ searchParams }: PageProps) {
         </Button>
       </header>
 
-      <nav className="flex flex-wrap gap-2 border-b pb-2">
-        {STATUS_FILTERS.map((s) => {
-          const active = filter === s.value;
-          const params = new URLSearchParams();
-          if (s.value !== 'ALL') params.set('status', s.value);
-          if (search) params.set('search', search);
-          const href = params.toString()
-            ? `${paths.adminVenues}?${params.toString()}`
-            : paths.adminVenues;
-          return (
-            <Link
-              key={s.value}
-              href={href}
-              className={
-                active
-                  ? 'rounded-md bg-primary/15 px-3 py-1.5 text-sm font-medium text-primary'
-                  : 'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              }
-            >
-              {s.label}
-            </Link>
-          );
-        })}
-      </nav>
+      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
+        <nav className="flex flex-nowrap gap-2 border-b pb-2 sm:flex-wrap">
+          {STATUS_FILTERS.map((s) => {
+            const active = filter === s.value;
+            const params = new URLSearchParams();
+            if (s.value !== 'ALL') params.set('status', s.value);
+            if (search) params.set('search', search);
+            const href = params.toString()
+              ? `${paths.adminVenues}?${params.toString()}`
+              : paths.adminVenues;
+            return (
+              <Link
+                key={s.value}
+                href={href}
+                className={
+                  active
+                    ? 'rounded-md bg-primary/15 px-3 py-1.5 text-sm font-medium text-primary transition-colors duration-200'
+                    : 'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:bg-accent hover:text-accent-foreground'
+                }
+              >
+                {s.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
 
       <VenueTable data={data} />
 

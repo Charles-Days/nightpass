@@ -31,7 +31,7 @@ export default async function CustomerHomePage() {
     <div className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-12">
       {/* Hero */}
       <section className="mb-10">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
           Vive la noche · Sin filas
         </p>
         <h1 className="mt-3 font-display text-4xl font-bold leading-[0.95] tracking-[-0.03em] sm:text-5xl lg:text-6xl">

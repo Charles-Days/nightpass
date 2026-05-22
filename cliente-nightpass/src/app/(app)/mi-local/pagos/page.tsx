@@ -26,7 +26,7 @@ export default async function PagosPage() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
           Mi local
         </p>
         <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">

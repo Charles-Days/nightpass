@@ -11,9 +11,9 @@ interface Props {
 export function TopBar({ user }: Props) {
   return (
     <header className="sticky top-0 z-20 border-b border-white/8 bg-background/70 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-5 py-4 sm:gap-4 sm:px-8">
         <Link href={paths.appHome} className="flex items-center gap-2">
-          <span className="font-display text-lg font-bold tracking-tight">
+          <span className="font-display text-base font-bold tracking-tight sm:text-lg">
             <span className="bg-gradient-to-r from-white to-purple-300 bg-clip-text text-transparent">
               NightPass
             </span>

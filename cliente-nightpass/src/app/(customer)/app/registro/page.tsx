@@ -8,7 +8,7 @@ export const metadata = { title: 'Crear cuenta — NightPass' };
 export default function CustomerSignupPage() {
   return (
     <div className="mx-auto w-full max-w-md px-5 py-12 sm:px-8">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+      <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
         Únete en segundos
       </p>
       <h1 className="mt-2 font-display text-3xl font-bold leading-tight tracking-tight">

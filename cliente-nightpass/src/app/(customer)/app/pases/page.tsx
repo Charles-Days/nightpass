@@ -30,7 +30,7 @@ export default async function PassesPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-6 sm:px-8 sm:py-10">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+      <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
         Tu noche · listo para entrar
       </p>
       <h1 className="mt-2 font-display text-3xl font-bold leading-tight tracking-[-0.02em] sm:text-4xl">

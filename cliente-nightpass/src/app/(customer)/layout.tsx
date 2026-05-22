@@ -18,7 +18,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
     <div className="relative flex min-h-screen flex-col">
       <CustomerBokeh />
       <TopBar user={user} />
-      <main className="flex-1 pb-24 md:pb-12">{children}</main>
+      <main className="flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-12">{children}</main>
       <BottomNav />
     </div>
   );

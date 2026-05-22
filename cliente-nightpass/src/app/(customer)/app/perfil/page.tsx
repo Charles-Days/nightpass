@@ -55,7 +55,7 @@ export default async function PerfilPage() {
 
       {/* Header */}
       <section className="mt-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
           Mi cuenta
         </p>
         <h1 className="mt-3 font-display text-3xl font-bold leading-[1.05] tracking-[-0.02em] sm:text-4xl">
@@ -92,7 +92,7 @@ export default async function PerfilPage() {
 
       {/* Tu cuenta */}
       <section className="mt-8">
-        <h3 className="mb-3 px-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+        <h3 className="mb-3 px-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
           Tu cuenta
         </h3>
         <ul className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]">
@@ -143,7 +143,7 @@ export default async function PerfilPage() {
 
       {/* Sesion */}
       <section className="mt-6">
-        <h3 className="mb-3 px-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+        <h3 className="mb-3 px-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
           Sesion
         </h3>
         <div className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025] p-2">
