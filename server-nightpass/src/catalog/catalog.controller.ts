@@ -27,4 +27,9 @@ export class CatalogController {
   getTier(@Param('tierId', ParseUUIDPipe) tierId: string) {
     return this.service.getTierById(tierId);
   }
+
+  @Get('stats')
+  getStats() {
+    return this.service.getPublicStats();
+  }
 }

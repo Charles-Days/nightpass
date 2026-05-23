@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, EventStatus } from '@prisma/client';
+import { Prisma, EventStatus, Role, VenueStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListCatalogVenuesQuery } from './dto/list-catalog-venues.query';
 
@@ -169,5 +169,16 @@ export class CatalogService {
       },
       paymentsEnabled: tier.event.venue.stripeAccount?.chargesEnabled === true,
     };
+  }
+
+  async getPublicStats() {
+    const [customers, venues, events] = await this.prisma.$transaction([
+      this.prisma.user.count({ where: { role: Role.CUSTOMER } }),
+      this.prisma.venue.count({ where: { status: VenueStatus.ACTIVE } }),
+      this.prisma.event.count({
+        where: { status: EventStatus.PUBLISHED, endsAt: { gte: new Date() } },
+      }),
+    ]);
+    return { customers, venues, events };
   }
 }

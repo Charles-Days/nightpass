@@ -396,7 +396,7 @@ function DiscoverScreen() {
   return (
     <div className="px-4 pb-4">
       <div className="text-[11px] font-medium tracking-[0.1em] text-white/55 uppercase">
-        ESTA NOCHE · MADRID
+        ESTA NOCHE · CUERNAVACA
       </div>
       <div className="mt-1 font-display text-[26px] font-bold tracking-[-0.02em] text-white">
         Cerca de ti
@@ -485,7 +485,7 @@ function VenueScreen() {
       <div className="mt-3">
         <div className="font-display text-xl font-bold text-white">Sala Apolo</div>
         <div className="mt-0.5 text-[11px] text-white/55">
-          Techno · Industrial · 1.2 km · Madrid
+          Techno · Industrial · 1.2 km · Cuernavaca
         </div>
       </div>
       <div className="mt-2 flex items-center gap-1 text-[11px] text-white/70">

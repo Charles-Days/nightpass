@@ -1,9 +1,10 @@
 import Link from 'next/link';
-import { Apple, ArrowRight, Check, Globe, Plus, Star } from 'lucide-react';
+import { ArrowRight, Check, Globe, MapPin, Plus, Sparkles } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { paths } from '@/core/config/paths';
 import { Counter } from '@/core/components/counter';
 import { Reveal } from '@/core/components/reveal';
+import { serverFetch } from '@/core/lib/api/server-client';
 import { DemoDialog } from './_components/demo-dialog';
 import { PhoneMockup } from './_components/phone-mockup';
 
@@ -13,10 +14,24 @@ export const metadata = {
     'NightPass es la app para descubrir bares, comprar tu cover digital y compartir la noche con tus amigos. Sin colas, sin efectivo, sin ticket que perder.',
 };
 
-export default function LandingPage() {
+interface PublicStats {
+  customers: number;
+  venues: number;
+  events: number;
+}
+
+export const revalidate = 60;
+
+export default async function LandingPage() {
+  let stats: PublicStats = { customers: 0, venues: 0, events: 0 };
+  try {
+    stats = await serverFetch<PublicStats>('/catalog/stats');
+  } catch {
+    // landing must never break on stats failure
+  }
   return (
     <>
-      <Hero />
+      <Hero stats={stats} />
       <VenuesStrip />
       <HowItWorks />
       <ForVenues />
@@ -95,14 +110,14 @@ function Eyebrow({
 // Hero
 // ────────────────────────────────────────────────
 
-function Hero() {
+function Hero({ stats }: { stats: PublicStats }) {
   return (
     <section className="relative px-6 pt-10 pb-24 sm:px-14 sm:pt-14 sm:pb-25">
       <HeroBokeh />
       <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.1fr_1fr] lg:gap-[60px]">
         <div>
           <div className="np-rise">
-            <Eyebrow>Nueva forma de salir · Madrid · Barcelona · Valencia</Eyebrow>
+            <Eyebrow>Nueva forma de salir · Cuernavaca · CDMX</Eyebrow>
           </div>
           <h1
             className="np-rise mt-5 font-display text-4xl font-bold leading-[0.96] tracking-[-0.035em] sm:text-5xl lg:text-[84px]"
@@ -133,7 +148,6 @@ function Hero() {
               title="Pronto disponible"
               className="group relative h-12 cursor-default rounded-full bg-gradient-to-r from-[#a855f7]/60 to-[#9333ea]/60 px-6 text-base font-semibold text-white shadow-[0_10px_30px_-8px_rgba(168,85,247,0.35)] transition-transform active:scale-95 disabled:cursor-default disabled:opacity-100"
             >
-              <Apple className="size-5" />
               Descargar app
               <span className="ml-2 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
                 Pronto
@@ -154,7 +168,7 @@ function Hero() {
             <DemoDialog />
           </div>
           <div className="np-rise" style={{ animationDelay: '560ms' }}>
-            <SocialProof />
+            <SocialProof stats={stats} />
           </div>
         </div>
 
@@ -177,8 +191,14 @@ function Hero() {
   );
 }
 
-function SocialProof() {
+function SocialProof({ stats }: { stats: PublicStats }) {
   const hues = [280, 320, 260, 300];
+  const hasUsers = stats.customers > 0;
+  const usersLine = hasUsers
+    ? `${stats.customers.toLocaleString('es-MX')} ${
+        stats.customers === 1 ? 'persona ya está dentro' : 'personas ya están dentro'
+      }`
+    : 'Beta privada — empezamos con los primeros locales';
   return (
     <div className="mt-9 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
       <div className="flex">
@@ -193,10 +213,15 @@ function SocialProof() {
         ))}
       </div>
       <div>
-        <p className="text-sm font-semibold">+24,000 personas ya entran sin fila</p>
+        <p className="flex items-center gap-1.5 text-sm font-semibold">
+          <Sparkles className="size-3.5 text-primary" />
+          {usersLine}
+        </p>
         <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Star className="size-3 fill-current" />
-          4.8 · App Store · 1.2k reseñas
+          <MapPin className="size-3" />
+          Cuernavaca · CDMX
+          {stats.venues > 0 && ` · ${stats.venues} ${stats.venues === 1 ? 'local' : 'locales'}`}
+          {stats.events > 0 && ` · ${stats.events} ${stats.events === 1 ? 'evento' : 'eventos'}`}
         </p>
       </div>
     </div>

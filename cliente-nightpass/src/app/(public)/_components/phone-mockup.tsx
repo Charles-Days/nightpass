@@ -50,7 +50,7 @@ export function PhoneMockup({ tilt = -6, scale = 1, className = '' }: PhoneMocku
         {/* App content */}
         <div className="px-4 pb-4 pt-[54px]">
           <div className="text-[11px] font-medium uppercase tracking-[0.1em] text-white/55">
-            ESTA NOCHE · MADRID
+            ESTA NOCHE · CUERNAVACA
           </div>
           <div className="mt-1 font-display text-[26px] font-bold leading-tight tracking-[-0.02em] text-white">
             Cerca de ti
