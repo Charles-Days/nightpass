@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Loader2, Search } from 'lucide-react';
 import { clientFetch } from '@/core/lib/api/client-client';
 import { Input } from '@/core/components/ui/input';
 import { VenueCard } from '../../../_components/venue-card';
@@ -50,15 +50,21 @@ export function SearchClient() {
   }, [data]);
 
   return (
-    <div className="mt-6">
-      <div className="relative">
-        <Search className="absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground" />
+    <div className="np-rise mt-6" style={{ animationDelay: '220ms' }}>
+      <div className="group relative">
+        <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground transition-colors duration-200 group-focus-within:text-primary" />
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Bar, ciudad, género…"
-          className="h-12 rounded-full border-white/15 bg-white/[0.04] pl-11 text-sm"
+          className="h-12 rounded-full border-white/15 bg-white/[0.04] pl-11 pr-11 text-sm transition focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/40"
         />
+        {loading && query.trim().length > 0 ? (
+          <Loader2
+            aria-hidden
+            className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 animate-spin text-primary"
+          />
+        ) : null}
       </div>
 
       {categories.length > 0 && (
@@ -66,7 +72,7 @@ export function SearchClient() {
           <button
             type="button"
             onClick={() => setCategory(null)}
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+            className={`transform-gpu rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 active:scale-95 ${
               category === null
                 ? 'border-primary/40 bg-primary/15 text-primary'
                 : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground'
@@ -74,16 +80,17 @@ export function SearchClient() {
           >
             Todos
           </button>
-          {categories.map((c) => (
+          {categories.map((c, i) => (
             <button
               key={c}
               type="button"
               onClick={() => setCategory(c === category ? null : c)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold capitalize transition ${
+              className={`np-rise transform-gpu rounded-full border px-3 py-1.5 text-xs font-semibold capitalize transition-all duration-200 active:scale-95 ${
                 category === c
                   ? 'border-primary/40 bg-primary/15 text-primary'
                   : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground'
               }`}
+              style={{ animationDelay: `${i * 50}ms` }}
             >
               {c}
             </button>
@@ -92,16 +99,25 @@ export function SearchClient() {
       )}
 
       <div className="mt-6">
-        {loading ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">Buscando…</p>
+        {loading && data.length === 0 ? (
+          <div className="np-fade-in flex flex-col items-center justify-center gap-3 py-12 text-center text-sm text-muted-foreground">
+            <Loader2 className="size-5 animate-spin text-primary" />
+            <span>Buscando…</span>
+          </div>
         ) : data.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
+          <p className="np-fade-in py-12 text-center text-sm text-muted-foreground">
             No encontramos resultados. Prueba con otra búsqueda.
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {data.map((v) => (
-              <VenueCard key={v.id} venue={v} />
+            {data.map((v, i) => (
+              <div
+                key={v.id}
+                className="np-rise"
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <VenueCard venue={v} />
+              </div>
             ))}
           </div>
         )}

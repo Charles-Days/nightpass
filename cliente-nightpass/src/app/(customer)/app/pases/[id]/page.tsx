@@ -59,13 +59,16 @@ export default async function PassDetailPage({ params }: Props) {
     <div className="mx-auto w-full max-w-md px-5 py-6 sm:px-8 sm:py-10">
       <Link
         href={paths.pases}
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
+        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground active:scale-95 transform-gpu"
       >
         <ArrowLeft className="size-4" />
         Mis pases
       </Link>
 
-      <section className="mt-6 overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.03] backdrop-blur-xl">
+      <section
+        className="mt-6 overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-br from-white/[0.04] via-white/[0.025] to-primary/[0.04] backdrop-blur-xl np-rise transform-gpu"
+        style={{ animationDelay: '60ms' }}
+      >
         {/* Top: status pill */}
         <div className="flex items-center justify-between border-b border-white/8 px-5 py-3.5 sm:px-6">
           <p className="flex items-center gap-2 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
@@ -86,7 +89,7 @@ export default async function PassDetailPage({ params }: Props) {
         </div>
 
         {/* QR */}
-        <div className="flex min-h-[70vh] flex-col items-center justify-center px-5 pb-2 pt-7 sm:min-h-0 sm:px-6 sm:pt-9">
+        <div className="flex min-h-[70dvh] flex-col items-center justify-center px-5 pb-2 pt-7 sm:min-h-0 sm:px-6 sm:pt-9">
           <PassQRWithGeoPing value={pass.qrCode} usedAt={pass.usedAt} />
 
           {used && pass.usedAt && (
@@ -110,7 +113,7 @@ export default async function PassDetailPage({ params }: Props) {
 
         {/* Event info */}
         <div className="space-y-3 px-5 pb-5 pt-3 sm:px-6 sm:pb-6">
-          <div>
+          <div className="np-rise transform-gpu" style={{ animationDelay: '320ms' }}>
             <h1 className="font-display text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
               {event?.title ?? 'Evento'}
             </h1>
@@ -122,7 +125,10 @@ export default async function PassDetailPage({ params }: Props) {
           </div>
 
           {event?.startsAt && (
-            <div className="flex items-start gap-3 rounded-[16px] border border-white/8 bg-white/[0.02] p-3">
+            <div
+              className="flex items-start gap-3 rounded-[16px] border border-white/8 bg-white/[0.02] p-3 np-rise transform-gpu"
+              style={{ animationDelay: '400ms' }}
+            >
               <Calendar className="mt-0.5 size-4 shrink-0 text-primary" />
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -136,7 +142,10 @@ export default async function PassDetailPage({ params }: Props) {
           )}
 
           {venue && (
-            <div className="flex items-start gap-3 rounded-[16px] border border-white/8 bg-white/[0.02] p-3">
+            <div
+              className="flex items-start gap-3 rounded-[16px] border border-white/8 bg-white/[0.02] p-3 np-rise transform-gpu"
+              style={{ animationDelay: '480ms' }}
+            >
               <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">

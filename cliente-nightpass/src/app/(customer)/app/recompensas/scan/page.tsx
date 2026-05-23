@@ -191,30 +191,30 @@ export default function ScanCheckinPage() {
   }
 
   return (
-    <div className="relative mx-auto flex min-h-[calc(100vh-160px)] w-full max-w-2xl flex-col px-5 py-6 sm:px-8 sm:py-10">
+    <div className="relative mx-auto flex min-h-[calc(100dvh-160px)] w-full max-w-2xl flex-col px-5 py-6 sm:px-8 sm:py-10">
       <Link
         href={paths.recompensas}
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
+        className="np-rise inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground active:scale-95 transform-gpu"
       >
         <ArrowLeft className="size-4" />
         Volver
       </Link>
 
       <section className="mt-6">
-        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+        <p className="np-rise text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary" style={{ animationDelay: '60ms' }}>
           Check-in
         </p>
-        <h1 className="mt-3 font-display text-3xl font-bold leading-[1.05] tracking-[-0.025em] sm:text-4xl">
+        <h1 className="np-rise mt-3 font-display text-3xl font-bold leading-[1.05] tracking-[-0.025em] sm:text-4xl" style={{ animationDelay: '120ms' }}>
           Escanea el QR del bar
         </h1>
-        <p className="mt-2 max-w-md text-sm text-muted-foreground">
+        <p className="np-rise mt-2 max-w-md text-sm text-muted-foreground" style={{ animationDelay: '180ms' }}>
           Suma puntos NightPass por estar aquí. Necesitamos tu ubicación para
           validar que sí estás en el local.
         </p>
       </section>
 
       {/* Cámara */}
-      <section className="mt-6 overflow-hidden rounded-[22px] border border-white/10 bg-black/60">
+      <section className="np-rise mt-6 overflow-hidden rounded-[22px] border border-white/10 bg-black/60" style={{ animationDelay: '240ms' }}>
         <div className="relative aspect-square">
           <video
             ref={videoRef}
@@ -224,7 +224,7 @@ export default function ScanCheckinPage() {
           />
 
           {phase.kind === 'idle' ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/60 p-6 text-center">
+            <div className="np-fade-in absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/60 p-6 text-center">
               <Camera className="size-10 text-primary" />
               <p className="max-w-xs text-sm text-muted-foreground">
                 Activa la cámara para empezar a escanear el QR del bar.
@@ -234,7 +234,7 @@ export default function ScanCheckinPage() {
               ) : null}
               <button
                 onClick={start}
-                className="rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transition hover:brightness-110"
+                className="np-glow-pulse rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95 hover:brightness-110"
               >
                 Iniciar cámara
               </button>
@@ -242,7 +242,7 @@ export default function ScanCheckinPage() {
           ) : null}
 
           {phase.kind === 'requesting-camera' ? (
-            <div className="absolute inset-0 grid place-items-center bg-black/70 text-sm text-white">
+            <div className="np-fade-in absolute inset-0 grid place-items-center bg-black/70 text-sm text-white">
               <span className="inline-flex items-center gap-2">
                 <Loader2 className="size-4 animate-spin" /> Abriendo cámara…
               </span>
@@ -250,14 +250,14 @@ export default function ScanCheckinPage() {
           ) : null}
 
           {phase.kind === 'requesting-geo' ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80 px-6 text-center text-sm text-white">
-              <MapPin className="size-8 text-primary" />
+            <div className="np-fade-in absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80 px-6 text-center text-sm text-white">
+              <MapPin className="size-8 animate-pulse text-primary" />
               <p>Confirma tu ubicación para validar el check-in…</p>
             </div>
           ) : null}
 
           {phase.kind === 'submitting' ? (
-            <div className="absolute inset-0 grid place-items-center bg-black/85 text-sm text-white">
+            <div className="np-fade-in absolute inset-0 grid place-items-center bg-black/85 text-sm text-white">
               <span className="inline-flex items-center gap-2">
                 <Loader2 className="size-4 animate-spin" /> Registrando tu
                 check-in…
@@ -266,7 +266,7 @@ export default function ScanCheckinPage() {
           ) : null}
 
           {phase.kind === 'geo-denied' ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/85 px-6 text-center text-sm text-white">
+            <div className="np-fade-in absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/85 px-6 text-center text-sm text-white">
               <AlertTriangle className="size-8 text-amber-300" />
               <p className="font-semibold">Necesitamos tu ubicación</p>
               <p className="max-w-xs text-xs text-white/70">
@@ -276,7 +276,7 @@ export default function ScanCheckinPage() {
               </p>
               <button
                 onClick={() => setPhase({ kind: 'scanning' })}
-                className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm hover:bg-white/[0.06]"
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm transform-gpu transition active:scale-95 hover:bg-white/[0.06]"
               >
                 <RefreshCw className="size-4" />
                 Reintentar
@@ -286,12 +286,16 @@ export default function ScanCheckinPage() {
 
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-12 rounded-2xl border-2 border-primary/60 shadow-[0_0_40px_rgba(168,85,247,0.4)]"
+            className={`pointer-events-none absolute inset-12 rounded-2xl border-2 ${
+              phase.kind === 'scanning'
+                ? 'np-scan-ring border-primary/60'
+                : 'border-primary/60 shadow-[0_0_40px_rgba(168,85,247,0.4)]'
+            }`}
           />
         </div>
       </section>
 
-      <p className="mt-4 text-center text-[11px] text-white/45">
+      <p className="np-fade-in mt-4 text-center text-[11px] text-white/45" style={{ animationDelay: '320ms' }}>
         Solo el QR oficial pegado en la entrada del bar funciona. Los QRs de
         pases son distintos.
       </p>
@@ -316,47 +320,57 @@ function SuccessFrame({
 }) {
   const tierStyle = TIER_STYLES[tier];
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-160px)] w-full max-w-2xl flex-col items-center justify-center px-6 py-10 text-center">
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.025] px-8 py-10 sm:px-12 sm:py-14">
-        <div className="grid place-items-center">{icon}</div>
-        <h1 className="mt-5 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          {title}
-        </h1>
-        <p className="mt-2 text-sm text-white/65">{subtitle}</p>
-
+    <div className="mx-auto flex min-h-[calc(100dvh-160px)] w-full max-w-2xl flex-col items-center justify-center px-6 py-10 text-center">
+      <div className="np-pop-in relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.025] px-8 py-10 sm:px-12 sm:py-14">
         {awarded > 0 ? (
-          <p
-            className="mt-7 font-display text-5xl font-bold leading-none tracking-tight"
-            style={{
-              backgroundImage: 'linear-gradient(135deg, #9333ea, #a855f7, #ec4899)',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              color: 'transparent',
-            }}
+          <div
+            aria-hidden
+            className="np-confetti-burst pointer-events-none absolute left-1/2 top-12 -translate-x-1/2"
           >
-            +{awarded} NPP
-          </p>
-        ) : (
-          <p className="mt-7 font-display text-3xl font-bold leading-none tracking-tight text-white/60">
-            +0 NPP
-          </p>
-        )}
+            <div className="size-24 rounded-full bg-gradient-to-br from-[#a855f7]/45 via-[#ec4899]/30 to-transparent blur-2xl" />
+          </div>
+        ) : null}
+        <div className="relative">
+          <div className="grid place-items-center">{icon}</div>
+          <h1 className="mt-5 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+            {title}
+          </h1>
+          <p className="mt-2 text-sm text-white/65">{subtitle}</p>
 
-        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-          <TierBadge tier={tier} />
-          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold text-white/75">
-            Racha: {streakDays} {streakDays === 1 ? 'día' : 'días'}
-          </span>
+          {awarded > 0 ? (
+            <p
+              className="mt-7 font-display text-5xl font-bold leading-none tracking-tight"
+              style={{
+                backgroundImage: 'linear-gradient(135deg, #9333ea, #a855f7, #ec4899)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+              }}
+            >
+              +{awarded} NPP
+            </p>
+          ) : (
+            <p className="mt-7 font-display text-3xl font-bold leading-none tracking-tight text-white/60">
+              +0 NPP
+            </p>
+          )}
+
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+            <TierBadge tier={tier} />
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold text-white/75">
+              Racha: {streakDays} {streakDays === 1 ? 'día' : 'días'}
+            </span>
+          </div>
+
+          <p className="mt-2 text-[11px] text-white/40">{tierStyle.description}</p>
+
+          <Link
+            href={paths.recompensas}
+            className="mt-8 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95 hover:brightness-110"
+          >
+            Ver mi progreso
+          </Link>
         </div>
-
-        <p className="mt-2 text-[11px] text-white/40">{tierStyle.description}</p>
-
-        <Link
-          href={paths.recompensas}
-          className="mt-8 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.55)] transition hover:brightness-110"
-        >
-          Ver mi progreso
-        </Link>
       </div>
     </div>
   );

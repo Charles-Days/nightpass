@@ -10,7 +10,7 @@ import {
   useElements,
   useStripe,
 } from '@stripe/react-stripe-js';
-import { ArrowLeft, Loader2, Lock, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, Lock, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/core/components/ui/button';
@@ -281,24 +281,31 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
     ? `${paths.evento}/${initialTier.event.id}`
     : paths.appHome;
 
+  const isErrorPhase =
+    phase === 'error' ||
+    phase === 'duplicate' ||
+    phase === 'sold_out' ||
+    phase === 'event_started' ||
+    phase === 'event_unavailable';
+
   return (
     <div className="mx-auto w-full max-w-md px-5 py-6 sm:py-10">
       <Link
         href={backToEvent}
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
+        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground active:scale-95 transform-gpu"
       >
         <ArrowLeft className="size-4" />
         Volver
       </Link>
 
-      <header className="mt-5">
+      <header className="mt-5 np-rise" style={{ animationDelay: '40ms' }}>
         <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
           Checkout
         </p>
         <h1 className="mt-2 font-display text-2xl font-bold tracking-tight">Confirma tu pase</h1>
       </header>
 
-      <section className="mt-6 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025] p-5">
+      <section className="mt-6 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025] p-5 np-rise" style={{ animationDelay: '120ms' }}>
         <div>
           <p className="font-display text-base font-semibold leading-tight">{summary.title}</p>
           {(summary.venueName || summary.startsAt) && (
@@ -329,7 +336,11 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
         </div>
       </section>
 
-      <section className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.025] p-5">
+      <section
+        key={phase}
+        className={`mt-5 rounded-[22px] border border-white/10 bg-white/[0.025] p-5 np-rise transform-gpu ${isErrorPhase ? 'np-shake border-red-400/20' : ''}`}
+        style={{ animationDelay: '180ms' }}
+      >
         {phase === 'creating' && <PhaseLoader label="Preparando pago seguro…" />}
 
         {phase === 'paying' && clientSecret && stripeInit && (
@@ -365,7 +376,16 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
 
         {phase === 'processing' && <PhaseLoader label="Procesando tu pase…" />}
 
-        {phase === 'success' && <PhaseLoader label="Redirigiendo a tu pase…" />}
+        {phase === 'success' && (
+          <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
+            <div className="grid size-14 place-items-center rounded-full bg-emerald-500/15 text-emerald-300 np-success-pop transform-gpu">
+              <Check className="size-7" />
+            </div>
+            <p className="text-sm text-muted-foreground np-fade-in" style={{ animationDelay: '180ms' }}>
+              Redirigiendo a tu pase…
+            </p>
+          </div>
+        )}
 
         {phase === 'no_stripe' && (
           <StateBlock
@@ -435,7 +455,7 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
             <Button
               type="button"
               onClick={() => void createOrder()}
-              className="bg-gradient-to-r from-[#9333ea] to-[#a855f7] text-white shadow-[0_4px_24px_rgba(168,85,247,0.35)] hover:brightness-110"
+              className="bg-gradient-to-r from-[#9333ea] to-[#a855f7] text-white shadow-[0_4px_24px_rgba(168,85,247,0.35)] transition hover:brightness-110 active:scale-95 transform-gpu"
             >
               Reintentar
             </Button>
@@ -504,7 +524,7 @@ function PaymentForm({ orderId, totalCents, currency, onProcessing, onError }: P
       <Button
         type="submit"
         disabled={!stripe || !elements || submitting}
-        className="h-11 w-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] text-sm font-semibold text-white shadow-[0_4px_24px_rgba(168,85,247,0.35)] transition hover:brightness-110 disabled:opacity-70"
+        className={`h-12 w-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] text-base font-semibold text-white shadow-[0_4px_24px_rgba(168,85,247,0.35)] transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 transform-gpu ${!stripe || !elements || submitting ? '' : 'np-shimmer'}`}
       >
         {submitting ? (
           <>
@@ -527,8 +547,8 @@ function PaymentForm({ orderId, totalCents, currency, onProcessing, onError }: P
 
 function PhaseLoader({ label }: { label: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
-      <Loader2 className="size-6 animate-spin text-primary" />
+    <div className="flex flex-col items-center justify-center gap-3 py-6 text-center np-fade-in">
+      <Loader2 className="size-6 animate-spin text-primary transform-gpu" />
       <p className="text-sm text-muted-foreground">{label}</p>
     </div>
   );
@@ -553,7 +573,7 @@ function StateBlock({ tone, title, message, primary, secondary }: StateBlockProp
       <div className="flex flex-col items-center gap-2">
         <Link
           href={primary.href}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 text-sm font-semibold text-white shadow-[0_4px_24px_rgba(168,85,247,0.35)] transition hover:brightness-110"
+          className="inline-flex h-11 items-center justify-center rounded-md bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 text-sm font-semibold text-white shadow-[0_4px_24px_rgba(168,85,247,0.35)] transition hover:brightness-110 active:scale-95 transform-gpu"
         >
           {primary.label}
         </Link>

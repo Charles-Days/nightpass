@@ -56,7 +56,7 @@ export function PassQRWithGeoPing({ value, usedAt }: Props) {
   return (
     <div className="flex w-full flex-col items-center gap-3">
       {!usedAt && state !== 'idle' && (
-        <GeoChip state={state} />
+        <GeoChip key={state} state={state} />
       )}
       <PassQR value={value} usedAt={usedAt} />
     </div>
@@ -66,15 +66,16 @@ export function PassQRWithGeoPing({ value, usedAt }: Props) {
 function GeoChip({ state }: { state: GeoState }) {
   if (state === 'requesting') {
     return (
-      <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-white/65">
-        <Loader2 className="size-3 animate-spin text-primary" />
+      <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-white/65 np-fade-in">
+        <Loader2 className="size-3 animate-spin text-primary transform-gpu" />
+        <span className="size-1.5 rounded-full bg-primary np-dot-pulse-fast transform-gpu" />
         Verificando ubicación…
       </div>
     );
   }
   if (state === 'verified') {
     return (
-      <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-300">
+      <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-300 np-pop-in transform-gpu">
         <MapPin className="size-3" />
         Ubicación verificada
       </div>
@@ -84,7 +85,7 @@ function GeoChip({ state }: { state: GeoState }) {
     return (
       <Link
         href="/app/perfil#ubicacion"
-        className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[11px] font-semibold text-amber-200 transition hover:bg-amber-400/15"
+        className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[11px] font-semibold text-amber-200 transition hover:bg-amber-400/15 active:scale-95 transform-gpu np-fade-in"
       >
         <MapPinOff className="size-3" />
         Activa la ubicación para validar en puerta
@@ -93,7 +94,7 @@ function GeoChip({ state }: { state: GeoState }) {
   }
   if (state === 'error') {
     return (
-      <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-white/60">
+      <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-white/60 np-fade-in">
         <MapPinOff className="size-3" />
         No pudimos verificar tu ubicación
       </div>
@@ -101,7 +102,7 @@ function GeoChip({ state }: { state: GeoState }) {
   }
   if (state === 'unsupported') {
     return (
-      <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-white/55">
+      <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-white/55 np-fade-in">
         <MapPinOff className="size-3" />
         Sin soporte de ubicación
       </div>

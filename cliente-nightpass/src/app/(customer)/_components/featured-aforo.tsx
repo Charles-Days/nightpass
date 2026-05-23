@@ -26,6 +26,12 @@ const SEGMENT_COLOR: Record<OccupancyBucket, string> = {
   high: 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.6)]',
 };
 
+const PULSE_CLASS: Record<OccupancyBucket, string> = {
+  low: '',
+  medium: 'np-dot-pulse-slow',
+  high: 'np-dot-pulse-fast',
+};
+
 const LABEL_COLOR: Record<OccupancyBucket, string> = {
   low: 'text-emerald-300',
   medium: 'text-amber-300',
@@ -62,14 +68,20 @@ export function FeaturedAforo({ venueId }: { venueId: string }) {
         </p>
       </div>
       <div className="mt-2 flex gap-1.5">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className={`h-1.5 flex-1 rounded-full transition ${
-              i <= level ? SEGMENT_COLOR[bucket] : 'bg-white/[0.07]'
-            }`}
-          />
-        ))}
+        {[1, 2, 3].map((i) => {
+          const filled = i <= level;
+          const isLeading = i === level;
+          return (
+            <div
+              key={i}
+              className={`h-1.5 flex-1 origin-center transform-gpu rounded-full transition-colors duration-500 ${
+                filled
+                  ? `${SEGMENT_COLOR[bucket]} ${isLeading ? PULSE_CLASS[bucket] : ''}`
+                  : 'bg-white/[0.07]'
+              }`}
+            />
+          );
+        })}
       </div>
     </div>
   );

@@ -1,18 +1,43 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LogIn, ShieldCheck } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { paths } from '@/core/config/paths';
 import type { Role } from '@/core/types/api';
+import { cn } from '@/core/lib/utils/cn';
 
 interface Props {
   user: { name: string | null; email: string; role: Role } | null;
 }
 
 export function TopBar({ user }: Props) {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-20 border-b border-white/8 bg-background/70 backdrop-blur-xl">
+    <header
+      className={cn(
+        'sticky top-0 z-20 transition-all duration-300 ease-out',
+        'pt-[env(safe-area-inset-top)]',
+        scrolled
+          ? 'border-b border-white/10 bg-background/80 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.6)] backdrop-blur-md'
+          : 'border-b border-transparent bg-background/30 backdrop-blur-md',
+      )}
+      style={{ WebkitBackdropFilter: 'blur(12px)' }}
+    >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-5 py-4 sm:gap-4 sm:px-8">
-        <Link href={paths.appHome} className="flex items-center gap-2">
+        <Link
+          href={paths.appHome}
+          className="flex items-center gap-2 transform-gpu transition-transform duration-150 active:scale-95"
+        >
           <span className="font-display text-base font-bold tracking-tight sm:text-lg">
             <span className="bg-gradient-to-r from-white to-purple-300 bg-clip-text text-transparent">
               NightPass
@@ -23,19 +48,19 @@ export function TopBar({ user }: Props) {
         <div className="hidden md:flex md:items-center md:gap-2">
           <Link
             href={paths.appHome}
-            className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground"
+            className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground active:scale-95"
           >
             Inicio
           </Link>
           <Link
             href={paths.buscar}
-            className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground"
+            className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground active:scale-95"
           >
             Buscar
           </Link>
           <Link
             href={paths.pases}
-            className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground"
+            className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground active:scale-95"
           >
             Mis pases
           </Link>
@@ -52,9 +77,14 @@ export function TopBar({ user }: Props) {
                   </Link>
                 </Button>
               )}
-              <Button asChild variant="ghost" size="sm">
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="transform-gpu transition-transform duration-150 active:scale-95"
+              >
                 <Link href={paths.perfil}>
-                  <span className="grid size-8 place-items-center rounded-full bg-primary/20 text-xs font-semibold text-primary">
+                  <span className="grid size-8 place-items-center rounded-full bg-primary/20 text-xs font-semibold text-primary ring-1 ring-primary/30">
                     {(user.name?.[0] ?? user.email[0]).toUpperCase()}
                   </span>
                 </Link>
@@ -71,7 +101,7 @@ export function TopBar({ user }: Props) {
               <Button
                 asChild
                 size="sm"
-                className="rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] shadow-[0_4px_20px_-4px_rgba(168,85,247,0.55)]"
+                className="rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] shadow-[0_4px_20px_-4px_rgba(168,85,247,0.55)] transform-gpu transition-transform duration-150 active:scale-95"
               >
                 <Link href={paths.registro}>Crear cuenta</Link>
               </Button>

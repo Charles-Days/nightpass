@@ -11,7 +11,11 @@ export default async function CustomerAppLayout({
   try {
     user = await serverFetch<User>('/auth/me');
   } catch (error) {
-    if (!(error instanceof ServerApiError) || (error.status !== 401 && error.status !== 403)) {
+    // 401/403 → invitado. Red caída / 5xx → degradamos a invitado en vez de 500.
+    if (
+      !(error instanceof ServerApiError) ||
+      (error.status !== 401 && error.status !== 403 && !error.isNetwork && error.status < 500)
+    ) {
       throw error;
     }
   }

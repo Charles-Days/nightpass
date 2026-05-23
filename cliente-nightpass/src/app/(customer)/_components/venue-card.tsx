@@ -16,7 +16,7 @@ export function VenueCard({ venue }: { venue: CatalogVenueSummary }) {
   return (
     <Link
       href={`${paths.bar}/${venue.slug}`}
-      className="group relative flex flex-col overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025] transition hover:border-white/20 hover:bg-white/[0.05] active:scale-[0.98]"
+      className="group relative flex flex-col overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025] transform-gpu transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.05] hover:shadow-[0_18px_40px_-20px_rgba(168,85,247,0.45)] active:scale-[0.97] active:duration-100"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-600/10">
         {venue.coverImageUrl ? (
@@ -24,7 +24,7 @@ export function VenueCard({ venue }: { venue: CatalogVenueSummary }) {
           <img
             src={venue.coverImageUrl}
             alt={venue.name}
-            className="absolute inset-0 size-full object-cover transition duration-500 group-hover:scale-105"
+            className="absolute inset-0 size-full object-cover transform-gpu transition-transform duration-[600ms] ease-out group-hover:scale-[1.07]"
           />
         ) : (
           <div className="absolute inset-0 grid place-items-center">

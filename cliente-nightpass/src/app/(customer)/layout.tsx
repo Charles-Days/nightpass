@@ -40,17 +40,25 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   try {
     user = await serverFetch<User>('/auth/me');
   } catch (error) {
-    if (!(error instanceof ServerApiError) || (error.status !== 401 && error.status !== 403)) {
+    // 401/403 → sin sesión (normal). Red caída/timeout (status 0) → degradamos
+    // a invitado en vez de 500. Cualquier otro 5xx también se trata como
+    // "sesión no disponible" para no romper toda la shell customer.
+    if (
+      !(error instanceof ServerApiError) ||
+      (error.status !== 401 && error.status !== 403 && !error.isNetwork && error.status < 500)
+    ) {
       throw error;
     }
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className="relative flex min-h-dvh flex-col">
       <SWRegister />
       <CustomerBokeh />
       <TopBar user={user} />
-      <main className="flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-12">{children}</main>
+      <main className="flex-1 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-12">
+        {children}
+      </main>
       <BottomNav />
     </div>
   );

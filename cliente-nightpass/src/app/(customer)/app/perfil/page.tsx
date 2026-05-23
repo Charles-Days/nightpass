@@ -64,8 +64,12 @@ export default async function PerfilPage() {
   try {
     user = await serverFetch<User>('/auth/me');
   } catch (error) {
-    if (error instanceof ServerApiError && (error.status === 401 || error.status === 403)) {
-      redirect(paths.iniciarSesion);
+    // 401/403 → login. Red caída o 5xx → tampoco podemos pintar el perfil sin
+    // user; mandamos al login en lugar de devolver 500.
+    if (error instanceof ServerApiError) {
+      if (error.status === 401 || error.status === 403 || error.isNetwork || error.status >= 500) {
+        redirect(paths.iniciarSesion);
+      }
     }
     throw error;
   }
@@ -92,13 +96,13 @@ export default async function PerfilPage() {
     <div className="mx-auto w-full max-w-5xl px-5 py-6 sm:px-8 sm:py-10">
       <Link
         href={paths.appHome}
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
+        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground active:scale-95 transform-gpu"
       >
         <ArrowLeft className="size-4" />
         Volver
       </Link>
 
-      <section className="mt-6">
+      <section className="mt-6 np-rise">
         <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
           Mi cuenta
         </p>
@@ -108,7 +112,10 @@ export default async function PerfilPage() {
       </section>
 
       {/* MEMBERSHIP CARD */}
-      <section className="relative mt-8 overflow-hidden rounded-[24px] border border-primary/25 bg-gradient-to-br from-[#1a0b2e] to-[#0f0820] p-6 shadow-[0_30px_80px_-20px_rgba(168,85,247,0.35)] sm:p-9">
+      <section
+        className="relative mt-8 overflow-hidden rounded-[24px] border border-primary/25 bg-gradient-to-br from-[#1a0b2e] to-[#0f0820] p-6 shadow-[0_30px_80px_-20px_rgba(168,85,247,0.35)] np-rise transform-gpu sm:p-9"
+        style={{ animationDelay: '80ms' }}
+      >
         <div
           aria-hidden
           className="pointer-events-none absolute -right-20 -top-24 size-[360px] rounded-full opacity-50 blur-[80px]"
@@ -157,7 +164,7 @@ export default async function PerfilPage() {
               className="absolute size-60 rounded-full opacity-50 blur-3xl"
               style={{ background: 'radial-gradient(circle, #a855f7, transparent 70%)' }}
             />
-            <div className="relative grid size-32 place-items-center rounded-full bg-gradient-to-br from-[#a855f7] via-[#9333ea] to-[#ec4899] font-display text-[64px] font-bold leading-none text-white shadow-[inset_0_0_0_2px_rgba(255,255,255,0.12),0_20px_50px_-10px_rgba(168,85,247,0.6)] sm:size-40 sm:text-[80px]">
+            <div className="relative grid size-32 place-items-center rounded-full bg-gradient-to-br from-[#a855f7] via-[#9333ea] to-[#ec4899] font-display text-[64px] font-bold leading-none text-white shadow-[inset_0_0_0_2px_rgba(255,255,255,0.12),0_20px_50px_-10px_rgba(168,85,247,0.6)] ring-2 ring-white/10 np-pop-in transform-gpu sm:size-40 sm:text-[80px]">
               {getInitial(user)}
             </div>
           </div>
@@ -178,10 +185,11 @@ export default async function PerfilPage() {
           { k: stats.noches, l: 'Noches', icon: Sparkles },
           { k: stats.bares, l: 'Bares visitados', icon: MapPin },
           { k: stats.ahorrado === '—' ? '—' : `S/ ${stats.ahorrado}`, l: 'Ahorrado en filas', icon: TicketCheck },
-        ].map((s) => (
+        ].map((s, i) => (
           <div
             key={s.l}
-            className="rounded-[18px] border border-white/10 bg-white/[0.025] p-5"
+            className="rounded-[18px] border border-white/10 bg-white/[0.025] p-5 transition-colors hover:bg-white/[0.04] np-rise transform-gpu"
+            style={{ animationDelay: `${160 + i * 60}ms` }}
           >
             <div className="mb-4 flex items-start justify-between">
               <s.icon className="size-5 text-primary" />
@@ -199,7 +207,7 @@ export default async function PerfilPage() {
 
       {/* UPCOMING PASS + RECENT ACTIVITY */}
       <section className="mt-5 grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-        <div className="rounded-[20px] border border-primary/25 bg-primary/[0.08] p-6 sm:p-7">
+        <div className="rounded-[20px] border border-primary/25 bg-primary/[0.08] p-6 np-rise transform-gpu sm:p-7" style={{ animationDelay: '440ms' }}>
           <div className="mb-4 flex items-center justify-between gap-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
               Tu próximo pase
@@ -229,7 +237,7 @@ export default async function PerfilPage() {
               </div>
               <Link
                 href={paths.pases}
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.55)] transition hover:opacity-95"
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.55)] transition hover:opacity-95 active:scale-[0.98] transform-gpu"
               >
                 Abrir mi pase QR →
               </Link>
@@ -239,7 +247,7 @@ export default async function PerfilPage() {
               <p className="text-sm text-white/70">No tienes pases activos.</p>
               <Link
                 href={paths.buscar}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.55)] transition hover:opacity-95"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.55)] transition hover:opacity-95 active:scale-95 transform-gpu"
               >
                 Buscar eventos →
               </Link>
@@ -247,7 +255,7 @@ export default async function PerfilPage() {
           )}
         </div>
 
-        <div className="rounded-[20px] border border-white/10 bg-white/[0.025] p-6 sm:p-7">
+        <div className="rounded-[20px] border border-white/10 bg-white/[0.025] p-6 np-rise transform-gpu sm:p-7" style={{ animationDelay: '500ms' }}>
           <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Actividad reciente
           </p>
@@ -377,7 +385,7 @@ function SettingItem({ icon: Icon, title, desc, href }: SettingItemProps) {
   );
 
   const className =
-    'group flex items-center gap-3.5 rounded-[14px] border border-white/10 bg-white/[0.025] px-4 py-3.5 transition hover:bg-white/[0.04]';
+    'group flex items-center gap-3.5 rounded-[14px] border border-white/10 bg-white/[0.025] px-4 py-3.5 transition-all hover:bg-white/[0.04] hover:border-white/15 active:scale-[0.98] transform-gpu';
 
   if (href) {
     return (

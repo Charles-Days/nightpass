@@ -187,24 +187,36 @@ export default async function CustomerHomePage() {
 
       {/* ── HERO ── */}
       <section className="mb-12 max-w-3xl">
-        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.28em] text-primary">
+        <p
+          className="np-rise text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.28em] text-primary"
+          style={{ animationDelay: '0ms' }}
+        >
           Vive la noche · Sin filas
         </p>
-        <h1 className="mt-4 font-display text-5xl font-bold leading-[0.95] tracking-[-0.035em] sm:text-6xl lg:text-7xl">
+        <h1
+          className="np-rise mt-4 font-display text-5xl font-bold leading-[0.95] tracking-[-0.035em] sm:text-6xl lg:text-7xl"
+          style={{ animationDelay: '80ms' }}
+        >
           Descubre dónde{' '}
           <span className="font-serif text-[1.05em] italic font-normal text-purple-200">
             sales esta noche.
           </span>
         </h1>
-        <p className="mt-6 max-w-xl text-base leading-relaxed text-white/65 sm:text-lg">
+        <p
+          className="np-rise mt-6 max-w-xl text-base leading-relaxed text-white/65 sm:text-lg"
+          style={{ animationDelay: '160ms' }}
+        >
           Compra tu cover digital con QR seguro y entra al toque. Sin efectivo, sin tickets.
         </p>
 
         {/* Search */}
-        <div className="mt-8 flex flex-col gap-3">
+        <div
+          className="np-rise mt-8 flex flex-col gap-3"
+          style={{ animationDelay: '240ms' }}
+        >
           <Link
             href={paths.buscar}
-            className="inline-flex w-full max-w-xl items-center gap-3 rounded-full border border-white/12 bg-white/[0.04] px-5 py-3.5 text-sm text-white/55 transition hover:border-white/25 hover:bg-white/[0.06]"
+            className="inline-flex w-full max-w-xl items-center gap-3 rounded-full border border-white/12 bg-white/[0.04] px-5 py-3.5 text-sm text-white/55 transform-gpu transition-all duration-200 hover:border-white/25 hover:bg-white/[0.06] active:scale-[0.98]"
           >
             <Search className="size-4" />
             <span className="flex-1">Buscar un bar, ciudad o género…</span>
@@ -220,9 +232,10 @@ export default async function CustomerHomePage() {
                 key={f.label}
                 href={f.q ? `${paths.buscar}?q=${encodeURIComponent(f.q)}` : paths.buscar}
                 className={
-                  i === 0
-                    ? 'rounded-full border border-primary/40 bg-primary/15 px-3.5 py-1.5 text-xs font-semibold text-purple-100 transition hover:bg-primary/20'
-                    : 'rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-xs font-semibold text-white/75 transition hover:border-white/20 hover:bg-white/[0.06]'
+                  (i === 0
+                    ? 'rounded-full border border-primary/40 bg-primary/15 px-3.5 py-1.5 text-xs font-semibold text-purple-100 hover:bg-primary/20'
+                    : 'rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-xs font-semibold text-white/75 hover:border-white/20 hover:bg-white/[0.06]') +
+                  ' transform-gpu transition-all duration-200 active:scale-95'
                 }
               >
                 {f.label}
@@ -234,14 +247,14 @@ export default async function CustomerHomePage() {
 
       {/* ── FEATURED ── */}
       {featured ? (
-        <section className="mb-12">
+        <section className="np-rise mb-12" style={{ animationDelay: '320ms' }}>
           <div className="mb-5 flex items-end justify-between gap-4">
             <h2 className="font-display text-xl font-bold tracking-[-0.015em] sm:text-2xl">
               Esta noche en {featuredCity}
             </h2>
             <Link
               href={paths.buscar}
-              className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary transition hover:text-primary/80"
+              className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary transform-gpu transition-all duration-200 hover:text-primary/80 active:scale-95"
             >
               Ver todos →
             </Link>
@@ -249,7 +262,10 @@ export default async function CustomerHomePage() {
           <FeaturedVenue venue={featured} />
         </section>
       ) : (
-        <section className="mb-12 rounded-[22px] border border-white/10 bg-white/[0.025] p-10 text-center">
+        <section
+          className="np-rise mb-12 rounded-[22px] border border-white/10 bg-white/[0.025] p-10 text-center"
+          style={{ animationDelay: '320ms' }}
+        >
           <p className="text-sm text-white/60">
             Aún no hay bares disponibles. Vuelve más tarde.
           </p>
@@ -259,12 +275,21 @@ export default async function CustomerHomePage() {
       {/* ── REST GRID ── */}
       {rest.length > 0 && (
         <section className="mb-12">
-          <h2 className="mb-5 font-display text-lg font-bold tracking-[-0.01em] text-white/85">
+          <h2
+            className="np-rise mb-5 font-display text-lg font-bold tracking-[-0.01em] text-white/85"
+            style={{ animationDelay: '380ms' }}
+          >
             Más opciones para esta noche
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {rest.map((v) => (
-              <VenueCard key={v.id} venue={v} />
+            {rest.map((v, i) => (
+              <div
+                key={v.id}
+                className="np-rise"
+                style={{ animationDelay: `${420 + i * 70}ms` }}
+              >
+                <VenueCard venue={v} />
+              </div>
             ))}
           </div>
         </section>
@@ -317,9 +342,10 @@ export default async function CustomerHomePage() {
           </div>
           <Link
             href={paths.solicitarLocal}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary/15"
+            className="group/cta inline-flex shrink-0 items-center gap-2 rounded-full border border-primary px-5 py-2.5 text-sm font-semibold text-white transform-gpu transition-all duration-200 hover:bg-primary/15 active:scale-95"
           >
-            Soy un local <ArrowRight className="size-4" />
+            Soy un local
+            <ArrowRight className="size-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
           </Link>
         </div>
       </section>

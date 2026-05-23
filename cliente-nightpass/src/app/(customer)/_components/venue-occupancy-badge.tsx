@@ -16,9 +16,9 @@ const LABEL: Record<OccupancyBucket, string> = {
 };
 
 const DOT_CLASS: Record<OccupancyBucket, string> = {
-  low: 'bg-white/40',
-  medium: 'bg-amber-400',
-  high: 'bg-red-500',
+  low: 'bg-emerald-400 shadow-[0_0_8px_rgba(74,222,128,0.55)]',
+  medium: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.55)] np-dot-pulse-slow',
+  high: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] np-dot-pulse-fast',
 };
 
 export function VenueOccupancyBadge({ venueId }: { venueId: string }) {
@@ -43,7 +43,10 @@ export function VenueOccupancyBadge({ venueId }: { venueId: string }) {
 
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.05] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white/75">
-      <span className={`h-1.5 w-1.5 rounded-full ${DOT_CLASS[bucket]}`} aria-hidden />
+      <span
+        className={`h-1.5 w-1.5 origin-center transform-gpu rounded-full ${DOT_CLASS[bucket]}`}
+        aria-hidden
+      />
       {LABEL[bucket]}
     </span>
   );

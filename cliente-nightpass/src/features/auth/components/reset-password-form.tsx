@@ -38,47 +38,51 @@ export function ResetPasswordForm({ token, variant = 'admin' }: ResetPasswordFor
     <form onSubmit={onSubmit} className="space-y-5">
       <input type="hidden" {...register('token')} />
 
-      <Field
-        label="Nueva contraseña"
-        htmlFor="newPassword"
-        error={errors.newPassword?.message}
-        description="Mínimo 8 caracteres"
-      >
-        <div className="relative">
-          <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            id="newPassword"
-            type="password"
-            autoComplete="new-password"
-            placeholder="••••••••"
-            className="h-11 pl-9"
-            {...register('newPassword')}
-          />
-        </div>
-      </Field>
+      <div className={errors.newPassword ? 'np-shake transform-gpu' : ''}>
+        <Field
+          label="Nueva contraseña"
+          htmlFor="newPassword"
+          error={errors.newPassword?.message}
+          description="Mínimo 8 caracteres"
+        >
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors" />
+            <Input
+              id="newPassword"
+              type="password"
+              autoComplete="new-password"
+              placeholder="••••••••"
+              className={`h-12 pl-9 text-base transition-colors ${errors.newPassword ? 'border-destructive/60' : ''}`}
+              {...register('newPassword')}
+            />
+          </div>
+        </Field>
+      </div>
 
-      <Field
-        label="Confirmar contraseña"
-        htmlFor="confirmPassword"
-        error={errors.confirmPassword?.message}
-      >
-        <div className="relative">
-          <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            id="confirmPassword"
-            type="password"
-            autoComplete="new-password"
-            placeholder="••••••••"
-            className="h-11 pl-9"
-            {...register('confirmPassword')}
-          />
-        </div>
-      </Field>
+      <div className={errors.confirmPassword ? 'np-shake transform-gpu' : ''}>
+        <Field
+          label="Confirmar contraseña"
+          htmlFor="confirmPassword"
+          error={errors.confirmPassword?.message}
+        >
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors" />
+            <Input
+              id="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              placeholder="••••••••"
+              className={`h-12 pl-9 text-base transition-colors ${errors.confirmPassword ? 'border-destructive/60' : ''}`}
+              {...register('confirmPassword')}
+            />
+          </div>
+        </Field>
+      </div>
 
       <Button
         type="submit"
         size="lg"
-        className="w-full rounded-full shadow-[0_10px_30px_-8px_rgba(168,85,247,0.65)]"
+        className={`h-12 w-full rounded-full shadow-[0_10px_30px_-8px_rgba(168,85,247,0.65)] transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 transform-gpu ${isPending ? '' : 'np-shimmer'}`}
         disabled={isPending}
       >
         {isPending ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}

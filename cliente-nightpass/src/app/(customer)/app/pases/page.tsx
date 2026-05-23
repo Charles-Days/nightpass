@@ -30,19 +30,19 @@ export default async function PassesPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-6 sm:px-8 sm:py-10">
-      <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+      <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary np-rise">
         Tu noche · listo para entrar
       </p>
-      <h1 className="mt-2 font-display text-3xl font-bold leading-tight tracking-[-0.02em] sm:text-4xl">
+      <h1 className="mt-2 font-display text-3xl font-bold leading-tight tracking-[-0.02em] sm:text-4xl np-rise" style={{ animationDelay: '60ms' }}>
         Mis pases
       </h1>
-      <p className="mt-2 max-w-lg text-sm text-muted-foreground">
+      <p className="mt-2 max-w-lg text-sm text-muted-foreground np-rise" style={{ animationDelay: '120ms' }}>
         Muestra el QR en la puerta y olvídate de las filas.
       </p>
 
       {passes.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center rounded-[22px] border border-white/10 bg-white/[0.025] p-10 text-center">
-          <div className="grid size-14 place-items-center rounded-full border border-white/10 bg-white/[0.04]">
+        <div className="mt-8 flex flex-col items-center rounded-[22px] border border-white/10 bg-white/[0.025] p-10 text-center np-rise" style={{ animationDelay: '180ms' }}>
+          <div className="grid size-14 place-items-center rounded-full border border-white/10 bg-white/[0.04] np-pop-in">
             <Ticket className="size-6 text-primary" />
           </div>
           <h2 className="mt-5 font-display text-lg font-bold tracking-tight">
@@ -53,22 +53,22 @@ export default async function PassesPage() {
           </p>
           <Link
             href={paths.appHome}
-            className="mt-6 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transition hover:brightness-110"
+            className="mt-6 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transition hover:brightness-110 active:scale-95 transform-gpu"
           >
             Explorar bares
           </Link>
         </div>
       ) : (
         <ul className="mt-8 space-y-3">
-          {passes.map((pass) => {
+          {passes.map((pass, idx) => {
             const used = Boolean(pass.usedAt);
             const event = pass.event;
             const venue = event?.venue;
             return (
-              <li key={pass.id}>
+              <li key={pass.id} className="np-rise transform-gpu" style={{ animationDelay: `${120 + idx * 70}ms` }}>
                 <Link
                   href={`${paths.pases}/${pass.id}`}
-                  className="flex items-stretch gap-4 rounded-[20px] border border-white/10 bg-white/[0.025] p-3 transition hover:bg-white/[0.04] sm:p-4"
+                  className="flex items-stretch gap-4 rounded-[20px] border border-white/10 bg-white/[0.025] p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/[0.04] hover:border-white/15 active:scale-[0.98] transform-gpu sm:p-4"
                 >
                   <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[14px] bg-gradient-to-br from-purple-900/40 to-purple-600/10 sm:h-28 sm:w-32">
                     {event?.coverImageUrl ? (
@@ -107,13 +107,13 @@ export default async function PassesPage() {
 
                   <div className="flex shrink-0 items-center">
                     {used ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55 transition-colors">
                         <CheckCircle2 className="size-3" />
                         Usado
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300">
-                        <span className="size-1.5 rounded-full bg-emerald-400" />
+                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300 transition-colors">
+                        <span className="size-1.5 rounded-full bg-emerald-400 np-dot-pulse-slow transform-gpu" />
                         Activo
                       </span>
                     )}

@@ -34,9 +34,9 @@ export function ForgotPasswordForm() {
 
   if (isSuccess && submittedEmail) {
     return (
-      <div className="space-y-4 rounded-2xl border border-primary/25 bg-primary/5 px-5 py-6">
+      <div className="space-y-4 rounded-2xl border border-primary/25 bg-primary/5 px-5 py-6 np-pop-in transform-gpu">
         <div className="flex items-start gap-3">
-          <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-primary" />
+          <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-primary np-success-pop transform-gpu" />
           <div className="space-y-1.5">
             <p className="font-display text-base font-semibold">Revisa tu correo</p>
             <p className="text-sm text-muted-foreground">
@@ -54,24 +54,26 @@ export function ForgotPasswordForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
-      <Field label="Email" htmlFor="email" error={errors.email?.message}>
-        <div className="relative">
-          <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="tu@email.com"
-            className="h-11 pl-9"
-            {...register('email')}
-          />
-        </div>
-      </Field>
+      <div className={errors.email ? 'np-shake transform-gpu' : ''}>
+        <Field label="Email" htmlFor="email" error={errors.email?.message}>
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors" />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="tu@email.com"
+              className={`h-12 pl-9 text-base transition-colors ${errors.email ? 'border-destructive/60' : ''}`}
+              {...register('email')}
+            />
+          </div>
+        </Field>
+      </div>
 
       <Button
         type="submit"
         size="lg"
-        className="w-full rounded-full shadow-[0_10px_30px_-8px_rgba(168,85,247,0.65)]"
+        className={`h-12 w-full rounded-full shadow-[0_10px_30px_-8px_rgba(168,85,247,0.65)] transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 transform-gpu ${isPending ? '' : 'np-shimmer'}`}
         disabled={isPending}
       >
         {isPending ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}

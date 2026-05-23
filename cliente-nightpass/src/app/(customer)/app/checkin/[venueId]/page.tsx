@@ -123,7 +123,7 @@ export default function CheckinFromUrlPage() {
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto flex min-h-[80vh] w-full max-w-md flex-col items-center justify-center px-5 py-8 sm:px-8">
+    <div className="mx-auto flex min-h-[80dvh] w-full max-w-md flex-col items-center justify-center px-5 py-8 sm:px-8">
       {children}
     </div>
   );
@@ -139,7 +139,7 @@ function Status({
   message: string;
 }) {
   return (
-    <div className="w-full rounded-[26px] border border-white/10 bg-white/[0.025] p-7 text-center">
+    <div className="np-pop-in w-full rounded-[26px] border border-white/10 bg-white/[0.025] p-7 text-center">
       <div className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-primary/12">
         {icon}
       </div>
@@ -151,7 +151,7 @@ function Status({
 
 function GeoDenied({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="w-full rounded-[26px] border border-amber-400/20 bg-amber-500/[0.06] p-7 text-center">
+    <div className="np-pop-in w-full rounded-[26px] border border-amber-400/20 bg-amber-500/[0.06] p-7 text-center">
       <AlertTriangle className="mx-auto mb-3 size-9 text-amber-300" />
       <h1 className="font-display text-2xl font-bold">Necesitamos tu ubicación</h1>
       <p className="mt-2 text-sm text-white/70">
@@ -160,7 +160,7 @@ function GeoDenied({ onRetry }: { onRetry: () => void }) {
       </p>
       <button
         onClick={onRetry}
-        className="mt-5 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(168,85,247,0.55)]"
+        className="np-glow-pulse mt-5 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95"
       >
         Reintentar
       </button>
@@ -170,19 +170,19 @@ function GeoDenied({ onRetry }: { onRetry: () => void }) {
 
 function ErrorView({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="w-full rounded-[26px] border border-rose-400/25 bg-rose-500/[0.07] p-7 text-center">
+    <div className="np-pop-in w-full rounded-[26px] border border-rose-400/25 bg-rose-500/[0.07] p-7 text-center">
       <AlertTriangle className="mx-auto mb-3 size-9 text-rose-300" />
       <h1 className="font-display text-xl font-bold">No pudimos procesar el check-in</h1>
       <p className="mt-2 text-sm text-white/75">{message}</p>
       <button
         onClick={onRetry}
-        className="mt-5 rounded-full bg-white/8 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/12"
+        className="mt-5 rounded-full bg-white/8 px-5 py-2.5 text-sm font-semibold text-white transform-gpu transition active:scale-95 hover:bg-white/12"
       >
         Reintentar
       </button>
       <Link
         href={paths.recompensas as never}
-        className="mt-3 inline-flex items-center gap-1.5 text-xs text-white/55 hover:text-white"
+        className="mt-3 inline-flex items-center gap-1.5 text-xs text-white/55 transition hover:text-white active:scale-95 transform-gpu"
       >
         <ArrowLeft className="size-3.5" /> Volver a Recompensas
       </Link>
@@ -192,7 +192,7 @@ function ErrorView({ message, onRetry }: { message: string; onRetry: () => void 
 
 function BadFormat() {
   return (
-    <div className="w-full rounded-[26px] border border-rose-400/25 bg-rose-500/[0.07] p-7 text-center">
+    <div className="np-pop-in w-full rounded-[26px] border border-rose-400/25 bg-rose-500/[0.07] p-7 text-center">
       <AlertTriangle className="mx-auto mb-3 size-9 text-rose-300" />
       <h1 className="font-display text-xl font-bold">Link inválido</h1>
       <p className="mt-2 text-sm text-white/75">
@@ -201,7 +201,7 @@ function BadFormat() {
       </p>
       <Link
         href={paths.recompensas as never}
-        className="mt-5 inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80"
+        className="mt-5 inline-flex items-center gap-1.5 text-sm text-primary transition hover:text-primary/80 active:scale-95 transform-gpu"
       >
         <ArrowLeft className="size-3.5" /> Volver a Recompensas
       </Link>
@@ -214,10 +214,18 @@ function Success({ data }: { data: VenueCheckinResponse }) {
   const already = data.awarded === 0 && data.alreadyCheckedInToday;
 
   return (
-    <div className="relative w-full overflow-hidden rounded-[26px] border border-white/12 bg-white/[0.03] p-7 text-center">
+    <div className="np-pop-in relative w-full overflow-hidden rounded-[26px] border border-white/12 bg-white/[0.03] p-7 text-center">
       <div
         className={`absolute inset-x-8 -top-20 h-44 rounded-full bg-gradient-to-br ${tierStyle.gradient} opacity-30 blur-3xl`}
       />
+      {!already ? (
+        <div
+          aria-hidden
+          className="np-confetti-burst pointer-events-none absolute left-1/2 top-10 -translate-x-1/2"
+        >
+          <div className="size-20 rounded-full bg-gradient-to-br from-[#a855f7]/45 via-[#ec4899]/30 to-transparent blur-2xl" />
+        </div>
+      ) : null}
       <div className="relative">
         {already ? (
           <>

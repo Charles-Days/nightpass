@@ -113,12 +113,18 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
+    -webkit-tap-highlight-color: transparent;
   }
   h1,
   h2,
   h3,
   h4 {
     font-family: var(--font-display);
+  }
+  a,
+  button,
+  [role='button'] {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -393,6 +399,266 @@
   transform: translate3d(0, -4px, 0);
 }
 
+/* ==========================================================================
+   Customer app — micro-animations (bokeh pulse, dot pulses, fade-in stagger)
+   ========================================================================== */
+
+@keyframes np-bokeh-pulse-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.28;
+  }
+  50% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+    opacity: 0.34;
+  }
+}
+
+@keyframes np-bokeh-pulse-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.22;
+  }
+  50% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+    opacity: 0.28;
+  }
+}
+
+@keyframes np-bokeh-pulse-c {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.18;
+  }
+  50% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+    opacity: 0.24;
+  }
+}
+
+.np-bokeh-a {
+  animation: np-bokeh-pulse-a 10s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+.np-bokeh-b {
+  animation: np-bokeh-pulse-b 12s ease-in-out infinite;
+  animation-delay: -3s;
+  will-change: transform, opacity;
+}
+.np-bokeh-c {
+  animation: np-bokeh-pulse-c 9s ease-in-out infinite;
+  animation-delay: -5s;
+  will-change: transform, opacity;
+}
+
+@keyframes np-dot-pulse-slow {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.75;
+  }
+}
+
+@keyframes np-dot-pulse-fast {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.45);
+    opacity: 0.6;
+  }
+}
+
+.np-dot-pulse-slow {
+  animation: np-dot-pulse-slow 2.4s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.np-dot-pulse-fast {
+  animation: np-dot-pulse-fast 1.3s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Stagger helper: applied to a .np-rise child uses --np-i for delay index */
+.np-stagger {
+  animation-delay: calc(var(--np-i, 0) * 70ms);
+}
+
+/* ==========================================================================
+   Customer app — additional micro-animations
+   (glow pulse for CTAs, scanner ring, fade-in, snap helper)
+   ========================================================================== */
+
+@keyframes np-glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 4px 18px -4px rgba(168, 85, 247, 0.55),
+      0 0 0 0 rgba(168, 85, 247, 0);
+  }
+  50% {
+    box-shadow: 0 6px 24px -2px rgba(168, 85, 247, 0.7),
+      0 0 0 6px rgba(168, 85, 247, 0.12);
+  }
+}
+
+.np-glow-pulse {
+  animation: np-glow-pulse 2.4s ease-in-out infinite;
+  will-change: box-shadow;
+}
+
+@keyframes np-scan-ring {
+  0%,
+  100% {
+    border-color: rgba(168, 85, 247, 0.45);
+    box-shadow: 0 0 26px rgba(168, 85, 247, 0.3);
+  }
+  50% {
+    border-color: rgba(168, 85, 247, 0.85);
+    box-shadow: 0 0 56px rgba(168, 85, 247, 0.55);
+  }
+}
+
+.np-scan-ring {
+  animation: np-scan-ring 2s ease-in-out infinite;
+  will-change: border-color, box-shadow;
+}
+
+@keyframes np-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.np-fade-in {
+  opacity: 0;
+  animation: np-fade-in 600ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+@keyframes np-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.np-pop-in {
+  opacity: 0;
+  animation: np-pop-in 520ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes np-confetti-burst {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.np-confetti-burst {
+  animation: np-confetti-burst 1100ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* Soft shake for error/duplicate states (300ms one-shot) */
+@keyframes np-shake {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  20% {
+    transform: translate3d(-6px, 0, 0);
+  }
+  40% {
+    transform: translate3d(5px, 0, 0);
+  }
+  60% {
+    transform: translate3d(-3px, 0, 0);
+  }
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+}
+
+.np-shake {
+  animation: np-shake 360ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  will-change: transform;
+}
+
+/* Subtle shimmer sweep across enabled CTA buttons */
+@keyframes np-shimmer {
+  0% {
+    transform: translate3d(-120%, 0, 0);
+  }
+  100% {
+    transform: translate3d(220%, 0, 0);
+  }
+}
+
+.np-shimmer {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.np-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 75%
+  );
+  transform: translate3d(-120%, 0, 0);
+  animation: np-shimmer 2.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Soft scale tap helper (when active:scale-95 isn't enough on bigger surfaces) */
+@keyframes np-success-pop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.np-success-pop {
+  animation: np-success-pop 520ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  will-change: transform, opacity;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .np-rise,
   .np-zoom-in {
@@ -410,5 +676,25 @@
   }
   .np-card-hover:hover {
     transform: none !important;
+  }
+  .np-bokeh-a,
+  .np-bokeh-b,
+  .np-bokeh-c,
+  .np-dot-pulse-slow,
+  .np-dot-pulse-fast,
+  .np-glow-pulse,
+  .np-scan-ring,
+  .np-fade-in,
+  .np-pop-in,
+  .np-confetti-burst,
+  .np-shake,
+  .np-success-pop {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .np-shimmer::after {
+    animation: none !important;
+    display: none !important;
   }
 }

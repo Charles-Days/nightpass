@@ -65,32 +65,32 @@ export default async function EventDetailPage({ params }: Props) {
     <div className="mx-auto w-full max-w-3xl px-5 py-6 sm:px-8 sm:py-10">
       <Link
         href={`${paths.bar}/${event.venue.slug}`}
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
+        className="np-rise inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground active:scale-95 transform-gpu"
       >
         <ArrowLeft className="size-4" />
         {event.venue.name}
       </Link>
 
-      <section className="mt-5 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]">
-        <div className="relative aspect-[16/9] bg-gradient-to-br from-purple-900/40 to-purple-600/10">
+      <section className="np-rise mt-5 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]" style={{ animationDelay: '80ms' }}>
+        <div className="group relative aspect-video bg-gradient-to-br from-purple-900/40 to-purple-600/10">
           {event.coverImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={event.coverImageUrl}
               alt={event.title}
-              className="absolute inset-0 size-full object-cover"
+              className="absolute inset-0 size-full object-cover transform-gpu transition-transform duration-[1200ms] ease-out group-hover:scale-[1.04]"
             />
           ) : null}
           <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
-            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+            <p className="np-rise text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary" style={{ animationDelay: '160ms' }}>
               <Calendar className="mr-1 inline size-3" />
               {formatDate(event.startsAt)}
             </p>
-            <h1 className="mt-2 font-display text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl">
+            <h1 className="np-rise mt-2 font-display text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl" style={{ animationDelay: '220ms' }}>
               {event.title}
             </h1>
-            <p className="mt-1.5 flex items-center gap-1.5 text-sm text-white/75">
+            <p className="np-rise mt-1.5 flex items-center gap-1.5 text-sm text-white/75" style={{ animationDelay: '280ms' }}>
               <MapPin className="size-3.5" />
               {event.venue.name} · {event.venue.city}
             </p>
@@ -98,13 +98,13 @@ export default async function EventDetailPage({ params }: Props) {
         </div>
 
         {event.description && (
-          <div className="border-t border-white/8 p-5 sm:p-7">
+          <div className="np-rise border-t border-white/8 p-5 sm:p-7" style={{ animationDelay: '340ms' }}>
             <p className="text-sm leading-relaxed text-muted-foreground">{event.description}</p>
           </div>
         )}
       </section>
 
-      <section className="mt-8">
+      <section className="np-rise mt-8" style={{ animationDelay: '400ms' }}>
         <h2 className="mb-4 font-display text-xl font-bold tracking-tight">Boletos</h2>
         {event.tiers.length === 0 ? (
           <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-8 text-center text-sm text-muted-foreground">
@@ -112,7 +112,7 @@ export default async function EventDetailPage({ params }: Props) {
           </div>
         ) : (
           <ul className="space-y-3">
-            {event.tiers.map((tier) => {
+            {event.tiers.map((tier, i) => {
               const requires = tier.minLoyaltyTier ?? null;
               const userRank = userTier ? LOYALTY_TIER_RANK[userTier] : 0;
               const requiredRank = requires ? LOYALTY_TIER_RANK[requires] : 0;
@@ -121,7 +121,8 @@ export default async function EventDetailPage({ params }: Props) {
               return (
                 <li
                   key={tier.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-white/10 bg-white/[0.025] p-4 sm:p-5"
+                  className="np-rise flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-white/10 bg-white/[0.025] p-4 transform-gpu transition-all duration-300 ease-out hover:border-white/20 hover:bg-white/[0.04] active:scale-[0.98] active:duration-100 sm:p-5"
+                  style={{ animationDelay: `${460 + i * 80}ms` }}
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -148,7 +149,7 @@ export default async function EventDetailPage({ params }: Props) {
                     {locked ? (
                       <Link
                         href={paths.recompensas}
-                        className="mt-2 inline-flex items-center text-[11px] font-semibold text-primary hover:underline"
+                        className="mt-2 inline-flex items-center text-[11px] font-semibold text-primary transition active:scale-95 transform-gpu hover:underline"
                       >
                         ¿Cómo subo de tier? →
                       </Link>
@@ -168,7 +169,7 @@ export default async function EventDetailPage({ params }: Props) {
                     ) : (
                       <Link
                         href={`${paths.checkout}/${tier.id}`}
-                        className="rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transition hover:brightness-110"
+                        className="np-glow-pulse rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95 hover:brightness-110"
                       >
                         Comprar
                       </Link>
