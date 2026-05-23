@@ -8,7 +8,10 @@ const isProd = process.env.NODE_ENV === 'production';
 const baseCookieOptions = {
   httpOnly: true,
   secure: isProd,
-  sameSite: 'strict',
+  // 'lax' instead of 'strict' so QR scans / external deep links into authed
+  // routes (e.g. /app/checkin/[venueId] opened from native camera app) carry
+  // cookies on the initial GET. Lax still blocks cross-site POSTs.
+  sameSite: 'lax',
   path: '/',
 } satisfies Partial<ResponseCookie>;
 

@@ -163,6 +163,30 @@ export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Gua
           <Field label="Descripción" className="sm:col-span-2" error={errors.description?.message}>
             <Textarea {...register('description')} rows={4} placeholder="Describe el ambiente, el concepto..." />
           </Field>
+          <Field
+            label="Latitud"
+            error={errors.latitude?.message}
+            description="Click derecho en Google Maps → primer valor del par lat,lng"
+          >
+            <Input
+              type="number"
+              step="any"
+              {...register('latitude')}
+              placeholder="Ej: 18.9244"
+            />
+          </Field>
+          <Field
+            label="Longitud"
+            error={errors.longitude?.message}
+            description="Segundo valor del par lat,lng en Google Maps"
+          >
+            <Input
+              type="number"
+              step="any"
+              {...register('longitude')}
+              placeholder="Ej: -99.2210"
+            />
+          </Field>
         </CardContent>
       </Card>
 
