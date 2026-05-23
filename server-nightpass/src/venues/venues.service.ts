@@ -1,6 +1,7 @@
 import {
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -8,6 +9,7 @@ import { Role, Prisma, VenueStatus, VenueStaffStatus, Photo, EventStatus } from 
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { MailerService } from '../mailer/mailer.service';
 import { ListVenuesQuery } from './dto/list-venues.query';
 import { CreateVenueDto } from './dto/create-venue.dto';
 import { UpdateVenueDto } from './dto/update-venue.dto';
@@ -23,12 +25,14 @@ interface CreateWithOwnerInput {
 
 @Injectable()
 export class VenuesService {
+  private readonly logger = new Logger(VenuesService.name);
   private readonly uploadsUrl: string;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly storage: StorageService,
+    private readonly mailer: MailerService,
   ) {
     this.uploadsUrl = this.config.get<string>('LOCAL_UPLOADS_URL') || '';
   }
@@ -199,6 +203,9 @@ export class VenuesService {
     if (user && user.role !== Role.ADMIN) {
       const isOwner = venue.owners.some((o) => o.userId === user.id);
       if (!isOwner) throw new NotFoundException('Local no encontrado');
+      // Non-admin callers cannot mutate moderation fields.
+      delete (dto as Record<string, unknown>).status;
+      delete (dto as Record<string, unknown>).slug;
     }
 
     const { images, ...rest } = dto;
@@ -245,20 +252,75 @@ export class VenuesService {
     return updated;
   }
 
-  async suspend(id: string) {
-    await this.ensureExists(id);
-    return this.prisma.venue.update({
+  async suspend(id: string, reason?: string) {
+    const venue = await this.prisma.venue.findUnique({
+      where: { id },
+      include: {
+        owners: {
+          include: {
+            user: { select: { email: true, name: true } },
+          },
+        },
+      },
+    });
+    if (!venue) throw new NotFoundException('Local no encontrado');
+
+    const updated = await this.prisma.venue.update({
       where: { id },
       data: { status: VenueStatus.SUSPENDED },
     });
+
+    for (const owner of venue.owners) {
+      void this.mailer
+        .sendVenueSuspended(
+          owner.user.email,
+          owner.user.name ?? 'amig@',
+          venue.name,
+          reason,
+        )
+        .catch((err) =>
+          this.logger.error(
+            `Email suspensión venue falló (${owner.user.email}): ${err instanceof Error ? err.message : err}`,
+          ),
+        );
+    }
+
+    return updated;
   }
 
   async reactivate(id: string) {
-    await this.ensureExists(id);
-    return this.prisma.venue.update({
+    const venue = await this.prisma.venue.findUnique({
+      where: { id },
+      include: {
+        owners: {
+          include: {
+            user: { select: { email: true, name: true } },
+          },
+        },
+      },
+    });
+    if (!venue) throw new NotFoundException('Local no encontrado');
+
+    const updated = await this.prisma.venue.update({
       where: { id },
       data: { status: VenueStatus.ACTIVE },
     });
+
+    for (const owner of venue.owners) {
+      void this.mailer
+        .sendVenueReactivated(
+          owner.user.email,
+          owner.user.name ?? 'amig@',
+          venue.name,
+        )
+        .catch((err) =>
+          this.logger.error(
+            `Email reactivación venue falló (${owner.user.email}): ${err instanceof Error ? err.message : err}`,
+          ),
+        );
+    }
+
+    return updated;
   }
 
   private _mapVenueUrls<T extends { coverImageUrl?: string | null; photos?: Photo[] }>(venue: T): T {

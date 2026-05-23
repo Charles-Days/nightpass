@@ -8,7 +8,9 @@ import {
   IsString,
   IsUUID,
   IsUrl,
+  Max,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
@@ -99,6 +101,12 @@ export class UpdateVenueDto {
   @IsOptional()
   @IsInt()
   minAge?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  geofenceRadiusM?: number;
 
   @IsOptional()
   @IsEnum(VenueStatus)

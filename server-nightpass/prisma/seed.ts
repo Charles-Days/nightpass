@@ -3,6 +3,7 @@ import { seedAdmin } from './seeds/admin';
 import { seedVenueOwner } from './seeds/venue-owner';
 import { seedVenueStaff } from './seeds/venue-staff';
 import { seedCustomer } from './seeds/customer';
+import { seedLoyalty } from './seeds/loyalty';
 
 async function main() {
   const prisma = new PrismaClient();
@@ -14,6 +15,7 @@ async function main() {
     await seedVenueOwner(prisma);
     await seedVenueStaff(prisma);
     await seedCustomer(prisma);
+    await seedLoyalty(prisma);
 
     // eslint-disable-next-line no-console
     console.log('✅ Seed completado.');

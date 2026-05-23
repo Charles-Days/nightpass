@@ -1,12 +1,14 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, Loader2, Lock, Mail } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { Input } from '@/core/components/ui/input';
 import { Field } from '@/core/components/ui/field';
+import { paths } from '@/core/config/paths';
 import { loginSchema, type LoginInput } from '../schemas/login.schema';
 import { useLogin } from '../hooks/use-login';
 
@@ -51,6 +53,14 @@ export function LoginForm() {
             className="h-11 pl-9"
             {...register('password')}
           />
+        </div>
+        <div className="flex justify-end pt-0.5">
+          <Link
+            href={paths.forgotPassword}
+            className="text-xs text-muted-foreground transition hover:text-primary"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
         </div>
       </Field>
 

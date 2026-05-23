@@ -1,9 +1,15 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Calendar, MapPin } from 'lucide-react';
+import { ArrowLeft, Calendar, Lock, MapPin } from 'lucide-react';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
-import type { CatalogEventDetail } from '@/core/types/api';
+import {
+  LOYALTY_TIER_RANK,
+  type CatalogEventDetail,
+  type LoyaltyStatus,
+  type LoyaltyTier,
+} from '@/core/types/api';
+import { TIER_STYLES } from '@/features/loyalty';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -42,6 +48,17 @@ export default async function EventDetailPage({ params }: Props) {
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 404) notFound();
     throw error;
+  }
+
+  // Try to fetch loyalty status to display tier-gate UX. If user is not
+  // signed in or backend is not ready yet, the tier check is skipped and
+  // the backend will still 403 on order creation.
+  let userTier: LoyaltyTier | null = null;
+  try {
+    const loyalty = await serverFetch<LoyaltyStatus>('/me/loyalty');
+    userTier = loyalty.tier;
+  } catch {
+    userTier = null;
   }
 
   return (
@@ -95,30 +112,71 @@ export default async function EventDetailPage({ params }: Props) {
           </div>
         ) : (
           <ul className="space-y-3">
-            {event.tiers.map((tier) => (
-              <li
-                key={tier.id}
-                className="flex items-center justify-between gap-4 rounded-[18px] border border-white/10 bg-white/[0.025] p-4 sm:p-5"
-              >
-                <div>
-                  <p className="font-display text-base font-bold tracking-tight">{tier.name}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {tier.capacity ? `${tier.capacity} lugares` : 'Sin límite'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-display text-lg font-bold tabular-nums">
-                    {formatPrice(tier.priceCents, tier.currency)}
-                  </span>
-                  <Link
-                    href={`${paths.checkout}/${tier.id}`}
-                    className="rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transition hover:brightness-110"
-                  >
-                    Comprar
-                  </Link>
-                </div>
-              </li>
-            ))}
+            {event.tiers.map((tier) => {
+              const requires = tier.minLoyaltyTier ?? null;
+              const userRank = userTier ? LOYALTY_TIER_RANK[userTier] : 0;
+              const requiredRank = requires ? LOYALTY_TIER_RANK[requires] : 0;
+              const locked = !!requires && userRank < requiredRank;
+              const requiredLabel = requires ? TIER_STYLES[requires].label : null;
+              return (
+                <li
+                  key={tier.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-white/10 bg-white/[0.025] p-4 sm:p-5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-display text-base font-bold tracking-tight">
+                        {tier.name}
+                      </p>
+                      {requires ? (
+                        <span
+                          className={
+                            locked
+                              ? 'inline-flex items-center gap-1 rounded-full border border-amber-300/35 bg-amber-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200'
+                              : 'inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70'
+                          }
+                        >
+                          {locked ? <Lock className="size-2.5" /> : null}
+                          {locked ? 'Requiere' : 'Tier'} {requiredLabel}
+                          {!locked ? '+' : ''}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {tier.capacity ? `${tier.capacity} lugares` : 'Sin límite'}
+                    </p>
+                    {locked ? (
+                      <Link
+                        href={paths.recompensas}
+                        className="mt-2 inline-flex items-center text-[11px] font-semibold text-primary hover:underline"
+                      >
+                        ¿Cómo subo de tier? →
+                      </Link>
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-display text-lg font-bold tabular-nums">
+                      {formatPrice(tier.priceCents, tier.currency)}
+                    </span>
+                    {locked ? (
+                      <span
+                        aria-disabled
+                        className="cursor-not-allowed rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-white/45"
+                      >
+                        Bloqueado
+                      </span>
+                    ) : (
+                      <Link
+                        href={`${paths.checkout}/${tier.id}`}
+                        className="rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transition hover:brightness-110"
+                      >
+                        Comprar
+                      </Link>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

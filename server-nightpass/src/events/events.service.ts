@@ -247,6 +247,7 @@ export class EventsService {
         currency: dto.currency ?? 'EUR',
         capacity: dto.capacity ?? null,
         position: dto.position ?? 0,
+        minLoyaltyTier: dto.minLoyaltyTier ?? null,
       },
     });
   }
@@ -277,6 +278,7 @@ export class EventsService {
     if (dto.currency !== undefined) data.currency = dto.currency;
     if (dto.capacity !== undefined) data.capacity = dto.capacity;
     if (dto.position !== undefined) data.position = dto.position;
+    if (dto.minLoyaltyTier !== undefined) data.minLoyaltyTier = dto.minLoyaltyTier;
 
     return this.prisma.eventTier.update({ where: { id: tierId }, data });
   }

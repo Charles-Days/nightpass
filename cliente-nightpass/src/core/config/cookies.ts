@@ -8,7 +8,7 @@ const isProd = process.env.NODE_ENV === 'production';
 const baseCookieOptions = {
   httpOnly: true,
   secure: isProd,
-  sameSite: 'lax',
+  sameSite: 'strict',
   path: '/',
 } satisfies Partial<ResponseCookie>;
 

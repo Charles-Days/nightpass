@@ -10,6 +10,7 @@ import type { Venue } from '@/core/types/api';
 import { useSuspendVenue } from '../hooks/use-suspend-venue';
 import { useReactivateVenue } from '../hooks/use-reactivate-venue';
 import { VenueEditForm } from './venue-edit-form';
+import { CheckinQrPanel } from './checkin-qr-panel';
 import { VenueStatusBadge } from './status-badge';
 import { RoleBadge } from '@/features/users';
 import { StaffTable, InviteStaffForm } from '@/features/staff';
@@ -123,6 +124,19 @@ export function VenueDetail({ venue, hideHeader = false }: { venue: Venue; hideH
             <p className="mb-3 text-sm font-medium">Miembros actuales</p>
             <StaffTable venueId={venue.id} />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Check-in QR</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CheckinQrPanel
+            venueId={venue.id}
+            venueName={venue.name}
+            venueCity={venue.city}
+          />
         </CardContent>
       </Card>
 

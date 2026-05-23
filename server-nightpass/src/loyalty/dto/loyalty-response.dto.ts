@@ -1,0 +1,33 @@
+import { LoyaltyEventType, LoyaltyTier } from '@prisma/client';
+
+export interface LoyaltyStatusDto {
+  totalPoints: number;
+  yearPoints: number;
+  tier: LoyaltyTier;
+  nextTier: LoyaltyTier | null;
+  pointsToNext: number | null;
+  streak: {
+    current: number;
+    longest: number;
+    freezesRemaining: number;
+    lastCheckinDate: string | null;
+  };
+}
+
+export interface LoyaltyEventDto {
+  id: string;
+  type: LoyaltyEventType;
+  points: number;
+  multiplier: number;
+  venueName: string | null;
+  eventTitle: string | null;
+  occurredAt: string;
+}
+
+export interface LeaderboardEntryDto {
+  rank: number;
+  userId: string;
+  name: string;
+  tier: LoyaltyTier;
+  yearPoints: number;
+}

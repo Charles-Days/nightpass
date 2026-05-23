@@ -9,6 +9,16 @@ import {
   applicationRejected,
   staffInvited,
 } from './templates/application-emails';
+import {
+  customerWelcome,
+  passwordReset,
+  passwordChanged,
+} from './templates/auth-emails';
+import {
+  venueSuspended,
+  venueReactivated,
+  staffRevoked,
+} from './templates/venue-lifecycle-emails';
 
 @Injectable()
 export class MailerService {
@@ -21,22 +31,26 @@ export class MailerService {
   constructor(config: ConfigService) {
     const smtpUser = config.get<string>('SMTP_USER');
     const smtpPass = config.get<string>('SMTP_PASS');
+    const smtpHost = config.get<string>('SMTP_HOST') ?? 'smtp.gmail.com';
+    const smtpPort = Number(config.get<string>('SMTP_PORT') ?? 587);
+    const smtpSecure = config.get<string>('SMTP_SECURE') === 'true' || smtpPort === 465;
+    const smtpFrom = config.get<string>('SMTP_FROM');
     this.adminNotificationEmail =
       config.get<string>('ADMIN_NOTIFICATION_EMAIL') ?? null;
     this.adminWebUrl =
       config.get<string>('ADMIN_WEB_URL') ?? 'http://localhost:7100';
 
     if (smtpUser && smtpPass) {
-      this.from = `NightPass <${smtpUser}>`;
+      this.from = smtpFrom ?? `NightPass <${smtpUser}>`;
       this.transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpSecure,
         auth: { user: smtpUser, pass: smtpPass },
       });
-      this.logger.log(`Mailer configurado con Gmail SMTP (${smtpUser})`);
+      this.logger.log(`Mailer configurado con SMTP ${smtpHost}:${smtpPort} (${smtpUser})`);
     } else {
-      this.from = 'NightPass <noreply@nightpass.app>';
+      this.from = 'NightPass <noreply@nightpass.mx>';
       this.transporter = null;
       this.logger.warn(
         'Mailer en modo no-op: define SMTP_USER y SMTP_PASS para enviar correos reales.',
@@ -109,9 +123,60 @@ export class MailerService {
     staffName: string,
     venueName: string,
     temporaryPassword?: string,
+    staffRole?: 'MANAGER' | 'SCANNER',
   ): Promise<void> {
     const loginUrl = `${this.adminWebUrl.replace(/\/$/, '')}/login`;
-    const tpl = staffInvited({ staffName, venueName, loginEmail: to, loginUrl, temporaryPassword });
+    const tpl = staffInvited({ staffName, venueName, loginEmail: to, loginUrl, temporaryPassword, staffRole });
+    await this.send(to, tpl);
+  }
+
+  async sendCustomerWelcome(to: string, name: string): Promise<void> {
+    const appUrl = `${this.adminWebUrl.replace(/\/$/, '')}/app`;
+    const tpl = customerWelcome({ name, email: to, appUrl });
+    await this.send(to, tpl);
+  }
+
+  async sendPasswordReset(
+    to: string,
+    name: string,
+    resetUrl: string,
+    expiresInMinutes: number,
+  ): Promise<void> {
+    const tpl = passwordReset({ name, resetUrl, expiresInMinutes });
+    await this.send(to, tpl);
+  }
+
+  async sendPasswordChanged(to: string, name: string): Promise<void> {
+    const tpl = passwordChanged({ name });
+    await this.send(to, tpl);
+  }
+
+  async sendVenueSuspended(
+    to: string,
+    ownerName: string,
+    venueName: string,
+    reason?: string,
+  ): Promise<void> {
+    const tpl = venueSuspended({ ownerName, venueName, reason });
+    await this.send(to, tpl);
+  }
+
+  async sendVenueReactivated(
+    to: string,
+    ownerName: string,
+    venueName: string,
+  ): Promise<void> {
+    const loginUrl = `${this.adminWebUrl.replace(/\/$/, '')}/login`;
+    const tpl = venueReactivated({ ownerName, venueName, loginUrl });
+    await this.send(to, tpl);
+  }
+
+  async sendStaffRevoked(
+    to: string,
+    staffName: string,
+    venueName: string,
+  ): Promise<void> {
+    const tpl = staffRevoked({ staffName, venueName });
     await this.send(to, tpl);
   }
 

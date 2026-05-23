@@ -55,3 +55,38 @@ export function verifyHmac(provided: string, expected: string): boolean {
     return false;
   }
 }
+
+/**
+ * Firma un QR de check-in estatico para un venue.
+ *
+ * El payload final es `np_checkin_<venueId>_<hmacHex>`. Solo el venueId entra
+ * en el HMAC para que el codigo impreso siga funcionando hasta la siguiente
+ * rotacion del `checkinQrSecret` del venue.
+ */
+export function signVenueCheckin(venueId: string, secret: string): string {
+  const payload = `checkin:${venueId}`;
+  const hex = createHmac('sha256', secret).update(payload).digest('hex');
+  return `np_checkin_${venueId}_${hex}`;
+}
+
+const VENUE_CHECKIN_REGEX = /^np_checkin_([0-9a-f-]{36})_([0-9a-f]{64})$/i;
+
+/**
+ * Verifica un payload de check-in. Devuelve `{ venueId }` cuando el formato y
+ * el HMAC coinciden con el secreto actual del venue; `null` en cualquier otro
+ * caso (formato invalido o HMAC distinto).
+ */
+export function verifyVenueCheckin(
+  payload: string,
+  secret: string,
+): { venueId: string } | null {
+  const match = payload.trim().match(VENUE_CHECKIN_REGEX);
+  if (!match) return null;
+  const venueId = match[1];
+  const provided = match[2].toLowerCase();
+  const expected = createHmac('sha256', secret)
+    .update(`checkin:${venueId}`)
+    .digest('hex');
+  if (!verifyHmac(provided, expected)) return null;
+  return { venueId };
+}

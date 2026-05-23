@@ -1,9 +1,11 @@
 import Link from 'next/link';
-import { Search } from 'lucide-react';
+import { ArrowRight, MapPin, Music2, Search, Sparkles } from 'lucide-react';
 import { serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import { VenueCard } from '../_components/venue-card';
+import { FeaturedAforo } from '../_components/featured-aforo';
 import type { CatalogVenueSummary } from '@/core/types/api';
+import { InstallBanner, AppOpenPinger } from '@/features/geolocation';
 
 export const metadata = {
   title: 'NightPass — Descubre la noche cerca de ti',
@@ -18,6 +20,154 @@ interface CatalogResponse {
   limit: number;
 }
 
+const QUICK_FILTERS = [
+  { label: 'Esta noche', q: '' },
+  { label: 'Reggaetón', q: 'reggaeton' },
+  { label: 'Techno', q: 'techno' },
+  { label: 'House', q: 'house' },
+  { label: 'Rooftop', q: 'rooftop' },
+  { label: 'Indie', q: 'indie' },
+];
+
+const COMING_SOON_TEASERS = [
+  { name: 'Más bares en camino', area: 'CDMX', when: 'Esta semana' },
+  { name: 'Próximamente', area: 'Roma Norte', when: 'En 2 semanas' },
+  { name: 'Próximamente', area: 'Condesa', when: 'En 3 semanas' },
+  { name: 'Próximamente', area: 'Polanco', when: 'Pronto' },
+];
+
+function formatPrice(cents: number | null, currency: string | null): string | null {
+  if (cents == null) return null;
+  const amount = (cents / 100).toFixed(0);
+  const sym = currency?.toLowerCase() === 'eur' ? '€' : '$';
+  const suffix = currency?.toLowerCase() === 'mxn' ? ' MXN' : '';
+  return `${sym}${amount}${suffix}`;
+}
+
+function FeaturedVenue({ venue }: { venue: CatalogVenueSummary }) {
+  const price = formatPrice(venue.priceFromCents, venue.currency);
+  const tags = [...(venue.musicTypes ?? []), ...(venue.categories ?? [])].slice(0, 3);
+
+  return (
+    <Link
+      href={`${paths.bar}/${venue.slug}`}
+      className="group block overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.02] transition hover:border-white/20"
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr]">
+        <div className="relative aspect-[16/10] overflow-hidden lg:aspect-auto lg:min-h-[420px]">
+          {venue.coverImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={venue.coverImageUrl}
+              alt={venue.name}
+              className="absolute inset-0 size-full object-cover transition duration-700 group-hover:scale-105"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 to-purple-600/10" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0712] via-[#0a0712]/40 to-transparent" />
+
+          <div className="absolute left-5 top-5 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300 backdrop-blur-md">
+              <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]" />
+              Activo
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/40 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85 backdrop-blur-md">
+              <Sparkles className="size-3 text-primary" /> Pick de hoy
+            </span>
+          </div>
+
+          <div className="absolute inset-x-0 bottom-0 p-6 sm:p-7">
+            <h3 className="font-display text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl">
+              {venue.name}
+            </h3>
+            <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/70">
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="size-3.5" />
+                {venue.address ?? venue.city}
+              </span>
+              {venue.musicTypes?.[0] && (
+                <>
+                  <span className="text-white/30">·</span>
+                  <span className="inline-flex items-center gap-1">
+                    <Music2 className="size-3.5" />
+                    {venue.musicTypes.slice(0, 2).join(' · ')}
+                  </span>
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-5 p-6 sm:p-7">
+          <FeaturedAforo venueId={venue.id} />
+
+          {venue.description && (
+            <p className="text-[14.5px] leading-relaxed text-white/70">
+              {venue.description.length > 220
+                ? `${venue.description.slice(0, 220)}…`
+                : venue.description}
+            </p>
+          )}
+
+          {(price || venue.minAge != null || venue.dressCode) && (
+            <div className="grid grid-cols-2 gap-3">
+              {price && (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
+                    Cover desde
+                  </p>
+                  <p className="mt-1.5 font-display text-2xl font-bold tracking-[-0.02em] text-white">
+                    {price}
+                  </p>
+                </div>
+              )}
+              {venue.minAge != null && (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
+                    Edad mínima
+                  </p>
+                  <p className="mt-1.5 font-display text-2xl font-bold tracking-[-0.02em] text-white">
+                    {venue.minAge}+
+                  </p>
+                </div>
+              )}
+              {venue.dressCode && !price && venue.minAge == null && (
+                <div className="col-span-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
+                    Dress code
+                  </p>
+                  <p className="mt-1.5 text-sm font-semibold text-white">{venue.dressCode}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {tags.map((t) => (
+                <span
+                  key={t}
+                  className="rounded-full bg-white/[0.05] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/75"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-auto flex flex-col gap-2 sm:flex-row">
+            <span className="group/btn inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.6)] transition group-hover:from-[#7e22ce] group-hover:to-[#9333ea]">
+              {price ? `Comprar pase · ${price}` : 'Ver detalles'}
+              <ArrowRight className="size-4 transition group-hover/btn:translate-x-0.5" />
+            </span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default async function CustomerHomePage() {
   let venues: CatalogVenueSummary[] = [];
   try {
@@ -27,56 +177,151 @@ export default async function CustomerHomePage() {
     venues = [];
   }
 
+  const [featured, ...rest] = venues;
+  const featuredCity = featured?.city ?? 'tu ciudad';
+
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-12">
-      {/* Hero */}
-      <section className="mb-10">
-        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+      <InstallBanner />
+      <AppOpenPinger />
+
+      {/* ── HERO ── */}
+      <section className="mb-12 max-w-3xl">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.28em] text-primary">
           Vive la noche · Sin filas
         </p>
-        <h1 className="mt-3 font-display text-4xl font-bold leading-[0.95] tracking-[-0.03em] sm:text-5xl lg:text-6xl">
-          Descubre dónde
-          <br />
-          <span className="font-serif italic text-purple-200">sales esta noche</span>
+        <h1 className="mt-4 font-display text-5xl font-bold leading-[0.95] tracking-[-0.035em] sm:text-6xl lg:text-7xl">
+          Descubre dónde{' '}
+          <span className="font-serif text-[1.05em] italic font-normal text-purple-200">
+            sales esta noche.
+          </span>
         </h1>
-        <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">
+        <p className="mt-6 max-w-xl text-base leading-relaxed text-white/65 sm:text-lg">
           Compra tu cover digital con QR seguro y entra al toque. Sin efectivo, sin tickets.
         </p>
 
-        <Link
-          href={paths.buscar}
-          className="mt-7 inline-flex w-full max-w-md items-center gap-3 rounded-full border border-white/15 bg-white/[0.04] px-5 py-3.5 text-sm text-white/60 transition hover:border-white/25 hover:bg-white/[0.06]"
-        >
-          <Search className="size-4" />
-          Buscar un bar, ciudad o género…
-        </Link>
-      </section>
-
-      {/* Grid */}
-      <section>
-        <div className="mb-5 flex items-end justify-between">
-          <h2 className="font-display text-xl font-bold tracking-tight">Bares cerca de ti</h2>
+        {/* Search */}
+        <div className="mt-8 flex flex-col gap-3">
           <Link
             href={paths.buscar}
-            className="text-xs font-semibold uppercase tracking-[0.18em] text-primary hover:text-primary/80"
+            className="inline-flex w-full max-w-xl items-center gap-3 rounded-full border border-white/12 bg-white/[0.04] px-5 py-3.5 text-sm text-white/55 transition hover:border-white/25 hover:bg-white/[0.06]"
           >
-            Ver todos
+            <Search className="size-4" />
+            <span className="flex-1">Buscar un bar, ciudad o género…</span>
+            <span className="hidden rounded border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-white/40 sm:inline">
+              ⌘K
+            </span>
           </Link>
-        </div>
 
-        {venues.length === 0 ? (
-          <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-10 text-center">
-            <p className="text-sm text-muted-foreground">
-              Aún no hay bares disponibles. Vuelve más tarde.
-            </p>
+          {/* Quick filter chips */}
+          <div className="flex flex-wrap gap-2">
+            {QUICK_FILTERS.map((f, i) => (
+              <Link
+                key={f.label}
+                href={f.q ? `${paths.buscar}?q=${encodeURIComponent(f.q)}` : paths.buscar}
+                className={
+                  i === 0
+                    ? 'rounded-full border border-primary/40 bg-primary/15 px-3.5 py-1.5 text-xs font-semibold text-purple-100 transition hover:bg-primary/20'
+                    : 'rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-xs font-semibold text-white/75 transition hover:border-white/20 hover:bg-white/[0.06]'
+                }
+              >
+                {f.label}
+              </Link>
+            ))}
           </div>
-        ) : (
+        </div>
+      </section>
+
+      {/* ── FEATURED ── */}
+      {featured ? (
+        <section className="mb-12">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <h2 className="font-display text-xl font-bold tracking-[-0.015em] sm:text-2xl">
+              Esta noche en {featuredCity}
+            </h2>
+            <Link
+              href={paths.buscar}
+              className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary transition hover:text-primary/80"
+            >
+              Ver todos →
+            </Link>
+          </div>
+          <FeaturedVenue venue={featured} />
+        </section>
+      ) : (
+        <section className="mb-12 rounded-[22px] border border-white/10 bg-white/[0.025] p-10 text-center">
+          <p className="text-sm text-white/60">
+            Aún no hay bares disponibles. Vuelve más tarde.
+          </p>
+        </section>
+      )}
+
+      {/* ── REST GRID ── */}
+      {rest.length > 0 && (
+        <section className="mb-12">
+          <h2 className="mb-5 font-display text-lg font-bold tracking-[-0.01em] text-white/85">
+            Más opciones para esta noche
+          </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {venues.map((v) => (
+            {rest.map((v) => (
               <VenueCard key={v.id} venue={v} />
             ))}
           </div>
-        )}
+        </section>
+      )}
+
+      {/* ── COMING SOON ── */}
+      <section className="mb-12">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <h2 className="font-display text-base font-bold tracking-[-0.01em] text-white/55">
+            Próximamente en {featuredCity}
+          </h2>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">
+            Activamos bares nuevos cada semana
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {COMING_SOON_TEASERS.map((b, i) => (
+            <div
+              key={`${b.name}-${i}`}
+              className="flex min-h-[140px] flex-col justify-between rounded-2xl border border-dashed border-white/10 bg-white/[0.015] p-4 opacity-80"
+            >
+              <div
+                className="size-8 rounded-lg opacity-50"
+                style={{
+                  background: `linear-gradient(135deg, hsl(${260 + i * 15} 40% 30%), hsl(${290 + i * 10} 35% 20%))`,
+                }}
+              />
+              <div>
+                <p className="font-display text-sm font-semibold text-white/85">{b.name}</p>
+                <p className="mt-0.5 text-[11px] text-white/45">{b.area}</p>
+                <span className="mt-2.5 inline-block rounded-md bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary">
+                  {b.when}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── OWNER CTA STRIP ── */}
+      <section className="mb-4">
+        <div className="flex flex-col items-start gap-4 rounded-2xl border border-primary/22 bg-primary/[0.06] p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-6">
+          <div>
+            <p className="font-display text-base font-semibold text-white sm:text-lg">
+              ¿Tienes un bar?
+            </p>
+            <p className="mt-1 text-sm text-white/65">
+              Súmate a NightPass y aparece aquí esta misma semana.
+            </p>
+          </div>
+          <Link
+            href={paths.solicitarLocal}
+            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary/15"
+          >
+            Soy un local <ArrowRight className="size-4" />
+          </Link>
+        </div>
       </section>
     </div>
   );

@@ -1,8 +1,39 @@
+import type { Metadata, Viewport } from 'next';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import type { User } from '@/core/types/api';
 import { TopBar } from './_components/top-bar';
 import { BottomNav } from './_components/bottom-nav';
 import { CustomerBokeh } from './_components/customer-bokeh';
+import { SWRegister } from './_components/sw-register';
+
+export const metadata: Metadata = {
+  title: 'NightPass',
+  description: 'Tu pase a la noche.',
+  manifest: '/manifest.webmanifest',
+  applicationName: 'NightPass',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'NightPass',
+  },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0A0A0F',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+};
 
 export default async function CustomerLayout({ children }: { children: React.ReactNode }) {
   let user: User | null = null;
@@ -16,6 +47,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
 
   return (
     <div className="relative flex min-h-screen flex-col">
+      <SWRegister />
       <CustomerBokeh />
       <TopBar user={user} />
       <main className="flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-12">{children}</main>

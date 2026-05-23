@@ -6,3 +6,5 @@ export { updateVenueSchema, type UpdateVenueInput } from './schemas/venue.schema
 export { useUpdateVenue } from './hooks/use-update-venue';
 export { useSuspendVenue } from './hooks/use-suspend-venue';
 export { useReactivateVenue } from './hooks/use-reactivate-venue';
+export { useRotateCheckinQr } from './hooks/use-rotate-checkin-qr';
+export { CheckinQrPanel } from './components/checkin-qr-panel';

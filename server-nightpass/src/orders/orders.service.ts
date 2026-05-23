@@ -11,6 +11,7 @@ import { OrderStatus, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { StripeService } from '../stripe/stripe.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
 
 const ORDER_LIMBO_MINUTES = 30;
 
@@ -22,6 +23,7 @@ export class OrdersService {
     private readonly prisma: PrismaService,
     private readonly stripe: StripeService,
     private readonly config: ConfigService,
+    private readonly loyalty: LoyaltyService,
   ) {}
 
   // ── Crear orden + PaymentIntent ──────────────────────────────────────────
@@ -115,6 +117,10 @@ export class OrdersService {
         HttpStatus.CONFLICT,
       );
     }
+
+    // Loyalty gating: throws ForbiddenException (→ HTTP 403) si el user
+    // no alcanza el tier mínimo requerido por el EventTier.
+    await this.loyalty.assertTierRequirement(userId, tier.minLoyaltyTier);
 
     const feePct = this.stripe.getPlatformFeePct();
     const applicationFeeCents = Math.floor((tier.priceCents * feePct) / 100);

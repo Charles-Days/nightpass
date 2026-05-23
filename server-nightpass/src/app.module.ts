@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
@@ -17,6 +18,9 @@ import { EventsModule } from './events/events.module';
 import { StripeModule } from './stripe/stripe.module';
 import { OrdersModule } from './orders/orders.module';
 import { PassesModule } from './passes/passes.module';
+import { LocationsModule } from './locations/locations.module';
+import { LoyaltyModule } from './loyalty/loyalty.module';
+import { LoyaltyCheckinModule } from './loyalty-checkin/loyalty-checkin.module';
 import { validateEnv } from './config/env.schema';
 
 @Module({
@@ -32,6 +36,7 @@ import { validateEnv } from './config/env.schema';
         limit: 100,
       },
     ]),
+    ScheduleModule.forRoot(),
     PrismaModule,
     MailerModule,
     AuthModule,
@@ -47,6 +52,9 @@ import { validateEnv } from './config/env.schema';
     StripeModule,
     OrdersModule,
     PassesModule,
+    LocationsModule,
+    LoyaltyModule,
+    LoyaltyCheckinModule,
   ],
   providers: [
     {

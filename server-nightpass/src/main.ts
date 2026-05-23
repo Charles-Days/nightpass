@@ -3,7 +3,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import helmet from '@fastify/helmet';
@@ -32,14 +32,22 @@ async function bootstrap() {
     },
   );
 
-  await app.register(helmet, {
-    contentSecurityPolicy: false,
-  });
+  await app.register(helmet);
 
   const config = app.get(ConfigService);
-  const corsOrigins = config.get<string>('CORS_ORIGINS');
+  const corsOriginsRaw = config.get<string>('CORS_ORIGINS');
+  const corsOrigins = corsOriginsRaw
+    ? corsOriginsRaw
+        .split(',')
+        .map((o: string) => o.trim())
+        .filter(Boolean)
+    : [];
+  const isProd = process.env.NODE_ENV === 'production';
+  if (corsOrigins.length === 0 && isProd) {
+    throw new Error('CORS_ORIGINS must be set in production');
+  }
   app.enableCors({
-    origin: corsOrigins ? corsOrigins.split(',').map((o: string) => o.trim()) : true,
+    origin: corsOrigins.length > 0 ? corsOrigins : false,
     credentials: true,
   });
 
@@ -56,7 +64,6 @@ async function bootstrap() {
       return true;
     },
     setHeaders: (res) => {
-      res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     }
   });
@@ -76,8 +83,7 @@ async function bootstrap() {
   const port = config.get<number>('PORT') ?? 7101;
 
   await app.listen(port, '0.0.0.0');
-  // eslint-disable-next-line no-console
-  console.log(`NightPass API listening on http://localhost:${port}/api/v1`);
+  Logger.log(`NightPass API listening on http://localhost:${port}/api/v1`, 'Bootstrap');
 }
 
 bootstrap();

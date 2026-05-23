@@ -24,9 +24,13 @@ export const envSchema = z.object({
 
   CORS_ORIGINS: z.string().optional(),
 
-  // Mailer (Gmail SMTP). Sin estos dos vars el mailer corre en modo no-op.
+  // Mailer SMTP. Sin SMTP_USER/SMTP_PASS el mailer corre en modo no-op.
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.string().optional(),
+  SMTP_SECURE: z.string().optional(),
   SMTP_USER: z.string().email().optional(),
   SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
   ADMIN_NOTIFICATION_EMAIL: z.string().email().optional(),
   ADMIN_WEB_URL: z.string().url().default('http://localhost:7100'),
 
@@ -55,7 +59,22 @@ export const envSchema = z.object({
     .string()
     .min(32, 'PASS_HMAC_SECRET must be at least 32 chars')
     .optional(),
-});
+
+  // Google OAuth (Sign in with Google). Sin GOOGLE_CLIENT_ID el endpoint /auth/google devuelve 503.
+  GOOGLE_CLIENT_ID: z.string().optional(),
+}).refine(
+  (env) => !env.STRIPE_SECRET_KEY || !!env.PASS_HMAC_SECRET,
+  {
+    message: 'PASS_HMAC_SECRET is required when STRIPE_SECRET_KEY is set',
+    path: ['PASS_HMAC_SECRET'],
+  },
+).refine(
+  (env) => !env.STRIPE_SECRET_KEY || !!env.STRIPE_WEBHOOK_SECRET,
+  {
+    message: 'STRIPE_WEBHOOK_SECRET is required when STRIPE_SECRET_KEY is set',
+    path: ['STRIPE_WEBHOOK_SECRET'],
+  },
+);
 
 export type Env = z.infer<typeof envSchema>;
 

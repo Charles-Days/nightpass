@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { MapPin, Music2 } from 'lucide-react';
 import { paths } from '@/core/config/paths';
 import type { CatalogVenueSummary } from '@/core/types/api';
+import { VenueOccupancyBadge } from './venue-occupancy-badge';
 
 function formatPrice(cents: number | null, currency: string | null) {
   if (cents == null) return null;
@@ -40,6 +41,9 @@ export function VenueCard({ venue }: { venue: CatalogVenueSummary }) {
               <MapPin className="size-3" />
               {venue.city}
             </p>
+            <div className="mt-1.5">
+              <VenueOccupancyBadge venueId={venue.id} />
+            </div>
           </div>
           {price && (
             <div className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-md">

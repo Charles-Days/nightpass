@@ -5,9 +5,19 @@ import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { Input } from '@/core/components/ui/input';
 import { Field } from '@/core/components/ui/field';
+import type { LoyaltyTier } from '@/core/types/api';
+import { TIER_STYLES } from '@/features/loyalty';
 import { useEventDetail } from '../hooks/use-event-detail';
 import { useCreateTier } from '../hooks/use-create-tier';
 import { useDeleteTier } from '../hooks/use-delete-tier';
+
+const LOYALTY_TIER_OPTIONS: { value: '' | LoyaltyTier; label: string }[] = [
+  { value: '', label: 'Abierto a todos' },
+  { value: 'ROOKIE', label: 'Rookie y arriba' },
+  { value: 'REGULAR', label: 'Regular y arriba' },
+  { value: 'INSIDER', label: 'Insider y arriba' },
+  { value: 'VIP', label: 'Solo VIP' },
+];
 
 interface Props {
   eventId: string;
@@ -26,6 +36,7 @@ export function TiersSection({ eventId }: Props) {
   const [name, setName] = React.useState('');
   const [priceMxn, setPriceMxn] = React.useState('');
   const [capacity, setCapacity] = React.useState('');
+  const [minLoyaltyTier, setMinLoyaltyTier] = React.useState<'' | LoyaltyTier>('');
   const [error, setError] = React.useState<string | null>(null);
 
   const tiers = detail.data?.tiers ?? [];
@@ -34,6 +45,7 @@ export function TiersSection({ eventId }: Props) {
     setName('');
     setPriceMxn('');
     setCapacity('');
+    setMinLoyaltyTier('');
     setError(null);
   };
 
@@ -65,6 +77,7 @@ export function TiersSection({ eventId }: Props) {
         currency: 'MXN',
         capacity: capacityInt,
         position: tiers.length,
+        minLoyaltyTier: minLoyaltyTier === '' ? null : minLoyaltyTier,
       });
       reset();
     } catch {
@@ -99,7 +112,14 @@ export function TiersSection({ eventId }: Props) {
               className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2 text-sm"
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{t.name}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate font-medium">{t.name}</p>
+                  {t.minLoyaltyTier ? (
+                    <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-primary">
+                      Min {TIER_STYLES[t.minLoyaltyTier].label}
+                    </span>
+                  ) : null}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {formatPrice(t.priceCents, t.currency)}
                   {t.capacity ? ` · cupo ${t.capacity}` : ' · sin límite'}
@@ -179,6 +199,29 @@ export function TiersSection({ eventId }: Props) {
             />
           </Field>
         </div>
+
+        <Field
+          label="Tier mínimo (loyalty)"
+          htmlFor="tier-min-loyalty"
+          error={undefined}
+        >
+          <select
+            id="tier-min-loyalty"
+            value={minLoyaltyTier}
+            onChange={(e) => setMinLoyaltyTier(e.target.value as '' | LoyaltyTier)}
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            {LOYALTY_TIER_OPTIONS.map((opt) => (
+              <option key={opt.value || 'open'} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Restringe la compra a usuarios con este nivel de NightPass o
+            superior. Por defecto, abierto a todos.
+          </p>
+        </Field>
 
         {error ? (
           <p className="text-xs text-amber-300">{error}</p>

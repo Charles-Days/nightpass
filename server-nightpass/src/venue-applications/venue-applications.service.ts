@@ -59,8 +59,11 @@ export class VenueApplicationsService {
         existing.role === Role.VENUE_OWNER ||
         existing.role === Role.VENUE_STAFF
       ) {
+        this.logger.warn(
+          `Venue application blocked — panel-bound email: ${email} (role=${existing.role})`,
+        );
         throw new ConflictException(
-          'Este email ya tiene panel asignado, contacta a soporte',
+          'No se pudo procesar la solicitud, contacta a soporte',
         );
       }
       applicantId = existing.id;

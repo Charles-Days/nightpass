@@ -38,44 +38,88 @@ enum OrderStatus {
   FAILED
 }
 
+enum LoyaltyTier {
+  ROOKIE
+  REGULAR
+  INSIDER
+  VIP
+}
+
+enum LoyaltyEventType {
+  EVENT_CHECKIN
+  VENUE_CHECKIN
+  FIRST_VENUE_BONUS
+  STREAK_DAILY_BONUS
+  STREAK_MILESTONE
+  BRING_FRIEND_BONUS
+  ADMIN_ADJUST
+}
+
+enum OAuthProvider {
+  GOOGLE
+}
+
 model User {
   id           String   @id @default(uuid(7)) @db.Uuid
   email        String   @unique
-  passwordHash String
+  passwordHash String?
   name         String?
   role         Role     @default(CUSTOMER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  mustChangePassword Boolean   @default(false)
+  mustChangePassword  Boolean   @default(false)
+  locationOnboardedAt DateTime?
 
-  refreshTokens     RefreshToken[]
-  ownedVenues       VenueOwner[]
-  applications      VenueApplication[] @relation("ApplicantApps")
-  reviewedApps      VenueApplication[] @relation("ReviewerApps")
-  staffMemberships  VenueStaff[]       @relation("staffMemberships")
-  sentInvites       VenueStaff[]       @relation("sentInvites")
-  orders            Order[]
-  passes            Pass[]
-  passesScanned     Pass[]             @relation("PassesScanned")
+  oauthAccounts OAuthAccount[]
+
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  ownedVenues         VenueOwner[]
+  applications        VenueApplication[]   @relation("ApplicantApps")
+  reviewedApps        VenueApplication[]   @relation("ReviewerApps")
+  staffMemberships    VenueStaff[]         @relation("staffMemberships")
+  sentInvites         VenueStaff[]         @relation("sentInvites")
+  orders              Order[]
+  passes              Pass[]
+  passesScanned       Pass[]               @relation("PassesScanned")
+  locationPings       LocationPing[]
+  loyaltyEvents       LoyaltyEvent[]
+  streak              UserStreak?
+  loyaltyTotal        UserLoyaltyTotal?
 
   @@map("users")
 }
 
 model RefreshToken {
-  id         String    @id @default(uuid(7)) @db.Uuid
-  userId     String    @db.Uuid
-  tokenHash  String    @unique
-  expiresAt  DateTime
-  revokedAt  DateTime?
-  createdAt  DateTime  @default(now())
-  userAgent  String?
-  ipAddress  String?
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  userAgent String?
+  ipAddress String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  ipAddress String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model Venue {
@@ -106,11 +150,20 @@ model Venue {
   dressCode   String?
   minAge      Int?
 
+  // Geofence radius for QR redeem (meters; 0 disables the check).
+  geofenceRadiusM Int @default(100)
+
+  // Loyalty: static QR for venue check-in (free, +10 NPP, 1/day/user).
+  // Null = check-in disabled until owner rotates a QR.
+  checkinQrSecret   String?
+  checkinQrIssuedAt DateTime?
+
   owners        VenueOwner[]
   staff         VenueStaff[]
   photos        Photo[]
   events        Event[]
   stripeAccount StripeAccount?
+  loyaltyEvents LoyaltyEvent[]
 
   @@index([city])
   @@index([status, createdAt])
@@ -192,8 +245,8 @@ model Photo {
   position  Int      @default(0)
   createdAt DateTime @default(now())
 
-  venue     Venue?   @relation(fields: [venueId], references: [id])
-  event     Event?   @relation(fields: [eventId], references: [id])
+  venue Venue? @relation(fields: [venueId], references: [id])
+  event Event? @relation(fields: [eventId], references: [id])
 
   @@index([venueId])
   @@index([eventId])
@@ -214,11 +267,12 @@ model Event {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  venue  Venue       @relation(fields: [venueId], references: [id])
-  tiers  EventTier[]
-  photos Photo[]
-  orders Order[]
-  passes Pass[]
+  venue         Venue          @relation(fields: [venueId], references: [id])
+  tiers         EventTier[]
+  photos        Photo[]
+  orders        Order[]
+  passes        Pass[]
+  loyaltyEvents LoyaltyEvent[]
 
   @@unique([venueId, slug])
   @@index([venueId, status])
@@ -227,15 +281,17 @@ model Event {
 }
 
 model EventTier {
-  id         String   @id @default(uuid(7)) @db.Uuid
-  eventId    String   @db.Uuid
-  name       String
-  priceCents Int
-  currency   String   @default("MXN")
-  capacity   Int?
-  position   Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             String       @id @default(uuid(7)) @db.Uuid
+  eventId        String       @db.Uuid
+  name           String
+  priceCents     Int
+  currency       String       @default("MXN")
+  capacity       Int?
+  position       Int          @default(0)
+  // Loyalty gating: minimum LoyaltyTier required to purchase. Null = open to all.
+  minLoyaltyTier LoyaltyTier?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
   orders Order[]
@@ -245,13 +301,13 @@ model EventTier {
 }
 
 model StripeAccount {
-  id                String   @id @default(uuid(7)) @db.Uuid
-  venueId           String   @unique @db.Uuid
-  stripeAccountId   String   @unique
-  chargesEnabled    Boolean  @default(false)
-  detailsSubmitted  Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id               String   @id @default(uuid(7)) @db.Uuid
+  venueId          String   @unique @db.Uuid
+  stripeAccountId  String   @unique
+  chargesEnabled   Boolean  @default(false)
+  detailsSubmitted Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
 
@@ -283,21 +339,128 @@ model Order {
 }
 
 model Pass {
-  id            String    @id @default(uuid(7)) @db.Uuid
-  orderId       String    @unique @db.Uuid
-  userId        String    @db.Uuid
-  eventId       String    @db.Uuid
-  qrCode        String    @unique
-  usedAt        DateTime?
-  usedByStaffId String?   @db.Uuid
-  createdAt     DateTime  @default(now())
+  id                String    @id @default(uuid(7)) @db.Uuid
+  orderId           String    @unique @db.Uuid
+  userId            String    @db.Uuid
+  eventId           String    @db.Uuid
+  qrCode            String    @unique
+  usedAt            DateTime?
+  usedByStaffId     String?   @db.Uuid
+  redeemedDistanceM Int?
+  redeemedAccuracyM Int?
+  createdAt         DateTime  @default(now())
 
-  order       Order @relation(fields: [orderId], references: [id])
-  user        User  @relation(fields: [userId], references: [id])
-  event       Event @relation(fields: [eventId], references: [id])
-  usedByStaff User? @relation("PassesScanned", fields: [usedByStaffId], references: [id])
+  order         Order          @relation(fields: [orderId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
+  event         Event          @relation(fields: [eventId], references: [id])
+  usedByStaff   User?          @relation("PassesScanned", fields: [usedByStaffId], references: [id])
+  loyaltyEvents LoyaltyEvent[]
 
   @@index([userId])
   @@index([eventId, usedAt])
   @@map("passes")
+}
+
+enum LocationPingSource {
+  APP_OPEN
+  PASS_VIEW
+  REDEEM
+  SCAN_REDEEM
+  VENUE_CHECKIN
+}
+
+model LocationPing {
+  id        String             @id @default(uuid(7)) @db.Uuid
+  userId    String             @db.Uuid
+  latitude  Float
+  longitude Float
+  accuracyM Float?
+  source    LocationPingSource @default(APP_OPEN)
+  createdAt DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdAt])
+  @@map("location_pings")
+}
+
+// ─── Loyalty ──────────────────────────────────────────────────────────────
+
+/// Append-only ledger of point-awarding events. Idempotent via idempotencyKey.
+model LoyaltyEvent {
+  id             String           @id @default(uuid(7)) @db.Uuid
+  userId         String           @db.Uuid
+  type           LoyaltyEventType
+  /// Signed integer. ADMIN_ADJUST may be negative.
+  points         Int
+  /// Multiplier applied at the time of the award (weekend, birthday, etc.).
+  /// Effective points = round(base * multiplier).
+  multiplier     Float            @default(1)
+  venueId        String?          @db.Uuid
+  eventId        String?          @db.Uuid
+  passId         String?          @db.Uuid
+  /// e.g. "scan:<passId>" or "checkin:<venueId>:<userId>:<YYYY-MM-DD>"
+  idempotencyKey String           @unique
+  occurredAt     DateTime         @default(now())
+  metadata       Json?
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue Venue? @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  pass  Pass?  @relation(fields: [passId], references: [id], onDelete: SetNull)
+
+  @@index([userId, occurredAt(sort: Desc)])
+  @@index([venueId, occurredAt(sort: Desc)])
+  @@map("loyalty_events")
+}
+
+/// Per-user streak tracker. Updated transactionally with LoyaltyEvent.
+model UserStreak {
+  userId             String    @id @db.Uuid
+  currentDays        Int       @default(0)
+  longestDays        Int       @default(0)
+  /// UTC date (truncated to day) of the last awarding check-in.
+  lastCheckinDate    DateTime?
+  /// Freezes remaining this calendar month.
+  freezesRemaining   Int       @default(2)
+  freezesRefreshedAt DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_streaks")
+}
+
+/// Cached aggregates so we don't sum the ledger on every request.
+/// Recomputed inside applyReward() transaction.
+model UserLoyaltyTotal {
+  userId        String      @id @db.Uuid
+  /// All-time effective points.
+  totalPoints   Int         @default(0)
+  /// Effective points within last 365 days. Drives the tier.
+  yearPoints    Int         @default(0)
+  /// Tier derived from yearPoints + TIER_THRESHOLDS.
+  tier          LoyaltyTier @default(ROOKIE)
+  tierUpdatedAt DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_loyalty_totals")
+}
+
+model OAuthAccount {
+  id          String        @id @default(uuid(7)) @db.Uuid
+  userId      String        @db.Uuid
+  provider    OAuthProvider
+  providerSub String
+  email       String?
+  createdAt   DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSub])
+  @@index([userId])
+  @@map("oauth_accounts")
 }

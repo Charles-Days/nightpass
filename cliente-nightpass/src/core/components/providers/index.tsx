@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from './theme-provider';
 import { QueryProvider } from './query-provider';
+import { NPGoogleOAuthProvider } from './google-oauth-provider';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -13,10 +14,12 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
-      <QueryProvider>
-        {children}
-        <Toaster position="top-right" theme="dark" richColors closeButton />
-      </QueryProvider>
+      <NPGoogleOAuthProvider>
+        <QueryProvider>
+          {children}
+          <Toaster position="top-right" theme="dark" richColors closeButton />
+        </QueryProvider>
+      </NPGoogleOAuthProvider>
     </ThemeProvider>
   );
 }

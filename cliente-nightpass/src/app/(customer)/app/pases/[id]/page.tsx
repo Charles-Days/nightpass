@@ -4,7 +4,7 @@ import { ArrowLeft, Calendar, Check, MapPin, Ticket } from 'lucide-react';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import type { Pass } from '@/core/types/api';
-import { PassQR } from '../../../_components/pass-qr';
+import { PassQRWithGeoPing } from '../../../_components/pass-qr-with-geo-ping';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -87,7 +87,7 @@ export default async function PassDetailPage({ params }: Props) {
 
         {/* QR */}
         <div className="flex min-h-[70vh] flex-col items-center justify-center px-5 pb-2 pt-7 sm:min-h-0 sm:px-6 sm:pt-9">
-          <PassQR value={pass.qrCode} usedAt={pass.usedAt} />
+          <PassQRWithGeoPing value={pass.qrCode} usedAt={pass.usedAt} />
 
           {used && pass.usedAt && (
             <p className="mt-4 text-center text-xs font-semibold uppercase tracking-[0.18em] text-red-300/90">

@@ -54,7 +54,7 @@ export class VenueStaffService {
           },
         });
         void this.mailer
-          .sendStaffInvited(email, existing.name ?? dto.name, venue.name)
+          .sendStaffInvited(email, existing.name ?? dto.name, venue.name, undefined, dto.staffRole)
           .catch((err) =>
             this.logger.error(
               `Email invitación staff (panel user) falló: ${err instanceof Error ? err.message : err}`,
@@ -83,7 +83,7 @@ export class VenueStaffService {
         },
       });
       void this.mailer
-        .sendStaffInvited(email, existing.name ?? dto.name, venue.name, tempPassword)
+        .sendStaffInvited(email, existing.name ?? dto.name, venue.name, tempPassword, dto.staffRole)
         .catch((err) =>
           this.logger.error(
             `Email invitación staff (customer) falló: ${err instanceof Error ? err.message : err}`,
@@ -115,7 +115,7 @@ export class VenueStaffService {
       },
     });
     void this.mailer
-      .sendStaffInvited(email, dto.name, venue.name, tempPassword)
+      .sendStaffInvited(email, dto.name, venue.name, tempPassword, dto.staffRole)
       .catch((err) =>
         this.logger.error(
           `Email invitación staff (nuevo usuario) falló: ${err instanceof Error ? err.message : err}`,
@@ -134,9 +134,33 @@ export class VenueStaffService {
   }
 
   async revoke(venueId: string, userId: string) {
-    await this.prisma.venueStaff.updateMany({
+    const staff = await this.prisma.venueStaff.findUnique({
+      where: { venueId_userId: { venueId, userId } },
+      include: {
+        user: { select: { email: true, name: true } },
+        venue: { select: { name: true } },
+      },
+    });
+
+    const result = await this.prisma.venueStaff.updateMany({
       where: { venueId, userId },
       data: { status: VenueStaffStatus.REVOKED },
     });
+
+    if (staff && staff.status !== VenueStaffStatus.REVOKED) {
+      void this.mailer
+        .sendStaffRevoked(
+          staff.user.email,
+          staff.user.name ?? 'amig@',
+          staff.venue.name,
+        )
+        .catch((err) =>
+          this.logger.error(
+            `Email revocación staff falló (${staff.user.email}): ${err instanceof Error ? err.message : err}`,
+          ),
+        );
+    }
+
+    return result;
   }
 }

@@ -38,7 +38,7 @@ export class VenuesController {
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF, Role.CUSTOMER)
+  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF)
   list(@Query() query: ListVenuesQuery) {
     return this.service.list(query);
   }
@@ -52,7 +52,7 @@ export class VenuesController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF, Role.CUSTOMER)
+  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF)
   getOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.getById(id);
   }

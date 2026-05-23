@@ -1,13 +1,24 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, EventStatus, Role, VenueStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { LocationsService } from '../locations/locations.service';
 import { ListCatalogVenuesQuery } from './dto/list-catalog-venues.query';
+
+export type OccupancyBucket = 'low' | 'medium' | 'high';
+
+export interface OccupancyResult {
+  venueId: string;
+  windowMinutes: number;
+  bucket: OccupancyBucket;
+  updatedAt: string;
+}
 
 const VENUE_PUBLIC_SELECT = {
   id: true,
   slug: true,
   name: true,
   city: true,
+  address: true,
   description: true,
   capacity: true,
   priceFromCents: true,
@@ -16,6 +27,9 @@ const VENUE_PUBLIC_SELECT = {
   longitude: true,
   coverImageUrl: true,
   categories: true,
+  musicTypes: true,
+  minAge: true,
+  dressCode: true,
   openHours: true,
   status: true,
   _count: { select: { owners: true } },
@@ -23,7 +37,10 @@ const VENUE_PUBLIC_SELECT = {
 
 @Injectable()
 export class CatalogService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly locations: LocationsService,
+  ) {}
 
   async listVenues(query: ListCatalogVenuesQuery) {
     const where: Prisma.VenueWhereInput = { status: 'ACTIVE' };
@@ -82,6 +99,7 @@ export class CatalogService {
                 priceCents: true,
                 currency: true,
                 capacity: true,
+                minLoyaltyTier: true,
               },
             },
           },
@@ -117,6 +135,7 @@ export class CatalogService {
         priceCents: true,
         currency: true,
         capacity: true,
+        minLoyaltyTier: true,
         event: {
           select: {
             id: true,
@@ -153,6 +172,7 @@ export class CatalogService {
       priceCents: tier.priceCents,
       currency: tier.currency,
       capacity: tier.capacity,
+      minLoyaltyTier: tier.minLoyaltyTier,
       event: {
         id: tier.event.id,
         slug: tier.event.slug,
@@ -180,5 +200,53 @@ export class CatalogService {
       }),
     ]);
     return { customers, venues, events };
+  }
+
+  /**
+   * Rough live occupancy of a venue, derived from how many distinct users
+   * pinged inside its geofence during the last `windowMinutes` minutes.
+   *
+   * Privacy guarantees:
+   *  - We never expose the raw count to the public — only a bucket.
+   *  - If fewer than 3 unique users pinged, we always return "low" so the
+   *    response cannot be used to infer individual presence.
+   */
+  async getVenueOccupancy(
+    venueId: string,
+    windowMinutes = 15,
+  ): Promise<OccupancyResult> {
+    const venue = await this.prisma.venue.findUnique({
+      where: { id: venueId },
+      select: {
+        id: true,
+        latitude: true,
+        longitude: true,
+        geofenceRadiusM: true,
+      },
+    });
+    if (!venue) throw new NotFoundException('Local no encontrado');
+
+    const updatedAt = new Date().toISOString();
+
+    if (venue.latitude == null || venue.longitude == null) {
+      return { venueId: venue.id, windowMinutes, bucket: 'low', updatedAt };
+    }
+
+    const radius = venue.geofenceRadiusM ?? 100;
+    const count = await this.locations.countNearbyUsers(
+      venue.latitude,
+      venue.longitude,
+      radius,
+      windowMinutes,
+    );
+
+    // k-anonymity: below 3 unique users, never reveal anything but "low".
+    let bucket: OccupancyBucket;
+    if (count < 3) bucket = 'low';
+    else if (count <= 4) bucket = 'low';
+    else if (count <= 14) bucket = 'medium';
+    else bucket = 'high';
+
+    return { venueId: venue.id, windowMinutes, bucket, updatedAt };
   }
 }

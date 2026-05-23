@@ -17,6 +17,14 @@ class ScannerScreen extends ConsumerStatefulWidget {
 
 enum _ScanPhase { scanning, validating, result }
 
+enum _GeofenceError { noRecentLocation, outOfRange }
+
+class _GeofenceFailure {
+  final _GeofenceError kind;
+  final int? distanceM;
+  const _GeofenceFailure(this.kind, {this.distanceM});
+}
+
 class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   final MobileScannerController _controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
@@ -25,6 +33,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   _ScanPhase _phase = _ScanPhase.scanning;
   ScanResult? _last;
   String? _error;
+  _GeofenceFailure? _geofence;
   String? _lastCode;
 
   @override
@@ -47,6 +56,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     setState(() {
       _phase = _ScanPhase.validating;
       _error = null;
+      _geofence = null;
     });
     try {
       await _controller.stop();
@@ -59,6 +69,16 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       });
     } on DioException catch (e) {
       if (!mounted) return;
+      final geofence = _readGeofenceError(e);
+      if (geofence != null) {
+        setState(() {
+          _phase = _ScanPhase.result;
+          _last = null;
+          _error = null;
+          _geofence = geofence;
+        });
+        return;
+      }
       final msg = _readDioError(e);
       setState(() {
         _phase = _ScanPhase.result;
@@ -82,11 +102,33 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     return e.message ?? 'Error de red';
   }
 
+  _GeofenceFailure? _readGeofenceError(DioException e) {
+    if (e.response?.statusCode != 409) return null;
+    final data = e.response?.data;
+    if (data is! Map) return null;
+    final code = data['code'];
+    if (code == 'NO_RECENT_LOCATION') {
+      return const _GeofenceFailure(_GeofenceError.noRecentLocation);
+    }
+    if (code == 'OUT_OF_RANGE') {
+      final raw = data['distanceM'];
+      final distance = raw is num
+          ? raw.round()
+          : (raw is String ? int.tryParse(raw) : null);
+      return _GeofenceFailure(
+        _GeofenceError.outOfRange,
+        distanceM: distance,
+      );
+    }
+    return null;
+  }
+
   Future<void> _scanAgain() async {
     setState(() {
       _phase = _ScanPhase.scanning;
       _last = null;
       _error = null;
+      _geofence = null;
       _lastCode = null;
     });
     await _controller.start();
@@ -169,6 +211,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
             _ResultModal(
               result: _last,
               error: _error,
+              geofence: _geofence,
               onAgain: _scanAgain,
             ),
         ],
@@ -180,40 +223,66 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 class _ResultModal extends StatelessWidget {
   final ScanResult? result;
   final String? error;
+  final _GeofenceFailure? geofence;
   final VoidCallback onAgain;
 
   const _ResultModal({
     required this.result,
     required this.error,
+    required this.geofence,
     required this.onAgain,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isError = result == null;
+    final isGeofence = geofence != null;
+    final isError = result == null && !isGeofence;
     final isAlreadyUsed = result != null && !result!.valid;
     final isValid = result != null && result!.valid;
+    // Hide event details card when there's no successful scan result.
+    final showDetails = !isError && !isGeofence;
 
     final Color accent;
     final IconData icon;
     final String title;
     final String subtitle;
+    final String ctaLabel;
     if (isValid) {
       accent = const Color(0xFF22C55E);
       icon = Icons.check_rounded;
       title = '¡Pase válido!';
       subtitle = 'Acceso confirmado';
+      ctaLabel = 'Escanear otro';
     } else if (isAlreadyUsed) {
       accent = const Color(0xFFF97316);
       icon = Icons.close_rounded;
       title = 'Pase ya canjeado';
       subtitle =
           '${result!.usedAt.toLocal().toString().substring(11, 16)} — ya entró antes';
+      ctaLabel = 'Escanear otro';
+    } else if (isGeofence &&
+        geofence!.kind == _GeofenceError.noRecentLocation) {
+      accent = const Color(0xFFF59E0B); // amber
+      icon = Icons.warning_amber_rounded;
+      title = 'Ubicación no disponible';
+      subtitle =
+          'Pídele al cliente que abra el pase en su app y vuelva a intentar.';
+      ctaLabel = 'Reintentar';
+    } else if (isGeofence && geofence!.kind == _GeofenceError.outOfRange) {
+      accent = const Color(0xFFEF4444); // red
+      icon = Icons.location_off_rounded;
+      title = 'Cliente fuera de rango';
+      final d = geofence!.distanceM;
+      subtitle = d != null
+          ? 'Cliente está a ${d}m del local. Verifica con identificación antes de admitir.'
+          : 'Cliente está fuera del rango del local. Verifica con identificación antes de admitir.';
+      ctaLabel = 'Reintentar';
     } else {
       accent = const Color(0xFFEF4444);
       icon = Icons.close_rounded;
       title = 'Pase inválido';
       subtitle = error ?? 'No se pudo validar';
+      ctaLabel = 'Escanear otro';
     }
 
     return Positioned.fill(
@@ -268,7 +337,7 @@ class _ResultModal extends StatelessWidget {
                     style: NPTextStyles.body(13, color: NPColors.textDim),
                     textAlign: TextAlign.center,
                   ),
-                  if (!isError) ...[
+                  if (showDetails) ...[
                     const SizedBox(height: 18),
                     Container(
                       width: double.infinity,
@@ -298,7 +367,7 @@ class _ResultModal extends StatelessWidget {
                   NPPrimary(
                     full: true,
                     onPressed: onAgain,
-                    child: const Text('Escanear otro'),
+                    child: Text(ctaLabel),
                   ),
                 ],
               ),

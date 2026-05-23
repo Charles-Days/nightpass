@@ -97,10 +97,10 @@ function Steps() {
         <p className="mt-1.5 text-sm text-muted-foreground">
           Escríbenos a{' '}
           <a
-            href="mailto:hola@nightpass.app"
+            href="mailto:hola@nightpass.mx"
             className="font-medium text-primary hover:underline"
           >
-            hola@nightpass.app
+            hola@nightpass.mx
           </a>{' '}
           y te respondemos el mismo día.
         </p>

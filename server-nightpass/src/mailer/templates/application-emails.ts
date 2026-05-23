@@ -4,6 +4,13 @@ import {
   renderCredentials,
   renderDivider,
   renderEyebrow,
+  renderHeading,
+  renderSubheading,
+  renderParagraph,
+  renderNumberedList,
+  renderInfoBox,
+  renderDataCard,
+  renderFallbackUrl,
   escapeHtml,
 } from './layout';
 
@@ -23,52 +30,26 @@ export function applicationReceivedToApplicant(input: ReceivedToApplicantInput) 
     html: renderLayout({
       title: 'Solicitud recibida — NightPass',
       preheader: `Tu solicitud para ${venueName} está en revisión. Te avisaremos pronto.`,
+      eyebrowLabel: 'Solicitud recibida',
       bodyHtml: `
-        ${renderEyebrow('Solicitud recibida')}
-        <h1 style="margin:0 0 20px;font-size:26px;font-weight:800;color:#fff;line-height:1.2;letter-spacing:-0.02em;">
-          Hola, ${escapeHtml(applicantName)} 👋
-        </h1>
-        <p style="margin:0 0 16px;font-size:15px;color:#a1a1aa;line-height:1.7;">
-          Recibimos tu solicitud para registrar
-          <strong style="color:#e4e4e7;">${escapeHtml(venueName)}</strong>
-          en NightPass. Nuestro equipo la revisará en los próximos días.
-        </p>
-
-        ${renderDivider()}
-
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
-          <tr>
-            <td style="width:40px;vertical-align:top;padding-top:2px;">
-              <div style="width:28px;height:28px;border-radius:50%;background:rgba(168,85,247,0.15);text-align:center;line-height:28px;font-size:14px;">⏳</div>
-            </td>
-            <td style="vertical-align:top;padding-left:14px;">
-              <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#e4e4e7;">En revisión</p>
-              <p style="margin:0;font-size:13px;color:#71717a;line-height:1.6;">Tu solicitud está en la cola de revisión del equipo NightPass.</p>
-            </td>
-          </tr>
-        </table>
-
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px;">
-          <tr>
-            <td style="width:40px;vertical-align:top;padding-top:2px;">
-              <div style="width:28px;height:28px;border-radius:50%;background:rgba(168,85,247,0.15);text-align:center;line-height:28px;font-size:14px;">📬</div>
-            </td>
-            <td style="vertical-align:top;padding-left:14px;">
-              <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#e4e4e7;">Te avisamos por correo</p>
-              <p style="margin:0;font-size:13px;color:#71717a;line-height:1.6;">Cuando haya una respuesta, te llegará a esta misma dirección. No necesitas hacer nada.</p>
-            </td>
-          </tr>
-        </table>
-
-        ${renderDivider()}
-
-        <p style="margin:0;font-size:13px;color:#52525b;text-align:center;">
-          ¿Tienes dudas? Escríbenos a
-          <a href="mailto:hola@nightpass.app" style="color:#a855f7;text-decoration:none;">hola@nightpass.app</a>
-        </p>
+        ${renderEyebrow('En revisión')}
+        ${renderHeading(`Hola, ${applicantName}.`)}
+        ${renderParagraph(
+          `Recibimos tu solicitud para registrar <strong style="color:#f5f3ff;">${escapeHtml(venueName)}</strong> en NightPass. Nuestro equipo la revisará en los próximos días.`,
+        )}
+        ${renderNumberedList([
+          {
+            title: 'En revisión',
+            body: 'Tu solicitud está en la cola del equipo NightPass.',
+          },
+          {
+            title: 'Te avisamos por correo',
+            body: 'Cuando haya una respuesta, te llegará a esta misma dirección. No necesitas hacer nada.',
+          },
+        ])}
       `,
     }),
-    text: `Hola ${applicantName},\n\nRecibimos tu solicitud para registrar "${venueName}" en NightPass. Nuestro equipo la revisará en los próximos días y te avisaremos por este correo.\n\nNo necesitas hacer nada por ahora.\n\n— Equipo NightPass`,
+    text: `Hola ${applicantName},\n\nRecibimos tu solicitud para registrar "${venueName}" en NightPass.\n\n01. En revisión — tu solicitud está en la cola del equipo NightPass.\n02. Te avisamos por correo — cuando haya una respuesta, te llegará a esta misma dirección. No necesitas hacer nada.\n\n— Equipo NightPass`,
   };
 }
 
@@ -92,48 +73,21 @@ export function applicationReceivedToAdmin(input: ReceivedToAdminInput) {
     html: renderLayout({
       title: 'Nueva solicitud — NightPass Admin',
       preheader: `${applicantName} quiere registrar "${venueName}" en NightPass.`,
+      eyebrowLabel: 'Solicitud pendiente',
       bodyHtml: `
-        ${renderEyebrow('Solicitud pendiente')}
-        <h1 style="margin:0 0 20px;font-size:26px;font-weight:800;color:#fff;line-height:1.2;letter-spacing:-0.02em;">
-          Nueva solicitud de local
-        </h1>
-
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);">
-          <tr>
-            <td style="padding:24px 28px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td style="padding-bottom:16px;">
-                    <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#a855f7;">Local</p>
-                    <p style="margin:0;font-size:18px;font-weight:700;color:#fff;">${escapeHtml(venueName)}</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="border-top:1px solid rgba(255,255,255,0.07);padding-top:16px;padding-bottom:16px;">
-                    <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#a855f7;">Solicitante</p>
-                    <p style="margin:0;font-size:15px;color:#e4e4e7;">${escapeHtml(applicantName)}</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="border-top:1px solid rgba(255,255,255,0.07);padding-top:16px;">
-                    <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#a855f7;">Email de contacto</p>
-                    <p style="margin:0;font-size:15px;color:#e4e4e7;">
-                      <a href="mailto:${escapeHtml(applicantEmail)}" style="color:#a855f7;text-decoration:none;">${escapeHtml(applicantEmail)}</a>
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-
+        ${renderEyebrow('Nueva solicitud')}
+        ${renderHeading('Hay una solicitud por revisar.')}
+        ${renderDataCard([
+          { label: 'Local', value: venueName },
+          { label: 'Solicitante', value: applicantName },
+          {
+            label: 'Email de contacto',
+            value: `<a href="mailto:${escapeHtml(applicantEmail)}" style="color:#a855f7;text-decoration:none;">${escapeHtml(applicantEmail)}</a>`,
+            isHtml: true,
+          },
+        ])}
         ${renderButton(link, 'Revisar solicitud')}
-
-        ${renderDivider()}
-
-        <p style="margin:0;font-size:12px;color:#52525b;text-align:center;word-break:break-all;">
-          <a href="${escapeHtml(link)}" style="color:#71717a;text-decoration:none;">${escapeHtml(link)}</a>
-        </p>
+        ${renderFallbackUrl(link)}
       `,
     }),
     text: `Nueva solicitud pendiente.\n\nLocal: ${venueName}\nSolicitante: ${applicantName} (${applicantEmail})\n\nRevisar: ${link}\n\n— NightPass`,
@@ -157,7 +111,7 @@ export function applicationApproved(input: ApprovedInput) {
   const { applicantName, venueName, loginUrl, loginEmail, temporaryPassword, isExistingUser } = input;
 
   const existingUserNote = isExistingUser
-    ? '⚠️ Esta contraseña reemplaza la que usabas en la app móvil. Cámbiala desde tu perfil al entrar.'
+    ? 'Esta contraseña reemplaza la que usabas en la app móvil. Cámbiala desde tu perfil al entrar.'
     : undefined;
 
   return {
@@ -165,47 +119,35 @@ export function applicationApproved(input: ApprovedInput) {
     html: renderLayout({
       title: `${venueName} aprobado — NightPass`,
       preheader: `¡Tu local ${venueName} ya está activo! Aquí están tus credenciales de acceso al panel.`,
+      eyebrowLabel: 'Solicitud aprobada · Acceso emitido',
       bodyHtml: `
-        ${renderEyebrow('¡Solicitud aprobada!')}
-        <h1 style="margin:0 0 12px;font-size:28px;font-weight:800;color:#fff;line-height:1.2;letter-spacing:-0.02em;">
-          ¡Bienvenido a NightPass,<br>${escapeHtml(applicantName)}!
-        </h1>
-        <p style="margin:0 0 28px;font-size:15px;color:#a1a1aa;line-height:1.7;">
-          Tu local <strong style="color:#e4e4e7;">${escapeHtml(venueName)}</strong> ya está activo en la plataforma.
-          Te creamos una cuenta de panel para que lo gestiones: publica eventos, invita a tu equipo y más.
-        </p>
-
+        ${renderEyebrow('Solicitud aprobada')}
+        ${renderHeading(`Bienvenido a NightPass, ${applicantName}.`)}
+        ${renderParagraph(
+          `Tu local <strong style="color:#f5f3ff;">${escapeHtml(venueName)}</strong> ya está activo en la plataforma. Te creamos una cuenta de panel para que lo gestiones: publica eventos, invita a tu equipo y supervisa la operación.`,
+        )}
         ${renderCredentials(loginEmail, temporaryPassword, existingUserNote)}
-
-        <p style="margin:16px 0 0;font-size:13px;color:#71717a;text-align:center;line-height:1.6;">
-          Al entrar, el sistema te pedirá que cambies esta contraseña.
-        </p>
-
+        <p style="margin:14px 0 0;font-size:13px;color:rgba(245,243,255,0.45);text-align:center;line-height:1.6;">Al entrar, el sistema te pedirá cambiar esta contraseña.</p>
         ${renderButton(loginUrl, 'Entrar al panel')}
-
         ${renderDivider()}
-
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-          <tr>
-            <td style="width:50%;padding-right:8px;vertical-align:top;">
-              <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px 18px;">
-                <p style="margin:0 0 6px;font-size:14px;">🎟️</p>
-                <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#e4e4e7;">Crea eventos</p>
-                <p style="margin:0;font-size:12px;color:#71717a;line-height:1.5;">Publica y gestiona todos los eventos de tu local.</p>
-              </div>
-            </td>
-            <td style="width:50%;padding-left:8px;vertical-align:top;">
-              <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px 18px;">
-                <p style="margin:0 0 6px;font-size:14px;">👥</p>
-                <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#e4e4e7;">Invita a tu equipo</p>
-                <p style="margin:0;font-size:12px;color:#71717a;line-height:1.5;">Añade staff para gestionar el local contigo.</p>
-              </div>
-            </td>
-          </tr>
-        </table>
+        ${renderSubheading('Qué puedes hacer ahora')}
+        ${renderNumberedList([
+          {
+            title: 'Crea eventos',
+            body: 'Publica y gestiona todos los eventos de tu local con sus tiers de precio.',
+          },
+          {
+            title: 'Invita a tu equipo',
+            body: 'Añade managers para gestionar contigo o staff para escanear en la puerta.',
+          },
+          {
+            title: 'Supervisa la operación',
+            body: 'Revisa en tiempo real pases vendidos y entradas escaneadas.',
+          },
+        ])}
       `,
     }),
-    text: `¡Enhorabuena, ${applicantName}!\n\n${venueName} ya está activo en NightPass.\n\nTus credenciales:\nEmail: ${loginEmail}\nContraseña temporal: ${temporaryPassword}\n\nEntra al panel: ${loginUrl}\n\nAl entrar, el sistema te pedirá que cambies la contraseña.\n\n— Equipo NightPass`,
+    text: `¡Enhorabuena, ${applicantName}!\n\n${venueName} ya está activo en NightPass.\n\nTus credenciales:\nEmail: ${loginEmail}\nContraseña temporal: ${temporaryPassword}\n\nEntra al panel: ${loginUrl}\n\nAl entrar, el sistema te pedirá cambiar esta contraseña.\n\n— Equipo NightPass`,
   };
 }
 
@@ -213,54 +155,110 @@ export function applicationApproved(input: ApprovedInput) {
    4. Invitación al equipo → al staff
 ───────────────────────────────────────── */
 
+export type StaffRole = 'MANAGER' | 'SCANNER';
+
 export interface StaffInvitedInput {
   staffName: string;
   venueName: string;
   loginEmail: string;
   loginUrl: string;
   temporaryPassword?: string;
+  staffRole?: StaffRole;
 }
 
+interface StaffCopy {
+  roleLabel: string;
+  description: string;
+  capabilities: Array<{ title: string; body: string }>;
+}
+
+const STAFF_COPY: Record<StaffRole, StaffCopy> = {
+  MANAGER: {
+    roleLabel: 'Manager',
+    description:
+      'Como manager tendrás acceso al panel para gestionar eventos, invitar staff y supervisar la operación del local.',
+    capabilities: [
+      {
+        title: 'Gestiona eventos',
+        body: 'Crea, edita y publica eventos del local con sus tiers de precio.',
+      },
+      {
+        title: 'Invita staff',
+        body: 'Añade más manos al equipo cuando lo necesites.',
+      },
+      {
+        title: 'Supervisa la operación',
+        body: 'Revisa en tiempo real pases vendidos y entradas escaneadas.',
+      },
+      {
+        title: 'Sube contenido',
+        body: 'Actualiza fotos del local y stories en vivo.',
+      },
+    ],
+  },
+  SCANNER: {
+    roleLabel: 'Staff de entrada',
+    description:
+      'Como staff de entrada usarás la app móvil NightPass para escanear los QR de los pases en la puerta del local.',
+    capabilities: [
+      {
+        title: 'Descarga la app NightPass',
+        body: 'Inicia sesión en la app móvil con estas credenciales.',
+      },
+      {
+        title: 'Escanea QR en la entrada',
+        body: 'Valida pases con la cámara del celular.',
+      },
+      {
+        title: 'Confirma acceso al instante',
+        body: 'El sistema te dirá si el pase es válido en menos de un segundo.',
+      },
+      {
+        title: 'Cuenta protegida',
+        body: 'Cambia tu contraseña al primer ingreso para asegurar la cuenta.',
+      },
+    ],
+  },
+};
+
 export function staffInvited(input: StaffInvitedInput) {
-  const { staffName, venueName, loginEmail, loginUrl, temporaryPassword } = input;
+  const { staffName, venueName, loginEmail, loginUrl, temporaryPassword, staffRole = 'SCANNER' } = input;
+  const copy = STAFF_COPY[staffRole];
 
   const credsHtml = temporaryPassword
     ? renderCredentials(loginEmail, temporaryPassword)
-    : `<div style="margin:24px 0;padding:20px 24px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);border-radius:12px;">
-         <p style="margin:0;font-size:14px;color:#e4e4e7;">✓ Ya tienes acceso con tu cuenta existente en <strong>${escapeHtml(loginEmail)}</strong>.</p>
-       </div>`;
+    : renderInfoBox({
+        tone: 'neutral',
+        bodyHtml: `Ya tienes acceso con tu cuenta existente en <strong style="color:#f5f3ff;">${escapeHtml(loginEmail)}</strong>.`,
+      });
 
   const credsText = temporaryPassword
     ? `\n\nEmail: ${loginEmail}\nContraseña temporal: ${temporaryPassword}`
     : `\n\nYa tienes acceso con tu cuenta existente (${loginEmail}).`;
 
+  const ctaLabel = staffRole === 'SCANNER' ? 'Entrar al scanner' : 'Entrar al panel';
+
   return {
-    subject: `Te invitaron al equipo de ${venueName} 🎉`,
+    subject: `Te invitaron a ${venueName} como ${copy.roleLabel.toLowerCase()} 🎉`,
     html: renderLayout({
       title: `Invitación al equipo — NightPass`,
       preheader: `Ahora formas parte del equipo de ${venueName} en NightPass.`,
+      eyebrowLabel: `Invitación · ${copy.roleLabel}`,
       bodyHtml: `
-        ${renderEyebrow('Invitación al equipo')}
-        <h1 style="margin:0 0 12px;font-size:28px;font-weight:800;color:#fff;line-height:1.2;letter-spacing:-0.02em;">
-          Hola, ${escapeHtml(staffName)} 👋
-        </h1>
-        <p style="margin:0 0 8px;font-size:15px;color:#a1a1aa;line-height:1.7;">
-          Te invitaron a formar parte del equipo de
-        </p>
-        <p style="margin:0 0 28px;font-size:22px;font-weight:700;color:#fff;">
-          ${escapeHtml(venueName)}
-        </p>
-        <p style="margin:0 0 24px;font-size:14px;color:#71717a;line-height:1.6;">
-          Desde el panel podrás gestionar eventos, escanear QRs en la entrada y más —
-          según el rol que te asignó el dueño del local.
-        </p>
-
+        ${renderEyebrow(copy.roleLabel)}
+        ${renderHeading(`Hola, ${staffName}.`)}
+        ${renderParagraph(
+          `Te invitaron a formar parte del equipo de <strong style="color:#f5f3ff;">${escapeHtml(venueName)}</strong>.`,
+        )}
+        ${renderParagraph(escapeHtml(copy.description))}
         ${credsHtml}
-
-        ${renderButton(loginUrl, 'Entrar al panel')}
+        ${renderButton(loginUrl, ctaLabel)}
+        ${renderDivider()}
+        ${renderSubheading('Lo que tendrás disponible')}
+        ${renderNumberedList(copy.capabilities)}
       `,
     }),
-    text: `Hola ${staffName},\n\nTe invitaron al equipo de "${venueName}" en NightPass.${credsText}\n\nEntra al panel: ${loginUrl}\n\n— Equipo NightPass`,
+    text: `Hola ${staffName},\n\nTe invitaron a "${venueName}" como ${copy.roleLabel}.\n\n${copy.description}${credsText}\n\nEntra: ${loginUrl}\n\n— Equipo NightPass`,
   };
 }
 
@@ -278,10 +276,7 @@ export function applicationRejected(input: RejectedInput) {
   const { applicantName, venueName, reason } = input;
 
   const reasonHtml = reason
-    ? `<div style="margin:24px 0;border-left:3px solid rgba(239,68,68,0.6);background:rgba(239,68,68,0.06);border-radius:0 10px 10px 0;padding:16px 20px;">
-         <p style="margin:0 0 6px;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#ef4444;">Motivo</p>
-         <p style="margin:0;font-size:14px;color:#e4e4e7;line-height:1.6;">${escapeHtml(reason)}</p>
-       </div>`
+    ? renderInfoBox({ tone: 'danger', title: 'Motivo', bodyHtml: escapeHtml(reason) })
     : '';
 
   const reasonText = reason ? `\n\nMotivo: ${reason}` : '';
@@ -291,41 +286,28 @@ export function applicationRejected(input: RejectedInput) {
     html: renderLayout({
       title: 'Solicitud no aprobada — NightPass',
       preheader: `Tu solicitud para ${venueName} no fue aprobada en esta ocasión.`,
+      eyebrowLabel: 'Resultado de tu solicitud',
       bodyHtml: `
-        ${renderEyebrow('Resultado de tu solicitud')}
-        <h1 style="margin:0 0 20px;font-size:26px;font-weight:800;color:#fff;line-height:1.2;letter-spacing:-0.02em;">
-          Hola, ${escapeHtml(applicantName)}
-        </h1>
-        <p style="margin:0 0 16px;font-size:15px;color:#a1a1aa;line-height:1.7;">
-          Gracias por tu interés en NightPass. Lamentamos informarte que tu solicitud para
-          <strong style="color:#e4e4e7;">${escapeHtml(venueName)}</strong>
-          no fue aprobada en esta ocasión.
-        </p>
-
+        ${renderEyebrow('No aprobada')}
+        ${renderHeading(`Hola, ${applicantName}.`)}
+        ${renderParagraph(
+          `Gracias por tu interés en NightPass. Lamentamos informarte que tu solicitud para <strong style="color:#f5f3ff;">${escapeHtml(venueName)}</strong> no fue aprobada en esta ocasión.`,
+        )}
         ${reasonHtml}
-
         ${renderDivider()}
-
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px;">
-          <tr>
-            <td style="width:36px;vertical-align:top;padding-top:2px;">
-              <div style="width:28px;height:28px;border-radius:50%;background:rgba(168,85,247,0.12);text-align:center;line-height:28px;font-size:14px;">🔄</div>
-            </td>
-            <td style="vertical-align:top;padding-left:14px;">
-              <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#e4e4e7;">¿Puedes volver a aplicar?</p>
-              <p style="margin:0;font-size:13px;color:#71717a;line-height:1.6;">Sí — podrás enviar una nueva solicitud transcurridos 30 días. Si crees que hay un error, escríbenos.</p>
-            </td>
-          </tr>
-        </table>
-
-        ${renderDivider()}
-
-        <p style="margin:0;font-size:13px;color:#52525b;text-align:center;">
-          ¿Tienes dudas? Escríbenos a
-          <a href="mailto:hola@nightpass.app" style="color:#a855f7;text-decoration:none;">hola@nightpass.app</a>
-        </p>
+        ${renderSubheading('Qué puedes hacer ahora')}
+        ${renderNumberedList([
+          {
+            title: 'Vuelve a aplicar en 30 días',
+            body: 'Podrás enviar una nueva solicitud transcurrido el periodo de espera.',
+          },
+          {
+            title: 'Ajusta tu propuesta',
+            body: 'Si crees que hubo un error o quieres clarificar algo, escríbenos a hola@nightpass.mx.',
+          },
+        ])}
       `,
     }),
-    text: `Hola ${applicantName},\n\nGracias por tu interés. Lamentamos informarte que tu solicitud para "${venueName}" no fue aprobada en esta ocasión.${reasonText}\n\nPodrás volver a aplicar transcurridos 30 días.\n\n¿Tienes dudas? Escríbenos a hola@nightpass.app\n\n— Equipo NightPass`,
+    text: `Hola ${applicantName},\n\nGracias por tu interés. Lamentamos informarte que tu solicitud para "${venueName}" no fue aprobada en esta ocasión.${reasonText}\n\n01. Vuelve a aplicar en 30 días — podrás enviar una nueva solicitud transcurrido el periodo de espera.\n02. Ajusta tu propuesta — si crees que hubo un error o quieres clarificar algo, escríbenos a hola@nightpass.mx.\n\n— Equipo NightPass`,
   };
 }

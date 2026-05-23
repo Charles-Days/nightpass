@@ -3,20 +3,33 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { OrderStatus, Role, VenueStaffStatus } from '@prisma/client';
+import {
+  LocationPingSource,
+  OrderStatus,
+  Role,
+  VenueStaffStatus,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
+import { LocationsService } from '../locations/locations.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
 import { parseQr, recomputeHmac, verifyHmac } from '../common/qr-hmac';
+import { haversineMeters } from '../common/geo';
 
 @Injectable()
 export class PassesService {
+  private readonly logger = new Logger(PassesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly locations: LocationsService,
+    private readonly loyalty: LoyaltyService,
   ) {}
 
   // ── Listado de mis passes activos ────────────────────────────────────────
@@ -163,11 +176,98 @@ export class PassesService {
       };
     }
 
-    // 6. Marcar usado
+    // 6. Geofence: si el venue lo tiene configurado y tenemos coordenadas,
+    //    exigir un ping reciente del CLIENTE (no del staff) dentro del radio.
+    //    Esto bloquea reventa remota — el QR no se canjea si el holder no
+    //    está físicamente cerca del local.
+    const radius = pass.event.venue.geofenceRadiusM;
+    let redeemedDistanceM: number | null = null;
+    let redeemedAccuracyM: number | null = null;
+
+    if (
+      radius > 0 &&
+      pass.event.venue.latitude != null &&
+      pass.event.venue.longitude != null
+    ) {
+      const ping = await this.locations.findRecentForUser(pass.userId, 10);
+      if (!ping) {
+        throw new ConflictException({
+          code: 'NO_RECENT_LOCATION',
+          message:
+            'Pídele al cliente que abra el pase para verificar ubicación.',
+        });
+      }
+      const meters = haversineMeters(
+        ping.latitude,
+        ping.longitude,
+        pass.event.venue.latitude,
+        pass.event.venue.longitude,
+      );
+      if (meters > radius) {
+        throw new ConflictException({
+          code: 'OUT_OF_RANGE',
+          distanceM: Math.round(meters),
+          message: `Cliente está a ${Math.round(meters)}m del local.`,
+        });
+      }
+      redeemedDistanceM = Math.round(meters);
+      redeemedAccuracyM = Math.round(ping.accuracyM ?? 0);
+    }
+
+    // 7. Marcar usado (+ audit de geofence)
     const updated = await this.prisma.pass.update({
       where: { id: pass.id },
-      data: { usedAt: new Date(), usedByStaffId: scanner.id },
+      data: {
+        usedAt: new Date(),
+        usedByStaffId: scanner.id,
+        redeemedDistanceM,
+        redeemedAccuracyM,
+      },
     });
+
+    // 8. Side-effects post-redeem (fire-and-forget — no bloquean la respuesta).
+    //    - Loyalty: puntos por escaneo exitoso.
+    //    - LocationPing server-side: ancla la presencia del usuario en el venue
+    //      (origen SCAN_REDEEM) para analítica/heat-map sin depender del cliente.
+    void this.loyalty
+      .awardPassScan({
+        userId: pass.userId,
+        passId: pass.id,
+        eventId: pass.eventId,
+        venueId: pass.event.venueId,
+        scannedAt: updated.usedAt!,
+      })
+      .catch((err: unknown) =>
+        this.logger.warn(
+          `Loyalty award failed for pass ${pass.id}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        ),
+      );
+
+    if (
+      pass.event.venue.latitude != null &&
+      pass.event.venue.longitude != null
+    ) {
+      void this.locations
+        .record(pass.userId, {
+          latitude: pass.event.venue.latitude,
+          longitude: pass.event.venue.longitude,
+          source: LocationPingSource.SCAN_REDEEM,
+          accuracyM: undefined,
+        })
+        .catch((err: unknown) =>
+          this.logger.warn(
+            `Server-side ping failed for pass ${pass.id}: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          ),
+        );
+    } else {
+      this.logger.warn(
+        `Skipping server-side ping for pass ${pass.id}: venue ${pass.event.venueId} has no coordinates`,
+      );
+    }
 
     return {
       valid: true,

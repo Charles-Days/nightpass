@@ -5,7 +5,13 @@ import { ACCESS_COOKIE, REFRESH_COOKIE } from '@/core/config/cookies';
 const ADMIN_PREFIXES = ['/dashboard', '/admin', '/mi-local', '/cambiar-password', '/scanner'];
 
 // Rutas customer que requieren login (cualquier rol autenticado, incluyendo CUSTOMER).
-const CUSTOMER_PROTECTED_PREFIXES = ['/app/pases', '/app/perfil', '/app/checkout'];
+const CUSTOMER_PROTECTED_PREFIXES = [
+  '/app/pases',
+  '/app/perfil',
+  '/app/checkout',
+  '/app/recompensas',
+  '/app/checkin',
+];
 
 // Rutas de auth — si ya hay sesion, redirigimos fuera de ellas.
 const AUTH_ROUTES_ADMIN = ['/login'];
@@ -100,7 +106,7 @@ export async function middleware(req: NextRequest) {
   // Sin auth para una ruta protegida: redirigir al login que corresponde.
   const loginPath = isAdminRoute ? '/login' : '/app/iniciar-sesion';
   const loginUrl = new URL(loginPath, req.url);
-  loginUrl.searchParams.set('from', pathname);
+  loginUrl.searchParams.set('from', `${pathname}${req.nextUrl.search}`);
   return NextResponse.redirect(loginUrl);
 }
 

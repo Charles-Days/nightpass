@@ -8,6 +8,8 @@ export const paths = {
   adminVenues: '/admin/locales',
   adminVenuesCreate: '/admin/locales/nuevo',
   cambiarPassword: '/cambiar-password',
+  forgotPassword: '/forgot-password',
+  resetPassword: '/reset-password',
   miLocal: '/mi-local',
   miLocalEditar: '/mi-local/editar',
   miLocalEventos: '/mi-local/eventos',
@@ -17,12 +19,16 @@ export const paths = {
   appHome: '/app',
   iniciarSesion: '/app/iniciar-sesion',
   registro: '/app/registro',
+  recuperarPassword: '/app/recuperar-password',
+  restablecerPassword: '/app/restablecer-password',
   buscar: '/app/buscar',
   bar: '/app/bar',
   evento: '/app/evento',
   checkout: '/app/checkout',
   pases: '/app/pases',
   perfil: '/app/perfil',
+  recompensas: '/app/recompensas',
+  recompensasScan: '/app/recompensas/scan',
 } as const;
 
 export type AppPath = (typeof paths)[keyof typeof paths];

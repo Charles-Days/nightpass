@@ -17,3 +17,11 @@
 .claude/
 .kiro/
 skills-lock.json
+
+# Secrets / SSL keys / certs — NEVER commit
+*.key
+*.pem
+*_private_key*
+*_ssl_certificate*.zip
+*.p12
+*.pfx

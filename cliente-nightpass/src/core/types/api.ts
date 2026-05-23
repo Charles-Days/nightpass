@@ -8,6 +8,7 @@ export interface User {
   createdAt?: string;
   updatedAt?: string;
   mustChangePassword?: boolean;
+  locationOnboardedAt?: string | null;
 }
 
 export interface AuthTokens {
@@ -162,6 +163,7 @@ export interface EventTier {
   currency: string;
   capacity: number | null;
   position: number;
+  minLoyaltyTier?: LoyaltyTier | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -297,7 +299,13 @@ export interface CatalogVenueDetail extends CatalogVenueSummary {
     startsAt: string;
     endsAt: string;
     coverImageUrl: string | null;
-    tiers?: Array<{ id: string; name: string; priceCents: number; currency: string }>;
+    tiers?: Array<{
+      id: string;
+      name: string;
+      priceCents: number;
+      currency: string;
+      minLoyaltyTier?: LoyaltyTier | null;
+    }>;
   }>;
 }
 
@@ -317,6 +325,7 @@ export interface CatalogEventDetail {
     currency: string;
     capacity: number | null;
     position: number;
+    minLoyaltyTier?: LoyaltyTier | null;
   }>;
   venue: {
     id: string;
@@ -326,4 +335,73 @@ export interface CatalogEventDetail {
     address: string | null;
     coverImageUrl: string | null;
   };
+}
+
+// ─── Loyalty / Streak / Tier ───────────────────────────────────────────────
+
+export type LoyaltyTier = 'ROOKIE' | 'REGULAR' | 'INSIDER' | 'VIP';
+
+export const LOYALTY_TIER_RANK: Record<LoyaltyTier, number> = {
+  ROOKIE: 0,
+  REGULAR: 1,
+  INSIDER: 2,
+  VIP: 3,
+};
+
+export type LoyaltyEventType =
+  | 'EVENT_CHECKIN'
+  | 'VENUE_CHECKIN'
+  | 'FIRST_VENUE_BONUS'
+  | 'STREAK_DAILY_BONUS'
+  | 'STREAK_MILESTONE'
+  | 'BRING_FRIEND_BONUS'
+  | 'ADMIN_ADJUST';
+
+export interface LoyaltyStreak {
+  current: number;
+  longest: number;
+  freezesRemaining: number;
+  lastCheckinDate: string | null;
+}
+
+export interface LoyaltyStatus {
+  totalPoints: number;
+  yearPoints: number;
+  tier: LoyaltyTier;
+  nextTier: LoyaltyTier | null;
+  pointsToNext: number | null;
+  streak: LoyaltyStreak;
+}
+
+export interface LoyaltyEntry {
+  id: string;
+  type: LoyaltyEventType;
+  points: number;
+  multiplier: number;
+  venueName: string | null;
+  eventTitle: string | null;
+  occurredAt: string;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  userId: string;
+  name: string | null;
+  tier: LoyaltyTier;
+  yearPoints: number;
+}
+
+export interface VenueCheckinResponse {
+  awarded: number;
+  newStreakDays: number;
+  tier: LoyaltyTier;
+  alreadyCheckedInToday?: boolean;
+}
+
+export interface VenueCheckinQrPayload {
+  payload: string;
+  /** URL form for native camera apps: opens the customer web flow,
+   *  which redirects to login if needed and auto-processes the check-in. */
+  scanUrl: string;
+  issuedAt: string;
 }

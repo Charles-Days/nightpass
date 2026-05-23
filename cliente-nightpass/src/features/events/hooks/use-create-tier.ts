@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { clientFetch, ClientApiError } from '@/core/lib/api/client-client';
-import type { EventTier } from '@/core/types/api';
+import type { EventTier, LoyaltyTier } from '@/core/types/api';
 
 export interface CreateTierInput {
   name: string;
@@ -11,6 +11,7 @@ export interface CreateTierInput {
   currency?: string;
   capacity?: number;
   position?: number;
+  minLoyaltyTier?: LoyaltyTier | null;
 }
 
 export function useCreateTier(eventId: string) {
