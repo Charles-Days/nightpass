@@ -12,26 +12,32 @@ import { MAX_IMAGE_BYTES, MAX_VIDEO_DURATION_MS, type ValidatedMedia } from '../
 import { StoryRecorder } from './story-recorder';
 
 interface OwnerStoryComposerProps {
-  venueId: string;
-  venueName: string;
+  venueId?: string;
+  eventId?: string;
+  venueName: string; // display name shown on chip (works for venue or event)
   autoStart?: 'record' | 'photo' | null;
   returnTo?: 'app' | 'profile' | null;
+  /** If set, fired when the user dismisses or finishes — used by parent overlays. */
+  onClose?: () => void;
 }
 
 type Mode = 'idle' | 'record' | 'preview';
 
-export function OwnerStoryComposer({ venueId, venueName, autoStart = null, returnTo = null }: OwnerStoryComposerProps) {
+export function OwnerStoryComposer({ venueId, eventId, venueName, autoStart = null, returnTo = null, onClose }: OwnerStoryComposerProps) {
   const router = useRouter();
   const [mode, setMode] = React.useState<Mode>('idle');
   const [media, setMedia] = React.useState<ValidatedMedia | null>(null);
   const photoInputRef = React.useRef<HTMLInputElement>(null);
   const autoStartedRef = React.useRef(false);
 
-  const create = useCreateStory(venueId, {
-    onSuccess: () => {
-      reset();
+  const create = useCreateStory(
+    venueId ? { venueId } : { eventId: eventId! },
+    {
+      onSuccess: () => {
+        reset();
+      },
     },
-  });
+  );
 
   // Auto-open record/photo flow when navigated with ?compose=record|photo.
   React.useEffect(() => {
@@ -63,14 +69,19 @@ export function OwnerStoryComposer({ venueId, venueName, autoStart = null, retur
     });
     setMode('idle');
     if (photoInputRef.current) photoInputRef.current.value = '';
-    // If we arrived from the customer app (e.g. ?return=app|profile), bounce
-    // the user back there so the composer never strands them in /mi-local/*.
+    // If parent owns the lifecycle (e.g. event composer overlay), bubble up.
+    if (onClose) {
+      onClose();
+      return;
+    }
+    // Otherwise, if we arrived from the customer app (?return=app|profile),
+    // bounce the user back there so the composer never strands them in /mi-local/*.
     if (returnTo === 'app') {
       router.push(paths.appHome);
     } else if (returnTo === 'profile') {
       router.push(paths.perfil);
     }
-  }, [returnTo, router]);
+  }, [onClose, returnTo, router]);
 
   const handlePhotoFile = (file: File | undefined) => {
     if (!file) return;

@@ -370,6 +370,7 @@ model Event {
   orders        Order[]
   passes        Pass[]
   loyaltyEvents LoyaltyEvent[]
+  stories       Story[]
 
   @@unique([venueId, slug])
   @@unique([promoterId, slug])
@@ -569,7 +570,8 @@ model OAuthAccount {
 
 model Story {
   id          String         @id @default(uuid(7)) @db.Uuid
-  venueId     String         @db.Uuid
+  venueId     String?        @db.Uuid
+  eventId     String?        @db.Uuid
   createdById String         @db.Uuid
   mediaUrl    String
   mediaType   StoryMediaType
@@ -579,10 +581,12 @@ model Story {
   expiresAt   DateTime
   deletedAt   DateTime?
 
-  venue     Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  createdBy User  @relation("StoryAuthor", fields: [createdById], references: [id])
+  venue     Venue? @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  event     Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy User   @relation("StoryAuthor", fields: [createdById], references: [id])
 
   @@index([venueId, expiresAt])
+  @@index([eventId, expiresAt])
   @@index([expiresAt])
   @@map("stories")
 }

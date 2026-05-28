@@ -10,6 +10,7 @@ import {
   type LoyaltyTier,
 } from '@/core/types/api';
 import { TIER_STYLES } from '@/features/loyalty';
+import { EventStoriesSection } from '@/app/(customer)/_components/event-stories-section';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -103,6 +104,8 @@ export default async function EventDetailPage({ params }: Props) {
           </div>
         )}
       </section>
+
+      <EventStoriesSection eventId={event.id} />
 
       <section className="np-rise mt-8" style={{ animationDelay: '400ms' }}>
         <h2 className="mb-4 font-display text-xl font-bold tracking-tight">Boletos</h2>

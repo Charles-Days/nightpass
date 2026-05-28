@@ -30,14 +30,14 @@ export class StoriesController {
   constructor(private readonly service: StoriesService) {}
 
   @Post('upload-init')
-  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF)
+  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF, Role.PROMOTER, Role.PROMOTER_STAFF)
   @HttpCode(HttpStatus.OK)
   uploadInit(@Body() dto: UploadInitDto, @CurrentUser() user: AuthUser) {
     return this.service.uploadInit(dto, user);
   }
 
   @Post()
-  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF)
+  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF, Role.PROMOTER, Role.PROMOTER_STAFF)
   @HttpCode(HttpStatus.CREATED)
   create(@Body() dto: CreateStoryDto, @CurrentUser() user: AuthUser) {
     return this.service.create(dto, user);
@@ -52,8 +52,17 @@ export class StoriesController {
     return this.service.listMine(query.venueId, user);
   }
 
+  @Get('mine-by-event/:eventId')
+  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF, Role.PROMOTER, Role.PROMOTER_STAFF)
+  listMineByEvent(
+    @Param('eventId', ParseUUIDPipe) eventId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.service.listMineByEvent(eventId, user);
+  }
+
   @Delete(':id')
-  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF)
+  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF, Role.PROMOTER, Role.PROMOTER_STAFF)
   @HttpCode(HttpStatus.OK)
   softDelete(
     @Param('id', ParseUUIDPipe) id: string,

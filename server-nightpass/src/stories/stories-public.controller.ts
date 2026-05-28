@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { StoriesService } from './stories.service';
 
@@ -20,5 +20,10 @@ export class StoriesPublicController {
   @Get('venues/:slug/stories')
   getByVenueSlug(@Param('slug') slug: string) {
     return this.service.getActiveByVenueSlug(slug);
+  }
+
+  @Get('events/:id/stories')
+  getByEventId(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.getActiveByEventId(id);
   }
 }

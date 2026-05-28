@@ -12,8 +12,13 @@ import {
 } from 'class-validator';
 
 export class CreateStoryDto {
+  @IsOptional()
   @IsUUID('all')
-  venueId!: string;
+  venueId?: string;
+
+  @IsOptional()
+  @IsUUID('all')
+  eventId?: string;
 
   @IsString()
   @MaxLength(500)

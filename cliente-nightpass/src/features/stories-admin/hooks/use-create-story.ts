@@ -29,7 +29,21 @@ interface UseCreateStoryOptions {
   onSuccess?: (story: Story) => void;
 }
 
-export function useCreateStory(venueId: string, options: UseCreateStoryOptions = {}) {
+export type CreateStoryTarget =
+  | { venueId: string; eventId?: undefined }
+  | { eventId: string; venueId?: undefined };
+
+export function useCreateStory(
+  targetOrVenueId: string | CreateStoryTarget,
+  options: UseCreateStoryOptions = {},
+) {
+  const target: CreateStoryTarget =
+    typeof targetOrVenueId === 'string' ? { venueId: targetOrVenueId } : targetOrVenueId;
+  const venueId = target.venueId;
+  const eventId = target.eventId;
+  const invalidationKey = venueId
+    ? ['stories-mine', venueId]
+    : ['stories-mine-event', eventId!];
   const qc = useQueryClient();
   const router = useRouter();
 
@@ -76,7 +90,7 @@ export function useCreateStory(venueId: string, options: UseCreateStoryOptions =
       const init = await clientFetch<StoryUploadInit>('/api/stories/upload-init', {
         method: 'POST',
         body: {
-          venueId,
+          ...(venueId ? { venueId } : { eventId }),
           mediaType,
           contentType: baseContentType,
           sizeBytes: uploadFile.size,
@@ -97,7 +111,7 @@ export function useCreateStory(venueId: string, options: UseCreateStoryOptions =
       const story = await clientFetch<Story>('/api/stories', {
         method: 'POST',
         body: {
-          venueId,
+          ...(venueId ? { venueId } : { eventId }),
           mediaUrl: init.publicUrl,
           mediaType,
           durationMs,
@@ -108,7 +122,7 @@ export function useCreateStory(venueId: string, options: UseCreateStoryOptions =
     },
     onSuccess: (story) => {
       toast.success('Historia publicada');
-      qc.invalidateQueries({ queryKey: ['stories-mine', venueId] });
+      qc.invalidateQueries({ queryKey: invalidationKey });
       router.refresh();
       setPhase('idle');
       setTranscodeProgress(0);

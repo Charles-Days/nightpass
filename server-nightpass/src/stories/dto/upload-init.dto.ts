@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
+  IsOptional,
   IsString,
   IsUUID,
   Max,
@@ -21,8 +22,13 @@ export const STORY_MAX_BYTES: Record<StoryMediaType, number> = {
 };
 
 export class UploadInitDto {
+  @IsOptional()
   @IsUUID('all')
-  venueId!: string;
+  venueId?: string;
+
+  @IsOptional()
+  @IsUUID('all')
+  eventId?: string;
 
   @IsEnum(StoryMediaType)
   mediaType!: StoryMediaType;

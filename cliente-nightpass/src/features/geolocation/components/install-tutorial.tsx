@@ -54,7 +54,8 @@ export function InstallTutorial({ open, onOpenChange }: InstallTutorialProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[calc(100%-2rem)] rounded-[22px] border border-white/10 bg-[#0E0B14]/95 p-6 text-white backdrop-blur-xl sm:max-w-md">
+      <DialogContent className="flex max-h-[88dvh] max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-[22px] border border-white/10 bg-[#0E0B14]/95 p-0 text-white backdrop-blur-xl sm:max-w-md">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
         <div className="flex flex-col gap-1 text-left">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
             Mejor experiencia
@@ -218,6 +219,7 @@ export function InstallTutorial({ open, onOpenChange }: InstallTutorialProps) {
             )}
           </TabsContent>
         </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );

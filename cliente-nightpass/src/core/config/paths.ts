@@ -30,6 +30,7 @@ export const paths = {
   miOrganizadorScanner: '/app/mi-organizador/scanner',
   miOrganizadorStaff: '/app/mi-organizador/staff',
   miOrganizadorPagos: '/app/mi-organizador/pagos',
+  miOrganizadorHistorias: '/app/mi-organizador/historias',
   appHome: '/app',
   iniciarSesion: '/app/iniciar-sesion',
   registro: '/app/registro',

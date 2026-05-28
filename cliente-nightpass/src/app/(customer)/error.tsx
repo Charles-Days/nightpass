@@ -1,9 +1,37 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { paths } from '@/core/config/paths';
+
+const STALE_PATTERNS = [
+  /failed to find server action/i,
+  /deployment/i,
+  /loading chunk \d+ failed/i,
+  /ChunkLoadError/i,
+];
+
+function isStaleDeployError(err: unknown): boolean {
+  const msg = err instanceof Error ? `${err.name} ${err.message}` : String(err);
+  return STALE_PATTERNS.some((re) => re.test(msg));
+}
+
+async function nukeClientCaches(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister().catch(() => undefined)));
+    }
+  } catch {}
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k).catch(() => undefined)));
+    }
+  } catch {}
+}
 
 export default function CustomerError({
   error,
@@ -12,11 +40,30 @@ export default function CustomerError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [recovering, setRecovering] = useState(false);
+
   useEffect(() => {
     if (process.env.NODE_ENV !== 'production') {
       console.error('[customer/error]', error);
     }
+    if (isStaleDeployError(error)) {
+      setRecovering(true);
+      nukeClientCaches().finally(() => {
+        window.location.replace(window.location.pathname + window.location.search);
+      });
+    }
   }, [error]);
+
+  if (recovering) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col items-center justify-center px-5 text-center">
+        <Loader2 className="size-6 animate-spin text-primary" />
+        <p className="mt-4 text-sm text-muted-foreground">
+          Actualizando la app a la versión más nueva…
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col items-center justify-center px-5 text-center">

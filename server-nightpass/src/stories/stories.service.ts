@@ -7,7 +7,9 @@ import {
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import {
+  EventStatus,
   Prisma,
+  PromoterStatus,
   Role,
   StoryMediaType,
   VenueStaffStatus,
@@ -40,6 +42,7 @@ const EXT_BY_MIME: Record<string, string> = {
 const STORY_PUBLIC_SELECT = {
   id: true,
   venueId: true,
+  eventId: true,
   mediaUrl: true,
   mediaType: true,
   durationMs: true,
@@ -94,10 +97,68 @@ export class StoriesService {
     throw new ForbiddenException('No tienes acceso a este local');
   }
 
+  /**
+   * Acceso a un evento como PROMOTER/PROMOTER_STAFF dueño del promoter,
+   * VENUE_OWNER/STAFF del venue al que pertenece el evento, o ADMIN.
+   */
+  private async assertEventAccess(
+    eventId: string,
+    user: AuthUser,
+  ): Promise<{ eventId: string; venueId: string | null }> {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: { id: true, venueId: true, promoterId: true },
+    });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+
+    if (user.role === Role.ADMIN) {
+      return { eventId: event.id, venueId: event.venueId };
+    }
+
+    if (event.venueId && (user.role === Role.VENUE_OWNER || user.role === Role.VENUE_STAFF)) {
+      await this.assertVenueAccess(event.venueId, user);
+      return { eventId: event.id, venueId: event.venueId };
+    }
+
+    if (event.promoterId && (user.role === Role.PROMOTER || user.role === Role.PROMOTER_STAFF)) {
+      const member = await this.prisma.promoterMember.findUnique({
+        where: { userId_promoterId: { userId: user.id, promoterId: event.promoterId } },
+        select: { promoter: { select: { status: true } } },
+      });
+      if (!member || member.promoter.status !== PromoterStatus.ACTIVE) {
+        throw new ForbiddenException('No tienes acceso a este evento');
+      }
+      return { eventId: event.id, venueId: event.venueId };
+    }
+
+    throw new ForbiddenException('No tienes acceso a este evento');
+  }
+
+  private requireExactlyOneTarget(
+    venueId: string | undefined,
+    eventId: string | undefined,
+  ): void {
+    const hasVenue = !!venueId;
+    const hasEvent = !!eventId;
+    if (hasVenue === hasEvent) {
+      throw new BadRequestException(
+        'Debes especificar exactamente uno: venueId o eventId',
+      );
+    }
+  }
+
   // ─── Upload init ─────────────────────────────────────────────────────────
 
   async uploadInit(dto: UploadInitDto, user: AuthUser) {
-    await this.assertVenueAccess(dto.venueId, user);
+    this.requireExactlyOneTarget(dto.venueId, dto.eventId);
+    let scopeKey: string;
+    if (dto.venueId) {
+      await this.assertVenueAccess(dto.venueId, user);
+      scopeKey = `venues/${dto.venueId}`;
+    } else {
+      await this.assertEventAccess(dto.eventId!, user);
+      scopeKey = `events/${dto.eventId}`;
+    }
 
     const allowed = STORY_ALLOWED_MIMES[dto.mediaType];
     if (!allowed.includes(dto.contentType)) {
@@ -114,7 +175,7 @@ export class StoriesService {
     }
 
     const ext = EXT_BY_MIME[dto.contentType] ?? 'bin';
-    const key = `stories/${dto.venueId}/${randomBytes(8).toString('hex')}-${Date.now()}.${ext}`;
+    const key = `stories/${scopeKey}/${randomBytes(8).toString('hex')}-${Date.now()}.${ext}`;
 
     const { signedUrl, publicUrl } = await this.storage.getSignedUploadUrl(
       key,
@@ -127,7 +188,12 @@ export class StoriesService {
   // ─── Create ──────────────────────────────────────────────────────────────
 
   async create(dto: CreateStoryDto, user: AuthUser) {
-    await this.assertVenueAccess(dto.venueId, user);
+    this.requireExactlyOneTarget(dto.venueId, dto.eventId);
+    if (dto.venueId) {
+      await this.assertVenueAccess(dto.venueId, user);
+    } else {
+      await this.assertEventAccess(dto.eventId!, user);
+    }
 
     if (dto.mediaType === StoryMediaType.VIDEO) {
       if (dto.durationMs == null) {
@@ -147,7 +213,8 @@ export class StoriesService {
 
     return this.prisma.story.create({
       data: {
-        venueId: dto.venueId,
+        venueId: dto.venueId ?? null,
+        eventId: dto.eventId ?? null,
         createdById: user.id,
         mediaUrl: dto.mediaUrl,
         mediaType: dto.mediaType,
@@ -177,16 +244,37 @@ export class StoriesService {
     });
   }
 
+  async listMineByEvent(eventId: string, user: AuthUser) {
+    await this.assertEventAccess(eventId, user);
+
+    const now = new Date();
+    return this.prisma.story.findMany({
+      where: {
+        eventId,
+        deletedAt: null,
+        expiresAt: { gt: now },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: STORY_PUBLIC_SELECT,
+    });
+  }
+
   // ─── Soft delete ─────────────────────────────────────────────────────────
 
   async softDelete(id: string, user: AuthUser) {
     const story = await this.prisma.story.findUnique({
       where: { id },
-      select: { id: true, venueId: true, mediaUrl: true, deletedAt: true },
+      select: { id: true, venueId: true, eventId: true, mediaUrl: true, deletedAt: true },
     });
     if (!story) throw new NotFoundException('Story no encontrada');
 
-    await this.assertVenueAccess(story.venueId, user);
+    if (story.venueId) {
+      await this.assertVenueAccess(story.venueId, user);
+    } else if (story.eventId) {
+      await this.assertEventAccess(story.eventId, user);
+    } else {
+      throw new ForbiddenException('Story sin owner');
+    }
 
     if (story.deletedAt) {
       return { id: story.id, deletedAt: story.deletedAt };
@@ -248,6 +336,7 @@ export class StoriesService {
 
     for (const row of stories) {
       const { venue, ...story } = row;
+      if (!venue) continue;
       const existing = grouped.get(venue.id);
       if (existing) {
         existing.stories.push(story);
@@ -294,6 +383,38 @@ export class StoriesService {
       venueSlug: venue.slug,
       venueName: venue.name,
       venueCoverImageUrl: venue.coverImageUrl,
+      stories,
+    };
+  }
+
+  /**
+   * Stories activas de un evento PUBLISHED concreto.
+   * Usado por el viewer fullscreen y la sección de historias en /app/evento/:id.
+   */
+  async getActiveByEventId(eventId: string) {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: { id: true, title: true, coverImageUrl: true, status: true },
+    });
+    if (!event || event.status !== EventStatus.PUBLISHED) {
+      throw new NotFoundException('Evento no encontrado');
+    }
+
+    const now = new Date();
+    const stories = await this.prisma.story.findMany({
+      where: {
+        eventId: event.id,
+        deletedAt: null,
+        expiresAt: { gt: now },
+      },
+      orderBy: { createdAt: 'asc' },
+      select: STORY_PUBLIC_SELECT,
+    });
+
+    return {
+      eventId: event.id,
+      eventTitle: event.title,
+      eventCoverImageUrl: event.coverImageUrl,
       stories,
     };
   }
