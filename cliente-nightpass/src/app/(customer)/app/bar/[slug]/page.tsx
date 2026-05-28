@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, MapPin } from 'lucide-react';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import type { CatalogVenueDetail } from '@/core/types/api';
+import { StoryRing } from '@/features/stories-public';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -69,6 +70,15 @@ export default async function VenueDetailPage({ params }: Props) {
             />
           ) : null}
           <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+          <div className="absolute left-4 top-4 z-10 sm:left-6 sm:top-6">
+            <StoryRing
+              slug={venue.slug}
+              venueName={venue.name}
+              coverImageUrl={venue.coverImageUrl}
+              size="lg"
+              hideIfEmpty
+            />
+          </div>
           <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8">
             <h1 className="np-rise font-display text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl" style={{ animationDelay: '160ms' }}>
               {venue.name}

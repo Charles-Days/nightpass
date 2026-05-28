@@ -15,6 +15,8 @@ import {
   QrCode,
   CreditCard,
   Menu,
+  Pencil,
+  Radio,
   type LucideIcon,
 } from 'lucide-react';
 import { useLogout } from '@/features/auth';
@@ -42,17 +44,28 @@ const PLATFORM_NAV: NavItem[] = [
   { href: paths.dashboard, label: 'Dashboard', icon: LayoutDashboard, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminApplications, label: 'Solicitudes', icon: Inbox, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminVenues, label: 'Locales', icon: Store, enabled: true, roles: ['ADMIN'] },
+  { href: paths.adminOrganizadores, label: 'Organizadores', icon: Sparkles, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminUsers, label: 'Usuarios', icon: Users, enabled: true, roles: ['ADMIN'] },
-  { href: '/admin/stories', label: 'Stories', icon: Sparkles, enabled: false, roles: ['ADMIN'] },
+  { href: paths.adminStories, label: 'Historias', icon: Radio, enabled: true, roles: ['ADMIN'] },
 ];
 
 const VENUE_NAV: NavItem[] = [
   { href: paths.miLocal, label: 'Mi local', icon: Store, enabled: true, roles: ['VENUE_OWNER', 'VENUE_STAFF'] },
+  { href: paths.miLocalEditar, label: 'Editar local', icon: Pencil, enabled: true, roles: ['VENUE_OWNER'] },
   { href: paths.miLocalEventos, label: 'Eventos', icon: Calendar, enabled: true, roles: ['VENUE_OWNER', 'VENUE_STAFF'] },
   { href: paths.scanner, label: 'Escanear pase', icon: QrCode, enabled: true, roles: ['VENUE_OWNER', 'VENUE_STAFF', 'ADMIN'] },
   { href: paths.miLocalPagos, label: 'Pagos', icon: CreditCard, enabled: true, roles: ['VENUE_OWNER'] },
-  { href: '/mi-local/pases', label: 'Pases', icon: Ticket, enabled: false, roles: ['VENUE_OWNER'] },
+  { href: paths.miLocalPases, label: 'Pases', icon: Ticket, enabled: true, roles: ['VENUE_OWNER'] },
+  { href: paths.miLocalStories, label: 'Historias', icon: Radio, enabled: true, roles: ['VENUE_OWNER', 'VENUE_STAFF'] },
   { href: paths.miLocalStaff, label: 'Staff', icon: Users, enabled: true, roles: ['VENUE_OWNER'] },
+];
+
+const PROMOTER_NAV: NavItem[] = [
+  { href: paths.miOrganizador, label: 'Mi panel', icon: Sparkles, enabled: true, roles: ['PROMOTER', 'PROMOTER_STAFF'] },
+  { href: paths.miOrganizadorEditar, label: 'Editar perfil', icon: Pencil, enabled: true, roles: ['PROMOTER'] },
+  { href: paths.miOrganizadorEventos, label: 'Eventos', icon: Calendar, enabled: true, roles: ['PROMOTER', 'PROMOTER_STAFF'] },
+  { href: paths.miOrganizadorScanner, label: 'Escanear pase', icon: QrCode, enabled: true, roles: ['PROMOTER', 'PROMOTER_STAFF'] },
+  { href: paths.miOrganizadorStaff, label: 'Staff', icon: Users, enabled: true, roles: ['PROMOTER'] },
 ];
 
 function visibleFor(role: Role, group: NavItem[]): NavItem[] {
@@ -76,9 +89,14 @@ function NavSection({
       <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-primary/50">
         {title}
       </p>
-      {items.map((item) => {
+      {(() => {
+        const matchingHrefs = items
+          .filter((it) => pathname === it.href || pathname.startsWith(`${it.href}/`))
+          .map((it) => it.href);
+        const bestMatch = matchingHrefs.sort((a, b) => b.length - a.length)[0];
+        return items.map((item) => {
         const Icon = item.icon;
-        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const active = item.href === bestMatch;
         const base =
           'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors';
         if (!item.enabled) {
@@ -112,7 +130,8 @@ function NavSection({
             <span>{item.label}</span>
           </Link>
         );
-      })}
+        });
+      })()}
     </div>
   );
 }
@@ -121,6 +140,8 @@ const ROLE_LABEL: Record<Role, string> = {
   ADMIN: 'Plataforma',
   VENUE_OWNER: 'Dueño de local',
   VENUE_STAFF: 'Staff de local',
+  PROMOTER: 'Organizador',
+  PROMOTER_STAFF: 'Staff de organizador',
   CUSTOMER: 'Cliente',
 };
 
@@ -128,6 +149,7 @@ interface SidebarBodyProps {
   user: User;
   platformItems: NavItem[];
   venueItems: NavItem[];
+  promoterItems: NavItem[];
   pathname: string;
   onLogout: () => void;
   isLoggingOut: boolean;
@@ -138,6 +160,7 @@ function SidebarBody({
   user,
   platformItems,
   venueItems,
+  promoterItems,
   pathname,
   onLogout,
   isLoggingOut,
@@ -161,6 +184,12 @@ function SidebarBody({
         <NavSection
           title="Mi local"
           items={venueItems}
+          pathname={pathname}
+          onNavigate={onNavigate}
+        />
+        <NavSection
+          title="Mi panel"
+          items={promoterItems}
           pathname={pathname}
           onNavigate={onNavigate}
         />
@@ -195,6 +224,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
 
   const platformItems = visibleFor(user.role, PLATFORM_NAV);
   const venueItems = visibleFor(user.role, VENUE_NAV);
+  const promoterItems = visibleFor(user.role, PROMOTER_NAV);
 
   return (
     <div className="relative min-h-dvh bg-background">
@@ -211,6 +241,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
           user={user}
           platformItems={platformItems}
           venueItems={venueItems}
+          promoterItems={promoterItems}
           pathname={pathname}
           onLogout={() => logout()}
           isLoggingOut={isPending}
@@ -230,6 +261,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
             user={user}
             platformItems={platformItems}
             venueItems={venueItems}
+            promoterItems={promoterItems}
             pathname={pathname}
             onLogout={() => logout()}
             isLoggingOut={isPending}

@@ -46,6 +46,7 @@ export interface AuthResult extends AuthTokens {
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private googleClient: OAuth2Client | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -53,6 +54,11 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly mailer: MailerService,
   ) {}
+
+  private getGoogleClient(clientId: string): OAuth2Client {
+    if (!this.googleClient) this.googleClient = new OAuth2Client(clientId);
+    return this.googleClient;
+  }
 
   async signup(dto: SignupDto): Promise<AuthResult> {
     const email = dto.email.toLowerCase();
@@ -117,13 +123,14 @@ export class AuthService {
       throw new ServiceUnavailableException('Google sign-in no configurado');
     }
 
-    const client = new OAuth2Client(clientId);
+    const client = this.getGoogleClient(clientId);
     let payload: TokenPayload | undefined;
     try {
       const ticket = await client.verifyIdToken({ idToken, audience: clientId });
       payload = ticket.getPayload();
     } catch (err) {
-      this.logger.warn(`Google idToken verify failed: ${err instanceof Error ? err.message : err}`);
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Google idToken verify failed: ${msg}`);
       throw new UnauthorizedException('Token de Google inválido');
     }
 

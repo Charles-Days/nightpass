@@ -1,9 +1,10 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Calendar, Users, MapPin, CheckCircle2, PauseCircle } from 'lucide-react';
 import { serverFetch } from '@/core/lib/api/server-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/core/components/ui/card';
 import { paths } from '@/core/config/paths';
-import type { Venue } from '@/core/types/api';
+import type { Venue, User } from '@/core/types/api';
 
 export const metadata = { title: 'Mi local' };
 
@@ -48,6 +49,9 @@ function StatCard({
 }
 
 export default async function MiLocalPage() {
+  const user = await serverFetch<User>('/auth/me');
+  if (user.role === 'ADMIN') redirect(paths.adminVenues);
+  if (!['VENUE_OWNER', 'VENUE_STAFF'].includes(user.role)) redirect(paths.dashboard);
   const venues = await serverFetch<VenueWithCount[]>('/venues/my');
   const venue = venues[0] as VenueWithCount | undefined;
 

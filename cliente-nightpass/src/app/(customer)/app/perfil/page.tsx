@@ -32,6 +32,8 @@ const ROLE_LABEL: Record<Role, string> = {
   ADMIN: 'Administrador',
   VENUE_OWNER: 'Dueno de local',
   VENUE_STAFF: 'Staff de local',
+  PROMOTER: 'Promotor',
+  PROMOTER_STAFF: 'Staff promotor',
   CUSTOMER: 'Insider',
 };
 

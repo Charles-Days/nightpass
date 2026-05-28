@@ -4,8 +4,9 @@ import { serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import { VenueCard } from '../_components/venue-card';
 import { FeaturedAforo } from '../_components/featured-aforo';
-import type { CatalogVenueSummary } from '@/core/types/api';
+import type { CatalogVenueSummary, VenueStoriesGroup } from '@/core/types/api';
 import { InstallBanner, AppOpenPinger } from '@/features/geolocation';
+import { StoriesCarousel } from '@/features/stories-public';
 
 export const metadata = {
   title: 'NightPass — Descubre la noche cerca de ti',
@@ -177,6 +178,13 @@ export default async function CustomerHomePage() {
     venues = [];
   }
 
+  let initialStoriesGroups: VenueStoriesGroup[] = [];
+  try {
+    initialStoriesGroups = await serverFetch<VenueStoriesGroup[]>('/catalog/stories/active');
+  } catch {
+    initialStoriesGroups = [];
+  }
+
   const [featured, ...rest] = venues;
   const featuredCity = featured?.city ?? 'tu ciudad';
 
@@ -244,6 +252,15 @@ export default async function CustomerHomePage() {
           </div>
         </div>
       </section>
+
+      {initialStoriesGroups.length > 0 && (
+        <section className="np-rise mb-10" style={{ animationDelay: '280ms' }}>
+          <h2 className="mb-4 font-display text-sm font-bold uppercase tracking-[0.22em] text-primary/80">
+            Historias en vivo
+          </h2>
+          <StoriesCarousel initialGroups={initialStoriesGroups} />
+        </section>
+      )}
 
       {/* ── FEATURED ── */}
       {featured ? (

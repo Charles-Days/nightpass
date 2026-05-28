@@ -37,6 +37,8 @@ export class StorageService {
         region: 'auto',
         endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
         credentials: { accessKeyId, secretAccessKey },
+        requestChecksumCalculation: 'WHEN_REQUIRED',
+        responseChecksumValidation: 'WHEN_REQUIRED',
       });
       this.logger.log('Storage configurado: Cloudflare R2');
     } else {
@@ -77,6 +79,10 @@ export class StorageService {
       Key: key,
       ContentType: contentType,
     });
+    // R2 no soporta los headers de flexible-checksums (CRC32) que el SDK
+    // añade por defecto al firmar PutObject. Si quedan en la URL firmada,
+    // el navegador sube sin esos headers y la firma falla en R2.
+    command.middlewareStack.remove('flexibleChecksumsMiddleware');
     const signedUrl = await getSignedUrl(this.client, command, { expiresIn });
     return { signedUrl, publicUrl: `${this.r2PublicUrl.replace(/\/$/, '')}/${key}` };
   }

@@ -10,6 +10,12 @@ import {
   staffInvited,
 } from './templates/application-emails';
 import {
+  promoterApplicationApproved,
+  promoterApplicationReceivedToAdmin,
+  promoterApplicationReceivedToApplicant,
+  promoterApplicationRejected,
+} from './templates/promoter-application-emails';
+import {
   customerWelcome,
   passwordReset,
   passwordChanged,
@@ -115,6 +121,66 @@ export class MailerService {
     reason?: string,
   ): Promise<void> {
     const tpl = applicationRejected({ applicantName, venueName, reason });
+    await this.send(to, tpl);
+  }
+
+  async sendPromoterApplicationReceivedToApplicant(
+    to: string,
+    applicantName: string,
+    promoterName: string,
+  ): Promise<void> {
+    const tpl = promoterApplicationReceivedToApplicant({ applicantName, promoterName });
+    await this.send(to, tpl);
+  }
+
+  async sendPromoterApplicationReceivedToAdmin(
+    applicationId: string,
+    applicantName: string,
+    applicantEmail: string,
+    promoterName: string,
+  ): Promise<void> {
+    if (!this.adminNotificationEmail) {
+      this.logger.warn(
+        'ADMIN_NOTIFICATION_EMAIL no configurado, no se envía notificación al admin.',
+      );
+      return;
+    }
+    const tpl = promoterApplicationReceivedToAdmin({
+      applicationId,
+      applicantName,
+      applicantEmail,
+      promoterName,
+      adminWebUrl: this.adminWebUrl,
+    });
+    await this.send(this.adminNotificationEmail, tpl);
+  }
+
+  async sendPromoterApplicationApproved(
+    to: string,
+    applicantName: string,
+    promoterName: string,
+    temporaryPassword: string,
+    isExistingUser: boolean,
+  ): Promise<void> {
+    const loginUrl = `${this.adminWebUrl.replace(/\/$/, '')}/login`;
+    const tpl = promoterApplicationApproved({
+      applicantName,
+      promoterName,
+      loginUrl,
+      temporaryPassword,
+      isExistingUser,
+      loginEmail: to,
+    });
+    await this.send(to, tpl);
+  }
+
+  async sendPromoterApplicationRejected(
+    to: string,
+    applicantName: string,
+    promoterName: string,
+    reason?: string,
+  ): Promise<void> {
+    const tpl = promoterApplicationRejected({ applicantName, promoterName, reason });
     await this.send(to, tpl);
   }
 

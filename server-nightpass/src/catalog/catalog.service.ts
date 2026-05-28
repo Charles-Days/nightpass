@@ -3,6 +3,7 @@ import { Prisma, EventStatus, Role, VenueStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LocationsService } from '../locations/locations.service';
 import { ListCatalogVenuesQuery } from './dto/list-catalog-venues.query';
+import { ListCatalogEventsQuery } from './dto/list-catalog-events.query';
 
 export type OccupancyBucket = 'low' | 'medium' | 'high';
 
@@ -25,6 +26,7 @@ const VENUE_PUBLIC_SELECT = {
   currency: true,
   latitude: true,
   longitude: true,
+  googleMapsUrl: true,
   coverImageUrl: true,
   categories: true,
   musicTypes: true,
@@ -114,6 +116,95 @@ export class CatalogService {
     return venue;
   }
 
+  async listCatalogEvents(query: ListCatalogEventsQuery) {
+    const now = new Date();
+    const where: Prisma.EventWhereInput = {
+      status: EventStatus.PUBLISHED,
+      startsAt: { gte: now },
+    };
+
+    if (query.date) {
+      const ms =
+        query.date === 'today'
+          ? 24 * 60 * 60 * 1000
+          : query.date === 'week'
+            ? 7 * 24 * 60 * 60 * 1000
+            : 30 * 24 * 60 * 60 * 1000;
+      where.startsAt = { gte: now, lt: new Date(now.getTime() + ms) };
+    }
+
+    if (query.city) {
+      const city = query.city.trim();
+      where.OR = [
+        { venue: { city: { contains: city, mode: 'insensitive' } } },
+        { externalVenueCity: { contains: city, mode: 'insensitive' } },
+      ];
+    }
+
+    if (query.search) {
+      const search = query.search.trim();
+      const searchOr: Prisma.EventWhereInput[] = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { venue: { name: { contains: search, mode: 'insensitive' } } },
+        { externalVenueName: { contains: search, mode: 'insensitive' } },
+      ];
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchOr }];
+        delete where.OR;
+      } else {
+        where.OR = searchOr;
+      }
+    }
+
+    // Solo eventos cuyo venue está ACTIVE (si tiene venue) o promotora ACTIVE (si tiene promotora).
+    const ownerActive: Prisma.EventWhereInput = {
+      OR: [
+        { venueId: { not: null }, venue: { status: VenueStatus.ACTIVE } },
+        { promoterId: { not: null }, promoter: { status: 'ACTIVE' } },
+      ],
+    };
+    where.AND = where.AND
+      ? [...(Array.isArray(where.AND) ? where.AND : [where.AND]), ownerActive]
+      : [ownerActive];
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.event.findMany({
+        where,
+        orderBy: { startsAt: 'asc' },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+        include: {
+          venue: {
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              city: true,
+              address: true,
+              coverImageUrl: true,
+            },
+          },
+          promoter: {
+            select: { id: true, slug: true, name: true, logoUrl: true },
+          },
+          tiers: {
+            orderBy: { position: 'asc' },
+            select: {
+              id: true,
+              name: true,
+              priceCents: true,
+              currency: true,
+              position: true,
+            },
+          },
+        },
+      }),
+      this.prisma.event.count({ where }),
+    ]);
+
+    return { items, total, page: query.page, limit: query.limit };
+  }
+
   async getEventById(id: string) {
     const event = await this.prisma.event.findUnique({
       where: { id, status: EventStatus.PUBLISHED },
@@ -163,9 +254,13 @@ export class CatalogService {
     if (tier.event.status !== EventStatus.PUBLISHED) {
       throw new NotFoundException('Evento no disponible');
     }
+    if (!tier.event.venue) {
+      throw new NotFoundException('Local no disponible');
+    }
     if (tier.event.venue.status !== 'ACTIVE') {
       throw new NotFoundException('Local no disponible');
     }
+    const venue = tier.event.venue;
     return {
       id: tier.id,
       name: tier.name,
@@ -181,13 +276,13 @@ export class CatalogService {
         endsAt: tier.event.endsAt,
         coverImageUrl: tier.event.coverImageUrl,
         venue: {
-          id: tier.event.venue.id,
-          slug: tier.event.venue.slug,
-          name: tier.event.venue.name,
-          city: tier.event.venue.city,
+          id: venue.id,
+          slug: venue.slug,
+          name: venue.name,
+          city: venue.city,
         },
       },
-      paymentsEnabled: tier.event.venue.stripeAccount?.chargesEnabled === true,
+      paymentsEnabled: venue.stripeAccount?.chargesEnabled === true,
     };
   }
 

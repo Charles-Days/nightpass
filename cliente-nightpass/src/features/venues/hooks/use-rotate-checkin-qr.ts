@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { clientFetch, ClientApiError } from '@/core/lib/api/client-client';
 import type { VenueCheckinQrPayload } from '@/core/types/api';
@@ -14,14 +14,30 @@ function extractMessage(payload: unknown): string | null {
   return null;
 }
 
+const checkinQrKey = (venueId: string) => ['venue-checkin-qr', venueId] as const;
+
+/** Read the persisted QR for this venue. Returns null if never generated. */
+export function useCheckinQr(venueId: string) {
+  return useQuery({
+    queryKey: checkinQrKey(venueId),
+    queryFn: () =>
+      clientFetch<VenueCheckinQrPayload | null>(
+        `/api/venues/${venueId}/checkin-qr`,
+      ),
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function useRotateCheckinQr(venueId: string) {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: () =>
       clientFetch<VenueCheckinQrPayload>(
         `/api/venues/${venueId}/checkin-qr/rotate`,
         { method: 'POST' },
       ),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      qc.setQueryData(checkinQrKey(venueId), data);
       toast.success('QR de check-in generado');
     },
     onError: (err) => {

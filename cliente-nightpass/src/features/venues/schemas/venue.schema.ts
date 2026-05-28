@@ -11,6 +11,7 @@ export const venueSchema = z.object({
   currency: z.string().optional().or(z.literal('')),
   latitude: z.coerce.number().nullable().optional(),
   longitude: z.coerce.number().nullable().optional(),
+  googleMapsUrl: z.string().url('URL inválida').optional().or(z.literal('')).nullable(),
   coverImageUrl: z.string().url('URL inválida').optional().or(z.literal('')).nullable(),
   categories: z.array(z.string()).optional(),
   openHours: z.record(z.any()).nullable().optional(),

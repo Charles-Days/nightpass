@@ -65,6 +65,11 @@ export class CreateVenueDto {
   @IsOptional()
   @Transform(emptyToUndefined)
   @IsUrl({ require_tld: false })
+  googleMapsUrl?: string;
+
+  @IsOptional()
+  @Transform(emptyToUndefined)
+  @IsUrl({ require_tld: false })
   coverImageUrl?: string;
 
   @IsOptional()

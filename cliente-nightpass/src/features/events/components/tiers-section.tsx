@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
+import { ConfirmDialog } from '@/core/components/ui/confirm-dialog';
 import { Input } from '@/core/components/ui/input';
 import { Field } from '@/core/components/ui/field';
 import type { LoyaltyTier } from '@/core/types/api';
@@ -28,10 +29,71 @@ function formatPrice(cents: number, currency: string) {
   return `${symbol}${(cents / 100).toFixed(2)} ${currency}`;
 }
 
+interface TierRowProps {
+  eventId: string;
+  tier: {
+    id: string;
+    name: string;
+    priceCents: number;
+    currency: string;
+    capacity: number | null;
+    minLoyaltyTier?: LoyaltyTier | null;
+  };
+}
+
+function TierRow({ eventId, tier }: TierRowProps) {
+  const deleteTier = useDeleteTier(eventId);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2 text-sm">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="truncate font-medium">{tier.name}</p>
+          {tier.minLoyaltyTier ? (
+            <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-primary">
+              Min {TIER_STYLES[tier.minLoyaltyTier].label}
+            </span>
+          ) : null}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {formatPrice(tier.priceCents, tier.currency)}
+          {tier.capacity ? ` · cupo ${tier.capacity}` : ' · sin límite'}
+        </p>
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="size-8 p-0 text-destructive/70 hover:text-destructive"
+        title="Eliminar tier"
+        disabled={deleteTier.isPending}
+        onClick={() => setConfirmOpen(true)}
+      >
+        {deleteTier.isPending ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <Trash2 className="size-3.5" />
+        )}
+      </Button>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="¿Eliminar tier?"
+        description={`"${tier.name}" se eliminará permanentemente. Esta acción no se puede deshacer.`}
+        confirmLabel="Sí, eliminar"
+        cancelLabel="Cancelar"
+        variant="destructive"
+        loading={deleteTier.isPending}
+        onConfirm={() => deleteTier.mutate(tier.id, { onSettled: () => setConfirmOpen(false) })}
+      />
+    </div>
+  );
+}
+
 export function TiersSection({ eventId }: Props) {
   const detail = useEventDetail(eventId);
   const createTier = useCreateTier(eventId);
-  const deleteTier = useDeleteTier(eventId);
 
   const [name, setName] = React.useState('');
   const [priceMxn, setPriceMxn] = React.useState('');
@@ -107,44 +169,7 @@ export function TiersSection({ eventId }: Props) {
       ) : (
         <div className="space-y-2">
           {tiers.map((t) => (
-            <div
-              key={t.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2 text-sm"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="truncate font-medium">{t.name}</p>
-                  {t.minLoyaltyTier ? (
-                    <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-primary">
-                      Min {TIER_STYLES[t.minLoyaltyTier].label}
-                    </span>
-                  ) : null}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {formatPrice(t.priceCents, t.currency)}
-                  {t.capacity ? ` · cupo ${t.capacity}` : ' · sin límite'}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="size-8 p-0 text-destructive/70 hover:text-destructive"
-                title="Eliminar tier"
-                disabled={deleteTier.isPending}
-                onClick={() => {
-                  if (confirm(`Eliminar tier "${t.name}"?`)) {
-                    deleteTier.mutate(t.id);
-                  }
-                }}
-              >
-                {deleteTier.isPending ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="size-3.5" />
-                )}
-              </Button>
-            </div>
+            <TierRow key={t.id} eventId={eventId} tier={t} />
           ))}
         </div>
       )}

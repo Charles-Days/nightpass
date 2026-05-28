@@ -1,4 +1,50 @@
-export type Role = 'ADMIN' | 'VENUE_OWNER' | 'VENUE_STAFF' | 'CUSTOMER';
+export type Role =
+  | 'ADMIN'
+  | 'VENUE_OWNER'
+  | 'VENUE_STAFF'
+  | 'PROMOTER'
+  | 'PROMOTER_STAFF'
+  | 'CUSTOMER';
+
+export type PromoterStatus = 'ACTIVE' | 'SUSPENDED';
+export type PromoterMemberRole = 'OWNER' | 'STAFF';
+
+export interface Promoter {
+  id: string;
+  slug: string;
+  name: string;
+  city: string;
+  bio?: string | null;
+  logoUrl?: string | null;
+  phone?: string | null;
+  instagram?: string | null;
+  website?: string | null;
+  status: PromoterStatus;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { members: number };
+}
+
+export interface PromoterMe {
+  promoter: Promoter;
+  membershipRole: PromoterMemberRole;
+}
+
+export interface PromoterStaffMember {
+  id: string;
+  userId: string;
+  promoterId: string;
+  role: PromoterMemberRole;
+  createdAt: string;
+  user: { id: string; email: string; name: string | null; role: Role };
+}
+
+export interface PaginatedPromoters {
+  items: Promoter[];
+  total: number;
+  page: number;
+  limit: number;
+}
 
 export interface User {
   id: string;
@@ -75,6 +121,7 @@ export interface Venue {
   currency?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  googleMapsUrl?: string | null;
   coverImageUrl?: string | null;
   categories?: string[];
   openHours?: Record<string, unknown> | null;
@@ -139,6 +186,39 @@ export interface PaginatedUsers {
 
 export type ApproveResponse = VenueApplication & { temporaryPassword: string };
 
+export type PromoterExperience = '0' | '1-5' | '6-20' | '20+';
+
+export interface PromoterApplication {
+  id: string;
+  applicantUserId: string;
+  promoterName: string;
+  city: string;
+  phone: string | null;
+  instagram: string | null;
+  website: string | null;
+  experience: PromoterExperience;
+  eventTypes: string[];
+  message: string | null;
+  status: ApplicationStatus;
+  rejectionReason: string | null;
+  reviewedById: string | null;
+  reviewedAt: string | null;
+  approvedPromoterId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  applicant?: { id: string; name: string | null; email: string };
+  reviewer?: { id: string; name: string | null; email: string } | null;
+}
+
+export interface PaginatedPromoterApplications {
+  items: PromoterApplication[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export type ApprovePromoterResponse = PromoterApplication & { temporaryPassword: string };
+
 export type VenueStaffRole = 'MANAGER' | 'SCANNER';
 export type VenueStaffStatus = 'PENDING' | 'ACTIVE' | 'REVOKED';
 
@@ -170,7 +250,13 @@ export interface EventTier {
 
 export interface Event {
   id: string;
-  venueId: string;
+  venueId: string | null;
+  promoterId?: string | null;
+  externalVenueName?: string | null;
+  externalVenueAddress?: string | null;
+  externalVenueCity?: string | null;
+  externalVenueLat?: number | null;
+  externalVenueLng?: number | null;
   slug: string;
   title: string;
   description: string | null;
@@ -182,7 +268,8 @@ export interface Event {
   createdAt: string;
   updatedAt: string;
   tiers?: EventTier[];
-  venue?: { id: string; slug: string; name: string; city: string };
+  venue?: { id: string; slug: string; name: string; city: string } | null;
+  promoter?: { id: string; slug: string; name: string; city: string } | null;
 }
 
 export interface PaginatedEvents {
@@ -282,6 +369,7 @@ export interface CatalogVenueSummary {
   dressCode: string | null;
   latitude: number | null;
   longitude: number | null;
+  googleMapsUrl: string | null;
   photos?: Array<{ id: string; url: string; position: number }>;
 }
 
@@ -404,4 +492,93 @@ export interface VenueCheckinQrPayload {
    *  which redirects to login if needed and auto-processes the check-in. */
   scanUrl: string;
   issuedAt: string;
+}
+
+export interface PassesStatsDailyPoint {
+  day: string;
+  sales: number;
+  revenue: number;
+}
+
+export interface PassesStatsEventRow {
+  eventId: string;
+  title: string;
+  startsAt: string;
+  capacity: number | null;
+  vendidos: number;
+  canjeados: number;
+  ingresos: number;
+}
+
+export interface PassesStats {
+  totalRevenue: number;
+  totalFees: number;
+  passesSold: number;
+  passesRedeemed: number;
+  passesPending: number;
+  redeemRate: number;
+  upcomingEvent: {
+    id: string;
+    title: string;
+    startsAt: string;
+    vendidos: number;
+  } | null;
+  dailySeries: PassesStatsDailyPoint[];
+  byEvent: PassesStatsEventRow[];
+  range: { from: string; to: string };
+}
+
+export interface EventTierBreakdownTier {
+  tierId: string;
+  name: string;
+  priceCents: number;
+  currency: string;
+  capacity: number | null;
+  sold: number;
+}
+
+export interface EventTierBreakdownOrder {
+  id: string;
+  userEmail: string;
+  userName: string | null;
+  tierName: string;
+  totalCents: number;
+  createdAt: string;
+  passUsed: boolean;
+}
+
+export interface EventTierBreakdown {
+  eventId: string;
+  title: string;
+  startsAt: string;
+  tiers: EventTierBreakdownTier[];
+  orders: EventTierBreakdownOrder[];
+}
+
+export type StoryMediaType = 'IMAGE' | 'VIDEO';
+
+export interface Story {
+  id: string;
+  venueId: string;
+  createdById: string;
+  mediaUrl: string;
+  mediaType: StoryMediaType;
+  durationMs: number | null;
+  caption: string | null;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface StoryUploadInit {
+  signedUrl: string;
+  publicUrl: string;
+  key: string;
+}
+
+export interface VenueStoriesGroup {
+  venueId: string;
+  venueSlug: string;
+  venueName: string;
+  venueCoverImageUrl: string | null;
+  stories: Story[];
 }

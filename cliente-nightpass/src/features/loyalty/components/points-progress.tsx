@@ -6,6 +6,7 @@ interface PointsProgressProps {
   yearPoints: number;
   nextTier: LoyaltyTier | null;
   pointsToNext: number | null;
+  hideTierName?: boolean;
   className?: string;
 }
 
@@ -13,12 +14,13 @@ export function PointsProgress({
   yearPoints,
   nextTier,
   pointsToNext,
+  hideTierName = false,
   className,
 }: PointsProgressProps) {
   if (!nextTier || pointsToNext == null) {
     return (
       <div className={cn('rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-[11px] font-semibold text-amber-200', className)}>
-        Tier máximo alcanzado.
+        {hideTierName ? 'Has alcanzado el máximo.' : 'Tier máximo alcanzado.'}
       </div>
     );
   }
@@ -40,8 +42,14 @@ export function PointsProgress({
           {yearPoints.toLocaleString('es-MX')} NPP
         </span>
         <span className="text-white/45">
-          {pointsToNext.toLocaleString('es-MX')} para{' '}
-          <span className="font-semibold text-primary/80">{nextLabel}</span>
+          {hideTierName ? (
+            <>{pointsToNext.toLocaleString('es-MX')} para el siguiente nivel</>
+          ) : (
+            <>
+              {pointsToNext.toLocaleString('es-MX')} para{' '}
+              <span className="font-semibold text-primary/80">{nextLabel}</span>
+            </>
+          )}
         </span>
       </div>
     </div>

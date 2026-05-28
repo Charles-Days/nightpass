@@ -26,12 +26,18 @@ import { UpdateTierDto } from './dto/update-tier.dto';
 
 @Controller('events')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN, Role.VENUE_OWNER)
+@Roles(Role.ADMIN, Role.VENUE_OWNER, Role.PROMOTER)
 export class EventsController {
   constructor(private readonly service: EventsService) {}
 
   @Get()
-  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF)
+  @Roles(
+    Role.ADMIN,
+    Role.VENUE_OWNER,
+    Role.VENUE_STAFF,
+    Role.PROMOTER,
+    Role.PROMOTER_STAFF,
+  )
   list(@Query() query: ListEventsQuery, @CurrentUser() user: AuthUser) {
     return this.service.list(query, user);
   }

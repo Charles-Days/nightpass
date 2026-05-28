@@ -4,7 +4,8 @@ import * as React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Download, Loader2, Printer, QrCode, RefreshCw } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
-import { useRotateCheckinQr } from '../hooks/use-rotate-checkin-qr';
+import { ConfirmDialog } from '@/core/components/ui/confirm-dialog';
+import { useCheckinQr, useRotateCheckinQr } from '../hooks/use-rotate-checkin-qr';
 
 interface CheckinQrPanelProps {
   venueId: string;
@@ -196,10 +197,15 @@ function formatDate(iso: string) {
 }
 
 export function CheckinQrPanel({ venueId, venueName, venueCity }: CheckinQrPanelProps) {
+  const qr = useCheckinQr(venueId);
   const rotate = useRotateCheckinQr(venueId);
   const svgRef = React.useRef<SVGSVGElement | null>(null);
+  const [confirmRotateOpen, setConfirmRotateOpen] = React.useState(false);
 
-  const data = rotate.data;
+  // El persistido del backend gana siempre; el mutation actualiza el cache
+  // via setQueryData, así que `qr.data` es la fuente única de verdad.
+  const data = qr.data;
+  const isLoading = qr.isLoading;
 
   return (
     <div className="space-y-4">
@@ -209,7 +215,11 @@ export function CheckinQrPanel({ venueId, venueName, venueCity }: CheckinQrPanel
         por bar).
       </p>
 
-      {!data ? (
+      {isLoading ? (
+        <div className="flex items-center justify-center gap-2 rounded-[18px] border border-dashed border-white/10 bg-white/[0.015] p-8 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" /> Cargando QR…
+        </div>
+      ) : !data ? (
         <div className="flex flex-col items-start gap-3 rounded-[18px] border border-dashed border-white/15 bg-white/[0.015] p-5">
           <QrCode className="size-6 text-primary" />
           <p className="text-sm">
@@ -293,7 +303,7 @@ export function CheckinQrPanel({ venueId, venueName, venueCity }: CheckinQrPanel
                   variant="outline"
                   className="rounded-full"
                   disabled={rotate.isPending}
-                  onClick={() => rotate.mutate()}
+                  onClick={() => setConfirmRotateOpen(true)}
                 >
                   {rotate.isPending ? (
                     <Loader2 className="mr-1.5 size-3.5 animate-spin" />
@@ -313,6 +323,22 @@ export function CheckinQrPanel({ venueId, venueName, venueCity }: CheckinQrPanel
         filtró (alguien lo está usando sin estar dentro del bar), rótalo
         ahora: el QR anterior dejará de funcionar al instante.
       </div>
+
+      <ConfirmDialog
+        open={confirmRotateOpen}
+        onOpenChange={setConfirmRotateOpen}
+        title="¿Rotar el QR de check-in?"
+        description="El QR actual dejará de funcionar al instante. Tendrás que imprimir el nuevo y pegarlo en la entrada del local."
+        confirmLabel="Sí, rotar"
+        cancelLabel="Cancelar"
+        variant="destructive"
+        loading={rotate.isPending}
+        onConfirm={() => {
+          rotate.mutate(undefined, {
+            onSettled: () => setConfirmRotateOpen(false),
+          });
+        }}
+      />
     </div>
   );
 }

@@ -206,6 +206,27 @@ export class LoyaltyService {
     return { payload, scanUrl, issuedAt };
   }
 
+  /**
+   * Read current checkin QR without rotating. Returns null if the venue never
+   * generated one. Same payload/scanUrl shape as `rotateVenueCheckinSecret`
+   * so the panel can render without distinguishing GET vs POST results.
+   */
+  async getVenueCheckinQr(
+    venueId: string,
+  ): Promise<{ payload: string; scanUrl: string; issuedAt: Date } | null> {
+    const venue = await this.prisma.venue.findUnique({
+      where: { id: venueId },
+      select: { id: true, checkinQrSecret: true, checkinQrIssuedAt: true },
+    });
+    if (!venue) throw new NotFoundException('Local no encontrado');
+    if (!venue.checkinQrSecret || !venue.checkinQrIssuedAt) return null;
+
+    const payload = signVenueCheckin(venueId, venue.checkinQrSecret);
+    const hmac = payload.split('_').pop()!;
+    const scanUrl = `${this.webUrl}/app/checkin/${venueId}?t=${hmac}`;
+    return { payload, scanUrl, issuedAt: venue.checkinQrIssuedAt };
+  }
+
   async assertTierRequirement(
     userId: string,
     requiredTier: LoyaltyTier | null,

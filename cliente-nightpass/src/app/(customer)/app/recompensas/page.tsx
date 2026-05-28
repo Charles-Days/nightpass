@@ -3,26 +3,15 @@ import { redirect } from 'next/navigation';
 import { ArrowLeft, QrCode } from 'lucide-react';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
-import type { User } from '@/core/types/api';
-import {
-  HistoryList,
-  LeaderboardTable,
-  LoyaltyCard,
-  TIER_ORDER,
-  TIER_STYLES,
-  TierBadge,
-} from '@/features/loyalty';
+import { HistoryList, LoyaltyCard } from '@/features/loyalty';
 
 export const metadata = {
   title: 'Recompensas — NightPass',
 };
 
-const DEFAULT_CITY = 'Cuernavaca';
-
 export default async function RecompensasPage() {
-  let user: User;
   try {
-    user = await serverFetch<User>('/auth/me');
+    await serverFetch('/auth/me');
   } catch (error) {
     // 401/403 = cookie inválida → login. 5xx/network = backend caído → dejar
     // que el error.tsx renderee fallback; redirigir a login en ese caso
@@ -32,11 +21,6 @@ export default async function RecompensasPage() {
     }
     throw error;
   }
-
-  // City fallback: hardcoded for MVP. Backend will eventually attach the
-  // user's primary city to /auth/me.
-  const userCity =
-    (user as User & { primaryCity?: string | null }).primaryCity ?? DEFAULT_CITY;
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-6 sm:px-8 sm:py-10">
@@ -56,13 +40,12 @@ export default async function RecompensasPage() {
           Recompensas
         </h1>
         <p className="np-rise mt-2 max-w-xl text-sm text-muted-foreground" style={{ animationDelay: '180ms' }}>
-          Suma puntos NightPass cada vez que vas a un bar. Sube de tier para
-          desbloquear eventos exclusivos.
+          Suma puntos NightPass cada vez que vas a un bar.
         </p>
       </section>
 
       <section className="np-rise mt-8" style={{ animationDelay: '240ms' }}>
-        <LoyaltyCard variant="hero" />
+        <LoyaltyCard variant="hero" hideTierNames />
       </section>
 
       <section className="np-rise mt-6 flex flex-wrap gap-3" style={{ animationDelay: '300ms' }}>
@@ -75,53 +58,11 @@ export default async function RecompensasPage() {
         </Link>
       </section>
 
-      {/* Perks por tier */}
-      <section className="np-rise mt-10" style={{ animationDelay: '360ms' }}>
-        <h2 className="mb-4 font-display text-xl font-bold tracking-tight">
-          Tiers y beneficios
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {TIER_ORDER.map((tier, i) => {
-            const style = TIER_STYLES[tier];
-            return (
-              <div
-                key={tier}
-                className="np-rise relative overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025] p-5 transform-gpu transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.04] hover:shadow-[0_18px_40px_-20px_rgba(168,85,247,0.4)]"
-                style={{ animationDelay: `${420 + i * 70}ms` }}
-              >
-                <TierBadge tier={tier} size="sm" />
-                <h3 className="mt-3 font-display text-lg font-bold tracking-tight">
-                  {style.label}
-                </h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {style.description}
-                </p>
-                <p className="mt-3 text-[11px] leading-relaxed text-white/55">
-                  {style.perk}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
       <section className="np-rise mt-10" style={{ animationDelay: '700ms' }}>
         <h2 className="mb-4 font-display text-xl font-bold tracking-tight">
           Actividad reciente
         </h2>
         <HistoryList limit={30} />
-      </section>
-
-      <section className="np-rise mt-10" style={{ animationDelay: '760ms' }}>
-        <div className="mb-4 flex items-baseline justify-between">
-          <h2 className="font-display text-xl font-bold tracking-tight">
-            Top Insiders en {userCity}
-          </h2>
-          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
-            Último año
-          </span>
-        </div>
-        <LeaderboardTable city={userCity} currentUserId={user.id} />
       </section>
 
       <section className="np-rise mt-10 rounded-[22px] border border-white/10 bg-white/[0.025] p-6 sm:p-7" style={{ animationDelay: '820ms' }}>

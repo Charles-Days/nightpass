@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useGeolocation } from '@/features/geolocation/hooks/use-geolocation';
 
 type OccupancyBucket = 'low' | 'medium' | 'high';
 
@@ -22,6 +23,9 @@ const DOT_CLASS: Record<OccupancyBucket, string> = {
 };
 
 export function VenueOccupancyBadge({ venueId }: { venueId: string }) {
+  const { status } = useGeolocation();
+  const hasPermission = status === 'granted';
+
   const { data } = useQuery<OccupancyResponse | null>({
     queryKey: ['venue-occupancy', venueId],
     queryFn: async () => {
@@ -32,13 +36,14 @@ export function VenueOccupancyBadge({ venueId }: { venueId: string }) {
       const json = (await res.json()) as OccupancyResponse | null;
       return json;
     },
+    enabled: hasPermission,
     staleTime: 60_000,
     refetchInterval: 90_000,
     refetchOnWindowFocus: false,
     retry: 1,
   });
 
-  if (!data || !data.bucket) return null;
+  if (!hasPermission || !data || !data.bucket) return null;
   const bucket = data.bucket;
 
   return (

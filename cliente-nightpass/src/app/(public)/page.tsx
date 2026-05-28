@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Check, Globe, MapPin, Plus, Sparkles } from 'lucide-react';
+import { ArrowRight, Check, Globe, MapPin, Megaphone, Plus, Sparkles } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { paths } from '@/core/config/paths';
 import { Counter } from '@/core/components/counter';
@@ -35,6 +35,7 @@ export default async function LandingPage() {
       <VenuesStrip />
       <HowItWorks />
       <ForVenues />
+      <ForPromoters />
     </>
   );
 }
@@ -440,7 +441,7 @@ function ForVenues() {
     { value: <Counter to={4.9} decimals={1} suffix="★" />, l: 'satisfacción operativa' },
   ];
   return (
-    <section className="mx-auto w-full max-w-7xl px-6 pt-10 pb-25 sm:px-14">
+    <section className="mx-auto w-full max-w-7xl px-6 pt-10 pb-10 sm:px-14">
       <Reveal>
         <div
           className="relative overflow-hidden rounded-[28px] border border-purple-400/25 p-8 sm:p-12"
@@ -497,6 +498,79 @@ function ForVenues() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      </Reveal>
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────
+// For promoters
+// ────────────────────────────────────────────────
+
+function ForPromoters() {
+  const bullets = [
+    'Sin venue propio — solo eventos en los locales que ya colaboras.',
+    'Vende pases con QR encriptado, sin imprimir nada.',
+    'Aparece frente a la audiencia que ya está buscando esta noche.',
+  ];
+  return (
+    <section className="mx-auto w-full max-w-7xl px-6 pt-2 pb-25 sm:px-14">
+      <Reveal>
+        <div
+          className="relative overflow-hidden rounded-[28px] border border-purple-400/25 p-8 sm:p-12"
+          style={{
+            background:
+              'linear-gradient(135deg, oklch(0.18 0.05 296.5) 0%, oklch(0.078 0.005 280) 70%)',
+          }}
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-24 -left-24 h-[400px] w-[400px] rounded-full opacity-50"
+            style={{
+              background: 'radial-gradient(circle, oklch(0.62 0.245 296.5), transparent 70%)',
+              filter: 'blur(120px)',
+            }}
+          />
+          <div className="relative grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+            <div className="order-2 flex flex-col gap-3 lg:order-1">
+              {bullets.map((b, i) => (
+                <div
+                  key={i}
+                  className="np-card-hover flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-5 hover:border-white/20 hover:bg-white/[0.06]"
+                >
+                  <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border border-primary/30 bg-primary/15 text-primary">
+                    <Megaphone className="size-3.5" />
+                  </span>
+                  <p className="text-sm leading-snug text-muted-foreground">{b}</p>
+                </div>
+              ))}
+            </div>
+            <div className="order-1 lg:order-2">
+              <Eyebrow>Para promotores</Eyebrow>
+              <h2 className="mt-3 font-display text-4xl font-bold leading-tight tracking-[-0.03em] sm:text-5xl">
+                ¿Eres promotor
+                <br />
+                de eventos?
+              </h2>
+              <p className="mt-5 max-w-md text-base leading-relaxed text-muted-foreground">
+                Sin venue propio, solo eventos. Mueve tu marca y vende pases con QR en NightPass.
+              </p>
+              <Button
+                asChild
+                size="lg"
+                className="mt-8 rounded-full shadow-[0_10px_30px_-8px_rgba(168,85,247,0.65)]"
+              >
+                <Link href={paths.solicitarPromotora}>
+                  Solicitar promotora
+                  <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+              <p className="mt-4 text-xs text-muted-foreground">
+                Sin permanencia · 0% comisión los primeros 3 meses
+              </p>
             </div>
           </div>
         </div>

@@ -95,13 +95,14 @@ export function EnableLocationOnboarding({ open, onComplete }: EnableLocationOnb
 
         <div className="px-6 pb-6 pt-4 text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-            Tu noche, mejor
+            Aforo en vivo
           </p>
           <DialogTitle className="mt-2 font-display text-2xl font-bold leading-tight tracking-tight">
-            Permítenos ver tu ubicación
+            Activa tu ubicación para ver el aforo
           </DialogTitle>
           <DialogDescription className="mt-3 text-sm leading-relaxed text-white/65">
-            Te mostramos qué bares están más llenos en este momento y eventos cerca de ti.{' '}
+            El aforo en vivo se calcula con la ubicación de quienes están en cada bar.
+            Si compartes la tuya, puedes ver qué tan lleno está cada lugar antes de ir.{' '}
             <strong className="text-white/85">
               Solo usamos tu ubicación cuando la app está abierta
             </strong>{' '}

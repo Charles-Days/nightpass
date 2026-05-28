@@ -5,7 +5,7 @@ import { SignedUploadUrl } from '../types/api';
 const COMPRESSION_OPTS = {
   maxSizeMB: 2,
   maxWidthOrHeight: 2560,
-  useWebWorker: true,
+  useWebWorker: false,
   fileType: 'image/webp' as const,
   initialQuality: 0.92,
 };
@@ -47,7 +47,14 @@ export async function uploadFile(
   });
 
   if (!response.ok) {
-    throw new Error('Error al subir el archivo al servidor de almacenamiento');
+    const body = await response.text().catch(() => '');
+    console.error('[upload] R2 PUT failed', {
+      status: response.status,
+      statusText: response.statusText,
+      body,
+      signedUrl,
+    });
+    throw new Error(`R2 ${response.status}: ${body.slice(0, 200) || response.statusText}`);
   }
 
   return publicUrl;

@@ -21,12 +21,14 @@ const cspDirectives = [
   "default-src 'self'",
   // 'unsafe-inline' required for Next.js inline runtime scripts; mitigated by
   // frame-ancestors 'none' + X-Frame-Options DENY. Move to nonces in a future pass.
-  "script-src 'self' 'unsafe-inline' https://js.stripe.com https://accounts.google.com/gsi/client",
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://js.stripe.com https://accounts.google.com/gsi/client https://unpkg.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https://*.r2.dev https://*.stripe.com https://images.unsplash.com https://*.googleusercontent.com",
-  "connect-src 'self' https://api.nightpass.mx https://api.stripe.com https://*.r2.dev https://accounts.google.com",
+  "media-src 'self' blob: https://*.r2.dev",
+  "connect-src 'self' blob: https://api.nightpass.mx https://api.stripe.com https://*.r2.dev https://*.r2.cloudflarestorage.com https://accounts.google.com https://unpkg.com",
   "frame-src https://js.stripe.com https://hooks.stripe.com https://accounts.google.com",
+  "worker-src 'self' blob:",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

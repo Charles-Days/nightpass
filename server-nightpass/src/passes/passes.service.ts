@@ -126,12 +126,16 @@ export class PassesService {
     }
 
     // 3. Permisos: ADMIN siempre; STAFF solo si pertenece al venue
+    if (!pass.event.venueId || !pass.event.venue) {
+      throw new ConflictException('Pase sin local asociado — no se puede escanear');
+    }
+    const venueId = pass.event.venueId;
+    const passVenue = pass.event.venue;
+
     if (scanner.role !== Role.ADMIN) {
       if (scanner.role !== Role.VENUE_STAFF && scanner.role !== Role.VENUE_OWNER) {
         throw new ForbiddenException('Solo staff/owner pueden escanear');
       }
-
-      const venueId = pass.event.venueId;
 
       if (scanner.role === Role.VENUE_OWNER) {
         const owner = await this.prisma.venueOwner.findUnique({
@@ -180,14 +184,14 @@ export class PassesService {
     //    exigir un ping reciente del CLIENTE (no del staff) dentro del radio.
     //    Esto bloquea reventa remota — el QR no se canjea si el holder no
     //    está físicamente cerca del local.
-    const radius = pass.event.venue.geofenceRadiusM;
+    const radius = passVenue.geofenceRadiusM;
     let redeemedDistanceM: number | null = null;
     let redeemedAccuracyM: number | null = null;
 
     if (
       radius > 0 &&
-      pass.event.venue.latitude != null &&
-      pass.event.venue.longitude != null
+      passVenue.latitude != null &&
+      passVenue.longitude != null
     ) {
       const ping = await this.locations.findRecentForUser(pass.userId, 10);
       if (!ping) {
@@ -200,8 +204,8 @@ export class PassesService {
       const meters = haversineMeters(
         ping.latitude,
         ping.longitude,
-        pass.event.venue.latitude,
-        pass.event.venue.longitude,
+        passVenue.latitude,
+        passVenue.longitude,
       );
       if (meters > radius) {
         throw new ConflictException({
@@ -234,7 +238,7 @@ export class PassesService {
         userId: pass.userId,
         passId: pass.id,
         eventId: pass.eventId,
-        venueId: pass.event.venueId,
+        venueId,
         scannedAt: updated.usedAt!,
       })
       .catch((err: unknown) =>
@@ -245,14 +249,11 @@ export class PassesService {
         ),
       );
 
-    if (
-      pass.event.venue.latitude != null &&
-      pass.event.venue.longitude != null
-    ) {
+    if (passVenue.latitude != null && passVenue.longitude != null) {
       void this.locations
         .record(pass.userId, {
-          latitude: pass.event.venue.latitude,
-          longitude: pass.event.venue.longitude,
+          latitude: passVenue.latitude,
+          longitude: passVenue.longitude,
           source: LocationPingSource.SCAN_REDEEM,
           accuracyM: undefined,
         })
@@ -265,7 +266,7 @@ export class PassesService {
         );
     } else {
       this.logger.warn(
-        `Skipping server-side ping for pass ${pass.id}: venue ${pass.event.venueId} has no coordinates`,
+        `Skipping server-side ping for pass ${pass.id}: venue ${venueId} has no coordinates`,
       );
     }
 
@@ -277,7 +278,7 @@ export class PassesService {
       event: {
         id: pass.event.id,
         title: pass.event.title,
-        venue: pass.event.venue.name,
+        venue: passVenue.name,
       },
     };
   }

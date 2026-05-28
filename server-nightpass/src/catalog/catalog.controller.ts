@@ -2,6 +2,7 @@ import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { CatalogService } from './catalog.service';
 import { ListCatalogVenuesQuery } from './dto/list-catalog-venues.query';
+import { ListCatalogEventsQuery } from './dto/list-catalog-events.query';
 import { GetVenueOccupancyQuery } from './dto/get-venue-occupancy.query';
 
 @Controller('catalog')
@@ -25,6 +26,11 @@ export class CatalogController {
     @Query() query: GetVenueOccupancyQuery,
   ) {
     return this.service.getVenueOccupancy(id, query.windowMinutes);
+  }
+
+  @Get('events')
+  listEvents(@Query() query: ListCatalogEventsQuery) {
+    return this.service.listCatalogEvents(query);
   }
 
   @Get('events/:id')

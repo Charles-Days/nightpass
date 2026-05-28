@@ -4,17 +4,22 @@ import {
   IsDate,
   IsEnum,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
 
 export class CreateEventDto {
-  @IsUUID('all')
-  venueId!: string;
+  @IsOptional() @IsUUID('all')
+  venueId?: string;
+
+  @IsOptional() @IsUUID('all')
+  promoterId?: string;
 
   @IsString() @MinLength(2) @MaxLength(160)
   title!: string;
@@ -36,4 +41,19 @@ export class CreateEventDto {
 
   @IsOptional() @IsInt() @Min(1)
   capacity?: number;
+
+  @IsOptional() @IsString() @MaxLength(120)
+  externalVenueName?: string;
+
+  @IsOptional() @IsString() @MaxLength(200)
+  externalVenueAddress?: string;
+
+  @IsOptional() @IsString() @MaxLength(80)
+  externalVenueCity?: string;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(-90) @Max(90)
+  externalVenueLat?: number;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(-180) @Max(180)
+  externalVenueLng?: number;
 }

@@ -9,6 +9,7 @@ import { HealthModule } from './health/health.module';
 import { MailerModule } from './mailer/mailer.module';
 import { VenuesModule } from './venues/venues.module';
 import { VenueApplicationsModule } from './venue-applications/venue-applications.module';
+import { PromoterApplicationsModule } from './promoter-applications/promoter-applications.module';
 import { UsersModule } from './users/users.module';
 import { VenueStaffModule } from './venue-staff/venue-staff.module';
 import { StorageModule } from './storage/storage.module';
@@ -18,9 +19,11 @@ import { EventsModule } from './events/events.module';
 import { StripeModule } from './stripe/stripe.module';
 import { OrdersModule } from './orders/orders.module';
 import { PassesModule } from './passes/passes.module';
+import { PasesModule } from './pases/pases.module';
 import { LocationsModule } from './locations/locations.module';
 import { LoyaltyModule } from './loyalty/loyalty.module';
 import { LoyaltyCheckinModule } from './loyalty-checkin/loyalty-checkin.module';
+import { StoriesModule } from './stories/stories.module';
 import { validateEnv } from './config/env.schema';
 
 @Module({
@@ -43,6 +46,7 @@ import { validateEnv } from './config/env.schema';
     HealthModule,
     VenuesModule,
     VenueApplicationsModule,
+    PromoterApplicationsModule,
     UsersModule,
     VenueStaffModule,
     StorageModule,
@@ -52,9 +56,11 @@ import { validateEnv } from './config/env.schema';
     StripeModule,
     OrdersModule,
     PassesModule,
+    PasesModule,
     LocationsModule,
     LoyaltyModule,
     LoyaltyCheckinModule,
+    StoriesModule,
   ],
   providers: [
     {

@@ -1,6 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { MapPin, Loader2 } from 'lucide-react';
+import { useGeolocation } from '@/features/geolocation/hooks/use-geolocation';
 
 type OccupancyBucket = 'low' | 'medium' | 'high';
 
@@ -39,6 +42,10 @@ const LABEL_COLOR: Record<OccupancyBucket, string> = {
 };
 
 export function FeaturedAforo({ venueId }: { venueId: string }) {
+  const { status, request } = useGeolocation();
+  const [requesting, setRequesting] = useState(false);
+  const hasPermission = status === 'granted';
+
   const { data } = useQuery<OccupancyResponse | null>({
     queryKey: ['venue-occupancy', venueId],
     queryFn: async () => {
@@ -48,11 +55,43 @@ export function FeaturedAforo({ venueId }: { venueId: string }) {
       if (!res.ok) return null;
       return (await res.json()) as OccupancyResponse | null;
     },
+    enabled: hasPermission,
     staleTime: 60_000,
     refetchInterval: 90_000,
     refetchOnWindowFocus: false,
     retry: 1,
   });
+
+  if (!hasPermission) {
+    const handleActivate = async () => {
+      setRequesting(true);
+      try {
+        await request();
+      } finally {
+        setRequesting(false);
+      }
+    };
+    return (
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
+          Aforo en vivo
+        </p>
+        <button
+          type="button"
+          onClick={handleActivate}
+          disabled={requesting}
+          className="mt-2 flex w-full items-center gap-2 rounded-[12px] border border-white/10 bg-white/[0.04] px-3 py-2 text-left text-[11px] text-white/70 transition hover:bg-white/[0.06] disabled:opacity-60"
+        >
+          {requesting ? (
+            <Loader2 className="size-3.5 shrink-0 animate-spin text-primary" />
+          ) : (
+            <MapPin className="size-3.5 shrink-0 text-primary" />
+          )}
+          <span>Activa tu ubicación para ver el aforo</span>
+        </button>
+      </div>
+    );
+  }
 
   const bucket = data?.bucket ?? 'low';
   const level = LEVEL[bucket];

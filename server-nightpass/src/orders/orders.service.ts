@@ -78,6 +78,15 @@ export class OrdersService {
       );
     }
 
+    if (!event.venue) {
+      throw new HttpException(
+        {
+          message: 'Evento sin local — compras no disponibles',
+          errorCode: 'EVENT_HAS_NO_VENUE',
+        },
+        HttpStatus.CONFLICT,
+      );
+    }
     const stripeAccount = event.venue.stripeAccount;
     if (!stripeAccount?.chargesEnabled) {
       throw new HttpException(
@@ -243,7 +252,8 @@ export class OrdersService {
     if (!event) throw new NotFoundException('Evento no encontrado');
 
     if (user.role !== Role.ADMIN) {
-      const isOwner = event.venue.owners.some((o) => o.userId === user.id);
+      const isOwner =
+        event.venue?.owners.some((o) => o.userId === user.id) ?? false;
       if (!isOwner) {
         throw new ForbiddenException('No tienes acceso a las ventas de este evento');
       }

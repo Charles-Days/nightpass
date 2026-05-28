@@ -11,8 +11,20 @@ interface RefreshTokens {
   refreshToken: string;
 }
 
-// Rutas del panel admin (solo ADMIN/VENUE_OWNER/VENUE_STAFF).
-const ADMIN_PREFIXES = ['/dashboard', '/admin', '/mi-local', '/cambiar-password', '/scanner'];
+// Rutas del panel admin (solo ADMIN/VENUE_OWNER/VENUE_STAFF/PROMOTER/PROMOTER_STAFF).
+const ADMIN_PREFIXES = [
+  '/dashboard',
+  '/admin',
+  '/mi-local',
+  '/app/mi-promotora',
+  '/cambiar-password',
+  '/scanner',
+];
+
+// Rutas reservadas a roles de local.
+const VENUE_PREFIXES = ['/mi-local'];
+// Rutas reservadas a roles de promotora.
+const PROMOTER_PREFIXES = ['/app/mi-promotora'];
 
 // Rutas customer que requieren login (cualquier rol autenticado, incluyendo CUSTOMER).
 const CUSTOMER_PROTECTED_PREFIXES = [
@@ -73,15 +85,31 @@ export async function middleware(req: NextRequest) {
     const payload = decodeJwt(accessToken!);
     const role = payload?.role;
 
+    const isVenueRoute = matches(pathname, VENUE_PREFIXES);
+    const isPromoterRoute = matches(pathname, PROMOTER_PREFIXES);
+
     // En rutas de auth con sesion ya activa, mandamos al home segun rol.
     if (isAuthRoute) {
-      const target = role === 'CUSTOMER' ? '/app' : '/dashboard';
+      let target = '/dashboard';
+      if (role === 'CUSTOMER') target = '/app';
+      else if (role === 'PROMOTER' || role === 'PROMOTER_STAFF') target = '/app/mi-promotora';
+      else if (role === 'VENUE_OWNER' || role === 'VENUE_STAFF') target = '/mi-local';
       return NextResponse.redirect(new URL(target, req.url));
     }
 
     // CUSTOMER no entra al panel admin.
     if (isAdminRoute && role === 'CUSTOMER') {
       return NextResponse.redirect(new URL('/app', req.url));
+    }
+
+    // Roles de promotora no entran a /mi-local ni a /admin (excepto ADMIN).
+    if ((role === 'PROMOTER' || role === 'PROMOTER_STAFF') && (isVenueRoute || pathname.startsWith('/admin'))) {
+      return NextResponse.redirect(new URL('/app/mi-promotora', req.url));
+    }
+
+    // Roles de local no entran al panel promotor.
+    if ((role === 'VENUE_OWNER' || role === 'VENUE_STAFF') && isPromoterRoute) {
+      return NextResponse.redirect(new URL('/mi-local', req.url));
     }
 
     // Forzar cambio de password (solo aplica a roles admin).

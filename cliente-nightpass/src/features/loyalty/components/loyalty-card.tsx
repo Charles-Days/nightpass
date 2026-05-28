@@ -12,10 +12,11 @@ import { useLoyaltyStatus } from '../hooks/use-loyalty-status';
 
 interface LoyaltyCardProps {
   variant?: 'compact' | 'hero';
+  hideTierNames?: boolean;
   className?: string;
 }
 
-export function LoyaltyCard({ variant = 'compact', className }: LoyaltyCardProps) {
+export function LoyaltyCard({ variant = 'compact', hideTierNames = false, className }: LoyaltyCardProps) {
   const { data, isLoading, isError } = useLoyaltyStatus();
 
   if (isLoading) {
@@ -87,23 +88,27 @@ export function LoyaltyCard({ variant = 'compact', className }: LoyaltyCardProps
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-              Tu estado
+              {hideTierNames ? 'Tus puntos' : 'Tu estado'}
             </p>
-            <h2
-              className={cn(
-                'mt-2 font-display font-bold tracking-[-0.025em]',
-                isHero
-                  ? 'text-3xl sm:text-[40px] leading-[1.05]'
-                  : 'text-2xl sm:text-[28px] leading-tight',
-              )}
-            >
-              {tierStyle.label}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {tierStyle.description}
-            </p>
+            {!hideTierNames && (
+              <>
+                <h2
+                  className={cn(
+                    'mt-2 font-display font-bold tracking-[-0.025em]',
+                    isHero
+                      ? 'text-3xl sm:text-[40px] leading-[1.05]'
+                      : 'text-2xl sm:text-[28px] leading-tight',
+                  )}
+                >
+                  {tierStyle.label}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {tierStyle.description}
+                </p>
+              </>
+            )}
           </div>
-          <TierBadge tier={data.tier} />
+          {!hideTierNames && <TierBadge tier={data.tier} />}
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -124,6 +129,7 @@ export function LoyaltyCard({ variant = 'compact', className }: LoyaltyCardProps
             yearPoints={data.yearPoints}
             nextTier={data.nextTier}
             pointsToNext={data.pointsToNext}
+            hideTierName={hideTierNames}
           />
         </div>
 

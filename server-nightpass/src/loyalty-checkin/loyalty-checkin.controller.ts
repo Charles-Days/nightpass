@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   ForbiddenException,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
@@ -46,6 +47,19 @@ export class LoyaltyCheckinController {
   }
 
   /**
+   * Read the current checkin QR (does NOT rotate). Returns null when the
+   * venue never generated one. Same auth as rotate.
+   */
+  @Get('venues/:id/checkin-qr')
+  async getQr(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) venueId: string,
+  ) {
+    await this.assertCanManageVenueQr(user, venueId);
+    return this.loyalty.getVenueCheckinQr(venueId);
+  }
+
+  /**
    * Rotate the static QR secret for a venue. ADMINs can rotate any venue;
    * VENUE_OWNERs can only rotate venues they own (checked via VenueOwner).
    * VENUE_STAFF cannot rotate — they only need to print/display the QR.
@@ -56,17 +70,23 @@ export class LoyaltyCheckinController {
     @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) venueId: string,
   ) {
-    if (user.role !== Role.ADMIN) {
-      if (user.role !== Role.VENUE_OWNER) {
-        throw new ForbiddenException('No tienes permisos para este local');
-      }
-      const owner = await this.prisma.venueOwner.findUnique({
-        where: { userId_venueId: { userId: user.id, venueId } },
-      });
-      if (!owner) {
-        throw new ForbiddenException('No tienes permisos para este local');
-      }
-    }
+    await this.assertCanManageVenueQr(user, venueId);
     return this.loyalty.rotateVenueCheckinSecret(venueId);
+  }
+
+  private async assertCanManageVenueQr(
+    user: AuthUser,
+    venueId: string,
+  ): Promise<void> {
+    if (user.role === Role.ADMIN) return;
+    if (user.role !== Role.VENUE_OWNER) {
+      throw new ForbiddenException('No tienes permisos para este local');
+    }
+    const owner = await this.prisma.venueOwner.findUnique({
+      where: { userId_venueId: { userId: user.id, venueId } },
+    });
+    if (!owner) {
+      throw new ForbiddenException('No tienes permisos para este local');
+    }
   }
 }

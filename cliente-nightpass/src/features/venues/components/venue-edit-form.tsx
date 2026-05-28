@@ -3,12 +3,9 @@
 import * as React from 'react';
 import type { Venue } from '@/core/types/api';
 import type { VenueInput } from '../schemas/venue.schema';
-import { useUpdateVenue } from '../hooks/use-update-venue';
 import { VenueForm } from './venue-form';
 
 export function VenueEditForm({ venue }: { venue: Venue }) {
-  const update = useUpdateVenue(venue.id);
-
   const initialData: Partial<VenueInput> = {
     name: venue.name,
     city: venue.city,
@@ -20,6 +17,7 @@ export function VenueEditForm({ venue }: { venue: Venue }) {
     currency: venue.currency ?? '',
     latitude: venue.latitude ?? undefined,
     longitude: venue.longitude ?? undefined,
+    googleMapsUrl: venue.googleMapsUrl ?? '',
     coverImageUrl: venue.coverImageUrl ?? '',
     categories: venue.categories ?? [],
     openHours: (venue.openHours as any) ?? undefined,
@@ -32,12 +30,16 @@ export function VenueEditForm({ venue }: { venue: Venue }) {
     images: venue.photos?.map((p) => p.url) ?? [],
   };
 
+  // En modo edit, `VenueForm` ya monta save-per-section internamente
+  // (useUpdateVenueSection). No necesita global `onSubmit` ni isPending — el
+  // botón global queda oculto cuando mode='edit'.
   return (
     <VenueForm
+      mode="edit"
+      venueId={venue.id}
       initialData={initialData}
-      isPending={update.isPending}
-      onSubmit={(values) => update.mutate(values)}
-      submitLabel="Guardar cambios"
+      isPending={false}
+      onSubmit={() => undefined}
     />
   );
 }

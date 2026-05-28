@@ -4,7 +4,7 @@ import { cn } from '@/core/lib/utils/cn';
 
 interface FieldProps {
   label: string;
-  htmlFor: string;
+  htmlFor?: string;
   error?: string;
   description?: string;
   children: React.ReactNode;

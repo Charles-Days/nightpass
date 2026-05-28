@@ -11,12 +11,24 @@ enum Role {
   ADMIN
   VENUE_OWNER
   VENUE_STAFF
+  PROMOTER
+  PROMOTER_STAFF
   CUSTOMER
 }
 
 enum VenueStatus {
   ACTIVE
   SUSPENDED
+}
+
+enum PromoterStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum PromoterMemberRole {
+  OWNER
+  STAFF
 }
 
 enum ApplicationStatus {
@@ -59,6 +71,11 @@ enum OAuthProvider {
   GOOGLE
 }
 
+enum StoryMediaType {
+  IMAGE
+  VIDEO
+}
+
 model User {
   id           String   @id @default(uuid(7)) @db.Uuid
   email        String   @unique
@@ -73,20 +90,24 @@ model User {
 
   oauthAccounts OAuthAccount[]
 
-  refreshTokens       RefreshToken[]
-  passwordResetTokens PasswordResetToken[]
-  ownedVenues         VenueOwner[]
-  applications        VenueApplication[]   @relation("ApplicantApps")
-  reviewedApps        VenueApplication[]   @relation("ReviewerApps")
-  staffMemberships    VenueStaff[]         @relation("staffMemberships")
-  sentInvites         VenueStaff[]         @relation("sentInvites")
-  orders              Order[]
-  passes              Pass[]
-  passesScanned       Pass[]               @relation("PassesScanned")
-  locationPings       LocationPing[]
-  loyaltyEvents       LoyaltyEvent[]
-  streak              UserStreak?
-  loyaltyTotal        UserLoyaltyTotal?
+  refreshTokens        RefreshToken[]
+  passwordResetTokens  PasswordResetToken[]
+  ownedVenues          VenueOwner[]
+  applications         VenueApplication[]    @relation("ApplicantApps")
+  reviewedApps         VenueApplication[]    @relation("ReviewerApps")
+  staffMemberships     VenueStaff[]          @relation("staffMemberships")
+  sentInvites          VenueStaff[]          @relation("sentInvites")
+  promoterMemberships  PromoterMember[]
+  promoterApplications PromoterApplication[] @relation("PromoterApplicantApps")
+  reviewedPromoterApps PromoterApplication[] @relation("PromoterReviewerApps")
+  orders               Order[]
+  passes               Pass[]
+  passesScanned        Pass[]                @relation("PassesScanned")
+  locationPings        LocationPing[]
+  loyaltyEvents        LoyaltyEvent[]
+  streak               UserStreak?
+  loyaltyTotal         UserLoyaltyTotal?
+  createdStories       Story[]               @relation("StoryAuthor")
 
   @@map("users")
 }
@@ -139,6 +160,7 @@ model Venue {
   currency       String?
   latitude       Float?
   longitude      Float?
+  googleMapsUrl  String?
   coverImageUrl  String?
   categories     String[]
   openHours      Json?
@@ -164,6 +186,7 @@ model Venue {
   events        Event[]
   stripeAccount StripeAccount?
   loyaltyEvents LoyaltyEvent[]
+  stories       Story[]
 
   @@index([city])
   @@index([status, createdAt])
@@ -237,6 +260,72 @@ model VenueStaff {
   @@map("venue_staff")
 }
 
+model Promoter {
+  id        String         @id @default(uuid(7)) @db.Uuid
+  slug      String         @unique
+  name      String
+  city      String
+  phone     String?
+  instagram String?
+  website   String?
+  bio       String?
+  logoUrl   String?
+  status    PromoterStatus @default(ACTIVE)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  members       PromoterMember[]
+  events        Event[]
+  applications  PromoterApplication[] @relation("ApprovedPromoter")
+  stripeAccount StripeAccount?
+
+  @@index([city])
+  @@index([status, createdAt])
+  @@map("promoters")
+}
+
+model PromoterMember {
+  userId     String             @db.Uuid
+  promoterId String             @db.Uuid
+  role       PromoterMemberRole @default(OWNER)
+  createdAt  DateTime           @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promoter Promoter @relation(fields: [promoterId], references: [id], onDelete: Cascade)
+
+  @@id([userId, promoterId])
+  @@index([promoterId])
+  @@map("promoter_members")
+}
+
+model PromoterApplication {
+  id                 String            @id @default(uuid(7)) @db.Uuid
+  applicantUserId    String            @db.Uuid
+  promoterName       String
+  city               String
+  phone              String?
+  instagram          String?
+  website            String?
+  experience         String
+  eventTypes         String[]
+  message            String?
+  status             ApplicationStatus @default(PENDING)
+  rejectionReason    String?
+  reviewedById       String?           @db.Uuid
+  reviewedAt         DateTime?
+  approvedPromoterId String?           @db.Uuid
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  applicant        User      @relation("PromoterApplicantApps", fields: [applicantUserId], references: [id], onDelete: Cascade)
+  reviewer         User?     @relation("PromoterReviewerApps", fields: [reviewedById], references: [id], onDelete: SetNull)
+  approvedPromoter Promoter? @relation("ApprovedPromoter", fields: [approvedPromoterId], references: [id], onDelete: SetNull)
+
+  @@index([applicantUserId, status])
+  @@index([status, createdAt])
+  @@map("promoter_applications")
+}
+
 model Photo {
   id        String   @id @default(uuid(7)) @db.Uuid
   venueId   String?  @db.Uuid
@@ -255,7 +344,8 @@ model Photo {
 
 model Event {
   id            String      @id @default(uuid(7)) @db.Uuid
-  venueId       String      @db.Uuid
+  venueId       String?     @db.Uuid
+  promoterId    String?     @db.Uuid
   slug          String
   title         String
   description   String?
@@ -267,7 +357,14 @@ model Event {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  venue         Venue          @relation(fields: [venueId], references: [id])
+  externalVenueName    String?
+  externalVenueAddress String?
+  externalVenueCity    String?
+  externalVenueLat     Float?
+  externalVenueLng     Float?
+
+  venue         Venue?         @relation(fields: [venueId], references: [id])
+  promoter      Promoter?      @relation(fields: [promoterId], references: [id])
   tiers         EventTier[]
   photos        Photo[]
   orders        Order[]
@@ -275,8 +372,11 @@ model Event {
   loyaltyEvents LoyaltyEvent[]
 
   @@unique([venueId, slug])
+  @@unique([promoterId, slug])
   @@index([venueId, status])
+  @@index([promoterId, status])
   @@index([startsAt])
+  @@index([externalVenueCity])
   @@map("events")
 }
 
@@ -302,14 +402,16 @@ model EventTier {
 
 model StripeAccount {
   id               String   @id @default(uuid(7)) @db.Uuid
-  venueId          String   @unique @db.Uuid
+  venueId          String?  @unique @db.Uuid
+  promoterId       String?  @unique @db.Uuid
   stripeAccountId  String   @unique
   chargesEnabled   Boolean  @default(false)
   detailsSubmitted Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  venue    Venue?    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  promoter Promoter? @relation(fields: [promoterId], references: [id], onDelete: Cascade)
 
   @@map("stripe_accounts")
 }
@@ -463,4 +565,24 @@ model OAuthAccount {
   @@unique([provider, providerSub])
   @@index([userId])
   @@map("oauth_accounts")
+}
+
+model Story {
+  id          String         @id @default(uuid(7)) @db.Uuid
+  venueId     String         @db.Uuid
+  createdById String         @db.Uuid
+  mediaUrl    String
+  mediaType   StoryMediaType
+  durationMs  Int?
+  caption     String?        @db.VarChar(280)
+  createdAt   DateTime       @default(now())
+  expiresAt   DateTime
+  deletedAt   DateTime?
+
+  venue     Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  createdBy User  @relation("StoryAuthor", fields: [createdById], references: [id])
+
+  @@index([venueId, expiresAt])
+  @@index([expiresAt])
+  @@map("stories")
 }

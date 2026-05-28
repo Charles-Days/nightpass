@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Loader2, Pause, Play, X } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/core/components/ui/card';
+import { ConfirmDialog } from '@/core/components/ui/confirm-dialog';
 import { paths } from '@/core/config/paths';
 import type { Venue } from '@/core/types/api';
 import { useSuspendVenue } from '../hooks/use-suspend-venue';
@@ -27,9 +28,10 @@ function OwnerRow({
   user,
 }: {
   venueId: string;
-  user: { id: string; email: string; name: string | null; role: 'ADMIN' | 'VENUE_OWNER' | 'VENUE_STAFF' | 'CUSTOMER' };
+  user: { id: string; email: string; name: string | null; role: import('@/core/types/api').Role };
 }) {
   const remove = useRemoveOwner(venueId);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
   return (
     <li className="flex items-center justify-between gap-3 rounded-md border bg-background/40 px-3 py-2">
       <Link href={`${paths.adminUsers}/${user.id}`} className="block min-w-0 flex-1 truncate">
@@ -43,13 +45,22 @@ function OwnerRow({
         variant="ghost"
         className="size-7 p-0 text-muted-foreground hover:text-destructive"
         title="Remover como dueño"
-        onClick={() => {
-          if (confirm(`¿Quitar a ${user.email} como dueño?`)) remove.mutate(user.id);
-        }}
+        onClick={() => setConfirmOpen(true)}
         disabled={remove.isPending}
       >
         {remove.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <X className="size-3.5" />}
       </Button>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="¿Quitar dueño?"
+        description={`${user.name ?? user.email} dejará de gestionar este local.`}
+        confirmLabel="Sí, quitar"
+        cancelLabel="Cancelar"
+        variant="destructive"
+        loading={remove.isPending}
+        onConfirm={() => remove.mutate(user.id, { onSettled: () => setConfirmOpen(false) })}
+      />
     </li>
   );
 }

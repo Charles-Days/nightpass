@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -13,6 +14,11 @@ import { UpdateEventDto } from './dto/update-event.dto';
 import { ListEventsQuery } from './dto/list-events.query';
 import { CreateTierDto } from './dto/create-tier.dto';
 import { UpdateTierDto } from './dto/update-tier.dto';
+
+interface OwnerParams {
+  venueId?: string | null;
+  promoterId?: string | null;
+}
 
 @Injectable()
 export class EventsService {
@@ -43,21 +49,24 @@ export class EventsService {
   }
 
   /**
-   * Verifica que el usuario tiene permisos sobre el venue.
+   * Verifica que el usuario tiene permisos sobre el evento (vía venue o promotora).
    * - ADMIN: siempre pasa.
-   * - VENUE_OWNER: debe tener entrada en VenueOwner.
-   * - Otros roles: deniegan (VENUE_STAFF solo puede listar vía el controller).
+   * - VENUE_OWNER/VENUE_STAFF: debe tener entrada en VenueOwner para ese venue.
+   * - PROMOTER/PROMOTER_STAFF: debe tener entrada en PromoterMember para esa promotora.
    */
-  private async ensureVenueOwner(
-    venueId: string,
+  private async ensureEventOwner(
+    params: OwnerParams,
     userId: string,
     userRole: string,
   ): Promise<void> {
     if (userRole === 'ADMIN') return;
 
-    if (userRole === 'VENUE_OWNER') {
+    if (params.venueId) {
+      if (!['VENUE_OWNER', 'VENUE_STAFF'].includes(userRole)) {
+        throw new ForbiddenException('No tienes permisos para gestionar eventos');
+      }
       const link = await this.prisma.venueOwner.findUnique({
-        where: { userId_venueId: { userId, venueId } },
+        where: { userId_venueId: { userId, venueId: params.venueId } },
         select: { userId: true },
       });
       if (!link) {
@@ -66,58 +75,97 @@ export class EventsService {
       return;
     }
 
-    throw new ForbiddenException('No tienes permisos para gestionar eventos');
+    if (params.promoterId) {
+      if (!['PROMOTER', 'PROMOTER_STAFF'].includes(userRole)) {
+        throw new ForbiddenException('No tienes permisos para gestionar eventos');
+      }
+      const link = await this.prisma.promoterMember.findUnique({
+        where: { userId_promoterId: { userId, promoterId: params.promoterId } },
+        select: { userId: true },
+      });
+      if (!link) {
+        throw new NotFoundException('Promotora no encontrada o sin permisos');
+      }
+      return;
+    }
+
+    throw new BadRequestException('EVENT_MUST_HAVE_VENUE_OR_PROMOTER');
   }
 
   // ─── Events CRUD ─────────────────────────────────────────────────────────────
 
   async create(dto: CreateEventDto, user: AuthUser) {
-    await this.ensureVenueOwner(dto.venueId, user.id, user.role);
+    const hasVenue = !!dto.venueId;
+    const hasPromoter = !!dto.promoterId;
+
+    if (hasVenue === hasPromoter) {
+      throw new BadRequestException('EVENT_MUST_HAVE_VENUE_OR_PROMOTER');
+    }
+
+    if (hasPromoter) {
+      if (!dto.externalVenueName || !dto.externalVenueCity) {
+        throw new BadRequestException(
+          'Los eventos de promotora requieren externalVenueName y externalVenueCity',
+        );
+      }
+    }
+
+    await this.ensureEventOwner(
+      { venueId: dto.venueId, promoterId: dto.promoterId },
+      user.id,
+      user.role,
+    );
 
     const baseSlug = this.toSlug(dto.title);
 
-    // Intentar crear con el slug base, reintentar con sufijo random si colisiona
+    const slugExists = async (slug: string): Promise<boolean> => {
+      if (hasVenue) {
+        const existing = await this.prisma.event.findUnique({
+          where: { venueId_slug: { venueId: dto.venueId!, slug } },
+          select: { id: true },
+        });
+        return !!existing;
+      }
+      const existing = await this.prisma.event.findUnique({
+        where: { promoterId_slug: { promoterId: dto.promoterId!, slug } },
+        select: { id: true },
+      });
+      return !!existing;
+    };
+
+    const buildData = (slug: string): Prisma.EventUncheckedCreateInput => ({
+      venueId: hasVenue ? dto.venueId! : null,
+      promoterId: hasPromoter ? dto.promoterId! : null,
+      slug,
+      title: dto.title,
+      description: dto.description ?? null,
+      startsAt: dto.startsAt,
+      endsAt: dto.endsAt,
+      coverImageUrl: dto.coverImageUrl ?? null,
+      status: dto.status ?? 'DRAFT',
+      capacity: dto.capacity ?? null,
+      externalVenueName: hasPromoter ? dto.externalVenueName ?? null : null,
+      externalVenueAddress: hasPromoter ? dto.externalVenueAddress ?? null : null,
+      externalVenueCity: hasPromoter ? dto.externalVenueCity ?? null : null,
+      externalVenueLat: hasPromoter ? dto.externalVenueLat ?? null : null,
+      externalVenueLng: hasPromoter ? dto.externalVenueLng ?? null : null,
+    });
+
     for (let attempt = 0; attempt < 5; attempt++) {
       const slug =
         attempt === 0 ? baseSlug : `${baseSlug}-${this.randomSuffix()}`;
 
-      const existing = await this.prisma.event.findUnique({
-        where: { venueId_slug: { venueId: dto.venueId, slug } },
-        select: { id: true },
-      });
-
-      if (existing) continue;
+      if (await slugExists(slug)) continue;
 
       return this.prisma.event.create({
-        data: {
-          venueId: dto.venueId,
-          slug,
-          title: dto.title,
-          description: dto.description ?? null,
-          startsAt: dto.startsAt,
-          endsAt: dto.endsAt,
-          coverImageUrl: dto.coverImageUrl ?? null,
-          status: dto.status ?? 'DRAFT',
-          capacity: dto.capacity ?? null,
-        },
+        data: buildData(slug),
         include: { tiers: true },
       });
     }
 
-    // último intento con timestamp para garantizar unicidad
     const slug = `${baseSlug}-${Date.now().toString(36)}`;
     return this.prisma.event.create({
-      data: {
-        venueId: dto.venueId,
-        slug,
-        title: dto.title,
-        description: dto.description ?? null,
-        startsAt: dto.startsAt,
-        endsAt: dto.endsAt,
-        coverImageUrl: dto.coverImageUrl ?? null,
-        status: dto.status ?? 'DRAFT',
-        capacity: dto.capacity ?? null,
-      },
+      data: buildData(slug),
       include: { tiers: true },
     });
   }
@@ -126,10 +174,10 @@ export class EventsService {
     const where: Prisma.EventWhereInput = {};
 
     if (query.venueId) where.venueId = query.venueId;
+    if (query.promoterId) where.promoterId = query.promoterId;
     if (query.status) where.status = query.status;
 
-    // VENUE_OWNER solo ve eventos de sus venues
-    if (user.role === 'VENUE_OWNER') {
+    if (user.role === 'VENUE_OWNER' || user.role === 'VENUE_STAFF') {
       const ownedVenues = await this.prisma.venueOwner.findMany({
         where: { userId: user.id },
         select: { venueId: true },
@@ -137,12 +185,25 @@ export class EventsService {
       const ownedVenueIds = ownedVenues.map((v) => v.venueId);
 
       if (query.venueId) {
-        // Si ya filtró por venueId, verificar que sea suyo
         if (!ownedVenueIds.includes(query.venueId)) {
           return { items: [], total: 0, page: query.page, limit: query.limit };
         }
       } else {
         where.venueId = { in: ownedVenueIds };
+      }
+    } else if (user.role === 'PROMOTER' || user.role === 'PROMOTER_STAFF') {
+      const memberships = await this.prisma.promoterMember.findMany({
+        where: { userId: user.id },
+        select: { promoterId: true },
+      });
+      const promoterIds = memberships.map((m) => m.promoterId);
+
+      if (query.promoterId) {
+        if (!promoterIds.includes(query.promoterId)) {
+          return { items: [], total: 0, page: query.page, limit: query.limit };
+        }
+      } else {
+        where.promoterId = { in: promoterIds };
       }
     }
 
@@ -166,6 +227,7 @@ export class EventsService {
       include: {
         tiers: { orderBy: { position: 'asc' } },
         venue: { select: { id: true, slug: true, name: true, city: true } },
+        promoter: { select: { id: true, slug: true, name: true, logoUrl: true } },
       },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
@@ -175,11 +237,33 @@ export class EventsService {
   async update(id: string, dto: UpdateEventDto, user: AuthUser) {
     const event = await this.prisma.event.findUnique({
       where: { id },
-      select: { venueId: true, coverImageUrl: true },
+      select: {
+        venueId: true,
+        promoterId: true,
+        coverImageUrl: true,
+      },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
-    await this.ensureVenueOwner(event.venueId, user.id, user.role);
+    await this.ensureEventOwner(
+      { venueId: event.venueId, promoterId: event.promoterId },
+      user.id,
+      user.role,
+    );
+
+    const isPromoterEvent = !!event.promoterId;
+    const hasExternalUpdate =
+      dto.externalVenueName !== undefined ||
+      dto.externalVenueAddress !== undefined ||
+      dto.externalVenueCity !== undefined ||
+      dto.externalVenueLat !== undefined ||
+      dto.externalVenueLng !== undefined;
+
+    if (hasExternalUpdate && !isPromoterEvent) {
+      throw new BadRequestException(
+        'Solo eventos de promotora pueden modificar la ubicación externa',
+      );
+    }
 
     const data: Prisma.EventUpdateInput = {};
     if (dto.title !== undefined) data.title = dto.title;
@@ -189,6 +273,14 @@ export class EventsService {
     if (dto.coverImageUrl !== undefined) data.coverImageUrl = dto.coverImageUrl;
     if (dto.status !== undefined) data.status = dto.status;
     if (dto.capacity !== undefined) data.capacity = dto.capacity;
+
+    if (isPromoterEvent) {
+      if (dto.externalVenueName !== undefined) data.externalVenueName = dto.externalVenueName;
+      if (dto.externalVenueAddress !== undefined) data.externalVenueAddress = dto.externalVenueAddress;
+      if (dto.externalVenueCity !== undefined) data.externalVenueCity = dto.externalVenueCity;
+      if (dto.externalVenueLat !== undefined) data.externalVenueLat = dto.externalVenueLat;
+      if (dto.externalVenueLng !== undefined) data.externalVenueLng = dto.externalVenueLng;
+    }
 
     const oldCover =
       dto.coverImageUrl !== undefined &&
@@ -213,11 +305,15 @@ export class EventsService {
   async remove(id: string, user: AuthUser) {
     const event = await this.prisma.event.findUnique({
       where: { id },
-      select: { venueId: true, coverImageUrl: true },
+      select: { venueId: true, promoterId: true, coverImageUrl: true },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
-    await this.ensureVenueOwner(event.venueId, user.id, user.role);
+    await this.ensureEventOwner(
+      { venueId: event.venueId, promoterId: event.promoterId },
+      user.id,
+      user.role,
+    );
 
     await this.prisma.event.delete({ where: { id } });
 
@@ -233,11 +329,15 @@ export class EventsService {
   async createTier(eventId: string, dto: CreateTierDto, user: AuthUser) {
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
-      select: { venueId: true },
+      select: { venueId: true, promoterId: true },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
-    await this.ensureVenueOwner(event.venueId, user.id, user.role);
+    await this.ensureEventOwner(
+      { venueId: event.venueId, promoterId: event.promoterId },
+      user.id,
+      user.role,
+    );
 
     return this.prisma.eventTier.create({
       data: {
@@ -260,11 +360,15 @@ export class EventsService {
   ) {
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
-      select: { venueId: true },
+      select: { venueId: true, promoterId: true },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
-    await this.ensureVenueOwner(event.venueId, user.id, user.role);
+    await this.ensureEventOwner(
+      { venueId: event.venueId, promoterId: event.promoterId },
+      user.id,
+      user.role,
+    );
 
     const tier = await this.prisma.eventTier.findFirst({
       where: { id: tierId, eventId },
@@ -286,11 +390,15 @@ export class EventsService {
   async removeTier(eventId: string, tierId: string, user: AuthUser) {
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
-      select: { venueId: true },
+      select: { venueId: true, promoterId: true },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
-    await this.ensureVenueOwner(event.venueId, user.id, user.role);
+    await this.ensureEventOwner(
+      { venueId: event.venueId, promoterId: event.promoterId },
+      user.id,
+      user.role,
+    );
 
     const tier = await this.prisma.eventTier.findFirst({
       where: { id: tierId, eventId },

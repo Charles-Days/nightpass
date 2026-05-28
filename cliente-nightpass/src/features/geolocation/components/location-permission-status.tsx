@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { MapPin, ShieldCheck, ShieldAlert, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/core/components/ui/button';
+import { ConfirmDialog } from '@/core/components/ui/confirm-dialog';
 import { useGeolocation } from '../hooks/use-geolocation';
 import { usePlatform } from '../hooks/use-platform';
 
@@ -12,6 +13,7 @@ export function LocationPermissionStatus() {
   const platform = usePlatform();
   const [requesting, setRequesting] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleRequest = async () => {
     setRequesting(true);
@@ -35,11 +37,6 @@ export function LocationPermissionStatus() {
   };
 
   const handleClearHistory = async () => {
-    const confirmed = window.confirm(
-      '¿Borrar todo tu historial de ubicación? Esta acción no se puede deshacer.',
-    );
-    if (!confirmed) return;
-
     setClearing(true);
     try {
       const res = await fetch('/api/me/locations', {
@@ -55,6 +52,7 @@ export function LocationPermissionStatus() {
       toast.error('Error de red. Intenta de nuevo.');
     } finally {
       setClearing(false);
+      setConfirmOpen(false);
     }
   };
 
@@ -131,7 +129,7 @@ export function LocationPermissionStatus() {
 
       <Button
         variant="ghost"
-        onClick={handleClearHistory}
+        onClick={() => setConfirmOpen(true)}
         disabled={clearing}
         className="h-10 w-full justify-start gap-3 rounded-[16px] border border-white/8 bg-white/[0.02] px-4 text-sm font-medium text-white/75 hover:bg-white/[0.04] hover:text-white"
       >
@@ -142,6 +140,18 @@ export function LocationPermissionStatus() {
         )}
         Borrar mi historial de ubicación
       </Button>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="¿Borrar tu historial de ubicación?"
+        description="Eliminaremos todos tus pings de ubicación guardados. Esta acción no se puede deshacer."
+        confirmLabel="Sí, borrar"
+        cancelLabel="Cancelar"
+        variant="destructive"
+        loading={clearing}
+        onConfirm={handleClearHistory}
+      />
     </div>
   );
 }

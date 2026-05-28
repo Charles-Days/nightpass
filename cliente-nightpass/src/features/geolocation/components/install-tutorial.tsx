@@ -46,9 +46,11 @@ export function InstallTutorial({ open, onOpenChange }: InstallTutorialProps) {
     }
   };
 
-  // Chrome on iOS does not support add-to-home-screen — only Safari does.
-  const isChromeOnIOS =
-    platform.os === 'ios' && !platform.isSafari && !platform.isInAppBrowser;
+  // iOS 16.4+ permite Add-to-Home-Screen tambien desde Chrome/Edge/Firefox/Orion
+  // via Share del URL bar. No bloqueamos Chrome iOS — solo Firefox sigue sin
+  // soportar manifest-based install. In-app browsers (Instagram/TikTok) sí
+  // estan bloqueados — no exponen el menu Share completo.
+  const isFirefoxOnIOS = platform.os === 'ios' && platform.browser === 'firefox';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,8 +72,11 @@ export function InstallTutorial({ open, onOpenChange }: InstallTutorialProps) {
           <div className="mt-2 flex items-start gap-2 rounded-[14px] border border-amber-400/30 bg-amber-400/10 px-3 py-2.5 text-xs text-amber-200">
             <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
             <p>
-              Estás dentro de otra app. Abre NightPass en{' '}
-              <strong>Safari</strong> o <strong>Chrome</strong> para poder instalarla.
+              Estás dentro de otra app (Instagram, TikTok, Facebook…). Tocá los{' '}
+              <strong>tres puntos</strong> arriba a la derecha y elegí{' '}
+              <strong>"Abrir en el navegador"</strong>{' '}
+              ({platform.os === 'ios' ? 'Safari, Chrome o Edge' : 'Chrome'}) para
+              poder instalar NightPass.
             </p>
           </div>
         )}
@@ -89,38 +94,60 @@ export function InstallTutorial({ open, onOpenChange }: InstallTutorialProps) {
           </TabsList>
 
           <TabsContent value="ios" className="mt-4">
-            {isChromeOnIOS ? (
+            {isFirefoxOnIOS ? (
               <div className="flex items-start gap-3 rounded-[16px] border border-white/10 bg-white/[0.03] p-4">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-300" />
                 <div>
-                  <p className="text-sm font-semibold">Abre en Safari para instalar</p>
+                  <p className="text-sm font-semibold">Abre en Safari, Chrome o Edge</p>
                   <p className="mt-1 text-xs text-white/55">
-                    En iPhone solo Safari permite agregar apps a la pantalla de inicio. Copia el
-                    enlace y ábrelo en Safari.
+                    Firefox en iPhone aún no permite instalar apps web. Copia el enlace y ábrelo
+                    en Safari, Chrome o Edge para instalar NightPass.
                   </p>
                 </div>
               </div>
             ) : (
-              <ol className="space-y-3">
-                <Step
-                  index={1}
-                  icon={<Share2 className="size-4" />}
-                  title="Toca el botón Compartir"
-                  desc="Está en la barra inferior de Safari (un cuadrado con una flecha hacia arriba)."
-                />
-                <Step
-                  index={2}
-                  icon={<Plus className="size-4" />}
-                  title='Elige "Añadir a la pantalla de inicio"'
-                  desc="Desplázate hacia abajo si no lo ves al instante."
-                />
-                <Step
-                  index={3}
-                  icon={<ArrowDown className="size-4" />}
-                  title='Confirma "Añadir"'
-                  desc="El ícono de NightPass aparecerá en tu pantalla de inicio."
-                />
-              </ol>
+              <>
+                <ol className="space-y-3">
+                  <Step
+                    index={1}
+                    icon={<Share2 className="size-4" />}
+                    title="Tocá el botón Compartir"
+                    desc={
+                      platform.browser === 'safari'
+                        ? 'Cuadrado con flecha hacia arriba. En iPhone vertical está abajo; en iPad o paisaje, arriba a la derecha.'
+                        : 'En la barra de direcciones, a la derecha de la URL. Es un cuadrado con flecha hacia arriba. Requiere iOS 16.4 o más reciente.'
+                    }
+                  />
+                  <Step
+                    index={2}
+                    icon={<ArrowDown className="size-4" />}
+                    title='Tocá "Ver más" para expandir'
+                    desc='Abajo del todo de la hoja Compartir hay un botón "Ver más" (con un chevron ↓). Tocalo para ver todas las opciones — la primera vista no muestra "Añadir a inicio".'
+                  />
+                  <Step
+                    index={3}
+                    icon={<Plus className="size-4" />}
+                    title='Elegí "Añadir a pantalla de inicio"'
+                    desc='Está abajo, después de "Imprimir". Tiene un ícono ⊞ con un más.'
+                  />
+                  <Step
+                    index={4}
+                    icon={<Apple className="size-4" />}
+                    title='Confirmá "Agregar"'
+                    desc='Botón azul arriba a la derecha. Dejá activado el toggle "Abrir como app web" (en iOS 26 viene por default).'
+                  />
+                  <Step
+                    index={5}
+                    icon={<Smartphone className="size-4" />}
+                    title="Abrí desde el ícono del home"
+                    desc="Salí del navegador y tocá el ícono morado de NightPass en tu pantalla de inicio. Así abre como app, sin barra del navegador."
+                  />
+                </ol>
+                <p className="mt-3 text-[11px] text-white/45">
+                  ¿No aparece la opción aún después de "Ver más"? Recargá la página, esperá 2
+                  segundos y volvé a tocar Compartir.
+                </p>
+              </>
             )}
           </TabsContent>
 
@@ -128,7 +155,7 @@ export function InstallTutorial({ open, onOpenChange }: InstallTutorialProps) {
             {canInstall ? (
               <div className="flex flex-col gap-3">
                 <p className="text-sm text-white/65">
-                  Tu navegador permite instalar NightPass directamente. Solo presiona el botón.
+                  Tu navegador permite instalar NightPass directamente. Solo presioná el botón.
                 </p>
                 <Button
                   onClick={handlePromptInstall}
@@ -138,28 +165,56 @@ export function InstallTutorial({ open, onOpenChange }: InstallTutorialProps) {
                   <Download className="size-4" />
                   Instalar ahora
                 </Button>
+                <p className="text-[11px] text-white/45">
+                  Si el botón no responde, abrí el menú del navegador (tres puntos) y elegí
+                  "Instalar app".
+                </p>
               </div>
             ) : (
-              <ol className="space-y-3">
-                <Step
-                  index={1}
-                  icon={<Smartphone className="size-4" />}
-                  title="Abre el menú del navegador"
-                  desc="Los tres puntos en la esquina superior derecha de Chrome."
-                />
-                <Step
-                  index={2}
-                  icon={<Plus className="size-4" />}
-                  title='Toca "Instalar app" o "Añadir a inicio"'
-                  desc="El nombre exacto depende de tu navegador."
-                />
-                <Step
-                  index={3}
-                  icon={<ArrowDown className="size-4" />}
-                  title="Confirma la instalación"
-                  desc="NightPass se abrirá como app nativa, sin barra del navegador."
-                />
-              </ol>
+              <>
+                <ol className="space-y-3">
+                  <Step
+                    index={1}
+                    icon={<Smartphone className="size-4" />}
+                    title="Abrí el menú del navegador"
+                    desc={
+                      platform.browser === 'samsung'
+                        ? 'Tres líneas abajo a la derecha (Samsung Internet).'
+                        : platform.browser === 'firefox'
+                          ? 'Tres puntos abajo a la derecha (Firefox).'
+                          : 'Tres puntos arriba a la derecha en Chrome o Edge.'
+                    }
+                  />
+                  <Step
+                    index={2}
+                    icon={<Plus className="size-4" />}
+                    title='Tocá "Instalar app" o "Agregar a inicio"'
+                    desc={
+                      platform.browser === 'samsung'
+                        ? 'En Samsung Internet aparece como "Agregar página a" → "Pantalla de inicio".'
+                        : platform.browser === 'firefox'
+                          ? 'En Firefox aparece como "Instalar" o "Agregar a pantalla de inicio".'
+                          : 'En Chrome dice "Instalar app". En Edge dice "Agregar a teléfono".'
+                    }
+                  />
+                  <Step
+                    index={3}
+                    icon={<ArrowDown className="size-4" />}
+                    title="Confirmá la instalación"
+                    desc='Tap "Instalar" en el popup. Vas a ver una notificación cuando termine.'
+                  />
+                  <Step
+                    index={4}
+                    icon={<Smartphone className="size-4" />}
+                    title="Abrí desde el ícono o el cajón de apps"
+                    desc="NightPass aparece en tu pantalla de inicio y en el cajón. Abrí desde ahí — ya no necesitás el navegador."
+                  />
+                </ol>
+                <p className="mt-3 text-[11px] text-white/45">
+                  ¿No aparece la opción? Recargá esta página, esperá 2 segundos. Si seguís sin
+                  verla, actualizá tu navegador a la última versión.
+                </p>
+              </>
             )}
           </TabsContent>
         </Tabs>

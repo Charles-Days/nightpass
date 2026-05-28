@@ -1,0 +1,533 @@
+'use client';
+
+import * as React from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Loader2, MapPin, Search } from 'lucide-react';
+import { Button } from '@/core/components/ui/button';
+import { Input } from '@/core/components/ui/input';
+import { Field } from '@/core/components/ui/field';
+import { ImageUploader } from '@/core/components/image-uploader';
+import { clientFetch } from '@/core/lib/api/client-client';
+import type { CatalogVenueSummary, Event } from '@/core/types/api';
+import { TiersSection } from './tiers-section';
+
+// ---------------------------------------------------------------------------
+// Schema — promoter-aware: location is either a catálogo venue or external.
+// ---------------------------------------------------------------------------
+const baseEventFields = z.object({
+  title: z.string().min(2, 'Mínimo 2 caracteres').max(160),
+  description: z.string().max(2000).optional().or(z.literal('')),
+  startsAt: z.string().min(1, 'Requerido'),
+  endsAt: z.string().min(1, 'Requerido'),
+  coverImageUrl: z.string().url('URL inválida').optional().or(z.literal('')),
+  capacity: z.coerce.number().int().min(1).optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'CANCELED']).default('DRAFT'),
+});
+
+const venueLocationSchema = baseEventFields.extend({
+  locationKind: z.literal('venue'),
+  venueId: z.string().uuid('Selecciona un venue del catálogo'),
+});
+
+const externalLocationSchema = baseEventFields.extend({
+  locationKind: z.literal('external'),
+  externalVenueName: z.string().min(2, 'Requerido').max(160),
+  externalVenueAddress: z.string().max(240).optional().or(z.literal('')),
+  externalVenueCity: z.string().min(2, 'Requerido').max(80),
+  externalVenueLat: z.coerce.number().nullable().optional(),
+  externalVenueLng: z.coerce.number().nullable().optional(),
+});
+
+export const promoterEventSchema = z.discriminatedUnion('locationKind', [
+  venueLocationSchema,
+  externalLocationSchema,
+]);
+
+export type PromoterEventInput = z.infer<typeof promoterEventSchema>;
+
+// ---------------------------------------------------------------------------
+// Default values helper — used by parent pages to bootstrap edits.
+// ---------------------------------------------------------------------------
+export function toPromoterEventDefaults(event: Event): Partial<PromoterEventInput> {
+  const base = {
+    title: event.title,
+    description: event.description ?? '',
+    startsAt: event.startsAt.slice(0, 16),
+    endsAt: event.endsAt.slice(0, 16),
+    coverImageUrl: event.coverImageUrl ?? '',
+    status: event.status,
+    capacity: event.capacity ?? undefined,
+  };
+  if (event.venueId) {
+    return {
+      ...base,
+      locationKind: 'venue' as const,
+      venueId: event.venueId,
+    };
+  }
+  return {
+    ...base,
+    locationKind: 'external' as const,
+    externalVenueName: event.externalVenueName ?? '',
+    externalVenueAddress: event.externalVenueAddress ?? '',
+    externalVenueCity: event.externalVenueCity ?? '',
+    externalVenueLat: event.externalVenueLat ?? undefined,
+    externalVenueLng: event.externalVenueLng ?? undefined,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Venue picker — debounced search against /api/catalog/venues.
+// ---------------------------------------------------------------------------
+function VenuePicker({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string | undefined;
+  onChange: (venueId: string, venueLabel: string) => void;
+  disabled?: boolean;
+}) {
+  const [query, setQuery] = React.useState('');
+  const [results, setResults] = React.useState<CatalogVenueSummary[]>([]);
+  const [selected, setSelected] = React.useState<CatalogVenueSummary | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
+
+  // Resolve initial selection if a venueId is provided externally.
+  React.useEffect(() => {
+    if (!value || selected?.id === value) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await clientFetch<{ items: CatalogVenueSummary[] }>(
+          `/api/catalog/venues?limit=20`,
+        );
+        if (cancelled) return;
+        const found = list.items.find((v) => v.id === value);
+        if (found) setSelected(found);
+      } catch {
+        // ignore — picker stays empty
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [value, selected?.id]);
+
+  // Debounced search.
+  React.useEffect(() => {
+    if (disabled) return;
+    if (query.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+    setLoading(true);
+    const handle = setTimeout(async () => {
+      try {
+        const data = await clientFetch<{ items: CatalogVenueSummary[] }>(
+          `/api/catalog/venues?search=${encodeURIComponent(query)}&limit=10`,
+        );
+        setResults(data.items);
+      } catch {
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [query, disabled]);
+
+  return (
+    <div className="space-y-2">
+      {selected ? (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">{selected.name}</p>
+            <p className="text-xs text-muted-foreground">{selected.city}</p>
+          </div>
+          {!disabled ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSelected(null);
+                setQuery('');
+              }}
+            >
+              Cambiar
+            </Button>
+          ) : null}
+        </div>
+      ) : (
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Busca un local del catálogo…"
+            className="pl-9"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            disabled={disabled}
+          />
+          {open && (results.length > 0 || loading) ? (
+            <div className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-lg border border-white/10 bg-background shadow-xl">
+              {loading ? (
+                <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+                  <Loader2 className="size-3.5 animate-spin" /> Buscando…
+                </div>
+              ) : (
+                results.map((v) => (
+                  <button
+                    type="button"
+                    key={v.id}
+                    onClick={() => {
+                      setSelected(v);
+                      setOpen(false);
+                      onChange(v.id, v.name);
+                    }}
+                    className="block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-white/[0.06]"
+                  >
+                    <p className="font-medium">{v.name}</p>
+                    <p className="text-xs text-muted-foreground">{v.city}</p>
+                  </button>
+                ))
+              )}
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Form
+// ---------------------------------------------------------------------------
+interface Props {
+  promoterId: string;
+  defaultValues?: Partial<PromoterEventInput>;
+  eventId?: string;
+  /** When editing, location switch is locked per backend constraint. */
+  locationLocked?: boolean;
+  onSubmit: (payload: Record<string, unknown>) => void | Promise<void>;
+  isPending: boolean;
+  submitLabel?: string;
+}
+
+export function EventFormPromoter({
+  promoterId,
+  defaultValues,
+  eventId,
+  locationLocked = false,
+  onSubmit,
+  isPending,
+  submitLabel,
+}: Props) {
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<PromoterEventInput>({
+    resolver: zodResolver(promoterEventSchema),
+    defaultValues: {
+      locationKind: 'venue',
+      title: '',
+      description: '',
+      startsAt: '',
+      endsAt: '',
+      coverImageUrl: '',
+      status: 'DRAFT',
+      ...defaultValues,
+    } as PromoterEventInput,
+  });
+
+  const locationKind = watch('locationKind');
+
+  const submit = handleSubmit((values) => {
+    // Common payload bits.
+    const common = {
+      title: values.title,
+      description: values.description || undefined,
+      startsAt: values.startsAt,
+      endsAt: values.endsAt,
+      coverImageUrl: values.coverImageUrl || undefined,
+      status: values.status,
+      capacity: values.capacity ?? undefined,
+    };
+    if (values.locationKind === 'venue') {
+      void onSubmit({ ...common, venueId: values.venueId });
+    } else {
+      void onSubmit({
+        ...common,
+        promoterId,
+        externalVenueName: values.externalVenueName,
+        externalVenueAddress: values.externalVenueAddress || undefined,
+        externalVenueCity: values.externalVenueCity,
+        externalVenueLat: values.externalVenueLat ?? undefined,
+        externalVenueLng: values.externalVenueLng ?? undefined,
+      });
+    }
+  });
+
+  return (
+    <form onSubmit={submit} className="space-y-6">
+      {/* Location switch */}
+      <fieldset
+        className="space-y-4 rounded-[18px] border border-white/10 bg-white/[0.02] p-4"
+        disabled={locationLocked}
+      >
+        <legend className="px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/70">
+          ¿Dónde se realiza?
+        </legend>
+
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <label
+            className={`flex flex-1 cursor-pointer items-start gap-3 rounded-lg border px-3 py-2 transition-colors ${
+              locationKind === 'venue'
+                ? 'border-primary/60 bg-primary/10'
+                : 'border-white/10 hover:bg-white/[0.04]'
+            }`}
+          >
+            <input
+              type="radio"
+              value="venue"
+              {...register('locationKind')}
+              className="mt-1"
+              disabled={locationLocked}
+            />
+            <div>
+              <p className="text-sm font-medium">Venue del catálogo</p>
+              <p className="text-xs text-muted-foreground">
+                Local registrado en NightPass.
+              </p>
+            </div>
+          </label>
+          <label
+            className={`flex flex-1 cursor-pointer items-start gap-3 rounded-lg border px-3 py-2 transition-colors ${
+              locationKind === 'external'
+                ? 'border-primary/60 bg-primary/10'
+                : 'border-white/10 hover:bg-white/[0.04]'
+            }`}
+          >
+            <input
+              type="radio"
+              value="external"
+              {...register('locationKind')}
+              className="mt-1"
+              disabled={locationLocked}
+            />
+            <div>
+              <p className="text-sm font-medium">Venue externo</p>
+              <p className="text-xs text-muted-foreground">
+                Espacio que no está en el catálogo.
+              </p>
+            </div>
+          </label>
+        </div>
+
+        {locationKind === 'venue' ? (
+          <Controller
+            name="venueId"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field
+                label="Local"
+                htmlFor="ev-venue-picker"
+                error={fieldState.error?.message}
+              >
+                <VenuePicker
+                  value={field.value}
+                  onChange={(id) => field.onChange(id)}
+                  disabled={locationLocked}
+                />
+              </Field>
+            )}
+          />
+        ) : (
+          <div className="space-y-4">
+            {(() => {
+              // Discriminated-union FieldErrors don't auto-narrow on `errors.xxx?.message`.
+              // Cast once to a record of optional messages.
+              const extErrors = errors as Partial<
+                Record<
+                  | 'externalVenueName'
+                  | 'externalVenueAddress'
+                  | 'externalVenueCity'
+                  | 'externalVenueLat'
+                  | 'externalVenueLng',
+                  { message?: string } | undefined
+                >
+              >;
+              return (
+                <>
+                  <Field
+                    label="Nombre del lugar"
+                    htmlFor="ext-name"
+                    error={extErrors.externalVenueName?.message}
+                  >
+                    <Input
+                      id="ext-name"
+                      placeholder="Ej. Terraza Roof"
+                      {...register('externalVenueName')}
+                    />
+                  </Field>
+                  <Field
+                    label="Dirección"
+                    htmlFor="ext-address"
+                    error={extErrors.externalVenueAddress?.message}
+                  >
+                    <Input
+                      id="ext-address"
+                      placeholder="Calle y número…"
+                      {...register('externalVenueAddress')}
+                    />
+                  </Field>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <Field
+                      label="Ciudad"
+                      htmlFor="ext-city"
+                      error={extErrors.externalVenueCity?.message}
+                    >
+                      <Input
+                        id="ext-city"
+                        placeholder="CDMX"
+                        {...register('externalVenueCity')}
+                      />
+                    </Field>
+                    <Field
+                      label="Latitud"
+                      htmlFor="ext-lat"
+                      error={extErrors.externalVenueLat?.message}
+                    >
+                      <Input
+                        id="ext-lat"
+                        type="number"
+                        step="any"
+                        placeholder="19.42"
+                        {...register('externalVenueLat')}
+                      />
+                    </Field>
+                    <Field
+                      label="Longitud"
+                      htmlFor="ext-lng"
+                      error={extErrors.externalVenueLng?.message}
+                    >
+                      <Input
+                        id="ext-lng"
+                        type="number"
+                        step="any"
+                        placeholder="-99.13"
+                        {...register('externalVenueLng')}
+                      />
+                    </Field>
+                  </div>
+                </>
+              );
+            })()}
+            <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+              <MapPin className="mt-0.5 size-3" />
+              Lat/Lng son opcionales — sin ellas el evento no aparece en el mapa.
+            </p>
+          </div>
+        )}
+      </fieldset>
+
+      {/* Standard event fields */}
+      <Field label="Título" htmlFor="ev-title" error={errors.title?.message}>
+        <Input id="ev-title" placeholder="Nombre del evento" {...register('title')} />
+      </Field>
+
+      <Field label="Descripción" htmlFor="ev-description" error={errors.description?.message}>
+        <textarea
+          id="ev-description"
+          rows={3}
+          placeholder="Descripción opcional…"
+          className="flex w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          {...register('description')}
+        />
+      </Field>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Inicio" htmlFor="ev-starts-at" error={errors.startsAt?.message}>
+          <input
+            id="ev-starts-at"
+            type="datetime-local"
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            {...register('startsAt')}
+          />
+        </Field>
+        <Field label="Fin" htmlFor="ev-ends-at" error={errors.endsAt?.message}>
+          <input
+            id="ev-ends-at"
+            type="datetime-local"
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            {...register('endsAt')}
+          />
+        </Field>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Estado" htmlFor="ev-status" error={errors.status?.message}>
+          <select
+            id="ev-status"
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            {...register('status')}
+          >
+            <option value="DRAFT">Borrador</option>
+            <option value="PUBLISHED">Publicado</option>
+            <option value="CANCELED">Cancelado</option>
+          </select>
+        </Field>
+
+        <Field label="Capacidad" htmlFor="ev-capacity" error={errors.capacity?.message}>
+          <Input
+            id="ev-capacity"
+            type="number"
+            min={1}
+            placeholder="Sin límite"
+            {...register('capacity')}
+          />
+        </Field>
+      </div>
+
+      <Controller
+        name="coverImageUrl"
+        control={control}
+        render={({ field }) => (
+          <ImageUploader
+            kind="event"
+            value={field.value || undefined}
+            onChange={(url) => {
+              setValue('coverImageUrl', url ?? '', { shouldDirty: true });
+              field.onChange(url ?? '');
+            }}
+            label="Portada del evento"
+          />
+        )}
+      />
+
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:gap-4">
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-6 font-semibold text-white shadow-lg shadow-primary/30 sm:w-auto"
+        >
+          {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+          {isPending ? 'Guardando…' : submitLabel ?? (eventId ? 'Guardar cambios' : 'Crear evento')}
+        </Button>
+      </div>
+
+      {eventId ? <TiersSection eventId={eventId} /> : null}
+    </form>
+  );
+}
