@@ -190,51 +190,75 @@ export default function ScanCheckinPage() {
     );
   }
 
+  const isCameraLive = phase.kind === 'scanning' || phase.kind === 'requesting-geo' || phase.kind === 'submitting';
+
   return (
-    <div className="relative mx-auto flex min-h-[calc(100dvh-160px)] w-full max-w-2xl flex-col px-5 py-6 sm:px-8 sm:py-10">
+    <div className="relative mx-auto flex min-h-[calc(100dvh-120px)] w-full max-w-lg flex-col px-5 pb-24 pt-6 sm:px-8 sm:pt-10">
       <Link
         href={paths.recompensas}
-        className="np-rise inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground active:scale-95 transform-gpu"
+        className="np-rise inline-flex w-fit items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground active:scale-95 transform-gpu"
       >
         <ArrowLeft className="size-4" />
         Volver
       </Link>
 
-      <section className="mt-6">
-        <p className="np-rise text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary" style={{ animationDelay: '60ms' }}>
+      <section className="mt-5">
+        <p className="np-rise text-[10px] font-semibold uppercase tracking-[0.22em] text-primary" style={{ animationDelay: '60ms' }}>
           Check-in
         </p>
-        <h1 className="np-rise mt-3 font-display text-3xl font-bold leading-[1.05] tracking-[-0.025em] sm:text-4xl" style={{ animationDelay: '120ms' }}>
+        <h1 className="np-rise mt-2 font-display text-[26px] font-bold leading-[1.1] tracking-[-0.02em] sm:text-3xl" style={{ animationDelay: '120ms' }}>
           Escanea el QR del bar
         </h1>
-        <p className="np-rise mt-2 max-w-md text-sm text-muted-foreground" style={{ animationDelay: '180ms' }}>
-          Suma puntos NightPass por estar aquí. Necesitamos tu ubicación para
-          validar que sí estás en el local.
+        <p className="np-rise mt-2 text-[13px] leading-snug text-muted-foreground" style={{ animationDelay: '180ms' }}>
+          Suma puntos por estar aquí. Pedimos tu ubicación solo para validar
+          que estás en el local.
         </p>
       </section>
 
-      {/* Cámara */}
-      <section className="np-rise mt-6 overflow-hidden rounded-[22px] border border-white/10 bg-black/60" style={{ animationDelay: '240ms' }}>
+      {/* Visor cámara */}
+      <section className="np-rise relative mt-6 overflow-hidden rounded-[22px] border border-white/10 bg-black" style={{ animationDelay: '240ms' }}>
         <div className="relative aspect-square">
           <video
             ref={videoRef}
-            className="h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover"
             playsInline
             muted
           />
 
+          {/* Mask con cutout central — solo visible cuando hay feed */}
+          {isCameraLive ? (
+            <>
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background:
+                    'radial-gradient(circle at center, transparent 38%, rgba(0,0,0,0.78) 62%)',
+                }}
+              />
+              <CornerBrackets />
+              <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
+                <span className="rounded-full bg-black/55 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">
+                  Apunta al QR
+                </span>
+              </div>
+            </>
+          ) : null}
+
           {phase.kind === 'idle' ? (
-            <div className="np-fade-in absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/60 p-6 text-center">
-              <Camera className="size-10 text-primary" />
-              <p className="max-w-xs text-sm text-muted-foreground">
-                Activa la cámara para empezar a escanear el QR del bar.
+            <div className="np-fade-in absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black p-6 text-center">
+              <div className="grid size-14 place-items-center rounded-full border border-primary/30 bg-primary/10">
+                <Camera className="size-6 text-primary" />
+              </div>
+              <p className="max-w-[260px] text-[13px] leading-snug text-white/70">
+                Activa la cámara para escanear el QR pegado en la entrada del bar.
               </p>
               {cameraError ? (
                 <p className="text-xs text-amber-400">{cameraError}</p>
               ) : null}
               <button
                 onClick={start}
-                className="np-glow-pulse rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95 hover:brightness-110"
+                className="np-glow-pulse mt-1 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95 hover:brightness-110"
               >
                 Iniciar cámara
               </button>
@@ -242,7 +266,7 @@ export default function ScanCheckinPage() {
           ) : null}
 
           {phase.kind === 'requesting-camera' ? (
-            <div className="np-fade-in absolute inset-0 grid place-items-center bg-black/70 text-sm text-white">
+            <div className="np-fade-in absolute inset-0 grid place-items-center bg-black/85 text-sm text-white">
               <span className="inline-flex items-center gap-2">
                 <Loader2 className="size-4 animate-spin" /> Abriendo cámara…
               </span>
@@ -252,27 +276,25 @@ export default function ScanCheckinPage() {
           {phase.kind === 'requesting-geo' ? (
             <div className="np-fade-in absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80 px-6 text-center text-sm text-white">
               <MapPin className="size-8 animate-pulse text-primary" />
-              <p>Confirma tu ubicación para validar el check-in…</p>
+              <p>Confirmando tu ubicación…</p>
             </div>
           ) : null}
 
           {phase.kind === 'submitting' ? (
             <div className="np-fade-in absolute inset-0 grid place-items-center bg-black/85 text-sm text-white">
               <span className="inline-flex items-center gap-2">
-                <Loader2 className="size-4 animate-spin" /> Registrando tu
-                check-in…
+                <Loader2 className="size-4 animate-spin" /> Registrando check-in…
               </span>
             </div>
           ) : null}
 
           {phase.kind === 'geo-denied' ? (
-            <div className="np-fade-in absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/85 px-6 text-center text-sm text-white">
+            <div className="np-fade-in absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/90 px-6 text-center text-sm text-white">
               <AlertTriangle className="size-8 text-amber-300" />
               <p className="font-semibold">Necesitamos tu ubicación</p>
-              <p className="max-w-xs text-xs text-white/70">
-                Sin permiso de ubicación no podemos validar que estás en el
-                bar. Actívalo en los ajustes del navegador y vuelve a
-                intentar.
+              <p className="max-w-[240px] text-xs leading-snug text-white/65">
+                Sin permiso no podemos validar que estás en el bar. Activalo en
+                ajustes del navegador.
               </p>
               <button
                 onClick={() => setPhase({ kind: 'scanning' })}
@@ -283,22 +305,34 @@ export default function ScanCheckinPage() {
               </button>
             </div>
           ) : null}
-
-          <div
-            aria-hidden
-            className={`pointer-events-none absolute inset-12 rounded-2xl border-2 ${
-              phase.kind === 'scanning'
-                ? 'np-scan-ring border-primary/60'
-                : 'border-primary/60 shadow-[0_0_40px_rgba(168,85,247,0.4)]'
-            }`}
-          />
         </div>
       </section>
 
-      <p className="np-fade-in mt-4 text-center text-[11px] text-white/45" style={{ animationDelay: '320ms' }}>
-        Solo el QR oficial pegado en la entrada del bar funciona. Los QRs de
-        pases son distintos.
+      <p className="np-fade-in mx-auto mt-4 max-w-[300px] text-center text-[11px] leading-snug text-white/45" style={{ animationDelay: '320ms' }}>
+        Solo el QR oficial pegado en la entrada funciona. Los QRs de pases son distintos.
       </p>
+    </div>
+  );
+}
+
+/** Brackets de esquinas estilo scanner. Animan sutilmente para feedback visual. */
+function CornerBrackets() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-[18%]">
+      {(['tl', 'tr', 'bl', 'br'] as const).map((corner) => (
+        <span
+          key={corner}
+          className={`absolute size-10 border-primary ${
+            corner === 'tl' ? 'left-0 top-0 border-l-[3px] border-t-[3px] rounded-tl-2xl' : ''
+          } ${corner === 'tr' ? 'right-0 top-0 border-r-[3px] border-t-[3px] rounded-tr-2xl' : ''} ${
+            corner === 'bl' ? 'bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-2xl' : ''
+          } ${corner === 'br' ? 'bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-2xl' : ''}`}
+          style={{
+            boxShadow: '0 0 16px rgba(168,85,247,0.45)',
+          }}
+        />
+      ))}
+      <span className="np-scan-line pointer-events-none absolute inset-x-2 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
     </div>
   );
 }

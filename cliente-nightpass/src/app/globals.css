@@ -531,6 +531,28 @@
   will-change: border-color, box-shadow;
 }
 
+@keyframes np-scan-line {
+  0% {
+    transform: translateY(-90%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(90%);
+    opacity: 0;
+  }
+}
+
+.np-scan-line {
+  animation: np-scan-line 2.4s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
 @keyframes np-fade-in {
   from {
     opacity: 0;
