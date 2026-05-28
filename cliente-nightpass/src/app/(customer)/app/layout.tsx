@@ -1,4 +1,4 @@
-import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
+import { serverFetch } from '@/core/lib/api/server-client';
 import type { User } from '@/core/types/api';
 import { OnboardingGate } from '@/features/geolocation';
 
@@ -7,17 +7,15 @@ export default async function CustomerAppLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Layout NUNCA debe tirar — error.tsx hermano no atrapa errores de layout,
+  // se cae a global-error.tsx → fallback Pages Router 500. Degradamos
+  // cualquier fallo (401/403/network/5xx/parse) a user=null y dejamos que
+  // las paginas hijas decidan que hacer (redirect a login si necesitan auth).
   let user: User | null = null;
   try {
     user = await serverFetch<User>('/auth/me');
-  } catch (error) {
-    // 401/403 → invitado. Red caída / 5xx → degradamos a invitado en vez de 500.
-    if (
-      !(error instanceof ServerApiError) ||
-      (error.status !== 401 && error.status !== 403 && !error.isNetwork && error.status < 500)
-    ) {
-      throw error;
-    }
+  } catch {
+    user = null;
   }
 
   return (

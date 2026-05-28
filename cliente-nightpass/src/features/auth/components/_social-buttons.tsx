@@ -27,22 +27,37 @@ export function SocialButtons({ variant = 'full' }: SocialButtonsProps) {
     );
   }
 
+  // Google fuerza el botón personalizado "Continuar como <X>" en fondo blanco
+  // cuando el usuario ya está logged in en Google — su design system no permite
+  // dark theme en esa variante. Render: GSI invisible centrado (atrapa el click
+  // real, requerido para confiar el gesto del usuario) + custom dark visible
+  // debajo full-width. Pointer-events-none en el visual deja pasar el click al GSI.
   return (
     <div
-      className={`flex w-full justify-center transition ${isPending ? 'pointer-events-none opacity-60' : ''}`}
+      className={`relative flex h-12 w-full items-center justify-center ${isPending ? 'pointer-events-none opacity-60' : ''}`}
     >
-      <GoogleLogin
-        onSuccess={(resp) => {
-          if (resp.credential) mutate(resp.credential);
-        }}
-        onError={() => {
-          toast.error('No pudimos iniciar con Google. Intenta de nuevo.');
-        }}
-        theme="filled_black"
-        shape="pill"
-        text={variant === 'full' ? 'continue_with' : 'signin_with'}
-        size="large"
-      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 flex items-center justify-center gap-2.5 rounded-full border border-white/10 bg-white/[0.04] px-4 text-[13px] font-semibold text-white/90"
+      >
+        <GoogleIcon />
+        {variant === 'full' ? 'Continuar con Google' : 'Google'}
+      </div>
+      <div className="relative z-10 opacity-0">
+        <GoogleLogin
+          onSuccess={(resp) => {
+            if (resp.credential) mutate(resp.credential);
+          }}
+          onError={() => {
+            toast.error('No pudimos iniciar con Google. Intenta de nuevo.');
+          }}
+          theme="filled_black"
+          shape="pill"
+          text={variant === 'full' ? 'continue_with' : 'signin_with'}
+          size="large"
+          width="320"
+        />
+      </div>
     </div>
   );
 }

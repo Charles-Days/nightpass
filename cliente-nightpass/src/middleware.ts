@@ -1,5 +1,15 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { ACCESS_COOKIE, REFRESH_COOKIE } from '@/core/config/cookies';
+import {
+  ACCESS_COOKIE,
+  REFRESH_COOKIE,
+  accessCookieOptions,
+  refreshCookieOptions,
+} from '@/core/config/cookies';
+
+interface RefreshTokens {
+  accessToken: string;
+  refreshToken: string;
+}
 
 // Rutas del panel admin (solo ADMIN/VENUE_OWNER/VENUE_STAFF).
 const ADMIN_PREFIXES = ['/dashboard', '/admin', '/mi-local', '/cambiar-password', '/scanner'];
@@ -87,19 +97,28 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Intentar refresh silencioso si hay refresh token.
+  // Intentar refresh silencioso llamando directo al backend. NO usar
+  // `fetch(new URL('/api/auth/refresh', req.url))` porque req.url en prod es
+  // https://<dominio> → fetch sale al proxy publico y vuelve al container
+  // interno HTTP (puerto 3000) generando ERR_SSL_PACKET_LENGTH_TOO_LONG.
+  // Inline la logica del route handler /api/auth/refresh.
   if (hasRefresh) {
-    const refreshRes = await fetch(new URL('/api/auth/refresh', req.url), {
-      method: 'POST',
-      headers: { Cookie: req.headers.get('cookie') ?? '' },
-    });
-
-    if (refreshRes.ok) {
-      const res = NextResponse.next();
-      refreshRes.headers.forEach((value, key) => {
-        if (key.toLowerCase() === 'set-cookie') res.headers.append('set-cookie', value);
+    const apiUrl = process.env.API_URL ?? 'http://localhost:7101';
+    try {
+      const upstream = await fetch(`${apiUrl}/api/v1/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
       });
-      return res;
+      if (upstream.ok) {
+        const tokens = (await upstream.json()) as RefreshTokens;
+        const res = NextResponse.next();
+        res.cookies.set(ACCESS_COOKIE, tokens.accessToken, accessCookieOptions);
+        res.cookies.set(REFRESH_COOKIE, tokens.refreshToken, refreshCookieOptions);
+        return res;
+      }
+    } catch {
+      // Backend caido o red — caemos al redirect de login mas abajo.
     }
   }
 

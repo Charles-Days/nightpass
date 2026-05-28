@@ -19,8 +19,16 @@ const serwist = new Serwist({
   navigationPreload: true,
   runtimeCaching: [
     {
-      matcher: ({ url }) =>
-        url.pathname.startsWith('/api/') || url.pathname.startsWith('/backend/'),
+      // Rutas vivas: API, proxy backend y todo /app/* (auth-gated, cacheable
+      // ofreceria HTML stale o 5xx). Sin esto Serwist NetworkFirst guarda
+      // respuestas 500 y las replayea hasta la siguiente revalidacion.
+      matcher: ({ url, request }) =>
+        url.pathname.startsWith('/api/') ||
+        url.pathname.startsWith('/backend/') ||
+        url.pathname.startsWith('/app/') ||
+        url.pathname === '/app' ||
+        request.headers.get('rsc') === '1' ||
+        request.headers.get('next-router-prefetch') === '1',
       handler: new NetworkOnly(),
     },
     ...defaultCache,
