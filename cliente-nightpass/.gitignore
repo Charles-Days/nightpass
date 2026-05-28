@@ -9,6 +9,10 @@ node_modules/
 out/
 build/
 
+# serwist / pwa (generated on build)
+public/sw.js
+public/swe-worker-*.js
+
 # env
 .env
 .env*.local

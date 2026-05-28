@@ -24,12 +24,11 @@ export default async function RecompensasPage() {
   try {
     user = await serverFetch<User>('/auth/me');
   } catch (error) {
-    // 401/403 → login. Red caída o 5xx → tampoco podemos pintar la página
-    // (necesita user.id para el leaderboard); mandamos al login en lugar de 500.
-    if (error instanceof ServerApiError) {
-      if (error.status === 401 || error.status === 403 || error.isNetwork || error.status >= 500) {
-        redirect(paths.iniciarSesion);
-      }
+    // 401/403 = cookie inválida → login. 5xx/network = backend caído → dejar
+    // que el error.tsx renderee fallback; redirigir a login en ese caso
+    // confunde al usuario (no es un problema de auth).
+    if (error instanceof ServerApiError && (error.status === 401 || error.status === 403)) {
+      redirect(paths.iniciarSesion);
     }
     throw error;
   }

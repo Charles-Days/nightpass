@@ -9,8 +9,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   try {
     user = await serverFetch<User>('/auth/me');
   } catch (error) {
-    if (error instanceof ServerApiError && (error.status === 401 || error.status === 403)) {
-      redirect(paths.login);
+    // 401/403 → login. Red caída o 5xx del backend → al login también, no 500.
+    if (error instanceof ServerApiError) {
+      if (error.status === 401 || error.status === 403 || error.isNetwork || error.status >= 500) {
+        redirect(paths.login);
+      }
     }
     throw error;
   }

@@ -2,22 +2,56 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Loader2, Pause, Play } from 'lucide-react';
+import { Loader2, Pause, Play, X } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/core/components/ui/card';
 import { paths } from '@/core/config/paths';
 import type { Venue } from '@/core/types/api';
 import { useSuspendVenue } from '../hooks/use-suspend-venue';
 import { useReactivateVenue } from '../hooks/use-reactivate-venue';
+import { useRemoveOwner } from '../hooks/use-assign-owner';
 import { VenueEditForm } from './venue-edit-form';
 import { CheckinQrPanel } from './checkin-qr-panel';
 import { VenueStatusBadge } from './status-badge';
+import { AssignOwnerDialog } from './assign-owner-dialog';
 import { RoleBadge } from '@/features/users';
 import { StaffTable, InviteStaffForm } from '@/features/staff';
 import { EventsPanel } from '@/features/events';
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleString('es-PE', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function OwnerRow({
+  venueId,
+  user,
+}: {
+  venueId: string;
+  user: { id: string; email: string; name: string | null; role: 'ADMIN' | 'VENUE_OWNER' | 'VENUE_STAFF' | 'CUSTOMER' };
+}) {
+  const remove = useRemoveOwner(venueId);
+  return (
+    <li className="flex items-center justify-between gap-3 rounded-md border bg-background/40 px-3 py-2">
+      <Link href={`${paths.adminUsers}/${user.id}`} className="block min-w-0 flex-1 truncate">
+        <p className="font-medium">{user.name ?? user.email}</p>
+        <p className="text-xs text-muted-foreground">{user.email}</p>
+      </Link>
+      <RoleBadge role={user.role} />
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        className="size-7 p-0 text-muted-foreground hover:text-destructive"
+        title="Remover como dueño"
+        onClick={() => {
+          if (confirm(`¿Quitar a ${user.email} como dueño?`)) remove.mutate(user.id);
+        }}
+        disabled={remove.isPending}
+      >
+        {remove.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <X className="size-3.5" />}
+      </Button>
+    </li>
+  );
 }
 
 export function VenueDetail({ venue, hideHeader = false }: { venue: Venue; hideHeader?: boolean }) {
@@ -49,28 +83,20 @@ export function VenueDetail({ venue, hideHeader = false }: { venue: Venue; hideH
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base">Dueños</CardTitle>
+          <AssignOwnerDialog venueId={venue.id} venueName={venue.name} />
         </CardHeader>
         <CardContent>
           {!venue.owners || venue.owners.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Sin dueños asignados.</p>
+            <p className="text-sm text-muted-foreground">
+              Sin dueños asignados. Usa el botón <strong>Asignar dueño</strong> para
+              vincular este local a un usuario (existente o nuevo).
+            </p>
           ) : (
             <ul className="space-y-2 text-sm">
               {venue.owners.map(({ user }) => (
-                <li
-                  key={user.id}
-                  className="flex items-center justify-between gap-3 rounded-md border bg-background/40 px-3 py-2"
-                >
-                  <Link
-                    href={`${paths.adminUsers}/${user.id}`}
-                    className="block flex-1 truncate"
-                  >
-                    <p className="font-medium">{user.name ?? user.email}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                  </Link>
-                  <RoleBadge role={user.role} />
-                </li>
+                <OwnerRow key={user.id} venueId={venue.id} user={user} />
               ))}
             </ul>
           )}

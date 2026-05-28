@@ -180,6 +180,21 @@ export class MailerService {
     await this.send(to, tpl);
   }
 
+  /** Aviso ligero — usuario existente con cuenta panel al que se le suma
+   *  un nuevo local como dueño. No reemplaza credenciales. */
+  async sendVenueOwnerAssigned(
+    to: string,
+    name: string,
+    venueName: string,
+  ): Promise<void> {
+    const loginUrl = `${this.adminWebUrl.replace(/\/$/, '')}/login`;
+    await this.send(to, {
+      subject: `Ahora gestionas ${venueName} en NightPass`,
+      html: `<p>Hola ${name},</p><p>Te asignamos como dueño de <strong>${venueName}</strong> en NightPass. Entra con tu cuenta de siempre para empezar a gestionarlo.</p><p><a href="${loginUrl}">${loginUrl}</a></p>`,
+      text: `Hola ${name},\n\nTe asignamos como dueño de "${venueName}" en NightPass. Entra al panel: ${loginUrl}\n\n— Equipo NightPass`,
+    });
+  }
+
   private async send(
     to: string,
     tpl: { subject: string; html: string; text: string },

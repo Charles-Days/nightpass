@@ -22,8 +22,8 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-white/8 bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
-      style={{ WebkitBackdropFilter: 'blur(12px)' }}
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-white/8 bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm md:hidden"
+      style={{ WebkitBackdropFilter: 'blur(8px)' }}
     >
       <ul className="relative mx-auto grid h-16 max-w-md grid-cols-5">
         {/* Sliding active pill */}

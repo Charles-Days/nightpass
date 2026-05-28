@@ -28,23 +28,21 @@ export function SocialButtons({ variant = 'full' }: SocialButtonsProps) {
   }
 
   return (
-    <div className="relative">
-      <div
-        className={`flex w-full justify-center rounded-[14px] border border-white/10 bg-white/[0.04] p-1 transition ${isPending ? 'pointer-events-none opacity-60' : ''}`}
-      >
-        <GoogleLogin
-          onSuccess={(resp) => {
-            if (resp.credential) mutate(resp.credential);
-          }}
-          onError={() => {
-            toast.error('No pudimos iniciar con Google. Intenta de nuevo.');
-          }}
-          theme="filled_black"
-          shape="pill"
-          text={variant === 'full' ? 'continue_with' : 'signin_with'}
-          size="large"
-        />
-      </div>
+    <div
+      className={`flex w-full justify-center transition ${isPending ? 'pointer-events-none opacity-60' : ''}`}
+    >
+      <GoogleLogin
+        onSuccess={(resp) => {
+          if (resp.credential) mutate(resp.credential);
+        }}
+        onError={() => {
+          toast.error('No pudimos iniciar con Google. Intenta de nuevo.');
+        }}
+        theme="filled_black"
+        shape="pill"
+        text={variant === 'full' ? 'continue_with' : 'signin_with'}
+        size="large"
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -326,7 +327,7 @@ export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Gua
            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
              {images.map((url, idx) => (
                <div key={idx} className="group relative aspect-square overflow-hidden rounded-lg border bg-muted">
-                 <img src={url} alt={`Foto ${idx}`} className="h-full w-full object-cover" />
+                 <Image src={url} alt={`Foto ${idx}`} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" unoptimized className="object-cover" />
                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                    <button
                      type="button"
@@ -379,7 +380,7 @@ export function VenueForm({ initialData, onSubmit, isPending, submitLabel = 'Gua
             <div className="flex flex-col gap-4">
                {coverImageUrl ? (
                  <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-muted">
-                   <img src={coverImageUrl} alt="Portada" className="h-full w-full object-cover" />
+                   <Image src={coverImageUrl} alt="Portada" fill sizes="(max-width: 768px) 100vw, 50vw" unoptimized className="object-cover" />
                    <button
                      type="button"
                      onClick={() => setValue('coverImageUrl', '', { shouldDirty: true })}

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { MapPin, Music2 } from 'lucide-react';
 import { paths } from '@/core/config/paths';
 import type { CatalogVenueSummary } from '@/core/types/api';
@@ -11,7 +12,7 @@ function formatPrice(cents: number | null, currency: string | null) {
   return `${sym}${amount}${currency?.toLowerCase() === 'mxn' ? ' MXN' : ''}`;
 }
 
-export function VenueCard({ venue }: { venue: CatalogVenueSummary }) {
+export function VenueCard({ venue, priority = false }: { venue: CatalogVenueSummary; priority?: boolean }) {
   const price = formatPrice(venue.priceFromCents, venue.currency);
   return (
     <Link
@@ -20,11 +21,13 @@ export function VenueCard({ venue }: { venue: CatalogVenueSummary }) {
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-600/10">
         {venue.coverImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={venue.coverImageUrl}
             alt={venue.name}
-            className="absolute inset-0 size-full object-cover transform-gpu transition-transform duration-[600ms] ease-out group-hover:scale-[1.07]"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            priority={priority}
+            className="object-cover transform-gpu transition-transform duration-[600ms] ease-out group-hover:scale-[1.07]"
           />
         ) : (
           <div className="absolute inset-0 grid place-items-center">
@@ -46,7 +49,7 @@ export function VenueCard({ venue }: { venue: CatalogVenueSummary }) {
             </div>
           </div>
           {price && (
-            <div className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
+            <div className="rounded-full border border-white/15 bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white">
               desde {price}
             </div>
           )}

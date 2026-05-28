@@ -22,7 +22,9 @@ import {
 import { ListVenuesQuery } from './dto/list-venues.query';
 import { CreateVenueDto } from './dto/create-venue.dto';
 import { UpdateVenueDto } from './dto/update-venue.dto';
+import { AssignOwnerDto } from './dto/assign-owner.dto';
 import { VenuesService } from './venues.service';
+import { Delete } from '@nestjs/common';
 
 @Controller('venues')
 export class VenuesController {
@@ -82,5 +84,27 @@ export class VenuesController {
   @HttpCode(HttpStatus.OK)
   reactivate(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.reactivate(id);
+  }
+
+  @Post(':id/owners')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  assignOwner(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AssignOwnerDto,
+  ) {
+    return this.service.assignOwner(id, dto);
+  }
+
+  @Delete(':id/owners/:userId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  removeOwner(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ) {
+    return this.service.removeOwner(id, userId);
   }
 }

@@ -1,5 +1,6 @@
 'use client';
 import * as React from 'react';
+import Image from 'next/image';
 import { Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadFile } from '@/core/lib/upload';
@@ -37,7 +38,7 @@ export function ImageUploader({ value, onChange, kind, label = 'Imagen' }: Image
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       {value ? (
         <div className="relative inline-block">
-          <img src={value} alt="preview" className="h-32 w-48 rounded-lg object-cover border border-white/10" />
+          <Image src={value} alt="preview" width={192} height={128} unoptimized className="h-32 w-48 rounded-lg object-cover border border-white/10" />
           <button
             type="button"
             onClick={() => onChange(undefined)}

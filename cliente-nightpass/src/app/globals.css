@@ -380,7 +380,6 @@
   transition:
     opacity 800ms cubic-bezier(0.2, 0.7, 0.3, 1),
     transform 800ms cubic-bezier(0.2, 0.7, 0.3, 1);
-  will-change: opacity, transform;
 }
 
 .np-reveal.is-visible {
@@ -578,7 +577,6 @@
 
 .np-confetti-burst {
   animation: np-confetti-burst 1100ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
-  will-change: transform, opacity;
 }
 
 /* Soft shake for error/duplicate states (300ms one-shot) */
@@ -603,7 +601,6 @@
 
 .np-shake {
   animation: np-shake 360ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
-  will-change: transform;
 }
 
 /* Subtle shimmer sweep across enabled CTA buttons */
@@ -656,7 +653,6 @@
 
 .np-success-pop {
   animation: np-success-pop 520ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  will-change: transform, opacity;
 }
 
 @media (prefers-reduced-motion: reduce) {

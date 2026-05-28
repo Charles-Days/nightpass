@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
       className={`${inter.variable} ${spaceGrotesk.variable} ${instrumentSerif.variable}`}
     >
-      <body className="min-h-screen antialiased">
+      <body className="min-h-dvh antialiased">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

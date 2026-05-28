@@ -103,6 +103,18 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // RSC prefetch desde <Link>: si redirigimos a /login el cliente cachea esa
+  // respuesta y al hacer click muestra un flash de la pantalla de login antes
+  // de la navegacion real. Devolvemos 204 sin contenido — Next.js descarta
+  // el prefetch y la navegacion real volvera a pasar por el middleware.
+  const isPrefetch =
+    req.headers.get('next-router-prefetch') === '1' ||
+    req.headers.get('purpose') === 'prefetch' ||
+    req.headers.get('x-purpose') === 'prefetch';
+  if (isPrefetch) {
+    return new NextResponse(null, { status: 204 });
+  }
+
   // Sin auth para una ruta protegida: redirigir al login que corresponde.
   const loginPath = isAdminRoute ? '/login' : '/app/iniciar-sesion';
   const loginUrl = new URL(loginPath, req.url);

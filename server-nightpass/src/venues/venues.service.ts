@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -7,13 +9,23 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Role, Prisma, VenueStatus, VenueStaffStatus, Photo, EventStatus } from '@prisma/client';
 import { randomBytes } from 'crypto';
+import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { MailerService } from '../mailer/mailer.service';
 import { ListVenuesQuery } from './dto/list-venues.query';
 import { CreateVenueDto } from './dto/create-venue.dto';
 import { UpdateVenueDto } from './dto/update-venue.dto';
+import { AssignOwnerDto } from './dto/assign-owner.dto';
+import { generateTemporaryPassword } from '../auth/utils/temporary-password';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
+
+const ARGON2_OPTS: argon2.Options = {
+  type: argon2.argon2id,
+  memoryCost: 19456,
+  timeCost: 2,
+  parallelism: 1,
+};
 
 interface CreateWithOwnerInput {
   name: string;
@@ -393,6 +405,149 @@ export class VenuesService {
       `No se pudo generar un slug único para el local "${input.name}"`,
       { cause: lastError instanceof Error ? lastError : undefined },
     );
+  }
+
+  /**
+   * Asigna un usuario como dueño de un local existente. ADMIN-only.
+   *
+   * Cuatro caminos según el estado del email:
+   *  1. Email NO existe → crea User con role VENUE_OWNER + temp password +
+   *     mustChangePassword=true. Email con credenciales.
+   *  2. Email existe como CUSTOMER → promueve a VENUE_OWNER, genera temp
+   *     password nueva (reemplaza la anterior). Email con credenciales
+   *     marcado como `isExistingUser=true`.
+   *  3. Email existe como VENUE_OWNER / VENUE_STAFF → suma ownership sin
+   *     tocar password ni rol. Email ligero "te asignaron X, usa tu cuenta".
+   *  4. Email existe como ADMIN → 409.
+   *
+   * Idempotente parcial: si el usuario YA es dueño del venue → 409.
+   */
+  async assignOwner(venueId: string, dto: AssignOwnerDto) {
+    const venue = await this.prisma.venue.findUnique({
+      where: { id: venueId },
+      select: { id: true, name: true, status: true },
+    });
+    if (!venue) throw new NotFoundException('Local no encontrado');
+    if (venue.status === VenueStatus.SUSPENDED) {
+      throw new BadRequestException(
+        'No puedes asignar un dueño a un local suspendido. Reactívalo primero.',
+      );
+    }
+
+    const email = dto.email.toLowerCase().trim();
+    const existing = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, name: true, role: true },
+    });
+
+    if (existing?.role === Role.ADMIN) {
+      throw new ConflictException(
+        'Este usuario es ADMIN — no puede ser asignado como dueño de un local.',
+      );
+    }
+
+    if (existing) {
+      const alreadyOwner = await this.prisma.venueOwner.findUnique({
+        where: { userId_venueId: { userId: existing.id, venueId } },
+        select: { userId: true },
+      });
+      if (alreadyOwner) {
+        throw new ConflictException('Este usuario ya es dueño de este local.');
+      }
+    }
+
+    // CASE 1 + 2: necesitamos temp password (user nuevo o CUSTOMER promovido).
+    const needsTempPassword =
+      !existing || existing.role === Role.CUSTOMER;
+
+    if (needsTempPassword) {
+      const tempPassword = generateTemporaryPassword(12);
+      const passwordHash = await argon2.hash(tempPassword, ARGON2_OPTS);
+      const isExistingUser = Boolean(existing);
+
+      const result = await this.prisma.$transaction(async (tx) => {
+        const user = existing
+          ? await tx.user.update({
+              where: { id: existing.id },
+              data: {
+                passwordHash,
+                role: Role.VENUE_OWNER,
+                mustChangePassword: true,
+              },
+              select: { id: true, email: true, name: true, role: true },
+            })
+          : await tx.user.create({
+              data: {
+                email,
+                passwordHash,
+                name: dto.name?.trim() || null,
+                role: Role.VENUE_OWNER,
+                mustChangePassword: true,
+              },
+              select: { id: true, email: true, name: true, role: true },
+            });
+
+        await tx.venueOwner.create({
+          data: { userId: user.id, venueId },
+        });
+
+        return user;
+      });
+
+      void this.mailer
+        .sendApplicationApproved(
+          result.email,
+          result.name ?? 'Hola',
+          venue.name,
+          tempPassword,
+          isExistingUser,
+        )
+        .catch((err) => this.logger.warn(`Owner-assign email failed: ${err.message}`));
+
+      return {
+        userId: result.id,
+        email: result.email,
+        name: result.name,
+        isNewUser: !existing,
+        wasPromoted: isExistingUser,
+        // Solo devolvemos la temp pw para que el admin pueda verla una sola vez
+        // por si el email falla (no se persiste en plaintext en logs).
+        temporaryPassword: tempPassword,
+      };
+    }
+
+    // CASE 3: usuario existente con rol OWNER/STAFF — solo añadir ownership.
+    await this.prisma.venueOwner.create({
+      data: { userId: existing!.id, venueId },
+    });
+
+    void this.mailer
+      .sendVenueOwnerAssigned(existing!.email, existing!.name ?? 'Hola', venue.name)
+      .catch((err) => this.logger.warn(`Owner-assign (existing) email failed: ${err.message}`));
+
+    return {
+      userId: existing!.id,
+      email: existing!.email,
+      name: existing!.name,
+      isNewUser: false,
+      wasPromoted: false,
+      temporaryPassword: null,
+    };
+  }
+
+  /** Quita la relación VenueOwner. No degrada el rol del user (puede ser dueño
+   *  de otros locales o tener otro rol asignado). ADMIN-only. */
+  async removeOwner(venueId: string, userId: string) {
+    const exists = await this.prisma.venueOwner.findUnique({
+      where: { userId_venueId: { userId, venueId } },
+      select: { userId: true },
+    });
+    if (!exists) throw new NotFoundException('Esta relación no existe');
+
+    await this.prisma.venueOwner.delete({
+      where: { userId_venueId: { userId, venueId } },
+    });
+    return { ok: true };
   }
 
   private toSlug(name: string): string {

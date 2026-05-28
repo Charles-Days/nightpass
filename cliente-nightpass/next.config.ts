@@ -13,22 +13,27 @@ const withSerwist = withSerwistInit({
   disable: !isProd,
 });
 
-const csp = [
+// CSP host wildcards only allow one level (RFC 7230). `pub-*.r2.dev` is
+// invalid: browsers drop the entire directive value. `*.r2.dev` already
+// covers `pub-xxx.r2.dev`. upgrade-insecure-requests forces http→https on the
+// whole page, breaking localhost dev (no TLS) — only emit in prod.
+const cspDirectives = [
   "default-src 'self'",
   // 'unsafe-inline' required for Next.js inline runtime scripts; mitigated by
   // frame-ancestors 'none' + X-Frame-Options DENY. Move to nonces in a future pass.
   "script-src 'self' 'unsafe-inline' https://js.stripe.com https://accounts.google.com/gsi/client",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
   "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: blob: https://pub-*.r2.dev https://*.r2.dev https://*.stripe.com https://images.unsplash.com https://*.googleusercontent.com",
+  "img-src 'self' data: blob: https://*.r2.dev https://*.stripe.com https://images.unsplash.com https://*.googleusercontent.com",
   "connect-src 'self' https://api.nightpass.mx https://api.stripe.com https://*.r2.dev https://accounts.google.com",
   "frame-src https://js.stripe.com https://hooks.stripe.com https://accounts.google.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
   "object-src 'none'",
-  "upgrade-insecure-requests",
-].join('; ');
+];
+if (isProd) cspDirectives.push('upgrade-insecure-requests');
+const csp = cspDirectives.join('; ');
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -36,9 +41,11 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: '*.r2.dev' },
-      { protocol: 'https', hostname: 'pub-*.r2.dev' },
+      { protocol: 'https', hostname: '**.r2.dev' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
     ],
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60 * 60 * 24 * 30,
   },
   async rewrites() {
     return [

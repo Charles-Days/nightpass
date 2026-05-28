@@ -81,7 +81,7 @@ export default async function VenueDetailPage({ params }: Props) {
               {venue.categories?.map((c, i) => (
                 <span
                   key={c}
-                  className="np-rise rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-white backdrop-blur-md"
+                  className="np-rise rounded-full bg-white/25 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-white"
                   style={{ animationDelay: `${320 + i * 60}ms` }}
                 >
                   {c}

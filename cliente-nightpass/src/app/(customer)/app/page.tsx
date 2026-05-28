@@ -68,11 +68,11 @@ function FeaturedVenue({ venue }: { venue: CatalogVenueSummary }) {
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0712] via-[#0a0712]/40 to-transparent" />
 
           <div className="absolute left-5 top-5 flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300 backdrop-blur-md">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300">
               <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]" />
               Activo
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/40 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85 backdrop-blur-md">
+            <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/65 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85">
               <Sparkles className="size-3 text-primary" /> Pick de hoy
             </span>
           </div>

@@ -16,7 +16,15 @@ export function TopBar({ user }: Props) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10);
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        setScrolled(window.scrollY > 10);
+        ticking = false;
+      });
+    };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -28,10 +36,10 @@ export function TopBar({ user }: Props) {
         'sticky top-0 z-20 transition-all duration-300 ease-out',
         'pt-[env(safe-area-inset-top)]',
         scrolled
-          ? 'border-b border-white/10 bg-background/80 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.6)] backdrop-blur-md'
-          : 'border-b border-transparent bg-background/30 backdrop-blur-md',
+          ? 'border-b border-white/10 bg-background/70 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.6)] backdrop-blur-sm'
+          : 'border-b border-transparent bg-background/30',
       )}
-      style={{ WebkitBackdropFilter: 'blur(12px)' }}
+      style={scrolled ? { WebkitBackdropFilter: 'blur(8px)' } : undefined}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-5 py-4 sm:gap-4 sm:px-8">
         <Link
