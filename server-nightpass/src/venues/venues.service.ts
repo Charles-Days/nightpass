@@ -335,6 +335,22 @@ export class VenuesService {
     return updated;
   }
 
+  async setFeatured(id: string, featured: boolean, reason?: string | null) {
+    const venue = await this.prisma.venue.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!venue) throw new NotFoundException('Local no encontrado');
+    return this.prisma.venue.update({
+      where: { id },
+      data: {
+        isFeatured: featured,
+        featuredAt: featured ? new Date() : null,
+        featuredReason: featured ? reason ?? null : null,
+      },
+    });
+  }
+
   private _mapVenueUrls<T extends { coverImageUrl?: string | null; photos?: Photo[] }>(venue: T): T {
     if (venue.coverImageUrl && !venue.coverImageUrl.startsWith('http')) {
       venue.coverImageUrl = `${this.uploadsUrl}/${venue.coverImageUrl}`.replace(/([^:]\/)\/+/g, '$1');

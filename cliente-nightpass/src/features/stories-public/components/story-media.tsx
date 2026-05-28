@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Image from 'next/image';
 import type { Story } from '@/core/types/api';
 
 interface Props {
@@ -48,11 +49,13 @@ export function StoryMedia({ story, paused, onReady, onEnded, onVideoTimeUpdate 
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src={story.mediaUrl}
       alt={story.caption ?? ''}
-      className="size-full object-contain"
+      fill
+      sizes="100vw"
+      priority
+      className="object-contain"
       onLoad={onReady}
       draggable={false}
     />

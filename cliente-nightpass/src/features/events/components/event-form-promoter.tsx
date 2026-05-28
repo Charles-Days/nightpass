@@ -4,14 +4,16 @@ import * as React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'sonner';
 import { Loader2, MapPin, Search } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { Input } from '@/core/components/ui/input';
 import { Field } from '@/core/components/ui/field';
 import { ImageUploader } from '@/core/components/image-uploader';
 import { clientFetch } from '@/core/lib/api/client-client';
+import { resolveAndParseGoogleMapsUrl } from '@/features/venues/lib/parse-google-maps-url';
+import { DateTimePicker } from '@/core/components/ui/datetime-picker';
 import type { CatalogVenueSummary, Event } from '@/core/types/api';
-import { TiersSection } from './tiers-section';
 
 // ---------------------------------------------------------------------------
 // Schema — promoter-aware: location is either a catálogo venue or external.
@@ -265,7 +267,7 @@ export function EventFormPromoter({
       capacity: values.capacity ?? undefined,
     };
     if (values.locationKind === 'venue') {
-      void onSubmit({ ...common, venueId: values.venueId });
+      void onSubmit({ ...common, promoterId, venueId: values.venueId });
     } else {
       void onSubmit({
         ...common,
@@ -392,6 +394,42 @@ export function EventFormPromoter({
                       {...register('externalVenueAddress')}
                     />
                   </Field>
+                  <Field
+                    label="Link de Google Maps o coordenadas"
+                    htmlFor="ext-gmaps"
+                  >
+                    <Input
+                      id="ext-gmaps"
+                      placeholder='Pega link o "18.92206, -99.23555"'
+                      onChange={async (e) => {
+                        const value = e.target.value.trim();
+                        if (!value || value.length < 5) return;
+                        try {
+                          const parsed = await resolveAndParseGoogleMapsUrl(value);
+                          if (parsed) {
+                            setValue('externalVenueLat', parsed.lat, {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            });
+                            setValue('externalVenueLng', parsed.lng, {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            });
+                            toast.success('Coordenadas extraídas');
+                          } else if (/^https?:\/\//.test(value)) {
+                            toast.error('No pude extraer coords del link');
+                            console.warn('[gmaps] no coords from', value);
+                          }
+                        } catch (err) {
+                          console.error('[gmaps] parse failed', err);
+                          toast.error('Error al procesar el link');
+                        }
+                      }}
+                    />
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      Tip: short links de Maps redondean. Para máxima precisión, click derecho en el pin → copia coordenadas → pégalas aquí.
+                    </p>
+                  </Field>
                   <div className="grid gap-4 sm:grid-cols-3">
                     <Field
                       label="Ciudad"
@@ -459,19 +497,29 @@ export function EventFormPromoter({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Inicio" htmlFor="ev-starts-at" error={errors.startsAt?.message}>
-          <input
-            id="ev-starts-at"
-            type="datetime-local"
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            {...register('startsAt')}
+          <Controller
+            name="startsAt"
+            control={control}
+            render={({ field }) => (
+              <DateTimePicker
+                id="ev-starts-at"
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
           />
         </Field>
         <Field label="Fin" htmlFor="ev-ends-at" error={errors.endsAt?.message}>
-          <input
-            id="ev-ends-at"
-            type="datetime-local"
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            {...register('endsAt')}
+          <Controller
+            name="endsAt"
+            control={control}
+            render={({ field }) => (
+              <DateTimePicker
+                id="ev-ends-at"
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
           />
         </Field>
       </div>
@@ -527,7 +575,6 @@ export function EventFormPromoter({
         </Button>
       </div>
 
-      {eventId ? <TiersSection eventId={eventId} /> : null}
     </form>
   );
 }

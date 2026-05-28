@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import Image from 'next/image';
 import type { Story } from '@/core/types/api';
 
 interface EventStoriesResponse {
@@ -18,8 +19,8 @@ export function EventStoriesSection({ eventId }: { eventId: string }) {
       if (!res.ok) return null;
       return (await res.json()) as EventStoriesResponse;
     },
-    staleTime: 60_000,
-    refetchInterval: 120_000,
+    staleTime: 300_000,
+    refetchInterval: 600_000,
   });
 
   const stories = data?.stories ?? [];
@@ -37,12 +38,13 @@ export function EventStoriesSection({ eventId }: { eventId: string }) {
             className="relative aspect-[9/16] overflow-hidden rounded-[12px] border border-white/10 bg-black"
           >
             {story.mediaType === 'IMAGE' ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={story.mediaUrl}
                 alt="Historia"
-                className="size-full object-cover"
+                fill
+                sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 16vw"
                 loading="lazy"
+                className="object-cover"
               />
             ) : (
               <video

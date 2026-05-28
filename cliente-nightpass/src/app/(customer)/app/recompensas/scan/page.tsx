@@ -3,10 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  BrowserMultiFormatReader,
-  type IScannerControls,
-} from '@zxing/browser';
+import type { IScannerControls } from '@zxing/browser';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -135,6 +132,7 @@ export default function ScanCheckinPage() {
     setCameraError(null);
     setPhase({ kind: 'requesting-camera' });
     try {
+      const { BrowserMultiFormatReader } = await import('@zxing/browser');
       const reader = new BrowserMultiFormatReader();
       const controls = await reader.decodeFromVideoDevice(
         undefined,

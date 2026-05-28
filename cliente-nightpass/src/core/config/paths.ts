@@ -38,6 +38,7 @@ export const paths = {
   restablecerPassword: '/app/restablecer-password',
   buscar: '/app/buscar',
   bar: '/app/bar',
+  promotora: '/app/promotora',
   evento: '/app/evento',
   checkout: '/app/checkout',
   pases: '/app/pases',

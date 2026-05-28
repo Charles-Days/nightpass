@@ -366,12 +366,12 @@
 
 .np-rise {
   opacity: 0;
-  animation: np-rise 800ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  animation: np-rise 420ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
 }
 
 .np-zoom-in {
   opacity: 0;
-  animation: np-zoom-in 1000ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  animation: np-zoom-in 520ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
 }
 
 .np-reveal {
@@ -439,18 +439,26 @@
 }
 
 .np-bokeh-a {
-  animation: np-bokeh-pulse-a 10s ease-in-out infinite;
-  will-change: transform, opacity;
+  animation: np-bokeh-pulse-a 18s ease-in-out infinite;
+  will-change: opacity;
 }
 .np-bokeh-b {
-  animation: np-bokeh-pulse-b 12s ease-in-out infinite;
-  animation-delay: -3s;
-  will-change: transform, opacity;
+  animation: np-bokeh-pulse-b 22s ease-in-out infinite;
+  animation-delay: -6s;
+  will-change: opacity;
 }
 .np-bokeh-c {
-  animation: np-bokeh-pulse-c 9s ease-in-out infinite;
-  animation-delay: -5s;
-  will-change: transform, opacity;
+  animation: np-bokeh-pulse-c 20s ease-in-out infinite;
+  animation-delay: -10s;
+  will-change: opacity;
+}
+
+@media (max-width: 640px) {
+  .np-bokeh-a,
+  .np-bokeh-b,
+  .np-bokeh-c {
+    animation: none !important;
+  }
 }
 
 @keyframes np-dot-pulse-slow {

@@ -1,7 +1,6 @@
 'use client';
 
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import type { FFmpeg } from '@ffmpeg/ffmpeg';
 
 type ProgressCb = (pct: number) => void;
 
@@ -15,6 +14,10 @@ async function getFFmpeg(): Promise<FFmpeg> {
   if (ffmpegSingleton) return ffmpegSingleton;
   if (loadPromise) return loadPromise;
   loadPromise = (async () => {
+    const [{ FFmpeg }, { toBlobURL }] = await Promise.all([
+      import('@ffmpeg/ffmpeg'),
+      import('@ffmpeg/util'),
+    ]);
     const ff = new FFmpeg();
     await ff.load({
       coreURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, 'text/javascript'),
@@ -40,6 +43,7 @@ export async function transcodeToH264(file: File, onProgress?: ProgressCb): Prom
     ff.on('progress', (e) => onProgress(Math.min(99, Math.round((e.progress ?? 0) * 100))));
   }
 
+  const { fetchFile } = await import('@ffmpeg/util');
   await ff.writeFile(inputName, await fetchFile(file));
   await ff.exec([
     '-i', inputName,

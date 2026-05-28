@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Flame, Home, Search, Ticket, User } from 'lucide-react';
@@ -14,7 +15,7 @@ const items = [
   { href: paths.perfil, label: 'Perfil', icon: User },
 ];
 
-export function BottomNav() {
+function BottomNavImpl() {
   const pathname = usePathname();
   const activeIndex = items.findIndex(({ href, exact }) =>
     exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`),
@@ -70,3 +71,5 @@ export function BottomNav() {
     </nav>
   );
 }
+
+export const BottomNav = memo(BottomNavImpl);

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import Image from 'next/image';
 import { X } from 'lucide-react';
 import type { VenueStoriesGroup } from '@/core/types/api';
 import { StoryProgressBars } from './story-progress-bars';
@@ -241,13 +242,14 @@ export function StoriesViewer({
         {/* Header */}
         <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 bg-gradient-to-b from-black/70 to-transparent px-3 pb-6 pt-7">
           <div className="pointer-events-auto mt-2 flex items-center gap-3">
-            <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full border border-white/20 bg-white/10">
+            <div className="relative grid size-9 shrink-0 place-items-center overflow-hidden rounded-full border border-white/20 bg-white/10">
               {currentGroup.venueCoverImageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={currentGroup.venueCoverImageUrl}
                   alt={currentGroup.venueName}
-                  className="size-full object-cover"
+                  fill
+                  sizes="36px"
+                  className="object-cover"
                 />
               ) : (
                 <span className="font-display text-sm font-semibold text-white">

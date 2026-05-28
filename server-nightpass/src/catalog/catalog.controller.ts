@@ -28,6 +28,11 @@ export class CatalogController {
     return this.service.getVenueOccupancy(id, query.windowMinutes);
   }
 
+  @Get('promoters/:slug')
+  getPromoter(@Param('slug') slug: string) {
+    return this.service.getPromoterBySlug(slug);
+  }
+
   @Get('events')
   listEvents(@Query() query: ListCatalogEventsQuery) {
     return this.service.listCatalogEvents(query);

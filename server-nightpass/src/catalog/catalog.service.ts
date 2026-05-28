@@ -34,6 +34,7 @@ const VENUE_PUBLIC_SELECT = {
   dressCode: true,
   openHours: true,
   status: true,
+  phone: true,
   _count: { select: { owners: true } },
 } satisfies Prisma.VenueSelect;
 
@@ -48,7 +49,18 @@ export class CatalogService {
     const where: Prisma.VenueWhereInput = { status: 'ACTIVE' };
 
     if (query.search) {
-      where.name = { contains: query.search.trim(), mode: 'insensitive' };
+      const s = query.search.trim();
+      const sLower = s.toLowerCase();
+      const sUpper = s.toUpperCase();
+      const sTitle = sLower.charAt(0).toUpperCase() + sLower.slice(1);
+      const variants = Array.from(new Set([s, sLower, sUpper, sTitle]));
+      where.OR = [
+        { name: { contains: s, mode: 'insensitive' } },
+        { city: { contains: s, mode: 'insensitive' } },
+        { address: { contains: s, mode: 'insensitive' } },
+        { categories: { hasSome: variants } },
+        { musicTypes: { hasSome: variants } },
+      ];
     }
     if (query.category) {
       where.categories = { has: query.category.trim() };
@@ -65,7 +77,11 @@ export class CatalogService {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.venue.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [
+          { isFeatured: 'desc' },
+          { featuredAt: { sort: 'desc', nulls: 'last' } },
+          { createdAt: 'desc' },
+        ],
         skip: (query.page - 1) * query.limit,
         take: query.limit,
         select: VENUE_PUBLIC_SELECT,
@@ -114,6 +130,62 @@ export class CatalogService {
     });
     if (!venue) throw new NotFoundException('Local no encontrado');
     return venue;
+  }
+
+  async getPromoterBySlug(slug: string) {
+    const promoter = await this.prisma.promoter.findUnique({
+      where: { slug, status: 'ACTIVE' },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        city: true,
+        bio: true,
+        instagram: true,
+        website: true,
+        logoUrl: true,
+        events: {
+          where: {
+            status: EventStatus.PUBLISHED,
+            endsAt: { gte: new Date() },
+          },
+          orderBy: { startsAt: 'asc' },
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            description: true,
+            startsAt: true,
+            endsAt: true,
+            coverImageUrl: true,
+            capacity: true,
+            externalVenueName: true,
+            externalVenueCity: true,
+            venue: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+                city: true,
+              },
+            },
+            tiers: {
+              orderBy: { position: 'asc' },
+              select: {
+                id: true,
+                name: true,
+                priceCents: true,
+                currency: true,
+                capacity: true,
+                minLoyaltyTier: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!promoter) throw new NotFoundException('Organizador no encontrado');
+    return promoter;
   }
 
   async listCatalogEvents(query: ListCatalogEventsQuery) {
@@ -170,7 +242,11 @@ export class CatalogService {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.event.findMany({
         where,
-        orderBy: { startsAt: 'asc' },
+        orderBy: [
+          { isFeatured: 'desc' },
+          { featuredAt: { sort: 'desc', nulls: 'last' } },
+          { startsAt: 'asc' },
+        ],
         skip: (query.page - 1) * query.limit,
         take: query.limit,
         include: {

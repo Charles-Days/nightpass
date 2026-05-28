@@ -47,12 +47,19 @@ export function StoryCard({ story, venueId }: StoryCardProps) {
         {isVideo ? (
           <video
             ref={videoRef}
-            src={story.mediaUrl}
+            src={`${story.mediaUrl}#t=0.1`}
             muted
             loop
             playsInline
             preload="metadata"
             className="size-full object-cover"
+            onLoadedMetadata={(e) => {
+              try {
+                e.currentTarget.currentTime = 0.1;
+              } catch {
+                // ignore
+              }
+            }}
           />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element

@@ -6,6 +6,7 @@ import { Button } from '@/core/components/ui/button';
 import { Input } from '@/core/components/ui/input';
 import { Field } from '@/core/components/ui/field';
 import { ImageUploader } from '@/core/components/image-uploader';
+import { DateTimePicker } from '@/core/components/ui/datetime-picker';
 import { createEventSchema, type CreateEventInput } from '../schemas/event.schema';
 import { useCreateEvent } from '../hooks/use-create-event';
 import { useUpdateEvent } from '../hooks/use-update-event';
@@ -72,20 +73,30 @@ export function EventForm({ venueId, onSuccess, defaultValues, eventId }: EventF
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Inicio" htmlFor="ev-starts-at" error={errors.startsAt?.message}>
-          <input
-            id="ev-starts-at"
-            type="datetime-local"
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            {...register('startsAt')}
+          <Controller
+            name="startsAt"
+            control={control}
+            render={({ field }) => (
+              <DateTimePicker
+                id="ev-starts-at"
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
           />
         </Field>
 
         <Field label="Fin" htmlFor="ev-ends-at" error={errors.endsAt?.message}>
-          <input
-            id="ev-ends-at"
-            type="datetime-local"
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            {...register('endsAt')}
+          <Controller
+            name="endsAt"
+            control={control}
+            render={({ field }) => (
+              <DateTimePicker
+                id="ev-ends-at"
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
           />
         </Field>
       </div>

@@ -8,10 +8,12 @@ import type { Event } from '@/core/types/api';
 import { paths } from '@/core/config/paths';
 import {
   EventFormPromoter,
+  TiersSection,
   toPromoterEventDefaults,
 } from '@/features/events';
 import { Button } from '@/core/components/ui/button';
-import { Loader2, Trash2 } from 'lucide-react';
+import { CollapsibleCard } from '@/core/components/ui/collapsible-card';
+import { Calendar, Loader2, Tag, Trash2 } from 'lucide-react';
 
 function readError(error: unknown): string {
   if (error instanceof ClientApiError) {
@@ -90,16 +92,31 @@ export function PromoterEventEdit({
   };
 
   return (
-    <div className="space-y-6">
-      <EventFormPromoter
-        promoterId={promoterId}
-        eventId={eventId}
-        defaultValues={toPromoterEventDefaults(event)}
-        locationLocked
-        onSubmit={handleSubmit}
-        isPending={update.isPending}
-        submitLabel="Guardar cambios"
-      />
+    <div className="space-y-4">
+      <CollapsibleCard
+        icon={<Calendar className="size-4 text-primary" />}
+        title="Información del evento"
+        defaultOpen
+      >
+        <EventFormPromoter
+          promoterId={promoterId}
+          eventId={eventId}
+          defaultValues={toPromoterEventDefaults(event)}
+          locationLocked
+          onSubmit={handleSubmit}
+          isPending={update.isPending}
+          submitLabel="Guardar cambios"
+        />
+      </CollapsibleCard>
+
+      <CollapsibleCard
+        icon={<Tag className="size-4 text-primary" />}
+        title="Tiers de precio"
+        defaultOpen
+      >
+        <TiersSection eventId={eventId} />
+      </CollapsibleCard>
+
       <div className="flex justify-end border-t border-white/8 pt-4">
         <Button
           type="button"

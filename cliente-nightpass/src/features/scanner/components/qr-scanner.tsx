@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
+import type { IScannerControls } from '@zxing/browser';
 import { Camera, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useScanPass, type ScanResult } from '../hooks/use-scan-pass';
 import { cn } from '@/core/lib/utils/cn';
@@ -28,6 +28,7 @@ export function QrScanner() {
     setPermissionError(null);
     setPhase({ kind: 'scanning' });
     try {
+      const { BrowserMultiFormatReader } = await import('@zxing/browser');
       const reader = new BrowserMultiFormatReader();
       const controls = await reader.decodeFromVideoDevice(
         undefined,

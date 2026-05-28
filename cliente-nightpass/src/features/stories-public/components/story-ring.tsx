@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { cn } from '@/core/lib/utils/cn';
 import type { Story, VenueStoriesGroup } from '@/core/types/api';
 import { useVenueStories } from '../hooks/use-venue-stories';
@@ -44,7 +45,9 @@ export function StoryRing({
 }: Props) {
   const enabled = providedStories === undefined;
   const query = useVenueStories(enabled ? slug : null);
-  const stories = providedStories ?? query.data ?? [];
+  const raw = providedStories ?? query.data ?? [];
+  // Defensive: backend sometimes returns the wrapper object instead of the array.
+  const stories = Array.isArray(raw) ? raw : [];
 
   const { allViewed } = useViewedStories();
   const [open, setOpen] = useState(false);
@@ -105,16 +108,18 @@ export function StoryRing({
         >
           <span
             className={cn(
-              'overflow-hidden rounded-full border border-black/80 bg-black',
+              'relative overflow-hidden rounded-full border border-black/80 bg-black',
               SIZE_INNER[size],
             )}
           >
             {coverImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={coverImageUrl}
                 alt={venueName}
-                className="size-full object-cover"
+                fill
+                sizes="80px"
+                loading="lazy"
+                className="object-cover"
                 draggable={false}
               />
             ) : (

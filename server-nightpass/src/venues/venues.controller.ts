@@ -86,6 +86,25 @@ export class VenuesController {
     return this.service.reactivate(id);
   }
 
+  @Post(':id/feature')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  feature(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { reason?: string } = {},
+  ) {
+    return this.service.setFeatured(id, true, body.reason);
+  }
+
+  @Post(':id/unfeature')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  unfeature(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.setFeatured(id, false);
+  }
+
   @Post(':id/owners')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)

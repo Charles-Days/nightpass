@@ -61,35 +61,34 @@ export class EventsService {
   ): Promise<void> {
     if (userRole === 'ADMIN') return;
 
-    if (params.venueId) {
-      if (!['VENUE_OWNER', 'VENUE_STAFF'].includes(userRole)) {
-        throw new ForbiddenException('No tienes permisos para gestionar eventos');
-      }
+    if (!params.venueId && !params.promoterId) {
+      throw new BadRequestException('EVENT_MUST_HAVE_VENUE_OR_PROMOTER');
+    }
+
+    // Pass if user owns the venue OR the promoter (event can have both refs).
+    if (
+      params.venueId &&
+      ['VENUE_OWNER', 'VENUE_STAFF'].includes(userRole)
+    ) {
       const link = await this.prisma.venueOwner.findUnique({
         where: { userId_venueId: { userId, venueId: params.venueId } },
         select: { userId: true },
       });
-      if (!link) {
-        throw new NotFoundException('Local no encontrado o sin permisos');
-      }
-      return;
+      if (link) return;
     }
 
-    if (params.promoterId) {
-      if (!['PROMOTER', 'PROMOTER_STAFF'].includes(userRole)) {
-        throw new ForbiddenException('No tienes permisos para gestionar eventos');
-      }
+    if (
+      params.promoterId &&
+      ['PROMOTER', 'PROMOTER_STAFF'].includes(userRole)
+    ) {
       const link = await this.prisma.promoterMember.findUnique({
         where: { userId_promoterId: { userId, promoterId: params.promoterId } },
         select: { userId: true },
       });
-      if (!link) {
-        throw new NotFoundException('Organizador no encontrado o sin permisos');
-      }
-      return;
+      if (link) return;
     }
 
-    throw new BadRequestException('EVENT_MUST_HAVE_VENUE_OR_PROMOTER');
+    throw new ForbiddenException('No tienes permisos para gestionar este evento');
   }
 
   // ─── Events CRUD ─────────────────────────────────────────────────────────────
@@ -98,11 +97,12 @@ export class EventsService {
     const hasVenue = !!dto.venueId;
     const hasPromoter = !!dto.promoterId;
 
-    if (hasVenue === hasPromoter) {
+    if (!hasVenue && !hasPromoter) {
       throw new BadRequestException('EVENT_MUST_HAVE_VENUE_OR_PROMOTER');
     }
 
-    if (hasPromoter) {
+    // Promoter event with external location (no catalog venue) requires location fields.
+    if (hasPromoter && !hasVenue) {
       if (!dto.externalVenueName || !dto.externalVenueCity) {
         throw new BadRequestException(
           'Los eventos del organizador requieren externalVenueName y externalVenueCity',
@@ -133,6 +133,7 @@ export class EventsService {
       return !!existing;
     };
 
+    const externalAllowed = hasPromoter && !hasVenue;
     const buildData = (slug: string): Prisma.EventUncheckedCreateInput => ({
       venueId: hasVenue ? dto.venueId! : null,
       promoterId: hasPromoter ? dto.promoterId! : null,
@@ -144,11 +145,11 @@ export class EventsService {
       coverImageUrl: dto.coverImageUrl ?? null,
       status: dto.status ?? 'DRAFT',
       capacity: dto.capacity ?? null,
-      externalVenueName: hasPromoter ? dto.externalVenueName ?? null : null,
-      externalVenueAddress: hasPromoter ? dto.externalVenueAddress ?? null : null,
-      externalVenueCity: hasPromoter ? dto.externalVenueCity ?? null : null,
-      externalVenueLat: hasPromoter ? dto.externalVenueLat ?? null : null,
-      externalVenueLng: hasPromoter ? dto.externalVenueLng ?? null : null,
+      externalVenueName: externalAllowed ? dto.externalVenueName ?? null : null,
+      externalVenueAddress: externalAllowed ? dto.externalVenueAddress ?? null : null,
+      externalVenueCity: externalAllowed ? dto.externalVenueCity ?? null : null,
+      externalVenueLat: externalAllowed ? dto.externalVenueLat ?? null : null,
+      externalVenueLng: externalAllowed ? dto.externalVenueLng ?? null : null,
     });
 
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -265,6 +266,19 @@ export class EventsService {
       );
     }
 
+    if (dto.capacity !== undefined && dto.capacity !== null) {
+      const tiers = await this.prisma.eventTier.findMany({
+        where: { eventId: id },
+        select: { capacity: true },
+      });
+      const sumTiers = tiers.reduce((acc, t) => acc + (t.capacity ?? 0), 0);
+      if (sumTiers > dto.capacity) {
+        throw new BadRequestException(
+          `La nueva capacidad (${dto.capacity}) es menor que la suma de cupos de tiers (${sumTiers}). Ajusta los tiers primero.`,
+        );
+      }
+    }
+
     const data: Prisma.EventUpdateInput = {};
     if (dto.title !== undefined) data.title = dto.title;
     if (dto.description !== undefined) data.description = dto.description;
@@ -324,7 +338,59 @@ export class EventsService {
     return { ok: true };
   }
 
+  async setFeatured(id: string, featured: boolean, reason?: string | null) {
+    const event = await this.prisma.event.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+    return this.prisma.event.update({
+      where: { id },
+      data: {
+        isFeatured: featured,
+        featuredAt: featured ? new Date() : null,
+        featuredReason: featured ? reason ?? null : null,
+      },
+    });
+  }
+
   // ─── Tiers ───────────────────────────────────────────────────────────────────
+
+  private async assertTierCapacityFits(params: {
+    eventId: string;
+    newCapacity: number | null | undefined;
+    excludeTierId?: string;
+  }) {
+    if (params.newCapacity == null) return;
+
+    const event = await this.prisma.event.findUnique({
+      where: { id: params.eventId },
+      select: { capacity: true },
+    });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+
+    if (event.capacity != null && params.newCapacity > event.capacity) {
+      throw new BadRequestException(
+        `El cupo del tier (${params.newCapacity}) no puede exceder la capacidad del evento (${event.capacity}).`,
+      );
+    }
+
+    const others = await this.prisma.eventTier.findMany({
+      where: {
+        eventId: params.eventId,
+        ...(params.excludeTierId ? { NOT: { id: params.excludeTierId } } : {}),
+      },
+      select: { capacity: true },
+    });
+    const sumOthers = others.reduce((acc, t) => acc + (t.capacity ?? 0), 0);
+    const total = sumOthers + params.newCapacity;
+    if (event.capacity != null && total > event.capacity) {
+      const remaining = Math.max(event.capacity - sumOthers, 0);
+      throw new BadRequestException(
+        `La suma de cupos de tiers (${total}) excede la capacidad del evento (${event.capacity}). Disponible: ${remaining}.`,
+      );
+    }
+  }
 
   async createTier(eventId: string, dto: CreateTierDto, user: AuthUser) {
     const event = await this.prisma.event.findUnique({
@@ -338,6 +404,11 @@ export class EventsService {
       user.id,
       user.role,
     );
+
+    await this.assertTierCapacityFits({
+      eventId,
+      newCapacity: dto.capacity ?? null,
+    });
 
     return this.prisma.eventTier.create({
       data: {
@@ -375,6 +446,14 @@ export class EventsService {
       select: { id: true },
     });
     if (!tier) throw new NotFoundException('Tier no encontrado');
+
+    if (dto.capacity !== undefined) {
+      await this.assertTierCapacityFits({
+        eventId,
+        newCapacity: dto.capacity,
+        excludeTierId: tierId,
+      });
+    }
 
     const data: Prisma.EventTierUpdateInput = {};
     if (dto.name !== undefined) data.name = dto.name;

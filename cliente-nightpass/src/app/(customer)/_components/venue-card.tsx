@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Music2 } from 'lucide-react';
+import { MapPin, Music2, Moon } from 'lucide-react';
 import { paths } from '@/core/config/paths';
 import type { CatalogVenueSummary } from '@/core/types/api';
+import { computeOpenStatus } from '@/core/lib/utils/open-hours';
 import { VenueOccupancyBadge } from './venue-occupancy-badge';
 
 function formatPrice(cents: number | null, currency: string | null) {
@@ -14,6 +15,8 @@ function formatPrice(cents: number | null, currency: string | null) {
 
 export function VenueCard({ venue, priority = false }: { venue: CatalogVenueSummary; priority?: boolean }) {
   const price = formatPrice(venue.priceFromCents, venue.currency);
+  const openStatus = computeOpenStatus(venue.openHours);
+  const isClosed = !openStatus.open;
   return (
     <Link
       href={`${paths.bar}/${venue.slug}`}
@@ -45,7 +48,14 @@ export function VenueCard({ venue, priority = false }: { venue: CatalogVenueSumm
               {venue.city}
             </p>
             <div className="mt-1.5">
-              <VenueOccupancyBadge venueId={venue.id} />
+              {isClosed ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-rose-200">
+                  <Moon className="size-2.5" />
+                  Cerrado
+                </span>
+              ) : (
+                <VenueOccupancyBadge venueId={venue.id} isClosed={isClosed} />
+              )}
             </div>
           </div>
           {price && (

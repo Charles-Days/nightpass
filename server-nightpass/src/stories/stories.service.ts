@@ -305,7 +305,13 @@ export class StoriesService {
       where: {
         deletedAt: null,
         expiresAt: { gt: now },
-        venue: { status: VenueStatus.ACTIVE },
+        OR: [
+          { venue: { status: VenueStatus.ACTIVE } },
+          {
+            venueId: null,
+            event: { promoter: { status: PromoterStatus.ACTIVE } },
+          },
+        ],
       },
       orderBy: { createdAt: 'desc' },
       take: limit,
@@ -319,13 +325,28 @@ export class StoriesService {
             coverImageUrl: true,
           },
         },
+        event: {
+          select: {
+            promoter: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+                logoUrl: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    // Agrupar por venue manteniendo el orden de aparición (primer story más reciente).
+    // Mixed groups: venue-anchored stories agrupan por venue; stories sin venue
+    // (event-only de un promoter) agrupan por promoter. El cliente decide a
+    // dónde navegar según `kind`.
     const grouped = new Map<
       string,
       {
+        kind: 'venue' | 'promoter';
         venueId: string;
         venueSlug: string;
         venueName: string;
@@ -335,19 +356,42 @@ export class StoriesService {
     >();
 
     for (const row of stories) {
-      const { venue, ...story } = row;
-      if (!venue) continue;
-      const existing = grouped.get(venue.id);
-      if (existing) {
-        existing.stories.push(story);
-      } else {
-        grouped.set(venue.id, {
-          venueId: venue.id,
-          venueSlug: venue.slug,
-          venueName: venue.name,
-          venueCoverImageUrl: venue.coverImageUrl,
-          stories: [story],
-        });
+      const { venue, event, ...story } = row;
+      const promoter = event?.promoter ?? null;
+
+      if (venue) {
+        const key = `venue:${venue.id}`;
+        const existing = grouped.get(key);
+        if (existing) {
+          existing.stories.push(story);
+        } else {
+          grouped.set(key, {
+            kind: 'venue',
+            venueId: venue.id,
+            venueSlug: venue.slug,
+            venueName: venue.name,
+            venueCoverImageUrl: venue.coverImageUrl,
+            stories: [story],
+          });
+        }
+        continue;
+      }
+
+      if (promoter) {
+        const key = `promoter:${promoter.id}`;
+        const existing = grouped.get(key);
+        if (existing) {
+          existing.stories.push(story);
+        } else {
+          grouped.set(key, {
+            kind: 'promoter',
+            venueId: promoter.id,
+            venueSlug: promoter.slug,
+            venueName: promoter.name,
+            venueCoverImageUrl: promoter.logoUrl,
+            stories: [story],
+          });
+        }
       }
     }
 

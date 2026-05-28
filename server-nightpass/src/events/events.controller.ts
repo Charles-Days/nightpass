@@ -67,6 +67,23 @@ export class EventsController {
     return this.service.remove(id, user);
   }
 
+  @Post(':id/feature')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  feature(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { reason?: string } = {},
+  ) {
+    return this.service.setFeatured(id, true, body.reason);
+  }
+
+  @Post(':id/unfeature')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  unfeature(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.setFeatured(id, false);
+  }
+
   @Post(':id/tiers')
   createTier(
     @Param('id', ParseUUIDPipe) id: string,

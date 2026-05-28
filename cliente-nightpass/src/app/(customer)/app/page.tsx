@@ -1,9 +1,11 @@
 import Link from 'next/link';
-import { ArrowRight, MapPin, Music2, Search, Sparkles } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowRight, Calendar, MapPin, Music2, Search, Sparkles } from 'lucide-react';
 import { serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import { VenueCard } from '../_components/venue-card';
 import { FeaturedAforo } from '../_components/featured-aforo';
+import { computeOpenStatus } from '@/core/lib/utils/open-hours';
 import type { CatalogVenueSummary, VenueStoriesGroup } from '@/core/types/api';
 import { InstallBanner, AppOpenPinger } from '@/features/geolocation';
 import { StoriesCarousel } from '@/features/stories-public';
@@ -19,6 +21,23 @@ interface CatalogResponse {
   total: number;
   page: number;
   limit: number;
+}
+
+interface CatalogEventFeed {
+  id: string;
+  title: string;
+  startsAt: string;
+  coverImageUrl: string | null;
+  externalVenueName: string | null;
+  externalVenueCity: string | null;
+  venue: { id: string; slug: string; name: string; city: string } | null;
+  promoter: { id: string; slug: string; name: string; logoUrl: string | null } | null;
+  tiers: Array<{ id: string; priceCents: number; currency: string }>;
+}
+
+interface CatalogEventsResponse {
+  items: CatalogEventFeed[];
+  total: number;
 }
 
 const QUICK_FILTERS = [
@@ -48,6 +67,7 @@ function formatPrice(cents: number | null, currency: string | null): string | nu
 function FeaturedVenue({ venue }: { venue: CatalogVenueSummary }) {
   const price = formatPrice(venue.priceFromCents, venue.currency);
   const tags = [...(venue.musicTypes ?? []), ...(venue.categories ?? [])].slice(0, 3);
+  const status = computeOpenStatus(venue.openHours);
 
   return (
     <Link
@@ -57,34 +77,49 @@ function FeaturedVenue({ venue }: { venue: CatalogVenueSummary }) {
       <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr]">
         <div className="relative aspect-[16/10] overflow-hidden lg:aspect-auto lg:min-h-[420px]">
           {venue.coverImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={venue.coverImageUrl}
               alt={venue.name}
-              className="absolute inset-0 size-full object-cover transition duration-700 group-hover:scale-105"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 60vw"
+              className="object-cover transition duration-700 group-hover:scale-105"
             />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 to-purple-600/10" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0712] via-[#0a0712]/40 to-transparent" />
 
           <div className="absolute left-5 top-5 flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300">
-              <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]" />
-              Activo
+            <span
+              className={
+                status.open
+                  ? 'inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/25 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-200 backdrop-blur-md'
+                  : 'inline-flex items-center gap-1.5 rounded-full border border-rose-500/45 bg-rose-500/25 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-rose-200 backdrop-blur-md'
+              }
+            >
+              <span
+                className={
+                  status.open
+                    ? 'size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]'
+                    : 'size-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]'
+                }
+              />
+              {status.open ? 'Abierto' : 'Cerrado'}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/65 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85">
+            <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/90 backdrop-blur-md">
               <Sparkles className="size-3 text-primary" /> Pick de hoy
             </span>
           </div>
+        </div>
 
-          <div className="absolute inset-x-0 bottom-0 p-6 sm:p-7">
+        <div className="flex flex-col gap-5 p-6 sm:p-7">
+          <div>
             <h3 className="font-display text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl">
               {venue.name}
             </h3>
             <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/70">
               <span className="inline-flex items-center gap-1">
-                <MapPin className="size-3.5" />
+                <MapPin className="size-3.5 text-primary" />
                 {venue.address ?? venue.city}
               </span>
               {venue.musicTypes?.[0] && (
@@ -98,10 +133,11 @@ function FeaturedVenue({ venue }: { venue: CatalogVenueSummary }) {
               )}
             </p>
           </div>
-        </div>
 
-        <div className="flex flex-col gap-5 p-6 sm:p-7">
-          <FeaturedAforo venueId={venue.id} />
+          <FeaturedAforo
+            venueId={venue.id}
+            isClosed={!status.open}
+          />
 
           {venue.description && (
             <p className="text-[14.5px] leading-relaxed text-white/70">
@@ -183,6 +219,14 @@ export default async function CustomerHomePage() {
     initialStoriesGroups = await serverFetch<VenueStoriesGroup[]>('/catalog/stories/active');
   } catch {
     initialStoriesGroups = [];
+  }
+
+  let events: CatalogEventFeed[] = [];
+  try {
+    const data = await serverFetch<CatalogEventsResponse>('/catalog/events?date=week&limit=6');
+    events = data.items ?? [];
+  } catch {
+    events = [];
   }
 
   const [featured, ...rest] = venues;
@@ -303,11 +347,103 @@ export default async function CustomerHomePage() {
               <div
                 key={v.id}
                 className="np-rise"
-                style={{ animationDelay: `${420 + i * 70}ms` }}
+                style={{ animationDelay: `${Math.min(240 + i * 40, 560)}ms` }}
               >
                 <VenueCard venue={v} />
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── EVENTS THIS WEEK ── */}
+      {events.length > 0 && (
+        <section className="mb-12">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <h2
+              className="np-rise font-display text-xl font-bold tracking-[-0.015em] sm:text-2xl"
+              style={{ animationDelay: '500ms' }}
+            >
+              Eventos esta semana
+            </h2>
+            <Link
+              href={paths.buscar}
+              className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary transform-gpu transition-all duration-200 hover:text-primary/80 active:scale-95"
+            >
+              Ver todos →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {events.map((ev, i) => {
+              const cheapest = ev.tiers?.reduce(
+                (min, t) => (min == null || t.priceCents < min.priceCents ? t : min),
+                null as null | { priceCents: number; currency: string },
+              );
+              const cheapestPrice = cheapest
+                ? `$${(cheapest.priceCents / 100).toFixed(0)}${cheapest.currency.toLowerCase() === 'mxn' ? ' MXN' : ''}`
+                : null;
+              const locationLabel = ev.venue
+                ? `${ev.venue.name} · ${ev.venue.city}`
+                : ev.externalVenueName
+                  ? `${ev.externalVenueName}${ev.externalVenueCity ? ` · ${ev.externalVenueCity}` : ''}`
+                  : ev.promoter?.name ?? '';
+              const dateLabel = new Intl.DateTimeFormat('es-MX', {
+                weekday: 'short',
+                day: '2-digit',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit',
+              }).format(new Date(ev.startsAt));
+              return (
+                <Link
+                  key={ev.id}
+                  href={`${paths.evento}/${ev.id}`}
+                  className="np-rise group block overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.025] transform-gpu transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.05] hover:shadow-[0_18px_40px_-20px_rgba(168,85,247,0.45)] active:scale-[0.98]"
+                  style={{ animationDelay: `${540 + i * 70}ms` }}
+                >
+                  <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-600/10">
+                    {ev.coverImageUrl ? (
+                      <Image
+                        src={ev.coverImageUrl}
+                        alt={ev.title}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover transform-gpu transition-transform duration-[600ms] ease-out group-hover:scale-[1.05]"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 grid place-items-center text-3xl text-white/30">
+                        ★
+                      </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                    {cheapestPrice && (
+                      <span className="absolute right-3 top-3 rounded-full border border-white/15 bg-black/65 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+                        Desde {cheapestPrice}
+                      </span>
+                    )}
+                    {ev.promoter && (
+                      <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/25 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur">
+                        <Sparkles className="size-3" />
+                        {ev.promoter.name}
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-y-1.5 p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+                      <Calendar className="mr-1 inline size-3" />
+                      {dateLabel}
+                    </p>
+                    <h3 className="font-display text-base font-bold leading-tight tracking-tight line-clamp-2">
+                      {ev.title}
+                    </h3>
+                    <p className="flex items-center gap-1 text-xs text-white/60 line-clamp-1">
+                      <MapPin className="size-3 shrink-0" />
+                      {locationLabel}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </section>
       )}

@@ -264,11 +264,19 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
   const summary = useMemo(() => {
     const tier = order?.eventTier;
     const event = order?.event;
+    const initEvent = initialTier?.event;
     return {
-      title: event?.title ?? initialTier?.event.title ?? 'Evento',
-      venueName: event?.venue?.name ?? initialTier?.event.venue.name,
-      city: event?.venue?.city ?? initialTier?.event.venue.city,
-      startsAt: event?.startsAt ?? initialTier?.event.startsAt,
+      title: event?.title ?? initEvent?.title ?? 'Evento',
+      venueName:
+        event?.venue?.name ??
+        initEvent?.venue?.name ??
+        initEvent?.promoter?.externalVenueName ??
+        initEvent?.promoter?.name,
+      city:
+        event?.venue?.city ??
+        initEvent?.venue?.city ??
+        initEvent?.promoter?.externalVenueCity,
+      startsAt: event?.startsAt ?? initEvent?.startsAt,
       tierName: tier?.name ?? initialTier?.name ?? 'Pase',
       totalCents:
         order?.totalCents ?? tier?.priceCents ?? initialTier?.priceCents ?? 0,

@@ -132,6 +132,9 @@ export interface Venue {
   socialLinks?: Record<string, any> | null;
   dressCode?: string | null;
   minAge?: number | null;
+  isFeatured?: boolean;
+  featuredAt?: string | null;
+  featuredReason?: string | null;
 }
 
 export interface PaginatedVenues {
@@ -270,6 +273,9 @@ export interface Event {
   tiers?: EventTier[];
   venue?: { id: string; slug: string; name: string; city: string } | null;
   promoter?: { id: string; slug: string; name: string; city: string } | null;
+  isFeatured?: boolean;
+  featuredAt?: string | null;
+  featuredReason?: string | null;
 }
 
 export interface PaginatedEvents {
@@ -370,6 +376,7 @@ export interface CatalogVenueSummary {
   latitude: number | null;
   longitude: number | null;
   googleMapsUrl: string | null;
+  openHours: Record<string, unknown> | null;
   photos?: Array<{ id: string; url: string; position: number }>;
 }
 
@@ -422,7 +429,52 @@ export interface CatalogEventDetail {
     city: string;
     address: string | null;
     coverImageUrl: string | null;
-  };
+  } | null;
+  promoter?: {
+    id: string;
+    slug: string;
+    name: string;
+    logoUrl: string | null;
+  } | null;
+  externalVenueName?: string | null;
+  externalVenueCity?: string | null;
+}
+
+export interface CatalogPromoterDetail {
+  id: string;
+  slug: string;
+  name: string;
+  city: string;
+  bio: string | null;
+  instagram: string | null;
+  website: string | null;
+  logoUrl: string | null;
+  events: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    description: string | null;
+    startsAt: string;
+    endsAt: string;
+    coverImageUrl: string | null;
+    capacity: number | null;
+    externalVenueName: string | null;
+    externalVenueCity: string | null;
+    venue: {
+      id: string;
+      slug: string;
+      name: string;
+      city: string;
+    } | null;
+    tiers: Array<{
+      id: string;
+      name: string;
+      priceCents: number;
+      currency: string;
+      capacity: number | null;
+      minLoyaltyTier?: LoyaltyTier | null;
+    }>;
+  }>;
 }
 
 // ─── Loyalty / Streak / Tier ───────────────────────────────────────────────
@@ -576,9 +628,15 @@ export interface StoryUploadInit {
 }
 
 export interface VenueStoriesGroup {
+  /** `venue` = anchor por local · `promoter` = anchor por organizador (eventos sin venue). */
+  kind?: 'venue' | 'promoter';
+  /** ID del venue o promoter — usado solo como key de React. */
   venueId: string;
+  /** Slug del venue o promoter (usar `kind` para decidir ruta). */
   venueSlug: string;
+  /** Nombre para mostrar en el ring. */
   venueName: string;
+  /** Cover del venue o logo del promoter. */
   venueCoverImageUrl: string | null;
   stories: Story[];
 }

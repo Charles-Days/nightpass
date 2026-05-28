@@ -108,18 +108,26 @@ function EventStoriesCard({
   return (
     <div className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]">
       <div className="flex items-center gap-4 border-b border-white/8 p-4">
-        <div className="relative size-14 shrink-0 overflow-hidden rounded-[12px] bg-white/[0.05]">
-          {coverImageUrl ? (
-            <Image
-              src={coverImageUrl}
-              alt={eventTitle}
-              fill
-              sizes="56px"
-              className="object-cover"
-            />
-          ) : (
-            <Calendar className="m-auto size-5 text-white/40" />
-          )}
+        <div
+          className={
+            list.length > 0
+              ? 'relative size-14 shrink-0 rounded-full bg-gradient-to-tr from-fuchsia-500 via-purple-500 to-amber-400 p-[2px]'
+              : 'relative size-14 shrink-0 rounded-full bg-white/8 p-[2px]'
+          }
+        >
+          <div className="relative size-full overflow-hidden rounded-full border-2 border-[#0a0712] bg-white/[0.05]">
+            {coverImageUrl ? (
+              <Image
+                src={coverImageUrl}
+                alt={eventTitle}
+                fill
+                sizes="56px"
+                className="object-cover"
+              />
+            ) : (
+              <Calendar className="m-auto size-5 text-white/40" />
+            )}
+          </div>
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-base font-semibold tracking-tight">
@@ -154,11 +162,18 @@ function EventStoriesCard({
                 />
               ) : (
                 <video
-                  src={story.mediaUrl}
+                  src={`${story.mediaUrl}#t=0.1`}
                   muted
                   playsInline
                   preload="metadata"
                   className="size-full object-cover"
+                  onLoadedMetadata={(e) => {
+                    try {
+                      e.currentTarget.currentTime = 0.1;
+                    } catch {
+                      // ignore — some browsers reject seek before ready
+                    }
+                  }}
                 />
               )}
               <button

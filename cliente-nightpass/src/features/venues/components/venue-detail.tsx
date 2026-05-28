@@ -2,14 +2,16 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Loader2, Pause, Play, X } from 'lucide-react';
+import { Loader2, Pause, Play, Star, X } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/core/components/ui/card';
 import { ConfirmDialog } from '@/core/components/ui/confirm-dialog';
+import { FeatureDialog } from '@/core/components/feature-dialog';
 import { paths } from '@/core/config/paths';
 import type { Venue } from '@/core/types/api';
 import { useSuspendVenue } from '../hooks/use-suspend-venue';
 import { useReactivateVenue } from '../hooks/use-reactivate-venue';
+import { useFeatureVenue } from '../hooks/use-feature-venue';
 import { useRemoveOwner } from '../hooks/use-assign-owner';
 import { VenueEditForm } from './venue-edit-form';
 import { CheckinQrPanel } from './checkin-qr-panel';
@@ -68,6 +70,8 @@ function OwnerRow({
 export function VenueDetail({ venue, hideHeader = false }: { venue: Venue; hideHeader?: boolean }) {
   const suspend = useSuspendVenue(venue.id);
   const reactivate = useReactivateVenue(venue.id);
+  const feature = useFeatureVenue(venue.id);
+  const [featureDialogOpen, setFeatureDialogOpen] = React.useState(false);
   const isMutating = suspend.isPending || reactivate.isPending;
 
   return (
@@ -147,6 +151,57 @@ export function VenueDetail({ venue, hideHeader = false }: { venue: Venue; hideH
           </p>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Destacado en primera plana</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <p className="text-muted-foreground">
+            {venue.isFeatured
+              ? 'Este local aparece primero en el catálogo público.'
+              : 'Activa para fijar este local arriba en el catálogo público.'}
+          </p>
+          {venue.isFeatured && venue.featuredReason ? (
+            <p className="rounded-md border border-amber-300/25 bg-amber-300/5 px-3 py-2 text-xs text-amber-100/80">
+              Motivo interno: {venue.featuredReason}
+            </p>
+          ) : null}
+          <Button
+            type="button"
+            variant={venue.isFeatured ? 'secondary' : 'default'}
+            disabled={feature.isPending}
+            onClick={() => {
+              if (venue.isFeatured) {
+                feature.mutate({ featured: false });
+              } else {
+                setFeatureDialogOpen(true);
+              }
+            }}
+          >
+            {feature.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Star className={`size-4 ${venue.isFeatured ? 'fill-amber-300 text-amber-300' : ''}`} />
+            )}
+            {venue.isFeatured ? 'Quitar destacado' : 'Destacar en primera plana'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <FeatureDialog
+        open={featureDialogOpen}
+        onOpenChange={setFeatureDialogOpen}
+        title={`Destacar ${venue.name}`}
+        description="Aparecerá primero en el catálogo público. El motivo es interno (solo admin lo ve)."
+        isPending={feature.isPending}
+        onConfirm={(reason) => {
+          feature.mutate(
+            { featured: true, reason },
+            { onSettled: () => setFeatureDialogOpen(false) },
+          );
+        }}
+      />
 
       <Card>
         <CardHeader>

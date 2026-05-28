@@ -9,9 +9,10 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 5 * 60_000,
-            gcTime: 15 * 60_000,
+            staleTime: 15 * 60_000,
+            gcTime: 30 * 60_000,
             refetchOnWindowFocus: false,
+            refetchOnReconnect: 'always',
             retry: (failureCount, error: unknown) => {
               const status = (error as { status?: number } | null)?.status;
               if (status === 401 || status === 403) return false;

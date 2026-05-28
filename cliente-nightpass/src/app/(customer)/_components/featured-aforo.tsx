@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { MapPin, Loader2 } from 'lucide-react';
+import { LogIn, MapPin, Loader2, Moon } from 'lucide-react';
 import { useGeolocation } from '@/features/geolocation/hooks/use-geolocation';
+import { useSession } from '@/features/auth/hooks/use-session';
+import { paths } from '@/core/config/paths';
 
 type OccupancyBucket = 'low' | 'medium' | 'high';
 
@@ -41,10 +44,18 @@ const LABEL_COLOR: Record<OccupancyBucket, string> = {
   high: 'text-rose-300',
 };
 
-export function FeaturedAforo({ venueId }: { venueId: string }) {
+export function FeaturedAforo({
+  venueId,
+  isClosed = false,
+}: {
+  venueId: string;
+  isClosed?: boolean;
+}) {
   const { status, request } = useGeolocation();
+  const session = useSession();
   const [requesting, setRequesting] = useState(false);
   const hasPermission = status === 'granted';
+  const isAuthed = !!session.data;
 
   const { data } = useQuery<OccupancyResponse | null>({
     queryKey: ['venue-occupancy', venueId],
@@ -55,12 +66,43 @@ export function FeaturedAforo({ venueId }: { venueId: string }) {
       if (!res.ok) return null;
       return (await res.json()) as OccupancyResponse | null;
     },
-    enabled: hasPermission,
-    staleTime: 60_000,
-    refetchInterval: 90_000,
+    enabled: !isClosed && isAuthed && hasPermission,
+    staleTime: 180_000,
+    refetchInterval: 300_000,
     refetchOnWindowFocus: false,
     retry: 1,
   });
+
+  if (isClosed) {
+    return (
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
+          Aforo en vivo
+        </p>
+        <div className="mt-2 flex items-center gap-2 rounded-[12px] border border-white/8 bg-white/[0.02] px-3 py-2 text-[11px] text-muted-foreground">
+          <Moon className="size-3.5 shrink-0 text-rose-300/70" />
+          <span>Cerrado · sin aforo</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthed) {
+    return (
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
+          Aforo en vivo
+        </p>
+        <Link
+          href={paths.iniciarSesion}
+          className="mt-2 flex items-center gap-2 rounded-[12px] border border-primary/30 bg-primary/10 px-3 py-2 text-[11px] font-semibold text-primary transition hover:bg-primary/15"
+        >
+          <LogIn className="size-3.5 shrink-0" />
+          <span>Inicia sesión para ver el aforo</span>
+        </Link>
+      </div>
+    );
+  }
 
   if (!hasPermission) {
     const handleActivate = async () => {

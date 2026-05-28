@@ -175,6 +175,11 @@ model Venue {
   // Geofence radius for QR redeem (meters; 0 disables the check).
   geofenceRadiusM Int @default(100)
 
+  // Featured: admin pin to top of public listings.
+  isFeatured     Boolean   @default(false)
+  featuredAt     DateTime?
+  featuredReason String?
+
   // Loyalty: static QR for venue check-in (free, +10 NPP, 1/day/user).
   // Null = check-in disabled until owner rotates a QR.
   checkinQrSecret   String?
@@ -354,7 +359,10 @@ model Event {
   coverImageUrl String?
   status        EventStatus @default(DRAFT)
   capacity      Int?
-  createdAt     DateTime    @default(now())
+  isFeatured     Boolean     @default(false)
+  featuredAt     DateTime?
+  featuredReason String?
+  createdAt      DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   externalVenueName    String?

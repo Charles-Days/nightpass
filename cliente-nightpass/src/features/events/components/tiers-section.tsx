@@ -102,6 +102,10 @@ export function TiersSection({ eventId }: Props) {
   const [error, setError] = React.useState<string | null>(null);
 
   const tiers = detail.data?.tiers ?? [];
+  const eventCapacity = detail.data?.capacity ?? null;
+  const sumExisting = tiers.reduce((acc, t) => acc + (t.capacity ?? 0), 0);
+  const remaining =
+    eventCapacity != null ? Math.max(eventCapacity - sumExisting, 0) : null;
 
   const reset = () => {
     setName('');
@@ -129,6 +133,26 @@ export function TiersSection({ eventId }: Props) {
     const capacityInt = capacity ? parseInt(capacity, 10) : undefined;
     if (capacity && (isNaN(capacityInt!) || capacityInt! < 1)) {
       setError('Capacidad debe ser un entero positivo');
+      return;
+    }
+    if (
+      capacityInt != null &&
+      eventCapacity != null &&
+      capacityInt > eventCapacity
+    ) {
+      setError(
+        `El cupo (${capacityInt}) no puede exceder la capacidad del evento (${eventCapacity}).`,
+      );
+      return;
+    }
+    if (
+      capacityInt != null &&
+      eventCapacity != null &&
+      sumExisting + capacityInt > eventCapacity
+    ) {
+      setError(
+        `Excede capacidad del evento. Disponible: ${remaining}.`,
+      );
       return;
     }
 
@@ -218,10 +242,18 @@ export function TiersSection({ eventId }: Props) {
               id="tier-capacity"
               type="number"
               min="1"
-              placeholder="Sin límite"
+              max={remaining ?? undefined}
+              placeholder={
+                remaining != null ? `Máx ${remaining}` : 'Sin límite'
+              }
               value={capacity}
               onChange={(e) => setCapacity(e.target.value)}
             />
+            {eventCapacity != null ? (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Cap. evento: {eventCapacity} · disponible: {remaining}
+              </p>
+            ) : null}
           </Field>
         </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { memo, useMemo, useState } from 'react';
+import Image from 'next/image';
 import { cn } from '@/core/lib/utils/cn';
 import type { VenueStoriesGroup } from '@/core/types/api';
 import { useActiveStories } from '../hooks/use-active-stories';
@@ -11,11 +12,23 @@ interface Props {
   initialGroups: VenueStoriesGroup[];
 }
 
-export function StoriesCarousel({ initialGroups }: Props) {
+function StoriesCarouselImpl({ initialGroups }: Props) {
   const { data } = useActiveStories(initialGroups);
   const groups = data ?? initialGroups;
   const { allViewed } = useViewedStories();
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  const ringMeta = useMemo(
+    () =>
+      (groups ?? []).map((g) => {
+        const ids = g.stories.map((s) => s.id);
+        return {
+          allViewed: ids.length > 0 && allViewed(ids),
+          initial: g.venueName.charAt(0).toUpperCase(),
+        };
+      }),
+    [groups, allViewed],
+  );
 
   if (!groups || groups.length === 0) return null;
 
@@ -27,12 +40,11 @@ export function StoriesCarousel({ initialGroups }: Props) {
         aria-label="Historias en vivo"
       >
         {groups.map((g, i) => {
-          const ids = g.stories.map((s) => s.id);
-          const everythingViewed = ids.length > 0 && allViewed(ids);
-          const ringClass = everythingViewed
+          const meta = ringMeta[i];
+          const ringClass = meta?.allViewed
             ? 'bg-white/15'
             : 'bg-gradient-to-tr from-fuchsia-500 via-purple-500 to-pink-500';
-          const initial = g.venueName.charAt(0).toUpperCase();
+          const initial = meta?.initial ?? '';
           return (
             <button
               key={g.venueId}
@@ -47,13 +59,15 @@ export function StoriesCarousel({ initialGroups }: Props) {
                   ringClass,
                 )}
               >
-                <span className="size-[64px] overflow-hidden rounded-full border border-black/80 bg-black">
+                <span className="relative size-[64px] overflow-hidden rounded-full border border-black/80 bg-black">
                   {g.venueCoverImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={g.venueCoverImageUrl}
                       alt={g.venueName}
-                      className="size-full object-cover"
+                      fill
+                      sizes="64px"
+                      loading="lazy"
+                      className="object-cover"
                       draggable={false}
                     />
                   ) : (
@@ -81,3 +95,5 @@ export function StoriesCarousel({ initialGroups }: Props) {
     </>
   );
 }
+
+export const StoriesCarousel = memo(StoriesCarouselImpl);

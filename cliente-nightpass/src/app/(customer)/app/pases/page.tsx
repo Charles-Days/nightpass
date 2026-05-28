@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Calendar, CheckCircle2, MapPin, Ticket } from 'lucide-react';
 import { serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
@@ -65,18 +66,20 @@ export default async function PassesPage() {
             const event = pass.event;
             const venue = event?.venue;
             return (
-              <li key={pass.id} className="np-rise transform-gpu" style={{ animationDelay: `${120 + idx * 70}ms` }}>
+              <li key={pass.id} className="np-rise transform-gpu" style={{ animationDelay: `${Math.min(80 + idx * 40, 480)}ms` }}>
                 <Link
                   href={`${paths.pases}/${pass.id}`}
                   className="flex items-stretch gap-4 rounded-[20px] border border-white/10 bg-white/[0.025] p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/[0.04] hover:border-white/15 active:scale-[0.98] transform-gpu sm:p-4"
                 >
                   <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[14px] bg-gradient-to-br from-purple-900/40 to-purple-600/10 sm:h-28 sm:w-32">
                     {event?.coverImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={event.coverImageUrl}
                         alt={event.title}
-                        className="absolute inset-0 size-full object-cover"
+                        fill
+                        sizes="128px"
+                        loading="lazy"
+                        className="object-cover"
                       />
                     ) : (
                       <div className="absolute inset-0 grid place-items-center text-2xl text-white/30">

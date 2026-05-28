@@ -1,16 +1,27 @@
 'use client';
 
 import * as React from 'react';
+import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import type { PassesStats } from '@/core/types/api';
 import { usePasesStats } from '../hooks/use-pases-stats';
 import { KpiCards } from './kpi-cards';
 import { DatePresets } from './date-presets';
-import { SalesChart } from './sales-chart';
-import { RedeemedDonut } from './redeemed-donut';
 import { EventsTable } from './events-table';
 import { TierDrilldownDialog } from './tier-drilldown-dialog';
 import { ExportCsvButton } from './export-csv-button';
+
+const SalesChart = dynamic(() => import('./sales-chart').then((m) => m.SalesChart), {
+  ssr: false,
+  loading: () => <div className="h-[260px] rounded-[22px] border border-white/10 bg-white/[0.025]" />,
+});
+const RedeemedDonut = dynamic(
+  () => import('./redeemed-donut').then((m) => m.RedeemedDonut),
+  {
+    ssr: false,
+    loading: () => <div className="h-[260px] rounded-[22px] border border-white/10 bg-white/[0.025]" />,
+  },
+);
 
 export function PasesDashboard({
   venueId,

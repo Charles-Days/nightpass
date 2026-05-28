@@ -33,6 +33,18 @@ export function parseGoogleMapsUrl(input: string): { lat: number; lng: number } 
     if (isValidCoords(lat, lng)) return { lat, lng };
   }
 
+  // /maps/search/LAT,LNG o /maps/search/LAT,+LNG (resultado típico de short links)
+  // También /maps/place/.../LAT,LNG y /maps/dir/.../LAT,LNG
+  const pathForm =
+    /\/maps\/(?:search|place|dir)\/(?:[^/]+\/)?(-?\d+(?:\.\d+)?),\s*\+?\s*(-?\d+(?:\.\d+)?)/.exec(
+      trimmed,
+    );
+  if (pathForm) {
+    const lat = Number(pathForm[1]);
+    const lng = Number(pathForm[2]);
+    if (isValidCoords(lat, lng)) return { lat, lng };
+  }
+
   // ?q=lat,lng or &q=lat,lng or ?ll=lat,lng
   try {
     const url = new URL(trimmed);
@@ -67,12 +79,24 @@ export async function resolveAndParseGoogleMapsUrl(
   } catch {
     return null;
   }
-  if (!/^(maps\.app\.goo\.gl|goo\.gl|g\.co)$/.test(host)) return null;
+  if (
+    !/^(maps\.app\.goo\.gl|goo\.gl|g\.co|maps\.google\.com|www\.google\.com)$/.test(
+      host,
+    )
+  )
+    return null;
 
   try {
     const res = await fetch(`/api/maps/resolve?url=${encodeURIComponent(input.trim())}`);
     if (!res.ok) return null;
-    const { resolvedUrl } = (await res.json()) as { resolvedUrl?: string };
+    const { resolvedUrl, lat, lng } = (await res.json()) as {
+      resolvedUrl?: string;
+      lat?: number;
+      lng?: number;
+    };
+    if (typeof lat === 'number' && typeof lng === 'number' && isValidCoords(lat, lng)) {
+      return { lat, lng };
+    }
     if (!resolvedUrl) return null;
     return parseGoogleMapsUrl(resolvedUrl);
   } catch {

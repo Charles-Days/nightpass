@@ -253,6 +253,15 @@ export async function seedCuernavacaVenues(prisma: PrismaClient): Promise<void> 
       geofenceRadiusM: v.geofenceRadiusM,
       coverImageUrl: photo,
       status: 'ACTIVE' as const,
+      openHours: {
+        mon: 'closed',
+        tue: 'closed',
+        wed: '20:00-02:00',
+        thu: '20:00-02:00',
+        fri: '21:00-04:00',
+        sat: '21:00-04:00',
+        sun: 'closed',
+      },
     };
 
     const venue = await prisma.venue.upsert({
@@ -263,6 +272,26 @@ export async function seedCuernavacaVenues(prisma: PrismaClient): Promise<void> 
 
     if (existing) updated++;
     else created++;
+
+    // Gallery photos — 4 per venue, rotated. Idempotent: skip if any photo exists.
+    const existingPhotosCount = await prisma.photo.count({
+      where: { venueId: venue.id },
+    });
+    if (existingPhotosCount === 0) {
+      const galleryPhotos = [0, 1, 2, 3].map(
+        (offset) =>
+          UNSPLASH_NIGHTCLUB_PHOTOS[
+            (i + offset + 1) % UNSPLASH_NIGHTCLUB_PHOTOS.length
+          ],
+      );
+      await prisma.photo.createMany({
+        data: galleryPhotos.map((url, idx) => ({
+          venueId: venue.id,
+          url,
+          position: idx,
+        })),
+      });
+    }
 
     if (v.withCheckinQr) {
       if (!venue.checkinQrSecret) {

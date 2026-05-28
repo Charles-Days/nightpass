@@ -1,7 +1,9 @@
 'use client';
 
+import { memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useGeolocation } from '@/features/geolocation/hooks/use-geolocation';
+import { useSession } from '@/features/auth/hooks/use-session';
 
 type OccupancyBucket = 'low' | 'medium' | 'high';
 
@@ -22,9 +24,17 @@ const DOT_CLASS: Record<OccupancyBucket, string> = {
   high: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] np-dot-pulse-fast',
 };
 
-export function VenueOccupancyBadge({ venueId }: { venueId: string }) {
+function VenueOccupancyBadgeImpl({
+  venueId,
+  isClosed = false,
+}: {
+  venueId: string;
+  isClosed?: boolean;
+}) {
   const { status } = useGeolocation();
+  const session = useSession();
   const hasPermission = status === 'granted';
+  const isAuthed = !!session.data;
 
   const { data } = useQuery<OccupancyResponse | null>({
     queryKey: ['venue-occupancy', venueId],
@@ -36,14 +46,14 @@ export function VenueOccupancyBadge({ venueId }: { venueId: string }) {
       const json = (await res.json()) as OccupancyResponse | null;
       return json;
     },
-    enabled: hasPermission,
-    staleTime: 60_000,
-    refetchInterval: 90_000,
+    enabled: !isClosed && isAuthed && hasPermission,
+    staleTime: 180_000,
+    refetchInterval: 300_000,
     refetchOnWindowFocus: false,
     retry: 1,
   });
 
-  if (!hasPermission || !data || !data.bucket) return null;
+  if (isClosed || !isAuthed || !hasPermission || !data || !data.bucket) return null;
   const bucket = data.bucket;
 
   return (
@@ -56,3 +66,5 @@ export function VenueOccupancyBadge({ venueId }: { venueId: string }) {
     </span>
   );
 }
+
+export const VenueOccupancyBadge = memo(VenueOccupancyBadgeImpl);

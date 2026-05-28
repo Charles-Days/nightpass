@@ -24,10 +24,10 @@ export function PromoterEventCreate({ promoterId }: { promoterId: string }) {
   const create = useMutation({
     mutationFn: (input: Record<string, unknown>) =>
       clientFetch<Event>('/api/events', { method: 'POST', body: input }),
-    onSuccess: (event) => {
-      toast.success('Evento creado');
+    onSuccess: () => {
+      toast.success('Evento creado. Ábrelo para agregar tiers.');
       qc.invalidateQueries({ queryKey: ['events'] });
-      router.push(`${paths.miOrganizadorEventos}/${event.id}`);
+      router.push(paths.miOrganizadorEventos);
     },
     onError: (err) => toast.error(readError(err)),
   });

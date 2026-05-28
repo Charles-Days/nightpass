@@ -1,5 +1,6 @@
 export { EventStatusBadge } from './components/event-status-badge';
 export { EventForm } from './components/event-form';
+export { TiersSection } from './components/tiers-section';
 export { EventsPanel } from './components/events-panel';
 export {
   EventFormPromoter,

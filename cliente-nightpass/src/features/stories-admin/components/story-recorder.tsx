@@ -101,11 +101,16 @@ export function StoryRecorder({ onRecorded, onCancel, maxDurationMs, fill = fals
       setState('initializing');
       stopStream();
       try {
+        // Constraints permisivas: pedir aspecto 9:16 pero dejar al navegador
+        // elegir resolución nativa. Width/height fijos en portrait fuerzan al
+        // sensor a recortar (= zoom digital) o a saltar a lente telephoto en
+        // iOS, lo que produce ese "zoom enorme" reportado en móvil.
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: mode,
-            width: { ideal: 1080 },
-            height: { ideal: 1920 },
+            facingMode: { ideal: mode },
+            aspectRatio: { ideal: 9 / 16 },
+            width: { ideal: 720, max: 1080 },
+            height: { ideal: 1280, max: 1920 },
           },
           audio: true,
         });
@@ -310,8 +315,8 @@ export function StoryRecorder({ onRecorded, onCancel, maxDurationMs, fill = fals
   const ringOffset = ringCircumference * (1 - progress);
 
   return (
-    <div className={fill ? 'relative size-full overflow-hidden bg-black' : 'relative overflow-hidden rounded-[18px] border border-white/10 bg-black'}>
-      <div className={fill ? 'relative size-full' : 'relative aspect-[9/16] max-h-[560px] w-full'}>
+    <div className={fill ? 'relative flex size-full flex-col overflow-hidden bg-black' : 'relative overflow-hidden rounded-[18px] border border-white/10 bg-black'}>
+      <div className={fill ? 'relative min-h-0 flex-1' : 'relative aspect-[9/16] max-h-[560px] w-full'}>
         {/* Live preview — visible in initializing/idle/recording. Hidden but kept mounted while preview. */}
         <video
           ref={liveVideoRef}

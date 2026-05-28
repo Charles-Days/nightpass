@@ -35,7 +35,13 @@ export class UploadsController {
 
   @Post('sign')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF)
+  @Roles(
+    Role.ADMIN,
+    Role.VENUE_OWNER,
+    Role.VENUE_STAFF,
+    Role.PROMOTER,
+    Role.PROMOTER_STAFF,
+  )
   @HttpCode(HttpStatus.OK)
   async sign(@Body() dto: SignUploadDto, @CurrentUser() user: AuthUser) {
     const ext = (extname(dto.filename).toLowerCase() || '.jpg');
@@ -48,7 +54,13 @@ export class UploadsController {
 
   @Put('local-put/*')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF)
+  @Roles(
+    Role.ADMIN,
+    Role.VENUE_OWNER,
+    Role.VENUE_STAFF,
+    Role.PROMOTER,
+    Role.PROMOTER_STAFF,
+  )
   @HttpCode(HttpStatus.CREATED)
   async handleLocalPut(@Req() req: any, @Param() params: any) {
     if (this.storage.getDriver() !== 'local') {
