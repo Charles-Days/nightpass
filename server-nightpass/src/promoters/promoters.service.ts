@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
@@ -403,6 +404,21 @@ export class PromotersService {
     return this.prisma.promoter.update({
       where: { id },
       data: { status: PromoterStatus.ACTIVE },
+    });
+  }
+
+  async setPlatformFee(id: string, pct: number) {
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      throw new BadRequestException('platformFeePct debe estar entre 0 y 100');
+    }
+    const promoter = await this.prisma.promoter.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!promoter) throw new NotFoundException('Organizador no encontrado');
+    return this.prisma.promoter.update({
+      where: { id },
+      data: { platformFeePct: pct },
     });
   }
 

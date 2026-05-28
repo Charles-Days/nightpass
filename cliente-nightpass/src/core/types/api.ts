@@ -135,6 +135,7 @@ export interface Venue {
   isFeatured?: boolean;
   featuredAt?: string | null;
   featuredReason?: string | null;
+  platformFeePct?: number;
 }
 
 export interface PaginatedVenues {
@@ -271,8 +272,8 @@ export interface Event {
   createdAt: string;
   updatedAt: string;
   tiers?: EventTier[];
-  venue?: { id: string; slug: string; name: string; city: string } | null;
-  promoter?: { id: string; slug: string; name: string; city: string } | null;
+  venue?: { id: string; slug: string; name: string; city: string; platformFeePct?: number } | null;
+  promoter?: { id: string; slug: string; name: string; city: string; platformFeePct?: number } | null;
   isFeatured?: boolean;
   featuredAt?: string | null;
   featuredReason?: string | null;

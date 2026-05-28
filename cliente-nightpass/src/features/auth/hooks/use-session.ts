@@ -19,6 +19,10 @@ export function useSession() {
         throw error;
       }
     },
-    staleTime: 5 * 60 * 1000,
+    // Mantenemos los datos actuales mientras refetcheamos, pero validamos pronto.
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
   });
 }

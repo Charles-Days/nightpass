@@ -227,8 +227,24 @@ export class EventsService {
       where: { id },
       include: {
         tiers: { orderBy: { position: 'asc' } },
-        venue: { select: { id: true, slug: true, name: true, city: true } },
-        promoter: { select: { id: true, slug: true, name: true, logoUrl: true } },
+        venue: {
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            city: true,
+            platformFeePct: true,
+          },
+        },
+        promoter: {
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            logoUrl: true,
+            platformFeePct: true,
+          },
+        },
       },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
@@ -484,6 +500,13 @@ export class EventsService {
       select: { id: true },
     });
     if (!tier) throw new NotFoundException('Tier no encontrado');
+
+    const orderCount = await this.prisma.order.count({ where: { tierId } });
+    if (orderCount > 0) {
+      throw new BadRequestException(
+        `No puedes eliminar este tier: tiene ${orderCount} orden${orderCount === 1 ? '' : 'es'} asociada${orderCount === 1 ? '' : 's'}. Bájale el cupo a 0 o crea uno nuevo.`,
+      );
+    }
 
     await this.prisma.eventTier.delete({ where: { id: tierId } });
     return { ok: true };

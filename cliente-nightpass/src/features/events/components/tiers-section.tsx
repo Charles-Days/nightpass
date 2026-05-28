@@ -11,6 +11,7 @@ import { TIER_STYLES } from '@/features/loyalty';
 import { useEventDetail } from '../hooks/use-event-detail';
 import { useCreateTier } from '../hooks/use-create-tier';
 import { useDeleteTier } from '../hooks/use-delete-tier';
+import { computeTierBreakdown, formatCents, STRIPE_FEE_PCT, STRIPE_FIXED_CENTS } from '@/core/lib/utils/fees';
 
 const LOYALTY_TIER_OPTIONS: { value: '' | LoyaltyTier; label: string }[] = [
   { value: '', label: 'Abierto a todos' },
@@ -106,6 +107,14 @@ export function TiersSection({ eventId }: Props) {
   const sumExisting = tiers.reduce((acc, t) => acc + (t.capacity ?? 0), 0);
   const remaining =
     eventCapacity != null ? Math.max(eventCapacity - sumExisting, 0) : null;
+  const platformFeePct =
+    detail.data?.venue?.platformFeePct ??
+    detail.data?.promoter?.platformFeePct ??
+    0;
+  const priceFloat = parseFloat(priceMxn);
+  const previewCents =
+    !isNaN(priceFloat) && priceFloat > 0 ? Math.round(priceFloat * 100) : 0;
+  const breakdown = computeTierBreakdown(previewCents, platformFeePct);
 
   const reset = () => {
     setName('');
@@ -279,6 +288,47 @@ export function TiersSection({ eventId }: Props) {
             superior. Por defecto, abierto a todos.
           </p>
         </Field>
+
+        {previewCents > 0 ? (
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs">
+            <p className="mb-2 font-semibold uppercase tracking-wider text-primary/70">
+              Cálculo · qué te queda
+            </p>
+            <dl className="space-y-1">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Cliente paga</dt>
+                <dd className="font-semibold tabular-nums">{formatCents(breakdown.grossCents)}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">
+                  Stripe ({STRIPE_FEE_PCT}% + ${(STRIPE_FIXED_CENTS / 100).toFixed(0)} MXN)
+                </dt>
+                <dd className="tabular-nums text-rose-300/90">
+                  − {formatCents(breakdown.stripeCents)}
+                </dd>
+              </div>
+              {platformFeePct > 0 ? (
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">
+                    NightPass ({platformFeePct}%)
+                  </dt>
+                  <dd className="tabular-nums text-rose-300/90">
+                    − {formatCents(breakdown.platformCents)}
+                  </dd>
+                </div>
+              ) : null}
+              <div className="mt-1 flex items-center justify-between gap-3 border-t border-white/8 pt-1.5">
+                <dt className="font-semibold text-foreground">Recibes</dt>
+                <dd className="font-display text-base font-bold tabular-nums text-emerald-300">
+                  {formatCents(breakdown.netCents)}
+                </dd>
+              </div>
+              <p className="pt-1 text-[10px] text-muted-foreground/80">
+                Comisión total: {breakdown.totalFeePct.toFixed(1)}%
+              </p>
+            </dl>
+          </div>
+        ) : null}
 
         {error ? (
           <p className="text-xs text-amber-300">{error}</p>

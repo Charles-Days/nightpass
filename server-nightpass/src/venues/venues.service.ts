@@ -335,6 +335,21 @@ export class VenuesService {
     return updated;
   }
 
+  async setPlatformFee(id: string, pct: number) {
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      throw new BadRequestException('platformFeePct debe estar entre 0 y 100');
+    }
+    const venue = await this.prisma.venue.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!venue) throw new NotFoundException('Local no encontrado');
+    return this.prisma.venue.update({
+      where: { id },
+      data: { platformFeePct: pct },
+    });
+  }
+
   async setFeatured(id: string, featured: boolean, reason?: string | null) {
     const venue = await this.prisma.venue.findUnique({
       where: { id },

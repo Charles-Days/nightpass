@@ -181,6 +181,9 @@ model Venue {
   featuredAt     DateTime?
   featuredReason String?
 
+  // Platform fee % NightPass keeps per ticket (0-100). Admin-set.
+  platformFeePct Float     @default(0)
+
   // Loyalty: static QR for venue check-in (free, +10 NPP, 1/day/user).
   // Null = check-in disabled until owner rotates a QR.
   checkinQrSecret   String?
@@ -279,6 +282,9 @@ model Promoter {
   status    PromoterStatus @default(ACTIVE)
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
+
+  // Platform fee % NightPass keeps per ticket (0-100). Admin-set.
+  platformFeePct Float @default(0)
 
   members       PromoterMember[]
   events        Event[]

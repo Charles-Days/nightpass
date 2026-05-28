@@ -155,31 +155,37 @@ export function EventsPanel({ venueId }: { venueId: string }) {
     <>
       {/* Modal crear evento */}
       <Dialog open={creating} onOpenChange={(v) => !v && setCreating(false)}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl lg:max-w-3xl">
+          <DialogHeader className="shrink-0 border-b border-white/8 px-6 pb-3 pt-5">
             <DialogTitle>Nuevo evento</DialogTitle>
           </DialogHeader>
-          <EventForm
-            venueId={venueId}
-            onSuccess={() => setCreating(false)}
-          />
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+            <EventForm
+              venueId={venueId}
+              onSuccess={() => setCreating(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Modal editar evento */}
       <Dialog open={!!editingEvent} onOpenChange={(v) => !v && setEditingEvent(null)}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Editar: {editingEvent?.title}</DialogTitle>
+        <DialogContent className="flex max-h-[90vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl lg:max-w-3xl">
+          <DialogHeader className="shrink-0 border-b border-white/8 px-6 pb-3 pt-5">
+            <DialogTitle className="truncate">
+              Editar: {editingEvent?.title}
+            </DialogTitle>
           </DialogHeader>
-          {editingEvent ? (
-            <EventForm
-              venueId={venueId}
-              eventId={editingEvent.id}
-              defaultValues={toDefaultValues(editingEvent)}
-              onSuccess={() => setEditingEvent(null)}
-            />
-          ) : null}
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+            {editingEvent ? (
+              <EventForm
+                venueId={venueId}
+                eventId={editingEvent.id}
+                defaultValues={toDefaultValues(editingEvent)}
+                onSuccess={() => setEditingEvent(null)}
+              />
+            ) : null}
+          </div>
         </DialogContent>
       </Dialog>
 

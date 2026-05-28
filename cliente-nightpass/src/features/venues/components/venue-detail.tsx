@@ -12,6 +12,8 @@ import type { Venue } from '@/core/types/api';
 import { useSuspendVenue } from '../hooks/use-suspend-venue';
 import { useReactivateVenue } from '../hooks/use-reactivate-venue';
 import { useFeatureVenue } from '../hooks/use-feature-venue';
+import { useSetVenuePlatformFee } from '../hooks/use-set-platform-fee';
+import { Input } from '@/core/components/ui/input';
 import { useRemoveOwner } from '../hooks/use-assign-owner';
 import { VenueEditForm } from './venue-edit-form';
 import { CheckinQrPanel } from './checkin-qr-panel';
@@ -71,6 +73,10 @@ export function VenueDetail({ venue, hideHeader = false }: { venue: Venue; hideH
   const suspend = useSuspendVenue(venue.id);
   const reactivate = useReactivateVenue(venue.id);
   const feature = useFeatureVenue(venue.id);
+  const setFee = useSetVenuePlatformFee(venue.id);
+  const [feeInput, setFeeInput] = React.useState<string>(
+    String(venue.platformFeePct ?? 0),
+  );
   const [featureDialogOpen, setFeatureDialogOpen] = React.useState(false);
   const isMutating = suspend.isPending || reactivate.isPending;
 
@@ -186,6 +192,50 @@ export function VenueDetail({ venue, hideHeader = false }: { venue: Venue; hideH
             )}
             {venue.isFeatured ? 'Quitar destacado' : 'Destacar en primera plana'}
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Comisión NightPass</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <p className="text-muted-foreground">
+            % que NightPass retiene sobre cada entrada vendida. Se descuenta antes del payout al local.
+          </p>
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Porcentaje (%)
+              </p>
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                value={feeInput}
+                onChange={(e) => setFeeInput(e.target.value)}
+              />
+            </div>
+            <Button
+              type="button"
+              disabled={
+                setFee.isPending ||
+                isNaN(Number(feeInput)) ||
+                Number(feeInput) < 0 ||
+                Number(feeInput) > 100
+              }
+              onClick={() => setFee.mutate(Number(feeInput))}
+            >
+              {setFee.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : null}
+              Guardar
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Actual: <span className="font-semibold text-foreground">{venue.platformFeePct ?? 0}%</span>
+          </p>
         </CardContent>
       </Card>
 

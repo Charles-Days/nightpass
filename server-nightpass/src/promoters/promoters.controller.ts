@@ -118,4 +118,14 @@ export class PromotersController {
   reactivate(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.reactivate(id);
   }
+
+  @Post(':id/platform-fee')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  setPlatformFee(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { platformFeePct: number },
+  ) {
+    return this.service.setPlatformFee(id, Number(body.platformFeePct));
+  }
 }

@@ -105,6 +105,17 @@ export class VenuesController {
     return this.service.setFeatured(id, false);
   }
 
+  @Post(':id/platform-fee')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  setPlatformFee(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { platformFeePct: number },
+  ) {
+    return this.service.setPlatformFee(id, Number(body.platformFeePct));
+  }
+
   @Post(':id/owners')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
