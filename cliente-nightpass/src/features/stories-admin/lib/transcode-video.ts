@@ -8,8 +8,8 @@ type ProgressCb = (pct: number) => void;
 let ffmpegSingleton: FFmpeg | null = null;
 let loadPromise: Promise<FFmpeg> | null = null;
 
-// Single-threaded core build — no COOP/COEP headers needed.
-const CORE_BASE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+// Self-hosted in /public/ffmpeg/ to bypass Turbopack's new URL(import.meta.url) bug.
+const CORE_BASE_URL = '/ffmpeg';
 
 async function getFFmpeg(): Promise<FFmpeg> {
   if (ffmpegSingleton) return ffmpegSingleton;
@@ -19,6 +19,7 @@ async function getFFmpeg(): Promise<FFmpeg> {
     await ff.load({
       coreURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, 'text/javascript'),
       wasmURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, 'application/wasm'),
+      classWorkerURL: await toBlobURL(`${CORE_BASE_URL}/worker.js`, 'text/javascript'),
     });
     ffmpegSingleton = ff;
     return ff;

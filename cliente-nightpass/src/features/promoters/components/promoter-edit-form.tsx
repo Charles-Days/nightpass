@@ -62,7 +62,7 @@ export function PromoterEditForm({ promoter }: Props) {
             kind="venue"
             value={field.value || undefined}
             onChange={(url) => field.onChange(url ?? '')}
-            label="Logo de la promotora"
+            label="Logo del organizador"
           />
         )}
       />

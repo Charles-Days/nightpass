@@ -75,11 +75,133 @@ export class StripeController {
       });
     }
 
-    const link = await this.stripe.createOnboardingLink(
+    const link = await this.stripe.createOnboardingLink({
       stripeAccountId,
-      venue.id,
-    );
+      venueId: venue.id,
+    });
     return { url: link.url };
+  }
+
+  // ── Connect onboarding (Promoter) ─────────────────────────────────────────
+
+  @Post('connect/onboard-promoter')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER)
+  async onboardPromoter(
+    @CurrentUser() user: AuthUser,
+  ): Promise<{ url: string }> {
+    const membership = await this.prisma.promoterMember.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!membership) {
+      throw new NotFoundException('Organizador no encontrado');
+    }
+
+    const promoter = await this.prisma.promoter.findUnique({
+      where: { id: membership.promoterId },
+      include: { stripeAccount: true },
+    });
+    if (!promoter) {
+      throw new NotFoundException('Organizador no encontrado');
+    }
+
+    let stripeAccountId = promoter.stripeAccount?.stripeAccountId;
+
+    if (!stripeAccountId) {
+      let ownerEmail = user.email;
+      if (!ownerEmail) {
+        const dbUser = await this.prisma.user.findUnique({
+          where: { id: user.id },
+          select: { email: true },
+        });
+        ownerEmail = dbUser?.email ?? '';
+      }
+      if (!ownerEmail) {
+        throw new NotFoundException('Email del usuario no disponible');
+      }
+      const account = await this.stripe.createConnectAccount(ownerEmail);
+      stripeAccountId = account.id;
+      await this.prisma.stripeAccount.create({
+        data: {
+          promoterId: promoter.id,
+          stripeAccountId,
+          chargesEnabled: account.charges_enabled ?? false,
+          detailsSubmitted: account.details_submitted ?? false,
+        },
+      });
+    }
+
+    const link = await this.stripe.createOnboardingLink({
+      stripeAccountId,
+      promoterId: promoter.id,
+    });
+    return { url: link.url };
+  }
+
+  @Get('connect/status-promoter')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER, Role.PROMOTER_STAFF)
+  async statusPromoter(@CurrentUser() user: AuthUser): Promise<
+    | { connected: false }
+    | {
+        connected: true;
+        chargesEnabled: boolean;
+        detailsSubmitted: boolean;
+        stripeAccountId: string;
+      }
+  > {
+    const membership = await this.prisma.promoterMember.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!membership) {
+      throw new NotFoundException('Organizador no encontrado');
+    }
+
+    const stripeAccount = await this.prisma.stripeAccount.findUnique({
+      where: { promoterId: membership.promoterId },
+    });
+    if (!stripeAccount) {
+      return { connected: false };
+    }
+
+    // Solo PROMOTER (owner) refresca con Stripe; STAFF lee el snapshot DB.
+    if (user.role === Role.PROMOTER && this.stripe.isEnabled()) {
+      try {
+        const account = await this.stripe.retrieveAccount(
+          stripeAccount.stripeAccountId,
+        );
+        const chargesEnabled = account.charges_enabled ?? false;
+        const detailsSubmitted = account.details_submitted ?? false;
+        if (
+          chargesEnabled !== stripeAccount.chargesEnabled ||
+          detailsSubmitted !== stripeAccount.detailsSubmitted
+        ) {
+          await this.prisma.stripeAccount.update({
+            where: { id: stripeAccount.id },
+            data: { chargesEnabled, detailsSubmitted },
+          });
+        }
+        return {
+          connected: true,
+          chargesEnabled,
+          detailsSubmitted,
+          stripeAccountId: stripeAccount.stripeAccountId,
+        };
+      } catch (err) {
+        this.logger.warn(
+          `No se pudo sincronizar account ${stripeAccount.stripeAccountId}: ${(err as Error).message}`,
+        );
+      }
+    }
+
+    return {
+      connected: true,
+      chargesEnabled: stripeAccount.chargesEnabled,
+      detailsSubmitted: stripeAccount.detailsSubmitted,
+      stripeAccountId: stripeAccount.stripeAccountId,
+    };
   }
 
   @Get('connect/status')

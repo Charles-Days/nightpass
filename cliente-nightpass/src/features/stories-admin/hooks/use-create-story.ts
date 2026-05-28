@@ -72,12 +72,13 @@ export function useCreateStory(venueId: string, options: UseCreateStoryOptions =
       }
 
       setPhase('signing');
+      const baseContentType = (uploadFile.type || 'application/octet-stream').split(';')[0].trim();
       const init = await clientFetch<StoryUploadInit>('/api/stories/upload-init', {
         method: 'POST',
         body: {
           venueId,
           mediaType,
-          contentType: uploadFile.type,
+          contentType: baseContentType,
           sizeBytes: uploadFile.size,
         },
       });
@@ -86,7 +87,7 @@ export function useCreateStory(venueId: string, options: UseCreateStoryOptions =
       const putRes = await fetch(init.signedUrl, {
         method: 'PUT',
         body: uploadFile,
-        headers: { 'Content-Type': uploadFile.type },
+        headers: { 'Content-Type': baseContentType },
       });
       if (!putRes.ok) {
         throw new Error('No pudimos subir el archivo a R2.');

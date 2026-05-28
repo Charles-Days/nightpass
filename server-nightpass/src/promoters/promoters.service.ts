@@ -415,7 +415,7 @@ export class PromotersService {
         .replace(/[^a-z0-9\s-]/g, '')
         .trim()
         .replace(/\s+/g, '-')
-        .slice(0, 60) || 'promotora'
+        .slice(0, 60) || 'organizador'
     );
   }
 

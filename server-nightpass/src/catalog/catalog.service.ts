@@ -156,7 +156,7 @@ export class CatalogService {
       }
     }
 
-    // Solo eventos cuyo venue está ACTIVE (si tiene venue) o promotora ACTIVE (si tiene promotora).
+    // Solo eventos cuyo venue está ACTIVE (si tiene venue) u organizador ACTIVE (si tiene organizador).
     const ownerActive: Prisma.EventWhereInput = {
       OR: [
         { venueId: { not: null }, venue: { status: VenueStatus.ACTIVE } },
@@ -182,10 +182,17 @@ export class CatalogService {
               city: true,
               address: true,
               coverImageUrl: true,
+              stripeAccount: { select: { chargesEnabled: true } },
             },
           },
           promoter: {
-            select: { id: true, slug: true, name: true, logoUrl: true },
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              logoUrl: true,
+              stripeAccount: { select: { chargesEnabled: true } },
+            },
           },
           tiers: {
             orderBy: { position: 'asc' },
@@ -210,7 +217,24 @@ export class CatalogService {
       where: { id, status: EventStatus.PUBLISHED },
       include: {
         tiers: { orderBy: { position: 'asc' } },
-        venue: { select: { id: true, slug: true, name: true, city: true } },
+        venue: {
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            city: true,
+            stripeAccount: { select: { chargesEnabled: true } },
+          },
+        },
+        promoter: {
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            logoUrl: true,
+            stripeAccount: { select: { chargesEnabled: true } },
+          },
+        },
       },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
@@ -236,12 +260,23 @@ export class CatalogService {
             endsAt: true,
             coverImageUrl: true,
             status: true,
+            externalVenueName: true,
+            externalVenueCity: true,
             venue: {
               select: {
                 id: true,
                 slug: true,
                 name: true,
                 city: true,
+                status: true,
+                stripeAccount: { select: { chargesEnabled: true } },
+              },
+            },
+            promoter: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
                 status: true,
                 stripeAccount: { select: { chargesEnabled: true } },
               },
@@ -254,13 +289,24 @@ export class CatalogService {
     if (tier.event.status !== EventStatus.PUBLISHED) {
       throw new NotFoundException('Evento no disponible');
     }
-    if (!tier.event.venue) {
-      throw new NotFoundException('Local no disponible');
-    }
-    if (tier.event.venue.status !== 'ACTIVE') {
-      throw new NotFoundException('Local no disponible');
-    }
+
     const venue = tier.event.venue;
+    const promoter = tier.event.promoter;
+
+    if (!venue && !promoter) {
+      throw new NotFoundException('Evento sin local ni organizador');
+    }
+    if (venue && venue.status !== 'ACTIVE') {
+      throw new NotFoundException('Local no disponible');
+    }
+    if (promoter && !venue && promoter.status !== 'ACTIVE') {
+      throw new NotFoundException('Organizador no disponible');
+    }
+
+    const paymentsEnabled =
+      venue?.stripeAccount?.chargesEnabled === true ||
+      promoter?.stripeAccount?.chargesEnabled === true;
+
     return {
       id: tier.id,
       name: tier.name,
@@ -275,14 +321,25 @@ export class CatalogService {
         startsAt: tier.event.startsAt,
         endsAt: tier.event.endsAt,
         coverImageUrl: tier.event.coverImageUrl,
-        venue: {
-          id: venue.id,
-          slug: venue.slug,
-          name: venue.name,
-          city: venue.city,
-        },
+        venue: venue
+          ? {
+              id: venue.id,
+              slug: venue.slug,
+              name: venue.name,
+              city: venue.city,
+            }
+          : null,
+        promoter: promoter
+          ? {
+              id: promoter.id,
+              slug: promoter.slug,
+              name: promoter.name,
+              externalVenueName: tier.event.externalVenueName,
+              externalVenueCity: tier.event.externalVenueCity,
+            }
+          : null,
       },
-      paymentsEnabled: venue.stripeAccount?.chargesEnabled === true,
+      paymentsEnabled,
     };
   }
 

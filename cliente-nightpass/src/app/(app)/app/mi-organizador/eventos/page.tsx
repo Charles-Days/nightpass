@@ -24,7 +24,7 @@ export default async function MiPromotoraEventosPage() {
           Mis eventos
         </h1>
         <p className="text-sm text-muted-foreground">
-          Crea y gestiona los eventos que produce tu promotora.
+          Crea y gestiona los eventos que organizas.
         </p>
       </header>
 

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Calendar, Users, MapPin, CheckCircle2, PauseCircle } from 'lucide-react';
 import { serverFetch } from '@/core/lib/api/server-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/core/components/ui/card';
+import { StatCard } from '@/core/components/ui/stat-card';
 import { paths } from '@/core/config/paths';
 import type { Venue, User } from '@/core/types/api';
 
@@ -12,41 +13,6 @@ export const metadata = { title: 'Mi local' };
 type VenueWithCount = Venue & {
   _count: { events: number; staff: number };
 };
-
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  href,
-}: {
-  label: string;
-  value: number | string;
-  icon: React.ElementType;
-  href?: string;
-}) {
-  const inner = (
-    <Card className="rounded-[22px] border border-white/10 bg-white/[0.025] transition-colors hover:bg-white/[0.04]">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-        <Icon className="size-4 text-primary/60" />
-      </CardHeader>
-      <CardContent>
-        <p className="bg-gradient-to-br from-white to-purple-200 bg-clip-text font-display text-3xl font-bold text-transparent">
-          {value}
-        </p>
-      </CardContent>
-    </Card>
-  );
-
-  if (href) {
-    return (
-      <Link href={href} className="block">
-        {inner}
-      </Link>
-    );
-  }
-  return inner;
-}
 
 export default async function MiLocalPage() {
   const user = await serverFetch<User>('/auth/me');

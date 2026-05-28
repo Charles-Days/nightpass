@@ -5,8 +5,8 @@ const LABEL: Record<Role, string> = {
   ADMIN: 'Admin',
   VENUE_OWNER: 'Dueño',
   VENUE_STAFF: 'Staff',
-  PROMOTER: 'Promotor',
-  PROMOTER_STAFF: 'Staff promotor',
+  PROMOTER: 'Organizador',
+  PROMOTER_STAFF: 'Staff organizador',
   CUSTOMER: 'Cliente',
 };
 

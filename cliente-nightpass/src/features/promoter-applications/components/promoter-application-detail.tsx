@@ -81,7 +81,7 @@ export function PromoterApplicationDetail({ application, onClose, hideHeader = f
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Datos de la promotora</CardTitle>
+          <CardTitle className="text-base">Datos del organizador</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm md:grid-cols-2">
           <Field label="Nombre" value={application.promoterName} />
@@ -257,10 +257,10 @@ function ApprovalSuccess({
 
       <div className="space-y-1">
         <h2 className="font-display text-2xl font-bold tracking-tight">
-          {promoterName} aprobada
+          {promoterName} aprobado
         </h2>
         <p className="text-sm text-muted-foreground">
-          Solicitud aprobada. Las credenciales fueron enviadas al promotor por email
+          Solicitud aprobada. Las credenciales fueron enviadas al organizador por email
           {applicantEmail ? (
             <>
               {' '}

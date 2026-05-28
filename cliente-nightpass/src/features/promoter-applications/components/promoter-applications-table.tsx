@@ -64,7 +64,7 @@ export function PromoterApplicationsTable({ data }: { data: PaginatedPromoterApp
         <Inbox className="size-8 text-muted-foreground/60" />
         <p className="font-medium">Sin solicitudes</p>
         <p className="text-sm text-muted-foreground">
-          Cuando una promotora aplique va a aparecer aquí.
+          Cuando un organizador aplique va a aparecer aquí.
         </p>
       </div>
     );
@@ -78,7 +78,7 @@ export function PromoterApplicationsTable({ data }: { data: PaginatedPromoterApp
         <table className="w-full min-w-[720px] text-left text-sm">
           <thead className="border-b border-white/8 bg-white/[0.02] text-[11px] uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="px-4 py-3 font-medium">Promotora</th>
+              <th className="px-4 py-3 font-medium">Organizador</th>
               <th className="px-4 py-3 font-medium">Solicitante</th>
               <th className="px-4 py-3 font-medium">Email</th>
               <th className="px-4 py-3 font-medium">Ciudad</th>

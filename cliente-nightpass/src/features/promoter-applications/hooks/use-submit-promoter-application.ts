@@ -16,7 +16,7 @@ export function readSubmitErrorMessage(error: unknown): string {
       const m = payload?.message;
       if (Array.isArray(m)) return m[0] ?? 'Solicitud duplicada';
       if (typeof m === 'string') return m;
-      return 'Ya tienes una solicitud pendiente para esta promotora.';
+      return 'Ya tienes una solicitud pendiente para este organizador.';
     }
     if (error.status === 400) {
       const payload = error.payload as { message?: string | string[] } | null;

@@ -57,7 +57,7 @@ export function PromoterEventEdit({
     onSuccess: () => {
       toast.success('Evento eliminado');
       qc.invalidateQueries({ queryKey: ['events'] });
-      router.push(paths.miPromotoraEventos);
+      router.push(paths.miOrganizadorEventos);
     },
     onError: () => toast.error('No pudimos eliminar el evento'),
   });

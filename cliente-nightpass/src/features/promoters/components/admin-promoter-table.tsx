@@ -24,11 +24,11 @@ function PromoterRowActions({ promoter }: { promoter: Promoter }) {
         method: 'POST',
       }),
     onSuccess: () => {
-      toast.success('Promotora suspendida');
+      toast.success('Organizador suspendido');
       qc.invalidateQueries({ queryKey: ['promoters'] });
       router.refresh();
     },
-    onError: () => toast.error('No pudimos suspender la promotora'),
+    onError: () => toast.error('No pudimos suspender el organizador'),
   });
 
   const reactivate = useMutation({
@@ -37,11 +37,11 @@ function PromoterRowActions({ promoter }: { promoter: Promoter }) {
         method: 'POST',
       }),
     onSuccess: () => {
-      toast.success('Promotora reactivada');
+      toast.success('Organizador reactivado');
       qc.invalidateQueries({ queryKey: ['promoters'] });
       router.refresh();
     },
-    onError: () => toast.error('No pudimos reactivar la promotora'),
+    onError: () => toast.error('No pudimos reactivar el organizador'),
   });
 
   const isMutating = suspend.isPending || reactivate.isPending;
@@ -82,9 +82,9 @@ export function AdminPromoterTable({ data }: { data: PaginatedPromoters }) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 rounded-[22px] border border-white/10 bg-white/[0.025] py-10 text-center sm:py-16">
         <Sparkles className="size-8 text-muted-foreground/60" />
-        <p className="font-medium">Sin promotoras</p>
+        <p className="font-medium">Sin organizadores</p>
         <p className="text-sm text-muted-foreground">
-          Aún no hay promotoras registradas.
+          Aún no hay organizadores registrados.
         </p>
       </div>
     );
@@ -95,7 +95,7 @@ export function AdminPromoterTable({ data }: { data: PaginatedPromoters }) {
       <table className="w-full min-w-[640px] text-left text-sm">
         <thead className="border-b border-white/8 bg-white/[0.02] text-[11px] uppercase tracking-wide text-muted-foreground">
           <tr>
-            <th className="px-4 py-3 font-medium">Promotora</th>
+            <th className="px-4 py-3 font-medium">Organizador</th>
             <th className="px-4 py-3 font-medium">Ciudad</th>
             <th className="px-4 py-3 font-medium">Miembros</th>
             <th className="px-4 py-3 font-medium">Estado</th>

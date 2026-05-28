@@ -27,7 +27,7 @@ export function PromoterEventCreate({ promoterId }: { promoterId: string }) {
     onSuccess: (event) => {
       toast.success('Evento creado');
       qc.invalidateQueries({ queryKey: ['events'] });
-      router.push(`${paths.miPromotoraEventos}/${event.id}`);
+      router.push(`${paths.miOrganizadorEventos}/${event.id}`);
     },
     onError: (err) => toast.error(readError(err)),
   });

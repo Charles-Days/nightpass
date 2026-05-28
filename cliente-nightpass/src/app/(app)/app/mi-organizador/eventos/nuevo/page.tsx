@@ -21,7 +21,7 @@ export default async function NuevoEventoPage() {
     <div className="space-y-6">
       <header className="space-y-1">
         <Link
-          href={paths.miPromotoraEventos}
+          href={paths.miOrganizadorEventos}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" />

@@ -7,7 +7,7 @@ import {
   PromoterStaffList,
 } from '@/features/promoters';
 
-export const metadata = { title: 'Staff de la promotora' };
+export const metadata = { title: 'Staff del organizador' };
 
 export default async function PromoterStaffPage() {
   let me: PromoterMe;
@@ -19,7 +19,7 @@ export default async function PromoterStaffPage() {
   }
 
   if (me.membershipRole !== 'OWNER') {
-    redirect(paths.miPromotora);
+    redirect(paths.miOrganizador);
   }
 
   return (
@@ -32,7 +32,7 @@ export default async function PromoterStaffPage() {
           Mi staff
         </h1>
         <p className="text-sm text-muted-foreground">
-          Invita y gestiona al equipo de tu promotora.
+          Invita y gestiona al equipo que escanea tus pases.
         </p>
       </header>
 

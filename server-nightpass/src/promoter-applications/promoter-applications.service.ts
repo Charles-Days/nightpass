@@ -124,7 +124,7 @@ export class PromoterApplicationsService {
     });
     if (pendingDuplicate) {
       throw new ConflictException(
-        'Ya tienes una solicitud pendiente para esta promotora',
+        'Ya tienes una solicitud pendiente como organizador',
       );
     }
 
@@ -333,7 +333,7 @@ export class PromoterApplicationsService {
     void this.mailer
       .sendPromoterApplicationApproved(
         payload.applicant.email,
-        payload.applicant.name ?? 'tu promotora',
+        payload.applicant.name ?? 'tu cuenta de organizador',
         payload.application.promoterName,
         temporaryPassword,
         payload.isExistingUser,
@@ -352,7 +352,7 @@ export class PromoterApplicationsService {
     void this.mailer
       .sendPromoterApplicationRejected(
         payload.applicant.email,
-        payload.applicant.name ?? 'tu promotora',
+        payload.applicant.name ?? 'tu cuenta de organizador',
         payload.application.promoterName,
         payload.application.rejectionReason ?? undefined,
       )

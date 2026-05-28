@@ -6,7 +6,7 @@ import { paths } from '@/core/config/paths';
 import type { PromoterMe } from '@/core/types/api';
 import { PromoterEditForm } from '@/features/promoters';
 
-export const metadata = { title: 'Editar promotora' };
+export const metadata = { title: 'Editar organizador' };
 
 export default async function MiPromotoraEditarPage() {
   let me: PromoterMe;
@@ -21,11 +21,11 @@ export default async function MiPromotoraEditarPage() {
     <div className="space-y-6">
       <header className="space-y-1">
         <Link
-          href={paths.miPromotora}
+          href={paths.miOrganizador}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
-          Volver a mi promotora
+          Volver al panel
         </Link>
         <h1 className="font-display text-3xl font-bold tracking-tight">
           Editar perfil

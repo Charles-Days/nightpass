@@ -3,7 +3,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OrderStatus, Role, VenueStaffStatus } from '@prisma/client';
+import {
+  OrderStatus,
+  PromoterMemberRole,
+  Role,
+  VenueStaffStatus,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { OrdersService } from '../orders/orders.service';
@@ -64,6 +69,34 @@ export class PasesService {
     }
 
     throw new ForbiddenException('No tienes acceso a este local');
+  }
+
+  private async assertPromoterAccess(
+    promoterId: string,
+    user: AuthUser,
+  ): Promise<void> {
+    if (user.role === Role.ADMIN) return;
+
+    if (user.role === Role.PROMOTER || user.role === Role.PROMOTER_STAFF) {
+      const link = await this.prisma.promoterMember.findUnique({
+        where: { userId_promoterId: { userId: user.id, promoterId } },
+        select: { role: true },
+      });
+      if (!link) {
+        throw new ForbiddenException('No tienes acceso a este organizador');
+      }
+      // PROMOTER role en JWT requiere ser OWNER del membership;
+      // PROMOTER_STAFF requiere ser STAFF (cualquiera basta).
+      if (
+        user.role === Role.PROMOTER &&
+        link.role !== PromoterMemberRole.OWNER
+      ) {
+        throw new ForbiddenException('No tienes acceso a este organizador');
+      }
+      return;
+    }
+
+    throw new ForbiddenException('No tienes acceso a este organizador');
   }
 
   // ─── Venue stats ───────────────────────────────────────────────────────────
@@ -171,6 +204,167 @@ export class PasesService {
     const upcoming = await this.prisma.event.findFirst({
       where: {
         venueId,
+        status: 'PUBLISHED',
+        startsAt: { gte: now },
+      },
+      orderBy: { startsAt: 'asc' },
+      select: { id: true, title: true, startsAt: true },
+    });
+
+    let upcomingEvent: {
+      id: string;
+      title: string;
+      startsAt: Date;
+      vendidos: number;
+    } | null = null;
+    if (upcoming) {
+      const vendidos = await this.prisma.pass.count({
+        where: { eventId: upcoming.id },
+      });
+      upcomingEvent = {
+        id: upcoming.id,
+        title: upcoming.title,
+        startsAt: upcoming.startsAt,
+        vendidos,
+      };
+    }
+
+    const totalRevenue = revenue._sum.totalCents ?? 0;
+    const totalFees = revenue._sum.applicationFeeCents ?? 0;
+    const passesPending = Math.max(passesSold - passesRedeemed, 0);
+    const redeemRate = passesSold > 0 ? passesRedeemed / passesSold : 0;
+
+    return {
+      totalRevenue,
+      totalFees,
+      ordersCount,
+      passesSold,
+      passesRedeemed,
+      passesPending,
+      redeemRate,
+      upcomingEvent,
+      dailySeries: dailySeries.map((row) => ({
+        day:
+          row.day instanceof Date
+            ? row.day.toISOString().slice(0, 10)
+            : String(row.day).slice(0, 10),
+        sales: Number(row.sales) || 0,
+        revenue: Number(row.revenue) || 0,
+      })),
+      byEvent,
+      range: { from: from.toISOString(), to: to.toISOString() },
+    };
+  }
+
+  // ─── Promoter stats ────────────────────────────────────────────────────────
+
+  async getPromoterStats(
+    promoterId: string,
+    query: PasesQueryDto,
+    user: AuthUser,
+  ) {
+    await this.assertPromoterAccess(promoterId, user);
+
+    const { from, to } = this.resolveRange(query);
+    const promoterOrderWhere = {
+      event: { promoterId },
+      status: OrderStatus.COMPLETED,
+      createdAt: { gte: from, lte: to },
+    } as const;
+    const promoterPassWhere = {
+      event: { promoterId },
+      createdAt: { gte: from, lte: to },
+    } as const;
+
+    const [revenue, ordersCount, passesSold, passesRedeemed, byEventRaw, dailySeries] =
+      await this.prisma.$transaction([
+        this.prisma.order.aggregate({
+          where: promoterOrderWhere,
+          _sum: { totalCents: true, applicationFeeCents: true },
+          _count: true,
+        }),
+        this.prisma.order.count({ where: promoterOrderWhere }),
+        this.prisma.pass.count({ where: promoterPassWhere }),
+        this.prisma.pass.count({
+          where: { ...promoterPassWhere, usedAt: { not: null } },
+        }),
+        this.prisma.order.groupBy({
+          by: ['eventId'],
+          where: promoterOrderWhere,
+          _sum: { totalCents: true, applicationFeeCents: true },
+          _count: true,
+          orderBy: { eventId: 'asc' },
+        }),
+        this.prisma.$queryRaw<
+          Array<{ day: Date; sales: number; revenue: number }>
+        >`
+          SELECT DATE(o."createdAt") as day,
+                 COUNT(*)::int as sales,
+                 COALESCE(SUM(o."totalCents"), 0)::int as revenue
+          FROM orders o
+          JOIN events e ON e.id = o."eventId"
+          WHERE e."promoterId" = ${promoterId}::uuid
+            AND o.status = 'COMPLETED'
+            AND o."createdAt" >= ${from}
+            AND o."createdAt" <= ${to}
+          GROUP BY DATE(o."createdAt")
+          ORDER BY day ASC
+        `,
+      ]);
+
+    const eventIds = byEventRaw.map((row) => row.eventId);
+    const eventsMeta = eventIds.length
+      ? await this.prisma.event.findMany({
+          where: { id: { in: eventIds } },
+          select: { id: true, title: true, startsAt: true, capacity: true },
+        })
+      : [];
+    const eventsById = new Map(eventsMeta.map((e) => [e.id, e]));
+
+    const redeemedByEvent = eventIds.length
+      ? await this.prisma.pass.groupBy({
+          by: ['eventId'],
+          where: {
+            eventId: { in: eventIds },
+            usedAt: { not: null },
+          },
+          _count: true,
+        })
+      : [];
+    const redeemedById = new Map(
+      redeemedByEvent.map((r) => [r.eventId, r._count]),
+    );
+
+    const passesSoldByEvent = eventIds.length
+      ? await this.prisma.pass.groupBy({
+          by: ['eventId'],
+          where: { eventId: { in: eventIds } },
+          _count: true,
+        })
+      : [];
+    const soldById = new Map(
+      passesSoldByEvent.map((r) => [r.eventId, r._count]),
+    );
+
+    const byEvent = byEventRaw.map((row) => {
+      const meta = eventsById.get(row.eventId);
+      return {
+        eventId: row.eventId,
+        title: meta?.title ?? '',
+        startsAt: meta?.startsAt ?? null,
+        capacity: meta?.capacity ?? null,
+        vendidos: soldById.get(row.eventId) ?? row._count,
+        canjeados: redeemedById.get(row.eventId) ?? 0,
+        ingresos: row._sum?.totalCents ?? 0,
+        fees: row._sum?.applicationFeeCents ?? 0,
+        ordersCount: row._count,
+      };
+    });
+
+    const now = new Date();
+    const upcoming = await this.prisma.event.findFirst({
+      where: {
+        promoterId,
         status: 'PUBLISHED',
         startsAt: { gte: now },
       },

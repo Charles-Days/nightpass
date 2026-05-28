@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { FileVideo, Loader2, Radio, Sparkles, UploadCloud, X } from 'lucide-react';
+import { Camera, FileVideo, Loader2, Radio, Sparkles, UploadCloud, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/core/components/ui/button';
 import { Textarea } from '@/core/components/ui/textarea';
@@ -12,6 +12,9 @@ import {
   type ValidatedMedia,
   validateAndPrepare,
 } from '../lib/media-utils';
+import { StoryRecorder } from './story-recorder';
+
+type UploaderMode = 'pick' | 'record';
 
 interface StoryUploaderProps {
   venueId: string;
@@ -29,6 +32,7 @@ export function StoryUploader({ venueId, venueName }: StoryUploaderProps) {
   const [caption, setCaption] = React.useState('');
   const [dragOver, setDragOver] = React.useState(false);
   const [validating, setValidating] = React.useState(false);
+  const [mode, setMode] = React.useState<UploaderMode>('pick');
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const create = useCreateStory(venueId, {
@@ -45,8 +49,26 @@ export function StoryUploader({ venueId, venueName }: StoryUploaderProps) {
       return null;
     });
     setCaption('');
+    setMode('pick');
     if (inputRef.current) inputRef.current.value = '';
   }, []);
+
+  const handleRecorded = React.useCallback(
+    (file: File, durationMs: number) => {
+      if (media?.previewUrl) URL.revokeObjectURL(media.previewUrl);
+      const safeDuration = durationMs > 0 ? Math.min(durationMs, MAX_VIDEO_DURATION_MS) : undefined;
+      setMedia({
+        file,
+        mediaType: 'VIDEO',
+        durationMs: safeDuration,
+        previewUrl: URL.createObjectURL(file),
+        needsTranscode: false,
+        playable: true,
+      });
+      setMode('pick');
+    },
+    [media?.previewUrl],
+  );
 
   React.useEffect(() => {
     return () => {
@@ -130,49 +152,86 @@ export function StoryUploader({ venueId, venueName }: StoryUploaderProps) {
       </div>
 
       {!media ? (
-        <label
-          htmlFor="story-file-input"
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragOver(false);
-            handleFiles(e.dataTransfer.files);
-          }}
-          className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[18px] border-2 border-dashed px-6 py-10 text-center transition ${
-            dragOver
-              ? 'border-primary/60 bg-primary/10'
-              : 'border-white/15 bg-white/[0.015] hover:border-white/25 hover:bg-white/[0.04]'
-          }`}
-        >
-          <div className="grid size-12 place-items-center rounded-full border border-white/10 bg-white/[0.04]">
-            {validating ? (
-              <Loader2 className="size-5 animate-spin text-primary" />
-            ) : (
-              <UploadCloud className="size-5 text-primary" />
-            )}
+        <div className="space-y-3">
+          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
+            <button
+              type="button"
+              onClick={() => setMode('pick')}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition ${
+                mode === 'pick'
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/60 hover:text-white/85'
+              }`}
+            >
+              <UploadCloud className="size-3.5" />
+              Subir archivo
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('record')}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition ${
+                mode === 'record'
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/60 hover:text-white/85'
+              }`}
+            >
+              <Camera className="size-3.5" />
+              Grabar
+            </button>
           </div>
-          <div>
-            <p className="text-sm font-medium text-white/85">
-              {validating ? 'Validando archivo…' : 'Arrastra una foto o video aquí'}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              o haz click para elegir desde tu dispositivo.
-            </p>
-          </div>
-          <input
-            ref={inputRef}
-            id="story-file-input"
-            type="file"
-            accept={ACCEPT_ATTR}
-            className="hidden"
-            disabled={validating}
-            onChange={(e) => handleFiles(e.target.files)}
-          />
-        </label>
+
+          {mode === 'record' ? (
+            <StoryRecorder
+              maxDurationMs={MAX_VIDEO_DURATION_MS}
+              onRecorded={handleRecorded}
+              onCancel={() => setMode('pick')}
+            />
+          ) : (
+            <label
+              htmlFor="story-file-input"
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                handleFiles(e.dataTransfer.files);
+              }}
+              className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[18px] border-2 border-dashed px-6 py-10 text-center transition ${
+                dragOver
+                  ? 'border-primary/60 bg-primary/10'
+                  : 'border-white/15 bg-white/[0.015] hover:border-white/25 hover:bg-white/[0.04]'
+              }`}
+            >
+              <div className="grid size-12 place-items-center rounded-full border border-white/10 bg-white/[0.04]">
+                {validating ? (
+                  <Loader2 className="size-5 animate-spin text-primary" />
+                ) : (
+                  <UploadCloud className="size-5 text-primary" />
+                )}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white/85">
+                  {validating ? 'Validando archivo…' : 'Arrastra una foto o video aquí'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  o haz click para elegir desde tu dispositivo.
+                </p>
+              </div>
+              <input
+                ref={inputRef}
+                id="story-file-input"
+                type="file"
+                accept={ACCEPT_ATTR}
+                className="hidden"
+                disabled={validating}
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+            </label>
+          )}
+        </div>
       ) : (
         <div className="space-y-4">
           <div className="relative overflow-hidden rounded-[18px] border border-white/10 bg-black">

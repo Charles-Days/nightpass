@@ -4,7 +4,7 @@ import { paths } from '@/core/config/paths';
 import type { PaginatedPromoters, PromoterStatus } from '@/core/types/api';
 import { AdminPromoterTable } from '@/features/promoters';
 
-export const metadata = { title: 'Promotoras' };
+export const metadata = { title: 'Organizadores' };
 
 interface PageProps {
   searchParams: Promise<{ status?: string; search?: string; page?: string }>;
@@ -35,10 +35,10 @@ export default async function PromotorasListPage({ searchParams }: PageProps) {
       <header className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-            Promotoras
+            Organizadores
           </h1>
           <p className="text-sm text-muted-foreground">
-            Todas las promotoras registradas en NightPass.
+            Todos los organizadores registrados en NightPass.
           </p>
         </div>
       </header>
@@ -51,8 +51,8 @@ export default async function PromotorasListPage({ searchParams }: PageProps) {
             if (s.value !== 'ALL') params.set('status', s.value);
             if (search) params.set('search', search);
             const href = params.toString()
-              ? `${paths.adminPromoters}?${params.toString()}`
-              : paths.adminPromoters;
+              ? `${paths.adminOrganizadores}?${params.toString()}`
+              : paths.adminOrganizadores;
             return (
               <Link
                 key={s.value}
@@ -73,7 +73,7 @@ export default async function PromotorasListPage({ searchParams }: PageProps) {
       <AdminPromoterTable data={data} />
 
       <p className="text-xs text-muted-foreground">
-        {data.total} promotoras · página {data.page}
+        {data.total} organizadores · página {data.page}
       </p>
     </div>
   );

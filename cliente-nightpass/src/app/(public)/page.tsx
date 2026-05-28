@@ -549,9 +549,9 @@ function ForPromoters() {
               ))}
             </div>
             <div className="order-1 lg:order-2">
-              <Eyebrow>Para promotores</Eyebrow>
+              <Eyebrow>Para organizadores</Eyebrow>
               <h2 className="mt-3 font-display text-4xl font-bold leading-tight tracking-[-0.03em] sm:text-5xl">
-                ¿Eres promotor
+                ¿Eres organizador
                 <br />
                 de eventos?
               </h2>
@@ -563,8 +563,8 @@ function ForPromoters() {
                 size="lg"
                 className="mt-8 rounded-full shadow-[0_10px_30px_-8px_rgba(168,85,247,0.65)]"
               >
-                <Link href={paths.solicitarPromotora}>
-                  Solicitar promotora
+                <Link href={paths.solicitarOrganizador}>
+                  Solicitar organizador
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>

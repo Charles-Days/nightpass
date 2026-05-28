@@ -79,14 +79,28 @@ export class StripeService {
     });
   }
 
-  async createOnboardingLink(
-    stripeAccountId: string,
-    venueId: string,
-  ): Promise<Stripe.AccountLink> {
-    const refreshUrl = `${this.adminWebUrl}/mi-local?stripe=refresh&venueId=${venueId}`;
-    const returnUrl = `${this.adminWebUrl}/mi-local?stripe=return&venueId=${venueId}`;
+  async createOnboardingLink(params: {
+    stripeAccountId: string;
+    venueId?: string;
+    promoterId?: string;
+  }): Promise<Stripe.AccountLink> {
+    let refreshUrl: string;
+    let returnUrl: string;
+
+    if (params.venueId) {
+      refreshUrl = `${this.adminWebUrl}/app/mi-local/pagos?stripe=refresh&venueId=${params.venueId}`;
+      returnUrl = `${this.adminWebUrl}/app/mi-local/pagos?stripe=return&venueId=${params.venueId}`;
+    } else if (params.promoterId) {
+      refreshUrl = `${this.adminWebUrl}/app/mi-organizador/pagos?stripe=refresh&promoterId=${params.promoterId}`;
+      returnUrl = `${this.adminWebUrl}/app/mi-organizador/pagos?stripe=return&promoterId=${params.promoterId}`;
+    } else {
+      throw new ServiceUnavailableException(
+        'createOnboardingLink requiere venueId o promoterId',
+      );
+    }
+
     return this.requireClient().accountLinks.create({
-      account: stripeAccountId,
+      account: params.stripeAccountId,
       refresh_url: refreshUrl,
       return_url: returnUrl,
       type: 'account_onboarding',

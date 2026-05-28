@@ -17,6 +17,7 @@ import {
   Menu,
   Pencil,
   Radio,
+  Smartphone,
   type LucideIcon,
 } from 'lucide-react';
 import { useLogout } from '@/features/auth';
@@ -64,6 +65,7 @@ const PROMOTER_NAV: NavItem[] = [
   { href: paths.miOrganizador, label: 'Mi panel', icon: Sparkles, enabled: true, roles: ['PROMOTER', 'PROMOTER_STAFF'] },
   { href: paths.miOrganizadorEditar, label: 'Editar perfil', icon: Pencil, enabled: true, roles: ['PROMOTER'] },
   { href: paths.miOrganizadorEventos, label: 'Eventos', icon: Calendar, enabled: true, roles: ['PROMOTER', 'PROMOTER_STAFF'] },
+  { href: paths.miOrganizadorPagos, label: 'Pagos', icon: CreditCard, enabled: true, roles: ['PROMOTER'] },
   { href: paths.miOrganizadorScanner, label: 'Escanear pase', icon: QrCode, enabled: true, roles: ['PROMOTER', 'PROMOTER_STAFF'] },
   { href: paths.miOrganizadorStaff, label: 'Staff', icon: Users, enabled: true, roles: ['PROMOTER'] },
 ];
@@ -147,6 +149,7 @@ const ROLE_LABEL: Record<Role, string> = {
 
 interface SidebarBodyProps {
   user: User;
+  contextName: string | null;
   platformItems: NavItem[];
   venueItems: NavItem[];
   promoterItems: NavItem[];
@@ -156,8 +159,19 @@ interface SidebarBodyProps {
   onNavigate?: () => void;
 }
 
+function sidebarHeader(role: Role, contextName: string | null): { title: string; subtitle: string } {
+  if ((role === 'VENUE_OWNER' || role === 'VENUE_STAFF') && contextName) {
+    return { title: `Admin · ${contextName}`, subtitle: role === 'VENUE_OWNER' ? 'Tu local' : 'Staff de local' };
+  }
+  if ((role === 'PROMOTER' || role === 'PROMOTER_STAFF') && contextName) {
+    return { title: `Admin · ${contextName}`, subtitle: role === 'PROMOTER' ? 'Tus eventos' : 'Staff de organizador' };
+  }
+  return { title: clientEnv.NEXT_PUBLIC_APP_NAME, subtitle: 'Panel admin' };
+}
+
 function SidebarBody({
   user,
+  contextName,
   platformItems,
   venueItems,
   promoterItems,
@@ -166,13 +180,14 @@ function SidebarBody({
   isLoggingOut,
   onNavigate,
 }: SidebarBodyProps) {
+  const header = sidebarHeader(user.role, contextName);
   return (
     <div className="flex h-full flex-col px-4 py-6">
       <div className="mb-8 px-2">
-        <span className="bg-gradient-to-r from-white to-purple-300 bg-clip-text font-display text-lg font-bold tracking-tight text-transparent">
-          {clientEnv.NEXT_PUBLIC_APP_NAME}
+        <span className="block truncate bg-gradient-to-r from-white to-purple-300 bg-clip-text font-display text-lg font-bold tracking-tight text-transparent">
+          {header.title}
         </span>
-        <p className="text-xs text-primary/70 mt-0.5">Panel admin</p>
+        <p className="text-xs text-primary/70 mt-0.5">{header.subtitle}</p>
       </div>
       <nav className="flex-1 space-y-6 overflow-y-auto">
         <NavSection
@@ -202,6 +217,14 @@ function SidebarBody({
             {ROLE_LABEL[user.role]}
           </p>
         </div>
+        <Link
+          href={paths.appHome}
+          onClick={onNavigate}
+          className="mb-1 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-primary transition hover:bg-primary/10"
+        >
+          <Smartphone className="size-4" />
+          Ir a la app
+        </Link>
         <Button
           variant="ghost"
           size="sm"
@@ -217,7 +240,7 @@ function SidebarBody({
   );
 }
 
-export function AppShell({ user, children }: { user: User; children: React.ReactNode }) {
+export function AppShell({ user, contextName = null, children }: { user: User; contextName?: string | null; children: React.ReactNode }) {
   const pathname = usePathname();
   const { mutate: logout, isPending } = useLogout();
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -239,6 +262,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-[260px] flex-col border-r border-white/8 bg-white/[0.03] backdrop-blur-xl md:flex">
         <SidebarBody
           user={user}
+          contextName={contextName}
           platformItems={platformItems}
           venueItems={venueItems}
           promoterItems={promoterItems}
@@ -259,6 +283,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
           </SheetHeader>
           <SidebarBody
             user={user}
+            contextName={contextName}
             platformItems={platformItems}
             venueItems={venueItems}
             promoterItems={promoterItems}
@@ -288,9 +313,17 @@ export function AppShell({ user, children }: { user: User; children: React.React
           </Button>
           <Link
             href={paths.dashboard}
-            className="bg-gradient-to-r from-white to-purple-300 bg-clip-text font-display text-base font-bold tracking-tight text-transparent"
+            className="flex-1 truncate bg-gradient-to-r from-white to-purple-300 bg-clip-text font-display text-base font-bold tracking-tight text-transparent"
           >
-            {clientEnv.NEXT_PUBLIC_APP_NAME}
+            {sidebarHeader(user.role, contextName).title}
+          </Link>
+          <Link
+            href={paths.appHome}
+            aria-label="Ir a la app"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary transition active:scale-95 hover:bg-primary/15"
+          >
+            <Smartphone className="size-3.5" />
+            App
           </Link>
         </header>
 

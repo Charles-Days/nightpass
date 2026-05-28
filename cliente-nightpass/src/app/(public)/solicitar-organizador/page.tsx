@@ -2,7 +2,7 @@ import { Inbox, Mail, Sparkles, type LucideIcon } from 'lucide-react';
 import { Reveal } from '@/core/components/reveal';
 import { PromoterApplicationForm } from '@/features/promoter-applications';
 
-export const metadata = { title: 'Solicitar registro de promotora' };
+export const metadata = { title: 'Solicitar registro de organizador' };
 
 export default function SolicitarPromotoraPage() {
   return (
@@ -11,7 +11,7 @@ export default function SolicitarPromotoraPage() {
       <div className="relative mx-auto max-w-6xl">
         <header className="max-w-2xl">
           <p className="np-rise text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-            Para promotores
+            Para organizadores
           </p>
           <h1
             className="np-rise mt-4 font-display text-4xl font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl lg:text-6xl"
@@ -24,7 +24,7 @@ export default function SolicitarPromotoraPage() {
             className="np-rise mt-5 text-base leading-relaxed text-muted-foreground sm:text-lg"
             style={{ animationDelay: '280ms' }}
           >
-            Cuéntanos sobre tu promotora y los eventos que organizas. Revisamos tu solicitud y te
+            Cuéntanos sobre ti y los eventos que organizas. Revisamos tu solicitud y te
             avisamos por email — sin papeleo, sin cuentas que crear.
           </p>
         </header>
@@ -49,12 +49,12 @@ function Steps() {
     {
       icon: Inbox,
       title: 'Llenas el formulario',
-      desc: 'Tus datos y los de tu promotora. No pedimos contraseña — la generamos cuando te aprobamos.',
+      desc: 'Tus datos y los de tu marca como organizador. No pedimos contraseña — la generamos cuando te aprobamos.',
     },
     {
       icon: Sparkles,
       title: 'Revisamos en 24-48 h',
-      desc: 'Verificamos tu promotora y nos aseguramos que tenga sentido para nuestros usuarios.',
+      desc: 'Verificamos tu perfil de organizador y nos aseguramos que tenga sentido para nuestros usuarios.',
     },
     {
       icon: Mail,

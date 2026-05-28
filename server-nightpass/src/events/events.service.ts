@@ -49,10 +49,10 @@ export class EventsService {
   }
 
   /**
-   * Verifica que el usuario tiene permisos sobre el evento (vía venue o promotora).
+   * Verifica que el usuario tiene permisos sobre el evento (vía venue u organizador).
    * - ADMIN: siempre pasa.
    * - VENUE_OWNER/VENUE_STAFF: debe tener entrada en VenueOwner para ese venue.
-   * - PROMOTER/PROMOTER_STAFF: debe tener entrada en PromoterMember para esa promotora.
+   * - PROMOTER/PROMOTER_STAFF: debe tener entrada en PromoterMember para ese organizador.
    */
   private async ensureEventOwner(
     params: OwnerParams,
@@ -84,7 +84,7 @@ export class EventsService {
         select: { userId: true },
       });
       if (!link) {
-        throw new NotFoundException('Promotora no encontrada o sin permisos');
+        throw new NotFoundException('Organizador no encontrado o sin permisos');
       }
       return;
     }
@@ -105,7 +105,7 @@ export class EventsService {
     if (hasPromoter) {
       if (!dto.externalVenueName || !dto.externalVenueCity) {
         throw new BadRequestException(
-          'Los eventos de promotora requieren externalVenueName y externalVenueCity',
+          'Los eventos del organizador requieren externalVenueName y externalVenueCity',
         );
       }
     }
@@ -261,7 +261,7 @@ export class EventsService {
 
     if (hasExternalUpdate && !isPromoterEvent) {
       throw new BadRequestException(
-        'Solo eventos de promotora pueden modificar la ubicación externa',
+        'Solo eventos del organizador pueden modificar la ubicación externa',
       );
     }
 

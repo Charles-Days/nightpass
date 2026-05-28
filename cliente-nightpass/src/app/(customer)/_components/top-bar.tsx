@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LogIn, ShieldCheck } from 'lucide-react';
+import { Camera, LogIn, ShieldCheck } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { paths } from '@/core/config/paths';
 import type { Role } from '@/core/types/api';
@@ -74,16 +74,30 @@ export function TopBar({ user }: Props) {
           </Link>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {user ? (
             <>
+              {(user.role === 'VENUE_OWNER' || user.role === 'VENUE_STAFF') && (
+                <Link
+                  href={`${paths.miLocalStories}?compose=record&return=app`}
+                  aria-label="Subir historia"
+                  title="Subir historia"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-fuchsia-400/30 bg-gradient-to-tr from-fuchsia-500/15 via-purple-500/15 to-pink-500/15 px-2.5 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-fuchsia-200 transition active:scale-95 hover:from-fuchsia-500/25 hover:via-purple-500/25 hover:to-pink-500/25 sm:px-3"
+                >
+                  <Camera className="size-3.5" />
+                  <span className="hidden sm:inline">Historia</span>
+                </Link>
+              )}
               {user.role !== 'CUSTOMER' && (
-                <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-                  <Link href={paths.dashboard}>
-                    <ShieldCheck className="size-4" />
-                    Panel
-                  </Link>
-                </Button>
+                <Link
+                  href={paths.dashboard}
+                  aria-label="Ir al panel"
+                  title="Panel"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-primary transition active:scale-95 hover:bg-primary/15 sm:px-3"
+                >
+                  <ShieldCheck className="size-3.5" />
+                  <span className="hidden sm:inline">Panel</span>
+                </Link>
               )}
               <Button
                 asChild

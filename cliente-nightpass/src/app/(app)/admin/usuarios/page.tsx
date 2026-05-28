@@ -15,8 +15,8 @@ const ROLE_FILTERS: { value: Role | 'ALL'; label: string }[] = [
   { value: 'ADMIN', label: 'Admins' },
   { value: 'VENUE_OWNER', label: 'Dueños' },
   { value: 'VENUE_STAFF', label: 'Staff' },
-  { value: 'PROMOTER', label: 'Promotores' },
-  { value: 'PROMOTER_STAFF', label: 'Staff promotor' },
+  { value: 'PROMOTER', label: 'Organizadores' },
+  { value: 'PROMOTER_STAFF', label: 'Staff organizador' },
   { value: 'CUSTOMER', label: 'Clientes' },
 ];
 

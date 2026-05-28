@@ -76,11 +76,11 @@ export default async function ApplicationsListPage({ searchParams }: PageProps) 
           Revisa y aprueba
         </h1>
         <p className="text-sm text-muted-foreground">
-          Locales y promotoras que quieren registrarse en NightPass.
+          Locales y organizadores que quieren registrarse en NightPass.
         </p>
       </header>
 
-      {/* Tabs primarios: Locales | Promotoras */}
+      {/* Tabs primarios: Locales | Organizadores */}
       <div className="flex flex-wrap gap-2">
         <TypePill
           href={buildHref('local', 'PENDING')}
@@ -93,7 +93,7 @@ export default async function ApplicationsListPage({ searchParams }: PageProps) 
           href={buildHref('promotora', 'PENDING')}
           active={type === 'promotora'}
           icon={<Megaphone className="size-4" />}
-          label="Promotoras"
+          label="Organizadores"
           count={promoterPendingCount}
         />
       </div>

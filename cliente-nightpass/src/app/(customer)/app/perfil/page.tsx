@@ -3,10 +3,12 @@ import { redirect } from 'next/navigation';
 import {
   ArrowLeft,
   Bell,
+  Camera,
   ChevronRight,
   CreditCard,
   HelpCircle,
   KeyRound,
+  LayoutDashboard,
   Mail,
   MapPin,
   Shield,
@@ -32,8 +34,8 @@ const ROLE_LABEL: Record<Role, string> = {
   ADMIN: 'Administrador',
   VENUE_OWNER: 'Dueno de local',
   VENUE_STAFF: 'Staff de local',
-  PROMOTER: 'Promotor',
-  PROMOTER_STAFF: 'Staff promotor',
+  PROMOTER: 'Organizador',
+  PROMOTER_STAFF: 'Staff organizador',
   CUSTOMER: 'Insider',
 };
 
@@ -107,9 +109,36 @@ export default async function PerfilPage() {
         <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
           Mi cuenta
         </p>
-        <h1 className="mt-3 font-display text-3xl font-bold leading-[1.05] tracking-[-0.035em] sm:text-5xl">
-          Hola, {firstName}.
-        </h1>
+        <div className="mt-3 flex flex-wrap items-center gap-2 sm:gap-3">
+          <h1 className="font-display text-3xl font-bold leading-[1.05] tracking-[-0.035em] sm:text-5xl">
+            Hola, {firstName}.
+          </h1>
+          {(user.role === 'VENUE_OWNER' || user.role === 'VENUE_STAFF') && (
+            <Link
+              href={`${paths.miLocalStories}?compose=record&return=profile`}
+              aria-label="Subir historia del local"
+              title="Subir historia"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-fuchsia-400/30 bg-gradient-to-tr from-fuchsia-500/15 via-purple-500/15 to-pink-500/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-fuchsia-200 transition active:scale-95 hover:from-fuchsia-500/25 hover:via-purple-500/25 hover:to-pink-500/25"
+            >
+              <Camera className="size-3.5" />
+              Historia
+            </Link>
+          )}
+          {(user.role === 'VENUE_OWNER' ||
+            user.role === 'VENUE_STAFF' ||
+            user.role === 'PROMOTER' ||
+            user.role === 'PROMOTER_STAFF') && (
+            <Link
+              href={paths.dashboard}
+              aria-label="Ir al panel de gestión"
+              title="Ir al panel"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-primary transition active:scale-95 hover:bg-primary/15"
+            >
+              <LayoutDashboard className="size-3.5" />
+              Panel
+            </Link>
+          )}
+        </div>
       </section>
 
       {/* MEMBERSHIP CARD */}

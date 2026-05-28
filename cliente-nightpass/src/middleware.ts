@@ -16,15 +16,15 @@ const ADMIN_PREFIXES = [
   '/dashboard',
   '/admin',
   '/mi-local',
-  '/app/mi-promotora',
+  '/app/mi-organizador',
   '/cambiar-password',
   '/scanner',
 ];
 
 // Rutas reservadas a roles de local.
 const VENUE_PREFIXES = ['/mi-local'];
-// Rutas reservadas a roles de promotora.
-const PROMOTER_PREFIXES = ['/app/mi-promotora'];
+// Rutas reservadas a roles de organizador.
+const PROMOTER_PREFIXES = ['/app/mi-organizador'];
 
 // Rutas customer que requieren login (cualquier rol autenticado, incluyendo CUSTOMER).
 const CUSTOMER_PROTECTED_PREFIXES = [
@@ -92,7 +92,7 @@ export async function middleware(req: NextRequest) {
     if (isAuthRoute) {
       let target = '/dashboard';
       if (role === 'CUSTOMER') target = '/app';
-      else if (role === 'PROMOTER' || role === 'PROMOTER_STAFF') target = '/app/mi-promotora';
+      else if (role === 'PROMOTER' || role === 'PROMOTER_STAFF') target = '/app/mi-organizador';
       else if (role === 'VENUE_OWNER' || role === 'VENUE_STAFF') target = '/mi-local';
       return NextResponse.redirect(new URL(target, req.url));
     }
@@ -102,12 +102,12 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/app', req.url));
     }
 
-    // Roles de promotora no entran a /mi-local ni a /admin (excepto ADMIN).
+    // Roles de organizador no entran a /mi-local ni a /admin (excepto ADMIN).
     if ((role === 'PROMOTER' || role === 'PROMOTER_STAFF') && (isVenueRoute || pathname.startsWith('/admin'))) {
-      return NextResponse.redirect(new URL('/app/mi-promotora', req.url));
+      return NextResponse.redirect(new URL('/app/mi-organizador', req.url));
     }
 
-    // Roles de local no entran al panel promotor.
+    // Roles de local no entran al panel organizador.
     if ((role === 'VENUE_OWNER' || role === 'VENUE_STAFF') && isPromoterRoute) {
       return NextResponse.redirect(new URL('/mi-local', req.url));
     }

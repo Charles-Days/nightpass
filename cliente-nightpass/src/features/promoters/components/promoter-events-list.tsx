@@ -42,7 +42,7 @@ export function PromoterEventsList() {
           {data ? `${data.total} evento${data.total !== 1 ? 's' : ''}` : '—'}
         </p>
         <Button asChild size="sm" className="gap-1.5 rounded-full">
-          <Link href={paths.miPromotoraEventosNuevo}>
+          <Link href={paths.miOrganizadorEventosNuevo}>
             <Plus className="size-3.5" />
             Nuevo evento
           </Link>
@@ -60,7 +60,7 @@ export function PromoterEventsList() {
             Aún no tienes eventos.
           </p>
           <Button asChild size="sm" className="mt-4 gap-1.5 rounded-full">
-            <Link href={paths.miPromotoraEventosNuevo}>
+            <Link href={paths.miOrganizadorEventosNuevo}>
               <Plus className="size-3.5" />
               Crear el primero
             </Link>
@@ -71,7 +71,7 @@ export function PromoterEventsList() {
           {data.items.map((event) => (
             <Link
               key={event.id}
-              href={`${paths.miPromotoraEventos}/${event.id}`}
+              href={`${paths.miOrganizadorEventos}/${event.id}`}
               className="flex items-center justify-between gap-3 rounded-[14px] border border-white/10 bg-white/[0.025] px-4 py-3 text-sm transition-colors hover:bg-white/[0.05]"
             >
               <div className="min-w-0 flex-1">

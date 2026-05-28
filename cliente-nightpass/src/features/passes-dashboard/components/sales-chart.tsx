@@ -10,18 +10,7 @@ import {
   YAxis,
 } from 'recharts';
 import type { PassesStatsDailyPoint } from '@/core/types/api';
-
-const mxnFormatter = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
-  maximumFractionDigits: 0,
-});
-
-function fmtDay(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
-}
+import { formatDay, formatMoney } from '@/core/lib/format';
 
 interface TooltipPayloadItem {
   payload: PassesStatsDailyPoint & { label?: string };
@@ -32,12 +21,12 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: Tooltip
   const point = payload[0].payload;
   return (
     <div className="rounded-lg border border-white/10 bg-[#0a0a0f]/95 px-3 py-2 text-xs shadow-lg backdrop-blur">
-      <p className="font-medium text-white/90">{fmtDay(point.day)}</p>
+      <p className="font-medium text-white/90">{formatDay(point.day)}</p>
       <p className="text-muted-foreground">
         Pases: <span className="text-white/90">{point.sales}</span>
       </p>
       <p className="text-muted-foreground">
-        Ingresos: <span className="text-white/90">{mxnFormatter.format(point.revenue / 100)}</span>
+        Ingresos: <span className="text-white/90">{formatMoney(point.revenue)}</span>
       </p>
     </div>
   );
@@ -63,7 +52,7 @@ export function SalesChart({ data }: { data: PassesStatsDailyPoint[] }) {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
               <XAxis
                 dataKey="day"
-                tickFormatter={fmtDay}
+                tickFormatter={formatDay}
                 stroke="rgba(255,255,255,0.4)"
                 tickLine={false}
                 axisLine={false}

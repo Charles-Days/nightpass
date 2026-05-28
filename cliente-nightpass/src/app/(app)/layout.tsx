@@ -1,15 +1,16 @@
 import { redirect } from 'next/navigation';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
-import type { User } from '@/core/types/api';
+import type { User, PromoterMe } from '@/core/types/api';
 import { AppShell } from './_components/app-shell';
+
+type VenueLite = { id: string; name: string };
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   let user: User;
   try {
     user = await serverFetch<User>('/auth/me');
   } catch (error) {
-    // 401/403 → login. Red caída o 5xx del backend → al login también, no 500.
     if (error instanceof ServerApiError) {
       if (error.status === 401 || error.status === 403 || error.isNetwork || error.status >= 500) {
         redirect(paths.login);
@@ -22,5 +23,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect(`/api/auth/logout?next=${encodeURIComponent('/login?reason=customer-blocked')}`);
   }
 
-  return <AppShell user={user}>{children}</AppShell>;
+  let contextName: string | null = null;
+  if (user.role === 'VENUE_OWNER' || user.role === 'VENUE_STAFF') {
+    try {
+      const venues = await serverFetch<VenueLite[]>('/venues/my');
+      contextName = venues[0]?.name ?? null;
+    } catch {
+      contextName = null;
+    }
+  } else if (user.role === 'PROMOTER' || user.role === 'PROMOTER_STAFF') {
+    try {
+      const me = await serverFetch<PromoterMe>('/promoters/me');
+      contextName = me.promoter?.name ?? null;
+    } catch {
+      contextName = null;
+    }
+  }
+
+  return <AppShell user={user} contextName={contextName}>{children}</AppShell>;
 }

@@ -26,6 +26,21 @@ export class OrdersService {
     private readonly loyalty: LoyaltyService,
   ) {}
 
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  /**
+   * Devuelve la cuenta Stripe asociada al evento — del venue si lo tiene,
+   * o del promoter si el evento es de un organizador.
+   */
+  private resolveStripeAccount(event: {
+    venue?: { stripeAccount?: { stripeAccountId: string; chargesEnabled: boolean } | null } | null;
+    promoter?: { stripeAccount?: { stripeAccountId: string; chargesEnabled: boolean } | null } | null;
+  }): { stripeAccountId: string; chargesEnabled: boolean } | null {
+    return (
+      event.venue?.stripeAccount ?? event.promoter?.stripeAccount ?? null
+    );
+  }
+
   // ── Crear orden + PaymentIntent ──────────────────────────────────────────
 
   async create(
@@ -52,7 +67,10 @@ export class OrdersService {
       where: { id: tierId },
       include: {
         event: {
-          include: { venue: { include: { stripeAccount: true } } },
+          include: {
+            venue: { include: { stripeAccount: true } },
+            promoter: { include: { stripeAccount: true } },
+          },
         },
       },
     });
@@ -78,21 +96,21 @@ export class OrdersService {
       );
     }
 
-    if (!event.venue) {
+    if (!event.venue && !event.promoter) {
       throw new HttpException(
         {
-          message: 'Evento sin local — compras no disponibles',
-          errorCode: 'EVENT_HAS_NO_VENUE',
+          message: 'Evento sin local ni organizador — compras no disponibles',
+          errorCode: 'EVENT_HAS_NO_OWNER',
         },
         HttpStatus.CONFLICT,
       );
     }
-    const stripeAccount = event.venue.stripeAccount;
+    const stripeAccount = this.resolveStripeAccount(event);
     if (!stripeAccount?.chargesEnabled) {
       throw new HttpException(
         {
           message:
-            'Local sin pagos configurados — el dueño debe completar Stripe onboarding',
+            'Cuenta sin pagos configurados — el dueño debe completar Stripe onboarding',
           errorCode: 'NO_STRIPE',
         },
         HttpStatus.SERVICE_UNAVAILABLE,
@@ -247,14 +265,17 @@ export class OrdersService {
       include: {
         tiers: true,
         venue: { include: { owners: { select: { userId: true } } } },
+        promoter: { include: { members: { select: { userId: true } } } },
       },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
     if (user.role !== Role.ADMIN) {
-      const isOwner =
+      const isVenueOwner =
         event.venue?.owners.some((o) => o.userId === user.id) ?? false;
-      if (!isOwner) {
+      const isPromoterMember =
+        event.promoter?.members.some((m) => m.userId === user.id) ?? false;
+      if (!isVenueOwner && !isPromoterMember) {
         throw new ForbiddenException('No tienes acceso a las ventas de este evento');
       }
     }

@@ -114,8 +114,8 @@ export function InstallTutorial({ open, onOpenChange }: InstallTutorialProps) {
                     title="Tocá el botón Compartir"
                     desc={
                       platform.browser === 'safari'
-                        ? 'Cuadrado con flecha hacia arriba. En iPhone vertical está abajo; en iPad o paisaje, arriba a la derecha.'
-                        : 'En la barra de direcciones, a la derecha de la URL. Es un cuadrado con flecha hacia arriba. Requiere iOS 16.4 o más reciente.'
+                        ? 'Cuadrado con flecha hacia arriba. En iPhone vertical está abajo; en iPad o paisaje, arriba a la derecha. Si no lo ves, abrí el menú "aA" o los tres puntos al lado de la URL y elegí "Compartir".'
+                        : 'En la barra de direcciones, a la derecha de la URL. Cuadrado con flecha hacia arriba. Si no aparece directo, abrí los tres puntos del navegador y elegí "Compartir". Requiere iOS 16.4 o más reciente.'
                     }
                   />
                   <Step

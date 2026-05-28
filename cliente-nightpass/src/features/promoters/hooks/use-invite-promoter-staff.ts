@@ -15,8 +15,8 @@ interface InvitePromoterStaffResponse {
 
 function readError(error: unknown): string {
   if (error instanceof ClientApiError) {
-    if (error.status === 404) return 'Promotora no encontrada';
-    if (error.status === 409) return 'Esta persona ya es staff de tu promotora';
+    if (error.status === 404) return 'Organizador no encontrado';
+    if (error.status === 409) return 'Esta persona ya es staff de tu equipo';
   }
   return 'No pudimos enviar la invitación';
 }

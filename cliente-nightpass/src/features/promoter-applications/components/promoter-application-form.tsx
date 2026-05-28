@@ -138,14 +138,14 @@ export function PromoterApplicationForm() {
       <section className="space-y-4">
         <header className="space-y-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/80">
-            Tu promotora
+            Tu perfil de organizador
           </p>
           <p className="text-xs leading-relaxed text-muted-foreground">
             Cuéntanos sobre tu marca o colectivo y dónde mueves eventos.
           </p>
         </header>
         <Field
-          label="Nombre de la promotora"
+          label="Nombre del organizador"
           htmlFor="promoter.name"
           error={errors.promoter?.name?.message}
         >
@@ -187,7 +187,7 @@ export function PromoterApplicationForm() {
             <IconInput
               id="promoter.instagram"
               icon={AtSign}
-              placeholder="@tu_promotora"
+              placeholder="@tu_marca"
               {...register('promoter.instagram')}
             />
           </Field>
@@ -264,7 +264,7 @@ export function PromoterApplicationForm() {
             id="promoter.message"
             rows={3}
             className="flex w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            placeholder="Cuéntanos algo más sobre tu promotora…"
+            placeholder="Cuéntanos algo más sobre lo que organizas…"
             {...register('promoter.message')}
           />
         </Field>

@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -20,6 +21,9 @@ import {
   AuthUser,
   CurrentUser,
 } from '../auth/decorators/current-user.decorator';
+import { PrismaService } from '../prisma/prisma.service';
+import { PasesService } from '../pases/pases.service';
+import { PasesQueryDto } from '../pases/dto/pases-query.dto';
 import { PromotersService } from './promoters.service';
 import { UpdatePromoterDto } from './dto/update-promoter.dto';
 import { InvitePromoterStaffDto } from './dto/invite-promoter-staff.dto';
@@ -28,7 +32,11 @@ import { ListPromotersQuery } from './dto/list-promoters.query';
 @Controller('promoters')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PromotersController {
-  constructor(private readonly service: PromotersService) {}
+  constructor(
+    private readonly service: PromotersService,
+    private readonly pases: PasesService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Get('me')
   @Roles(Role.PROMOTER, Role.PROMOTER_STAFF)
@@ -69,6 +77,20 @@ export class PromotersController {
     @Param('userId', ParseUUIDPipe) userId: string,
   ) {
     return this.service.revokeStaffByUser(user.id, userId);
+  }
+
+  @Get('me/stats')
+  @Roles(Role.PROMOTER, Role.PROMOTER_STAFF)
+  async getMyStats(
+    @CurrentUser() user: AuthUser,
+    @Query() query: PasesQueryDto,
+  ) {
+    const membership = await this.prisma.promoterMember.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!membership) throw new NotFoundException('Organizador no encontrado');
+    return this.pases.getPromoterStats(membership.promoterId, query, user);
   }
 
   @Get()

@@ -2,11 +2,19 @@ import { redirect } from 'next/navigation';
 import { serverFetch } from '@/core/lib/api/server-client';
 import type { Story, User, Venue } from '@/core/types/api';
 import { paths } from '@/core/config/paths';
-import { StoriesManager } from '@/features/stories-admin';
+import { OwnerStoriesManager } from '@/features/stories-admin';
 
 export const metadata = { title: 'Historias · NightPass Admin' };
 
-export default async function MiLocalStoriesPage() {
+export default async function MiLocalStoriesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ compose?: string; return?: string }>;
+}) {
+  const { compose, return: returnParam } = await searchParams;
+  const autoStart: 'record' | 'photo' | null =
+    compose === 'record' ? 'record' : compose === 'photo' ? 'photo' : null;
+  const returnTo = returnParam === 'app' || returnParam === 'profile' ? returnParam : null;
   const user = await serverFetch<User>('/auth/me');
   if (user.role === 'ADMIN') {
     redirect(paths.adminStories);
@@ -44,10 +52,12 @@ export default async function MiLocalStoriesPage() {
           Comparte momentos del local. Las historias se borran solas a las 24h.
         </p>
       </header>
-      <StoriesManager
+      <OwnerStoriesManager
         venueId={venue.id}
         venueName={venue.name}
         initialStories={initialStories}
+        autoStart={autoStart}
+        returnTo={returnTo}
       />
     </div>
   );

@@ -8,10 +8,10 @@ import type { UpdatePromoterInput } from '../schemas/promoter.schema';
 
 function readError(error: unknown): string {
   if (error instanceof ClientApiError) {
-    if (error.status === 404) return 'Promotora no encontrada';
+    if (error.status === 404) return 'Organizador no encontrado';
     if (error.status === 400) return 'Datos inválidos';
   }
-  return 'No pudimos actualizar la promotora';
+  return 'No pudimos actualizar el organizador';
 }
 
 export function useUpdatePromoter() {
@@ -21,7 +21,7 @@ export function useUpdatePromoter() {
     mutationFn: (input: UpdatePromoterInput) =>
       clientFetch<Promoter>('/api/promoters/me', { method: 'PATCH', body: input }),
     onSuccess: () => {
-      toast.success('Promotora actualizada');
+      toast.success('Organizador actualizado');
       qc.invalidateQueries({ queryKey: ['promoter-me'] });
       router.refresh();
     },
