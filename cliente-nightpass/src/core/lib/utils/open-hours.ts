@@ -21,12 +21,29 @@ function parseHHMM(s: string): number | null {
   return h * 60 + min;
 }
 
+function normalizeDayValue(v: unknown): string | null {
+  if (typeof v === 'string') return v.trim() || null;
+  if (Array.isArray(v)) {
+    const joined = v.map((x) => String(x)).filter(Boolean).join(' · ');
+    return joined || null;
+  }
+  if (v && typeof v === 'object') {
+    const obj = v as { open?: unknown; close?: unknown; closed?: unknown };
+    if (obj.closed === true) return 'closed';
+    const open = typeof obj.open === 'string' ? obj.open : null;
+    const close = typeof obj.close === 'string' ? obj.close : null;
+    if (open && close) return `${open}-${close}`;
+    return null;
+  }
+  return null;
+}
+
 function findHoursForDay(raw: Record<string, unknown> | null, dayIdx: number): string | null {
   if (!raw || typeof raw !== 'object') return null;
   const targetKey = DAY_KEYS[dayIdx];
   for (const [k, v] of Object.entries(raw)) {
     const norm = k.toLowerCase().slice(0, 3);
-    if (norm === targetKey && typeof v === 'string') return v;
+    if (norm === targetKey) return normalizeDayValue(v);
   }
   return null;
 }
@@ -89,9 +106,17 @@ export function computeOpenStatus(raw: Record<string, unknown> | null | undefine
 export function formatOpenHours(raw: Record<string, unknown> | null | undefined): Array<{ day: string; hours: string }> {
   if (!raw || typeof raw !== 'object') return [];
   return Object.entries(raw)
-    .map(([k, v]) => ({
-      day: DAY_LABELS[k.toLowerCase()] ?? k,
-      hours: typeof v === 'string' ? v : Array.isArray(v) ? v.join(' · ') : String(v ?? ''),
-    }))
-    .filter((entry) => entry.hours.trim().length > 0);
+    .map(([k, v]) => {
+      const norm = normalizeDayValue(v);
+      const hours = !norm
+        ? ''
+        : norm.toLowerCase() === 'closed'
+          ? 'Cerrado'
+          : norm;
+      return {
+        day: DAY_LABELS[k.toLowerCase()] ?? k,
+        hours,
+      };
+    })
+    .filter((entry) => entry.hours.length > 0);
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, EventStatus, Role, VenueStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LocationsService } from '../locations/locations.service';
@@ -476,5 +476,57 @@ export class CatalogService {
     else bucket = 'high';
 
     return { venueId: venue.id, windowMinutes, bucket, updatedAt };
+  }
+
+  // ─── Event forum ─────────────────────────────────────────────────────────────
+
+  private async assertForumOpen(eventId: string): Promise<void> {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: { id: true, startsAt: true, endsAt: true, status: true },
+    });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+    if (event.status !== EventStatus.PUBLISHED) {
+      throw new ForbiddenException('Evento no disponible');
+    }
+    const now = Date.now();
+    const start = event.startsAt.getTime() - 2 * 60 * 60 * 1000;
+    const end = event.endsAt.getTime() + 2 * 60 * 60 * 1000;
+    if (now < start || now > end) {
+      throw new ForbiddenException('FORUM_CLOSED');
+    }
+  }
+
+  async listForumPosts(eventId: string) {
+    await this.assertForumOpen(eventId);
+    const posts = await this.prisma.eventForumPost.findMany({
+      where: { eventId, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: {
+        id: true,
+        body: true,
+        createdAt: true,
+        user: { select: { id: true, name: true } },
+      },
+    });
+    return { items: posts };
+  }
+
+  async createForumPost(eventId: string, userId: string, body: string) {
+    await this.assertForumOpen(eventId);
+    const trimmed = body.trim();
+    if (trimmed.length < 1 || trimmed.length > 280) {
+      throw new BadRequestException('Mensaje inválido');
+    }
+    return this.prisma.eventForumPost.create({
+      data: { eventId, userId, body: trimmed },
+      select: {
+        id: true,
+        body: true,
+        createdAt: true,
+        user: { select: { id: true, name: true } },
+      },
+    });
   }
 }

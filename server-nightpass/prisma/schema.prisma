@@ -108,6 +108,7 @@ model User {
   streak               UserStreak?
   loyaltyTotal         UserLoyaltyTotal?
   createdStories       Story[]               @relation("StoryAuthor")
+  forumPosts           EventForumPost[]
 
   @@map("users")
 }
@@ -379,6 +380,7 @@ model Event {
   passes        Pass[]
   loyaltyEvents LoyaltyEvent[]
   stories       Story[]
+  forumPosts    EventForumPost[]
 
   @@unique([venueId, slug])
   @@unique([promoterId, slug])
@@ -387,6 +389,22 @@ model Event {
   @@index([startsAt])
   @@index([externalVenueCity])
   @@map("events")
+}
+
+model EventForumPost {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  eventId   String    @db.Uuid
+  userId    String    @db.Uuid
+  body      String    @db.VarChar(280)
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, createdAt])
+  @@index([userId])
+  @@map("event_forum_posts")
 }
 
 model EventTier {

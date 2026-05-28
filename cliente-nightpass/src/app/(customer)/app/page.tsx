@@ -49,13 +49,6 @@ const QUICK_FILTERS = [
   { label: 'Indie', q: 'indie' },
 ];
 
-const COMING_SOON_TEASERS = [
-  { name: 'Más bares en camino', area: 'CDMX', when: 'Esta semana' },
-  { name: 'Próximamente', area: 'Roma Norte', when: 'En 2 semanas' },
-  { name: 'Próximamente', area: 'Condesa', when: 'En 3 semanas' },
-  { name: 'Próximamente', area: 'Polanco', when: 'Pronto' },
-];
-
 function formatPrice(cents: number | null, currency: string | null): string | null {
   if (cents == null) return null;
   const amount = (cents / 100).toFixed(0);
@@ -448,58 +441,31 @@ export default async function CustomerHomePage() {
         </section>
       )}
 
-      {/* ── COMING SOON ── */}
-      <section className="mb-12">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-          <h2 className="font-display text-base font-bold tracking-[-0.01em] text-white/55">
-            Próximamente en {featuredCity}
-          </h2>
-          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">
-            Activamos bares nuevos cada semana
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {COMING_SOON_TEASERS.map((b, i) => (
-            <div
-              key={`${b.name}-${i}`}
-              className="flex min-h-[140px] flex-col justify-between rounded-2xl border border-dashed border-white/10 bg-white/[0.015] p-4 opacity-80"
-            >
-              <div
-                className="size-8 rounded-lg opacity-50"
-                style={{
-                  background: `linear-gradient(135deg, hsl(${260 + i * 15} 40% 30%), hsl(${290 + i * 10} 35% 20%))`,
-                }}
-              />
-              <div>
-                <p className="font-display text-sm font-semibold text-white/85">{b.name}</p>
-                <p className="mt-0.5 text-[11px] text-white/45">{b.area}</p>
-                <span className="mt-2.5 inline-block rounded-md bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary">
-                  {b.when}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── OWNER CTA STRIP ── */}
+      {/* ── OWNER / PROMOTER CTA STRIP ── */}
       <section className="mb-4">
-        <div className="flex flex-col items-start gap-4 rounded-2xl border border-primary/22 bg-primary/[0.06] p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-6">
-          <div>
-            <p className="font-display text-base font-semibold text-white sm:text-lg">
-              ¿Tienes un bar?
-            </p>
-            <p className="mt-1 text-sm text-white/65">
-              Súmate a NightPass y aparece aquí esta misma semana.
-            </p>
+        <div className="rounded-2xl border border-primary/22 bg-primary/[0.06] p-5 sm:p-6">
+          <p className="font-display text-base font-semibold text-white sm:text-lg">
+            ¿Eres parte de la noche?
+          </p>
+          <p className="mt-1 text-sm text-white/65">
+            Súmate a NightPass como local o como organizador de eventos.
+          </p>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <Link
+              href={paths.solicitarLocal}
+              className="group/cta inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-primary bg-primary/10 px-5 py-2.5 text-sm font-semibold text-white transform-gpu transition-all duration-200 hover:bg-primary/20 active:scale-95"
+            >
+              Soy un local
+              <ArrowRight className="size-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
+            </Link>
+            <Link
+              href={paths.solicitarOrganizador}
+              className="group/cta inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-white transform-gpu transition-all duration-200 hover:bg-white/[0.08] active:scale-95"
+            >
+              Soy organizador
+              <ArrowRight className="size-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
+            </Link>
           </div>
-          <Link
-            href={paths.solicitarLocal}
-            className="group/cta inline-flex shrink-0 items-center gap-2 rounded-full border border-primary px-5 py-2.5 text-sm font-semibold text-white transform-gpu transition-all duration-200 hover:bg-primary/15 active:scale-95"
-          >
-            Soy un local
-            <ArrowRight className="size-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
-          </Link>
         </div>
       </section>
     </div>

@@ -19,8 +19,12 @@ export function StoryProgressBars({ total, currentIndex, currentProgress }: Prop
             className="h-0.5 flex-1 overflow-hidden rounded-full bg-white/25"
           >
             <div
-              className="h-full bg-white transition-[width] duration-100 ease-linear"
-              style={{ width: `${width}%` }}
+              className="h-full bg-white"
+              style={{
+                width: `${width}%`,
+                transition: i === currentIndex ? 'none' : 'width 120ms linear',
+                willChange: 'width',
+              }}
             />
           </div>
         );

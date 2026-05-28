@@ -12,6 +12,7 @@ import {
 } from '@/core/types/api';
 import { TIER_STYLES } from '@/features/loyalty';
 import { EventStoriesSection } from '@/app/(customer)/_components/event-stories-section';
+import { EventForumSection } from '@/app/(customer)/_components/event-forum-section';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -128,6 +129,12 @@ export default async function EventDetailPage({ params }: Props) {
       </section>
 
       <EventStoriesSection eventId={event.id} />
+
+      <EventForumSection
+        eventId={event.id}
+        startsAt={event.startsAt}
+        endsAt={event.endsAt}
+      />
 
       <section className="np-rise mt-8" style={{ animationDelay: '400ms' }}>
         <h2 className="mb-4 font-display text-xl font-bold tracking-tight">Boletos</h2>

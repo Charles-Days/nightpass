@@ -139,14 +139,14 @@ export function StoriesViewer({
         goNext();
         return;
       }
-      rafRef.current = window.setTimeout(tick, PROGRESS_TICK_MS) as unknown as number;
+      rafRef.current = window.requestAnimationFrame(tick) as unknown as number;
     };
     tick();
 
     return () => {
       cancelled = true;
       if (rafRef.current != null) {
-        clearTimeout(rafRef.current);
+        cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
     };

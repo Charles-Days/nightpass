@@ -14,6 +14,7 @@ interface Props {
 
 export function StoryMedia({ story, paused, onReady, onEnded, onVideoTimeUpdate }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -24,6 +25,31 @@ export function StoryMedia({ story, paused, onReady, onEnded, onVideoTimeUpdate 
       v.play().catch(() => {});
     }
   }, [paused]);
+
+  // rAF-driven progress: HTMLVideoElement.onTimeUpdate fires only ~4x/sec,
+  // causing choppy progress bar. Read currentTime directly each frame.
+  useEffect(() => {
+    if (story.mediaType !== 'VIDEO') return;
+    if (!onVideoTimeUpdate) return;
+    const v = videoRef.current;
+    if (!v) return;
+
+    let cancelled = false;
+    const loop = () => {
+      if (cancelled) return;
+      const el = videoRef.current;
+      if (el && el.duration > 0 && !el.paused) {
+        onVideoTimeUpdate(el.currentTime * 1000, el.duration * 1000);
+      }
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+    return () => {
+      cancelled = true;
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [story.id, story.mediaType, onVideoTimeUpdate]);
 
   if (story.mediaType === 'VIDEO') {
     return (
@@ -38,12 +64,6 @@ export function StoryMedia({ story, paused, onReady, onEnded, onVideoTimeUpdate 
         className="size-full object-contain"
         onLoadedData={onReady}
         onEnded={onEnded}
-        onTimeUpdate={(e) => {
-          const el = e.currentTarget;
-          if (onVideoTimeUpdate && el.duration > 0) {
-            onVideoTimeUpdate(el.currentTime * 1000, el.duration * 1000);
-          }
-        }}
       />
     );
   }

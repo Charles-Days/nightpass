@@ -1,9 +1,28 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
+import { IsString, MaxLength, MinLength } from 'class-validator';
 import { CatalogService } from './catalog.service';
 import { ListCatalogVenuesQuery } from './dto/list-catalog-venues.query';
 import { ListCatalogEventsQuery } from './dto/list-catalog-events.query';
 import { GetVenueOccupancyQuery } from './dto/get-venue-occupancy.query';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser, type AuthUser } from '../auth/decorators/current-user.decorator';
+
+class CreateForumPostDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(280)
+  body!: string;
+}
 
 @Controller('catalog')
 @SkipThrottle()
@@ -51,5 +70,21 @@ export class CatalogController {
   @Get('stats')
   getStats() {
     return this.service.getPublicStats();
+  }
+
+  @Get('events/:id/forum')
+  @UseGuards(JwtAuthGuard)
+  listForum(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.listForumPosts(id);
+  }
+
+  @Post('events/:id/forum')
+  @UseGuards(JwtAuthGuard)
+  createForumPost(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateForumPostDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.service.createForumPost(id, user.id, dto.body);
   }
 }

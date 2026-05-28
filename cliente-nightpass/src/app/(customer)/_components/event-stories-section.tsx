@@ -1,8 +1,12 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import * as React from 'react';
 import Image from 'next/image';
-import type { Story } from '@/core/types/api';
+import { useQuery } from '@tanstack/react-query';
+import type { Story, VenueStoriesGroup } from '@/core/types/api';
+import { StoriesViewer } from '@/features/stories-public/components/stories-viewer';
+import { useViewedStories } from '@/features/stories-public/hooks/use-viewed-stories';
+import { cn } from '@/core/lib/utils/cn';
 
 interface EventStoriesResponse {
   eventId: string;
@@ -23,42 +27,90 @@ export function EventStoriesSection({ eventId }: { eventId: string }) {
     refetchInterval: 600_000,
   });
 
+  const { allViewed } = useViewedStories();
+  const [open, setOpen] = React.useState(false);
+
   const stories = data?.stories ?? [];
   if (stories.length === 0) return null;
+
+  const firstStory = stories[0];
+  const everythingViewed = allViewed(stories.map((s) => s.id));
+  const ringClass = everythingViewed
+    ? 'bg-white/15'
+    : 'bg-gradient-to-tr from-fuchsia-500 via-purple-500 to-pink-500';
+
+  const groups: VenueStoriesGroup[] = [
+    {
+      venueId: data?.eventId ?? eventId,
+      venueSlug: eventId,
+      venueName: data?.eventTitle ?? 'Evento',
+      venueCoverImageUrl: data?.eventCoverImageUrl ?? null,
+      stories,
+    },
+  ];
 
   return (
     <section className="np-rise mt-6">
       <h2 className="mb-3 font-display text-lg font-bold tracking-tight">
         Historias del evento
       </h2>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-        {stories.map((story) => (
-          <div
-            key={story.id}
-            className="relative aspect-[9/16] overflow-hidden rounded-[12px] border border-white/10 bg-black"
-          >
-            {story.mediaType === 'IMAGE' ? (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="group flex flex-col items-center gap-1.5 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full"
+        aria-label="Ver historias del evento"
+      >
+        <span
+          className={cn(
+            'relative grid size-20 place-items-center rounded-full p-[2.5px] transition-transform duration-200 group-hover:scale-[1.04] group-active:scale-95',
+            ringClass,
+          )}
+        >
+          <span className="relative size-[72px] overflow-hidden rounded-full border border-black/80 bg-black">
+            {firstStory.mediaType === 'IMAGE' ? (
               <Image
-                src={story.mediaUrl}
+                src={firstStory.mediaUrl}
                 alt="Historia"
                 fill
-                sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 16vw"
+                sizes="80px"
                 loading="lazy"
                 className="object-cover"
               />
             ) : (
               <video
-                src={story.mediaUrl}
+                src={`${firstStory.mediaUrl}#t=0.1`}
                 muted
-                loop
                 playsInline
                 preload="metadata"
                 className="size-full object-cover"
+                onLoadedMetadata={(e) => {
+                  try {
+                    e.currentTarget.currentTime = 0.1;
+                  } catch {
+                    // ignore
+                  }
+                }}
               />
             )}
-          </div>
-        ))}
-      </div>
+            {stories.length > 1 ? (
+              <span className="absolute right-0 bottom-0 grid size-5 place-items-center rounded-full border-2 border-black bg-primary text-[10px] font-bold text-white">
+                {stories.length}
+              </span>
+            ) : null}
+          </span>
+        </span>
+        <span className="mt-1.5 line-clamp-1 max-w-[100px] text-center text-[11px] text-white/70">
+          Ver historias
+        </span>
+      </button>
+
+      {open ? (
+        <StoriesViewer
+          groups={groups}
+          initialVenueIndex={0}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
     </section>
   );
 }
