@@ -30,6 +30,10 @@ export interface RpStats {
   eventStats: Array<{
     eventId: string;
     eventName: string;
+    eventStartsAt: string | null;
+    eventEndsAt: string | null;
+    eventCoverImageUrl: string | null;
+    isPassed: boolean;
     salesCount: number;
     earningsCents: number;
     rule: {
@@ -106,7 +110,7 @@ export function useRpMeStats() {
 export function useCreateRp() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { email: string; displayName: string; password?: string; promoterId?: string }) =>
+    mutationFn: (data: { email: string; displayName: string; password?: string; promoterId?: string; eventId?: string }) =>
       clientFetch<RpProfile>('/api/rp', {
         method: 'POST',
         body: data,

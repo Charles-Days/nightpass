@@ -53,7 +53,7 @@ export default function RpDashboardPage() {
   const passedEvents = stats.eventStats.filter(e => e.isPassed);
   const visibleEvents = activeTab === 'active' ? activeEvents : passedEvents;
 
-  const formatDate = (isoString: string) => {
+  const formatDate = (isoString: string | null) => {
     if (!isoString) return '';
     return new Date(isoString).toLocaleDateString('es-MX', {
       weekday: 'short',
