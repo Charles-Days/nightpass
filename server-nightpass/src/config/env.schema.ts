@@ -62,6 +62,12 @@ export const envSchema = z.object({
 
   // Google OAuth (Sign in with Google). Sin GOOGLE_CLIENT_ID el endpoint /auth/google devuelve 503.
   GOOGLE_CLIENT_ID: z.string().optional(),
+
+  // Web Push (VAPID). Sin las dos keys el PushService corre en modo no-op.
+  // Generar con: npx web-push generate-vapid-keys
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().default('mailto:nightpass02@gmail.com'),
 }).refine(
   (env) => !env.STRIPE_SECRET_KEY || !!env.PASS_HMAC_SECRET,
   {

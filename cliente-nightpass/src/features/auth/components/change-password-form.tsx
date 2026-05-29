@@ -14,8 +14,14 @@ import { ClientApiError, clientFetch } from '@/core/lib/api/client-client';
 
 const schema = z
   .object({
-    oldPassword: z.string().min(8, 'Mínimo 8 caracteres'),
-    newPassword: z.string().min(8, 'Mínimo 8 caracteres').max(128),
+    oldPassword: z.string().min(1, 'Requerido'),
+    newPassword: z
+      .string()
+      .min(10, 'La nueva contraseña debe tener al menos 10 caracteres')
+      .max(128)
+      .regex(/[A-Z]/, 'Debe incluir al menos una mayúscula')
+      .regex(/[a-z]/, 'Debe incluir al menos una minúscula')
+      .regex(/[0-9]/, 'Debe incluir al menos un número'),
     confirmPassword: z.string(),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {
@@ -42,6 +48,10 @@ export function ChangePasswordForm() {
     onError: (err) => {
       if (err instanceof ClientApiError && err.status === 401) {
         toast.error('Contraseña actual incorrecta');
+      } else if (err instanceof ClientApiError && err.status === 400) {
+        const raw = (err.payload as { message?: string | string[] })?.message;
+        const msg = Array.isArray(raw) ? raw[0] : raw;
+        toast.error(msg || 'La nueva contraseña no cumple los requisitos');
       } else {
         toast.error('No pudimos cambiar la contraseña');
       }

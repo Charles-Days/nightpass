@@ -2,7 +2,11 @@ import { Inbox, Mail, Sparkles, type LucideIcon } from 'lucide-react';
 import { Reveal } from '@/core/components/reveal';
 import { ApplicationForm } from '@/features/venue-applications';
 
-export const metadata = { title: 'Solicitar registro de local' };
+export const metadata = {
+  title: 'Solicitar registro de local',
+  description: 'Registra tu bar o local en NightPass y empieza a vender pases.',
+  alternates: { canonical: '/solicitar-local' },
+};
 
 export default function SolicitarLocalPage() {
   return (

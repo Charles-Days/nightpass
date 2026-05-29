@@ -16,8 +16,10 @@ import {
   Users,
   Utensils,
 } from 'lucide-react';
-import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
+import { ServerApiError, publicFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
+import { absoluteUrl } from '@/core/config/env';
+import { JsonLd, localBusinessLd, breadcrumbLd } from '@/core/seo/json-ld';
 import type { CatalogVenueDetail } from '@/core/types/api';
 import { StoryRing } from '@/features/stories-public';
 import { computeOpenStatus, formatOpenHours } from '@/core/lib/utils/open-hours';
@@ -30,10 +32,18 @@ interface Props {
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   try {
-    const venue = await serverFetch<CatalogVenueDetail>(`/catalog/venues/${slug}`);
+    const venue = await publicFetch<CatalogVenueDetail>(`/catalog/venues/${slug}`, {
+      revalidate: 300,
+    });
+    const title = `${venue.name} — NightPass`;
+    const description = venue.description ?? `Compra tu cover para ${venue.name} en ${venue.city}.`;
+    const path = `${paths.bar}/${slug}`;
     return {
-      title: `${venue.name} — NightPass`,
-      description: venue.description ?? `Compra tu cover para ${venue.name} en ${venue.city}.`,
+      title,
+      description,
+      alternates: { canonical: path },
+      openGraph: { title, description, url: absoluteUrl(path), type: 'website' as const },
+      twitter: { card: 'summary_large_image' as const, title, description },
     };
   } catch {
     return { title: 'Bar — NightPass' };
@@ -60,14 +70,33 @@ export default async function VenueDetailPage({ params }: Props) {
   const { slug } = await params;
   let venue: CatalogVenueDetail;
   try {
-    venue = await serverFetch<CatalogVenueDetail>(`/catalog/venues/${slug}`);
+    venue = await publicFetch<CatalogVenueDetail>(`/catalog/venues/${slug}`, { revalidate: 300 });
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 404) notFound();
     throw error;
   }
 
+  const venuePath = `${paths.bar}/${slug}`;
+
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-6 sm:px-8 sm:py-10">
+      <JsonLd
+        data={localBusinessLd({
+          name: venue.name,
+          description: venue.description,
+          image: venue.coverImageUrl,
+          path: venuePath,
+          city: venue.city,
+          address: venue.address,
+        })}
+      />
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Inicio', path: paths.appHome },
+          { name: 'Bares', path: paths.buscar },
+          { name: venue.name, path: venuePath },
+        ])}
+      />
       <Link
         href={paths.appHome}
         className="np-rise inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground active:scale-95 transform-gpu"

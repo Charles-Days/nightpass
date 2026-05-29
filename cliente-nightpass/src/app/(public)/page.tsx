@@ -4,14 +4,22 @@ import { Button } from '@/core/components/ui/button';
 import { paths } from '@/core/config/paths';
 import { Counter } from '@/core/components/counter';
 import { Reveal } from '@/core/components/reveal';
-import { serverFetch } from '@/core/lib/api/server-client';
+import { publicFetch } from '@/core/lib/api/server-client';
+import { absoluteUrl } from '@/core/config/env';
+import { JsonLd, organizationLd, websiteLd } from '@/core/seo/json-ld';
 import { DemoDialog } from './_components/demo-dialog';
 import { PhoneMockup } from './_components/phone-mockup';
 
+const title = 'NightPass';
+const description =
+  'NightPass es la app para descubrir bares, comprar tu cover digital y compartir la noche con tus amigos. Sin colas, sin efectivo, sin ticket que perder.';
+
 export const metadata = {
-  title: { absolute: 'NightPass' },
-  description:
-    'NightPass es la app para descubrir bares, comprar tu cover digital y compartir la noche con tus amigos. Sin colas, sin efectivo, sin ticket que perder.',
+  title: { absolute: title },
+  description,
+  alternates: { canonical: '/' },
+  openGraph: { title, description, url: absoluteUrl('/'), type: 'website' },
+  twitter: { card: 'summary_large_image', title, description },
 };
 
 interface PublicStats {
@@ -25,12 +33,14 @@ export const revalidate = 60;
 export default async function LandingPage() {
   let stats: PublicStats = { customers: 0, venues: 0, events: 0 };
   try {
-    stats = await serverFetch<PublicStats>('/catalog/stats');
+    stats = await publicFetch<PublicStats>('/catalog/stats', { revalidate: 60 });
   } catch {
     // landing must never break on stats failure
   }
   return (
     <>
+      <JsonLd data={organizationLd()} />
+      <JsonLd data={websiteLd()} />
       <Hero stats={stats} />
       <VenuesStrip />
       <HowItWorks />

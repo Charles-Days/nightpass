@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Calendar, MapPin, Music2, Search, Sparkles } from 'lucide-react';
-import { serverFetch } from '@/core/lib/api/server-client';
+import { publicFetch } from '@/core/lib/api/server-client';
+import { absoluteUrl } from '@/core/config/env';
 import { paths } from '@/core/config/paths';
 import { VenueCard } from '../_components/venue-card';
 import { FeaturedAforo } from '../_components/featured-aforo';
@@ -10,10 +11,16 @@ import type { CatalogVenueSummary, VenueStoriesGroup } from '@/core/types/api';
 import { InstallBanner, AppOpenPinger } from '@/features/geolocation';
 import { StoriesCarousel } from '@/features/stories-public';
 
+const title = 'NightPass — Descubre la noche cerca de ti';
+const description =
+  'Encuentra bares y discos cerca, compra tu cover digital y entra sin filas con tu pase QR.';
+
 export const metadata = {
-  title: 'NightPass — Descubre la noche cerca de ti',
-  description:
-    'Encuentra bares y discos cerca, compra tu cover digital y entra sin filas con tu pase QR.',
+  title,
+  description,
+  alternates: { canonical: '/app' },
+  openGraph: { title, description, url: absoluteUrl('/app'), type: 'website' },
+  twitter: { card: 'summary_large_image', title, description },
 };
 
 interface CatalogResponse {
@@ -201,7 +208,9 @@ function FeaturedVenue({ venue }: { venue: CatalogVenueSummary }) {
 export default async function CustomerHomePage() {
   let venues: CatalogVenueSummary[] = [];
   try {
-    const data = await serverFetch<CatalogResponse>('/catalog/venues?limit=24');
+    const data = await publicFetch<CatalogResponse>('/catalog/venues?limit=24', {
+      revalidate: 300,
+    });
     venues = data.items ?? [];
   } catch {
     venues = [];
@@ -209,14 +218,18 @@ export default async function CustomerHomePage() {
 
   let initialStoriesGroups: VenueStoriesGroup[] = [];
   try {
-    initialStoriesGroups = await serverFetch<VenueStoriesGroup[]>('/catalog/stories/active');
+    initialStoriesGroups = await publicFetch<VenueStoriesGroup[]>('/catalog/stories/active', {
+      revalidate: 300,
+    });
   } catch {
     initialStoriesGroups = [];
   }
 
   let events: CatalogEventFeed[] = [];
   try {
-    const data = await serverFetch<CatalogEventsResponse>('/catalog/events?date=week&limit=6');
+    const data = await publicFetch<CatalogEventsResponse>('/catalog/events?date=week&limit=6', {
+      revalidate: 300,
+    });
     events = data.items ?? [];
   } catch {
     events = [];

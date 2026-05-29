@@ -2,7 +2,11 @@ import { Inbox, Mail, Sparkles, type LucideIcon } from 'lucide-react';
 import { Reveal } from '@/core/components/reveal';
 import { PromoterApplicationForm } from '@/features/promoter-applications';
 
-export const metadata = { title: 'Solicitar registro de organizador' };
+export const metadata = {
+  title: 'Solicitar registro de organizador',
+  description: 'Conviértete en organizador en NightPass y gestiona tus eventos y pases.',
+  alternates: { canonical: '/solicitar-organizador' },
+};
 
 export default function SolicitarPromotoraPage() {
   return (

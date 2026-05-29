@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { MailerModule } from './mailer/mailer.module';
+import { PushModule } from './push/push.module';
 import { VenuesModule } from './venues/venues.module';
 import { VenueApplicationsModule } from './venue-applications/venue-applications.module';
 import { PromoterApplicationsModule } from './promoter-applications/promoter-applications.module';
@@ -42,6 +43,7 @@ import { validateEnv } from './config/env.schema';
     ScheduleModule.forRoot(),
     PrismaModule,
     MailerModule,
+    PushModule,
     AuthModule,
     HealthModule,
     VenuesModule,

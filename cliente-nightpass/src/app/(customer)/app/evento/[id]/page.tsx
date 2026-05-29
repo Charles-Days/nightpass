@@ -2,8 +2,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Calendar, Lock, MapPin } from 'lucide-react';
-import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
+import { ServerApiError, publicFetch, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
+import { absoluteUrl } from '@/core/config/env';
+import { JsonLd, eventLd, breadcrumbLd } from '@/core/seo/json-ld';
 import {
   LOYALTY_TIER_RANK,
   type CatalogEventDetail,
@@ -21,8 +23,17 @@ interface Props {
 export async function generateMetadata({ params }: Props) {
   const { id } = await params;
   try {
-    const ev = await serverFetch<CatalogEventDetail>(`/catalog/events/${id}`);
-    return { title: `${ev.title} — NightPass`, description: ev.description ?? undefined };
+    const ev = await publicFetch<CatalogEventDetail>(`/catalog/events/${id}`, { revalidate: 300 });
+    const title = `${ev.title} — NightPass`;
+    const description = ev.description ?? undefined;
+    const path = `${paths.evento}/${id}`;
+    return {
+      title,
+      description,
+      alternates: { canonical: path },
+      openGraph: { title, description, url: absoluteUrl(path), type: 'article' as const },
+      twitter: { card: 'summary_large_image' as const, title, description },
+    };
   } catch {
     return { title: 'Evento — NightPass' };
   }
@@ -47,7 +58,7 @@ export default async function EventDetailPage({ params }: Props) {
   const { id } = await params;
   let event: CatalogEventDetail;
   try {
-    event = await serverFetch<CatalogEventDetail>(`/catalog/events/${id}`);
+    event = await publicFetch<CatalogEventDetail>(`/catalog/events/${id}`, { revalidate: 300 });
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 404) notFound();
     throw error;
@@ -64,8 +75,35 @@ export default async function EventDetailPage({ params }: Props) {
     userTier = null;
   }
 
+  const eventPath = `${paths.evento}/${id}`;
+  const cheapestTier = event.tiers.reduce<{ priceCents: number; currency: string } | null>(
+    (min, t) => (min == null || t.priceCents < min.priceCents ? t : min),
+    null,
+  );
+
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-6 sm:px-8 sm:py-10">
+      <JsonLd
+        data={eventLd({
+          name: event.title,
+          description: event.description,
+          startDate: event.startsAt,
+          endDate: event.endsAt,
+          image: event.coverImageUrl,
+          path: eventPath,
+          locationName: event.venue?.name ?? event.externalVenueName,
+          city: event.venue?.city ?? event.externalVenueCity,
+          priceCents: cheapestTier?.priceCents,
+          currency: cheapestTier?.currency,
+        })}
+      />
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Inicio', path: paths.appHome },
+          { name: 'Eventos', path: paths.buscar },
+          { name: event.title, path: eventPath },
+        ])}
+      />
       <Link
         href={
           event.venue

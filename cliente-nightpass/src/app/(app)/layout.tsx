@@ -4,6 +4,8 @@ import { paths } from '@/core/config/paths';
 import type { User, PromoterMe } from '@/core/types/api';
 import { AppShell } from './_components/app-shell';
 
+export const metadata = { robots: { index: false, follow: false } };
+
 type VenueLite = { id: string; name: string };
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

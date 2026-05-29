@@ -1,6 +1,9 @@
 import { ChangePasswordForm } from '@/features/auth';
 
-export const metadata = { title: 'Cambiar contraseña' };
+export const metadata = {
+  title: 'Cambiar contraseña',
+  robots: { index: false, follow: false },
+};
 
 export default function CambiarPasswordPage() {
   return (

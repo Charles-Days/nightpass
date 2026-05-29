@@ -4,7 +4,10 @@ import { AlertTriangle } from 'lucide-react';
 import { paths } from '@/core/config/paths';
 import { LoginForm } from '@/features/auth';
 
-export const metadata = { title: 'Iniciar sesión' };
+export const metadata = {
+  title: 'Iniciar sesión',
+  robots: { index: false, follow: false },
+};
 
 interface LoginPageProps {
   searchParams: Promise<{ reason?: string }>;

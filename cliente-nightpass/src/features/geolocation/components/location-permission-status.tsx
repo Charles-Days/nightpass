@@ -105,6 +105,14 @@ export function LocationPermissionStatus() {
               'Tu navegador no soporta geolocalización web.'}
           </p>
 
+          {platform.os === 'ios' && platform.standalone && (
+            <p className="mt-2 rounded-lg border border-white/8 bg-white/[0.02] px-2.5 py-1.5 text-[11px] leading-snug text-white/45">
+              En iPhone, al cerrar y volver a abrir la app puede que tengas que
+              reactivar la ubicación. Es una limitación de iOS para apps
+              agregadas a la pantalla de inicio.
+            </p>
+          )}
+
           {status !== 'granted' && status !== 'unsupported' && status !== 'denied' && (
             <Button
               onClick={handleRequest}

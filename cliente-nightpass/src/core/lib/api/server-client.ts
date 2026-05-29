@@ -71,3 +71,43 @@ export async function serverFetch<T>(path: string, options: FetchOptions = {}): 
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
+
+/**
+ * Lectura de endpoints PÚBLICOS del backend (`/catalog/*`, stats, sitemap).
+ * A diferencia de `serverFetch`, NO lee cookies ni manda `Authorization`, y
+ * usa la Data Cache de Next con `revalidate` (ISR) en vez de `no-store`. Así
+ * varias requests comparten el mismo resultado y se baja la carga del backend.
+ *
+ * No usar para datos personalizados por usuario (auth/me, loyalty, pases).
+ */
+export async function publicFetch<T>(
+  path: string,
+  options: { revalidate?: number; tags?: string[] } = {},
+): Promise<T> {
+  const { revalidate = 300, tags } = options;
+  const url = `${serverEnv.API_URL}/api/v1${path}`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      next: { revalidate, ...(tags ? { tags } : {}) },
+      signal: controller.signal,
+    });
+  } catch (err) {
+    const reason = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    throw new ServerApiError(0, { reason, url });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (!res.ok) {
+    const payload = await res.json().catch(() => null);
+    throw new ServerApiError(res.status, payload);
+  }
+
+  if (res.status === 204) return undefined as T;
+  return (await res.json()) as T;
+}

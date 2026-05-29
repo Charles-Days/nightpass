@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import { Radio, Search } from 'lucide-react';
 import { Input } from '@/core/components/ui/input';
 import {
@@ -52,10 +53,15 @@ export function AdminStoriesClient({ venues }: { venues: Venue[] }) {
                 onClick={() => setSelected(v)}
                 className="flex cursor-pointer items-center gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.05]"
               >
-                <div className="size-10 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/[0.05]">
+                <div className="relative size-10 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/[0.05]">
                   {v.coverImageUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={v.coverImageUrl} alt={v.name} className="size-full object-cover" />
+                    <Image
+                      src={v.coverImageUrl}
+                      alt={v.name}
+                      fill
+                      sizes="40px"
+                      className="object-cover"
+                    />
                   ) : (
                     <div className="flex size-full items-center justify-center font-display text-sm font-bold text-white/40">
                       {v.name.charAt(0).toUpperCase()}

@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useLogout } from '@/features/auth';
+import { EnableNotificationsBanner } from '@/features/push';
 import { Button } from '@/core/components/ui/button';
 import {
   Sheet,
@@ -339,6 +340,8 @@ export function AppShell({ user, contextName = null, children }: { user: User; c
             </Link>
           </div>
         ) : null}
+
+        <EnableNotificationsBanner />
 
         <main className="flex-1 bg-transparent px-4 py-6 sm:px-6 md:px-8 md:py-8">{children}</main>
       </div>

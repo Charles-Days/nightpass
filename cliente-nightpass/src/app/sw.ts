@@ -36,3 +36,59 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// ───────────────────────── Web Push ─────────────────────────
+// Payload enviado por el backend (PushService.PushPayload).
+interface NpPushPayload {
+  title: string;
+  body: string;
+  url?: string;
+  icon?: string;
+  badge?: string;
+  tag?: string;
+  data?: Record<string, unknown>;
+}
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  let payload: NpPushPayload;
+  try {
+    payload = event.data.json() as NpPushPayload;
+  } catch {
+    payload = { title: 'NightPass', body: event.data.text() };
+  }
+
+  const url = payload.url ?? '/';
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: payload.icon ?? '/icons/icon-192.png',
+      badge: payload.badge ?? '/icons/icon-192.png',
+      tag: payload.tag,
+      data: { ...payload.data, url },
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl =
+    (event.notification.data as { url?: string } | undefined)?.url ?? '/';
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // Si ya hay una ventana de la app abierta, enfocala y navega.
+        for (const client of clientList) {
+          if ('focus' in client) {
+            void client.focus();
+            if ('navigate' in client) void client.navigate(targetUrl);
+            return;
+          }
+        }
+        return self.clients.openWindow(targetUrl);
+      }),
+  );
+});

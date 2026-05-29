@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Instrument_Serif, Space_Grotesk } from 'next/font/google';
 import { AppProviders } from '@/core/components/providers';
-import { clientEnv } from '@/core/config/env';
+import { siteUrl } from '@/core/config/env';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
@@ -19,11 +19,30 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: {
-    default: clientEnv.NEXT_PUBLIC_APP_NAME,
-    template: `%s | ${clientEnv.NEXT_PUBLIC_APP_NAME}`,
+    default: 'NightPass — Tu pase a la noche',
+    template: '%s | NightPass',
   },
-  description: 'Panel de administracion de NightPass',
+  description:
+    'Descubre los mejores bares y eventos de la noche, suma puntos y compra tus pases con NightPass.',
+  applicationName: 'NightPass',
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    siteName: 'NightPass',
+    locale: 'es_MX',
+    url: siteUrl(),
+    title: 'NightPass — Tu pase a la noche',
+    description:
+      'Descubre los mejores bares y eventos de la noche, suma puntos y compra tus pases con NightPass.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'NightPass — Tu pase a la noche',
+    description:
+      'Descubre los mejores bares y eventos de la noche, suma puntos y compra tus pases con NightPass.',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

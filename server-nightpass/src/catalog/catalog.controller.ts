@@ -72,6 +72,11 @@ export class CatalogController {
     return this.service.getPublicStats();
   }
 
+  @Get('sitemap')
+  getSitemap() {
+    return this.service.getSitemapFeed();
+  }
+
   @Get('events/:id/forum')
   @UseGuards(JwtAuthGuard)
   listForum(@Param('id', ParseUUIDPipe) id: string) {

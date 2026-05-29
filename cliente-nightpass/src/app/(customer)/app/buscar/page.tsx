@@ -1,8 +1,14 @@
 import { SearchClient } from './_components/search-client';
+import { absoluteUrl } from '@/core/config/env';
+
+const title = 'Buscar bares — NightPass';
+const description = 'Encuentra el bar perfecto por ciudad, género musical o categoría.';
 
 export const metadata = {
-  title: 'Buscar bares — NightPass',
-  description: 'Encuentra el bar perfecto por ciudad, género musical o categoría.',
+  title,
+  description,
+  alternates: { canonical: '/app/buscar' },
+  openGraph: { title, description, url: absoluteUrl('/app/buscar'), type: 'website' },
 };
 
 export default function BuscarPage() {

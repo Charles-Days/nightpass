@@ -419,6 +419,43 @@ export class CatalogService {
     };
   }
 
+  /**
+   * Feed mínimo para el sitemap del cliente web. Solo entidades públicas/visibles:
+   *  - venues ACTIVE
+   *  - events PUBLISHED, no pasados (startsAt futuro), con owner (venue o promoter) ACTIVE
+   *  - promoters ACTIVE
+   * `select` mínimo (slug/id + updatedAt) para mantenerlo barato y cacheable.
+   */
+  async getSitemapFeed() {
+    const now = new Date();
+
+    const eventWhere: Prisma.EventWhereInput = {
+      status: EventStatus.PUBLISHED,
+      startsAt: { gte: now },
+      OR: [
+        { venueId: { not: null }, venue: { status: VenueStatus.ACTIVE } },
+        { promoterId: { not: null }, promoter: { status: 'ACTIVE' } },
+      ],
+    };
+
+    const [venues, events, promoters] = await this.prisma.$transaction([
+      this.prisma.venue.findMany({
+        where: { status: VenueStatus.ACTIVE },
+        select: { slug: true, updatedAt: true },
+      }),
+      this.prisma.event.findMany({
+        where: eventWhere,
+        select: { id: true, updatedAt: true },
+      }),
+      this.prisma.promoter.findMany({
+        where: { status: 'ACTIVE' },
+        select: { slug: true, updatedAt: true },
+      }),
+    ]);
+
+    return { venues, events, promoters };
+  }
+
   async getPublicStats() {
     const [customers, venues, events] = await this.prisma.$transaction([
       this.prisma.user.count({ where: { role: Role.CUSTOMER } }),

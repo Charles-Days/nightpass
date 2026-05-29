@@ -2,8 +2,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Calendar, Globe, Instagram, MapPin, Sparkles } from 'lucide-react';
-import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
+import { ServerApiError, publicFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
+import { absoluteUrl } from '@/core/config/env';
+import { JsonLd, breadcrumbLd } from '@/core/seo/json-ld';
 import type { CatalogPromoterDetail } from '@/core/types/api';
 
 interface Props {
@@ -13,10 +15,19 @@ interface Props {
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   try {
-    const promoter = await serverFetch<CatalogPromoterDetail>(`/catalog/promoters/${slug}`);
+    const promoter = await publicFetch<CatalogPromoterDetail>(`/catalog/promoters/${slug}`, {
+      revalidate: 300,
+    });
+    const title = `${promoter.name} — NightPass`;
+    const description =
+      promoter.bio ?? `Eventos producidos por ${promoter.name} en ${promoter.city}.`;
+    const path = `${paths.promotora}/${slug}`;
     return {
-      title: `${promoter.name} — NightPass`,
-      description: promoter.bio ?? `Eventos producidos por ${promoter.name} en ${promoter.city}.`,
+      title,
+      description,
+      alternates: { canonical: path },
+      openGraph: { title, description, url: absoluteUrl(path), type: 'website' as const },
+      twitter: { card: 'summary_large_image' as const, title, description },
     };
   } catch {
     return { title: 'Organizador — NightPass' };
@@ -47,14 +58,25 @@ export default async function PromoterDetailPage({ params }: Props) {
   const { slug } = await params;
   let promoter: CatalogPromoterDetail;
   try {
-    promoter = await serverFetch<CatalogPromoterDetail>(`/catalog/promoters/${slug}`);
+    promoter = await publicFetch<CatalogPromoterDetail>(`/catalog/promoters/${slug}`, {
+      revalidate: 300,
+    });
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 404) notFound();
     throw error;
   }
 
+  const promoterPath = `${paths.promotora}/${slug}`;
+
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-6 sm:px-8 sm:py-10">
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Inicio', path: paths.appHome },
+          { name: 'Organizadores', path: paths.buscar },
+          { name: promoter.name, path: promoterPath },
+        ])}
+      />
       <Link
         href={paths.appHome}
         className="np-rise inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground active:scale-95 transform-gpu"
