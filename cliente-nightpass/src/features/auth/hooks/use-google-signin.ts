@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ClientApiError, clientFetch } from '@/core/lib/api/client-client';
 import { paths } from '@/core/config/paths';
+import { saveRpRef, extractRefFromPath } from '@/features/rp-referral/rp-referral';
 import type { User } from '@/core/types/api';
 import { sessionQueryKey } from './use-session';
 
@@ -42,6 +43,9 @@ export function useGoogleSignin() {
       toast.success(`Hola${data.user.name ? `, ${data.user.name}` : ''}`);
       const from = params.get('from');
       const safeFrom = from && from.startsWith('/') ? from : null;
+      // Preserva el código RP anidado en `from` antes del reload.
+      const ref = extractRefFromPath(safeFrom);
+      if (ref) saveRpRef(ref);
       const fallback = data.user.role === 'CUSTOMER' ? paths.appHome : paths.dashboard;
       router.replace((safeFrom ?? fallback) as never);
       router.refresh();

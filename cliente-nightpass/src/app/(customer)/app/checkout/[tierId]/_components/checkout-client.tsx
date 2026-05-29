@@ -17,7 +17,7 @@ import { Button } from '@/core/components/ui/button';
 import { clientFetch, ClientApiError } from '@/core/lib/api/client-client';
 import { paths } from '@/core/config/paths';
 import type { CatalogTierDetail, Order, OrderCreationResponse } from '@/core/types/api';
-import { saveRpRef, readRpRefCookie, clearRpRef } from '@/features/rp-referral/rp-referral';
+import { saveRpRef, readRpRef, clearRpRef } from '@/features/rp-referral/rp-referral';
 
 type Phase =
   | 'creating'
@@ -159,7 +159,7 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
       
       const resolvedCode = customCode !== undefined
         ? (customCode || undefined)
-        : (urlRef || readRpRefCookie() || undefined);
+        : (urlRef || readRpRef() || undefined);
 
       const res = await clientFetch<OrderCreationResponse>('/api/orders', {
         method: 'POST',

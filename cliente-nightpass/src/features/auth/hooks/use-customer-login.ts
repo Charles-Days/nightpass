@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ClientApiError, clientFetch } from '@/core/lib/api/client-client';
 import { paths } from '@/core/config/paths';
+import { saveRpRef, extractRefFromPath } from '@/features/rp-referral/rp-referral';
 import type { User } from '@/core/types/api';
 import type { LoginInput } from '../schemas/login.schema';
 import { sessionQueryKey } from './use-session';
@@ -39,6 +40,11 @@ export function useCustomerLogin() {
       toast.success(`Hola${data.user.name ? `, ${data.user.name}` : ''}`);
       const from = params.get('from');
       const safeFrom = from && from.startsWith('/') ? from : null;
+      // Si el código RP venía anidado en `from` (?from=/app/evento/abc?ref=CODE),
+      // lo persistimos AQUÍ — sincrónico, antes del refresh. Así el reload del
+      // login no lo pierde y el checkout lo recupera desde storage.
+      const ref = extractRefFromPath(safeFrom);
+      if (ref) saveRpRef(ref);
       const fallback = data.user.role === 'CUSTOMER' ? paths.appHome : paths.dashboard;
       router.replace((safeFrom ?? fallback) as never);
       router.refresh();

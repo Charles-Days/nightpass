@@ -2,13 +2,15 @@
 
 import { useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { saveRpRef } from '@/features/rp-referral/rp-referral';
+import { saveRpRef, extractRefFromPath } from '@/features/rp-referral/rp-referral';
 
 function RefTrackerInner() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const ref = searchParams.get('ref');
+    // ref directo en la URL (?ref=CODE) o anidado dentro de ?from= cuando el
+    // middleware nos mandó al login con la ruta original (?from=/app/evento/abc?ref=CODE).
+    const ref = searchParams.get('ref') ?? extractRefFromPath(searchParams.get('from'));
     if (ref) {
       saveRpRef(ref);
     }
