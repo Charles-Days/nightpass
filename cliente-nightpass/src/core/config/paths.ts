@@ -25,6 +25,7 @@ export const paths = {
   rpDashboard: '/rp-dashboard',
   // Organizadores
   adminOrganizadores: '/admin/organizadores',
+  adminEventos: '/admin/eventos',
   miOrganizador: '/app/mi-organizador',
   miOrganizadorEditar: '/app/mi-organizador/editar',
   miOrganizadorEventos: '/app/mi-organizador/eventos',

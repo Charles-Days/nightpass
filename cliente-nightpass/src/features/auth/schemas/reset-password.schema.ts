@@ -1,10 +1,11 @@
 import { z } from 'zod';
+import { strongPassword } from './password';
 
 export const resetPasswordSchema = z
   .object({
     token: z.string().min(32, 'Token invalido'),
-    newPassword: z.string().min(8, 'Minimo 8 caracteres').max(128),
-    confirmPassword: z.string().min(8).max(128),
+    newPassword: strongPassword,
+    confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: 'Las contrasenas no coinciden',

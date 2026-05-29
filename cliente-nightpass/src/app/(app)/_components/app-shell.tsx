@@ -47,6 +47,7 @@ const PLATFORM_NAV: NavItem[] = [
   { href: paths.adminApplications, label: 'Solicitudes', icon: Inbox, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminVenues, label: 'Locales', icon: Store, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminOrganizadores, label: 'Organizadores', icon: Sparkles, enabled: true, roles: ['ADMIN'] },
+  { href: paths.adminEventos, label: 'Eventos', icon: Calendar, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminUsers, label: 'Usuarios', icon: Users, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminStories, label: 'Historias', icon: Radio, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminRps, label: 'RPs', icon: Users, enabled: true, roles: ['ADMIN'] },

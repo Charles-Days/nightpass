@@ -11,17 +11,12 @@ import { Button } from '@/core/components/ui/button';
 import { Input } from '@/core/components/ui/input';
 import { Field } from '@/core/components/ui/field';
 import { ClientApiError, clientFetch } from '@/core/lib/api/client-client';
+import { strongPassword } from '../schemas/password';
 
 const schema = z
   .object({
     oldPassword: z.string().min(1, 'Requerido'),
-    newPassword: z
-      .string()
-      .min(10, 'La nueva contraseña debe tener al menos 10 caracteres')
-      .max(128)
-      .regex(/[A-Z]/, 'Debe incluir al menos una mayúscula')
-      .regex(/[a-z]/, 'Debe incluir al menos una minúscula')
-      .regex(/[0-9]/, 'Debe incluir al menos un número'),
+    newPassword: strongPassword,
     confirmPassword: z.string(),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {

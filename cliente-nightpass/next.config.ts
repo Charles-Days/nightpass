@@ -26,7 +26,7 @@ const cspDirectives = [
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https://*.r2.dev https://*.stripe.com https://images.unsplash.com https://*.googleusercontent.com http://127.0.0.1:7101 http://localhost:7101",
   "media-src 'self' blob: https://*.r2.dev",
-  "connect-src 'self' blob: https://api.nightpass.mx https://api.stripe.com https://*.r2.dev https://*.r2.cloudflarestorage.com https://accounts.google.com https://unpkg.com http://127.0.0.1:7101 http://localhost:7101",
+  "connect-src 'self' blob: https://api.nightpass.mx https://api.stripe.com https://js.stripe.com https://m.stripe.com https://m.stripe.network https://r.stripe.com https://q.stripe.com https://merchant-ui-api.stripe.com https://*.r2.dev https://*.r2.cloudflarestorage.com https://accounts.google.com https://unpkg.com http://127.0.0.1:7101 http://localhost:7101",
   "frame-src https://js.stripe.com https://hooks.stripe.com https://accounts.google.com",
   "worker-src 'self' blob:",
   "frame-ancestors 'none'",

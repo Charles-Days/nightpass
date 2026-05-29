@@ -90,7 +90,7 @@ export function CustomerSignupForm({ onNameChange }: CustomerSignupFormProps) {
                 id="password"
                 type="password"
                 autoComplete="new-password"
-                placeholder="Mínimo 8 caracteres"
+                placeholder="Mínimo 10 caracteres"
                 className={`h-12 rounded-[12px] border-white/10 bg-white/[0.04] pl-10 pr-3.5 text-base transition-colors focus:border-primary/40 ${passwordValue ? 'border-primary/40' : ''} ${errors.password ? 'border-destructive/60' : ''}`}
                 {...register('password')}
               />

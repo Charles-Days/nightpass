@@ -215,7 +215,11 @@ export class EventsService {
         orderBy: { startsAt: 'asc' },
         skip: (query.page - 1) * query.limit,
         take: query.limit,
-        include: { tiers: { orderBy: { position: 'asc' } } },
+        include: {
+          tiers: { orderBy: { position: 'asc' } },
+          venue: { select: { id: true, slug: true, name: true, city: true } },
+          promoter: { select: { id: true, slug: true, name: true, city: true } },
+        },
       }),
       this.prisma.event.count({ where }),
     ]);
