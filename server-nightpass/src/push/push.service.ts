@@ -32,7 +32,7 @@ export class PushService implements OnModuleInit {
     const publicKey = this.config.get<string>('VAPID_PUBLIC_KEY');
     const privateKey = this.config.get<string>('VAPID_PRIVATE_KEY');
     const subject =
-      this.config.get<string>('VAPID_SUBJECT') ?? 'mailto:nightpass02@gmail.com';
+      this.config.get<string>('VAPID_SUBJECT') ?? 'mailto:noreply@nightpass.mx';
 
     if (publicKey && privateKey) {
       webpush.setVapidDetails(subject, publicKey, privateKey);
