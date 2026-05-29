@@ -284,6 +284,7 @@ export interface Event {
   startsAt: string;
   endsAt: string;
   coverImageUrl: string | null;
+  flyerImageUrl: string | null;
   status: EventStatus;
   capacity: number | null;
   createdAt: string;
@@ -431,6 +432,7 @@ export interface CatalogEventDetail {
   startsAt: string;
   endsAt: string;
   coverImageUrl: string | null;
+  flyerImageUrl: string | null;
   capacity: number | null;
   tiers: Array<{
     id: string;

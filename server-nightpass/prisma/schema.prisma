@@ -380,6 +380,7 @@ model Event {
   startsAt      DateTime
   endsAt        DateTime
   coverImageUrl String?
+  flyerImageUrl String?
   status        EventStatus @default(DRAFT)
   capacity      Int?
   isFeatured     Boolean     @default(false)

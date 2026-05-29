@@ -19,6 +19,7 @@ export class UpdateEventDto {
   @IsOptional() @Type(() => Date) @IsDate() startsAt?: Date;
   @IsOptional() @Type(() => Date) @IsDate() endsAt?: Date;
   @IsOptional() @IsString() @MaxLength(500) coverImageUrl?: string;
+  @IsOptional() @IsString() @MaxLength(500) flyerImageUrl?: string;
   @IsOptional() @IsEnum(EventStatus) status?: EventStatus;
   @IsOptional() @IsInt() @Min(1) capacity?: number;
 

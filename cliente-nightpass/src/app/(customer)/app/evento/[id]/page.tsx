@@ -23,7 +23,10 @@ interface Props {
 export async function generateMetadata({ params }: Props) {
   const { id } = await params;
   try {
-    const ev = await publicFetch<CatalogEventDetail>(`/catalog/events/${id}`, { revalidate: 300 });
+    const ev = await publicFetch<CatalogEventDetail>(`/catalog/events/${id}`, {
+      revalidate: 300,
+      tags: [`event:${id}`],
+    });
     const title = `${ev.title} — NightPass`;
     const description = ev.description ?? undefined;
     const path = `${paths.evento}/${id}`;
@@ -64,7 +67,10 @@ export default async function EventDetailPage({ params }: Props) {
   const { id } = await params;
   let event: CatalogEventDetail;
   try {
-    event = await publicFetch<CatalogEventDetail>(`/catalog/events/${id}`, { revalidate: 300 });
+    event = await publicFetch<CatalogEventDetail>(`/catalog/events/${id}`, {
+      revalidate: 300,
+      tags: [`event:${id}`],
+    });
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 404) notFound();
     throw error;
@@ -171,6 +177,22 @@ export default async function EventDetailPage({ params }: Props) {
           </div>
         )}
       </section>
+
+      {event.flyerImageUrl && (
+        <section
+          className="np-rise mt-5 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]"
+          style={{ animationDelay: '360ms' }}
+        >
+          <Image
+            src={event.flyerImageUrl}
+            alt={`Flyer — ${event.title}`}
+            width={1080}
+            height={1920}
+            sizes="(max-width: 768px) 100vw, 768px"
+            className="h-auto w-full object-contain"
+          />
+        </section>
+      )}
 
       <EventStoriesSection eventId={event.id} />
 

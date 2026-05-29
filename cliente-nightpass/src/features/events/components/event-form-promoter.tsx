@@ -24,6 +24,7 @@ const baseEventFields = z.object({
   startsAt: z.string().min(1, 'Requerido'),
   endsAt: z.string().min(1, 'Requerido'),
   coverImageUrl: z.string().url('URL inválida').optional().or(z.literal('')),
+  flyerImageUrl: z.string().url('URL inválida').optional().or(z.literal('')),
   capacity: z.coerce.number().int().min(1).optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'CANCELED']).default('DRAFT'),
 });
@@ -59,6 +60,7 @@ export function toPromoterEventDefaults(event: Event): Partial<PromoterEventInpu
     startsAt: event.startsAt.slice(0, 16),
     endsAt: event.endsAt.slice(0, 16),
     coverImageUrl: event.coverImageUrl ?? '',
+    flyerImageUrl: event.flyerImageUrl ?? '',
     status: event.status,
     capacity: event.capacity ?? undefined,
   };
@@ -248,6 +250,7 @@ export function EventFormPromoter({
       startsAt: '',
       endsAt: '',
       coverImageUrl: '',
+      flyerImageUrl: '',
       status: 'DRAFT',
       ...defaultValues,
     } as PromoterEventInput,
@@ -263,6 +266,7 @@ export function EventFormPromoter({
       startsAt: values.startsAt,
       endsAt: values.endsAt,
       coverImageUrl: values.coverImageUrl || undefined,
+      flyerImageUrl: values.flyerImageUrl || undefined,
       status: values.status,
       capacity: values.capacity ?? undefined,
     };
@@ -560,6 +564,22 @@ export function EventFormPromoter({
               field.onChange(url ?? '');
             }}
             label="Portada del evento"
+          />
+        )}
+      />
+
+      <Controller
+        name="flyerImageUrl"
+        control={control}
+        render={({ field }) => (
+          <ImageUploader
+            kind="event"
+            value={field.value || undefined}
+            onChange={(url) => {
+              setValue('flyerImageUrl', url ?? '', { shouldDirty: true });
+              field.onChange(url ?? '');
+            }}
+            label="Flyer del evento (vertical)"
           />
         )}
       />

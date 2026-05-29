@@ -143,6 +143,7 @@ export class EventsService {
       startsAt: dto.startsAt,
       endsAt: dto.endsAt,
       coverImageUrl: dto.coverImageUrl ?? null,
+      flyerImageUrl: dto.flyerImageUrl ?? null,
       status: dto.status ?? 'DRAFT',
       capacity: dto.capacity ?? null,
       externalVenueName: externalAllowed ? dto.externalVenueName ?? null : null,
@@ -261,6 +262,7 @@ export class EventsService {
         venueId: true,
         promoterId: true,
         coverImageUrl: true,
+        flyerImageUrl: true,
       },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
@@ -304,6 +306,7 @@ export class EventsService {
     if (dto.startsAt !== undefined) data.startsAt = dto.startsAt;
     if (dto.endsAt !== undefined) data.endsAt = dto.endsAt;
     if (dto.coverImageUrl !== undefined) data.coverImageUrl = dto.coverImageUrl;
+    if (dto.flyerImageUrl !== undefined) data.flyerImageUrl = dto.flyerImageUrl;
     if (dto.status !== undefined) data.status = dto.status;
     if (dto.capacity !== undefined) data.capacity = dto.capacity;
 
@@ -322,6 +325,13 @@ export class EventsService {
         ? event.coverImageUrl
         : null;
 
+    const oldFlyer =
+      dto.flyerImageUrl !== undefined &&
+      event.flyerImageUrl &&
+      event.flyerImageUrl !== dto.flyerImageUrl
+        ? event.flyerImageUrl
+        : null;
+
     const updated = await this.prisma.event.update({
       where: { id },
       data,
@@ -331,6 +341,9 @@ export class EventsService {
     if (oldCover) {
       this.storage.deleteByPublicUrl(oldCover).catch(() => undefined);
     }
+    if (oldFlyer) {
+      this.storage.deleteByPublicUrl(oldFlyer).catch(() => undefined);
+    }
 
     return updated;
   }
@@ -338,7 +351,7 @@ export class EventsService {
   async remove(id: string, user: AuthUser) {
     const event = await this.prisma.event.findUnique({
       where: { id },
-      select: { venueId: true, promoterId: true, coverImageUrl: true },
+      select: { venueId: true, promoterId: true, coverImageUrl: true, flyerImageUrl: true },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
@@ -352,6 +365,9 @@ export class EventsService {
 
     if (event.coverImageUrl) {
       this.storage.deleteByPublicUrl(event.coverImageUrl).catch(() => undefined);
+    }
+    if (event.flyerImageUrl) {
+      this.storage.deleteByPublicUrl(event.flyerImageUrl).catch(() => undefined);
     }
 
     return { ok: true };

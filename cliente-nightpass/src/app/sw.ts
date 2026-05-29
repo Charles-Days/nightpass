@@ -19,6 +19,14 @@ const serwist = new Serwist({
   navigationPreload: true,
   runtimeCaching: [
     {
+      // Stripe.js NUNCA se cachea ni pasa por el SW: Stripe exige cargarlo
+      // fresco de su CDN. Cachearlo rompe el checkout (stripe.js falla, el
+      // form de pago no confirma). Aplica a js/api/m/r.stripe.com.
+      matcher: ({ url }) =>
+        url.hostname === 'js.stripe.com' || url.hostname.endsWith('.stripe.com'),
+      handler: new NetworkOnly(),
+    },
+    {
       // Rutas vivas: API, proxy backend y todo /app/* (auth-gated, cacheable
       // ofreceria HTML stale o 5xx). Sin esto Serwist NetworkFirst guarda
       // respuestas 500 y las replayea hasta la siguiente revalidacion.

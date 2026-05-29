@@ -31,6 +31,7 @@ function toDefaultValues(event: Event): Partial<CreateEventInput> {
     startsAt: event.startsAt.slice(0, 16),
     endsAt: event.endsAt.slice(0, 16),
     coverImageUrl: event.coverImageUrl ?? '',
+    flyerImageUrl: event.flyerImageUrl ?? '',
     status: event.status,
     capacity: event.capacity ?? undefined,
   };

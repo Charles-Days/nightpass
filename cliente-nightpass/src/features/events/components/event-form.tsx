@@ -37,6 +37,7 @@ export function EventForm({ venueId, onSuccess, defaultValues, eventId }: EventF
       startsAt: '',
       endsAt: '',
       coverImageUrl: '',
+      flyerImageUrl: '',
       status: 'DRAFT',
       ...defaultValues,
     },
@@ -47,6 +48,7 @@ export function EventForm({ venueId, onSuccess, defaultValues, eventId }: EventF
       ...values,
       description: values.description || undefined,
       coverImageUrl: values.coverImageUrl || undefined,
+      flyerImageUrl: values.flyerImageUrl || undefined,
     };
     if (eventId) {
       update.mutate({ id: eventId, ...payload }, { onSuccess: () => onSuccess?.() });
@@ -134,6 +136,19 @@ export function EventForm({ venueId, onSuccess, defaultValues, eventId }: EventF
             value={field.value || undefined}
             onChange={(url) => field.onChange(url ?? '')}
             label="Portada del evento"
+          />
+        )}
+      />
+
+      <Controller
+        name="flyerImageUrl"
+        control={control}
+        render={({ field }) => (
+          <ImageUploader
+            kind="event"
+            value={field.value || undefined}
+            onChange={(url) => field.onChange(url ?? '')}
+            label="Flyer del evento (vertical)"
           />
         )}
       />

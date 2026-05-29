@@ -6,6 +6,7 @@ export const createEventSchema = z.object({
   startsAt: z.string().min(1, 'Requerido'),
   endsAt: z.string().min(1, 'Requerido'),
   coverImageUrl: z.string().url().optional().or(z.literal('')),
+  flyerImageUrl: z.string().url().optional().or(z.literal('')),
   capacity: z.coerce.number().int().min(1).optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'CANCELED']).default('DRAFT'),
 });

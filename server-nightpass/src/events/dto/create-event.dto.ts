@@ -36,6 +36,9 @@ export class CreateEventDto {
   @IsOptional() @IsString() @MaxLength(500)
   coverImageUrl?: string;
 
+  @IsOptional() @IsString() @MaxLength(500)
+  flyerImageUrl?: string;
+
   @IsOptional() @IsEnum(EventStatus)
   status?: EventStatus;
 
