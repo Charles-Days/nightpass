@@ -2,12 +2,19 @@
 
 import { Suspense, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { paths } from '@/core/config/paths';
 import { CustomerSignupForm } from '@/features/auth';
 import { SignupPreview } from '@/features/auth/components/_signup-preview';
 
 export function SignupSplit() {
   const [name, setName] = useState('');
+  const params = useSearchParams();
+  const from = params.get('from');
+  // Conserva `from` (con el ref RP anidado) al cambiar a la pantalla de login.
+  const loginHref = from
+    ? `${paths.iniciarSesion}?from=${encodeURIComponent(from)}`
+    : paths.iniciarSesion;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 sm:py-10 lg:py-14">
@@ -40,7 +47,7 @@ export function SignupSplit() {
           <p className="mt-6 text-center text-sm text-white/60 np-rise lg:text-left" style={{ animationDelay: '340ms' }}>
             ¿Ya tienes cuenta?{' '}
             <Link
-              href={paths.iniciarSesion}
+              href={loginHref as never}
               className="font-semibold text-primary transition-colors hover:underline active:scale-95 inline-block transform-gpu"
             >
               Entrar

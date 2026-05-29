@@ -5,7 +5,17 @@ import { CustomerLoginForm } from '@/features/auth';
 
 export const metadata = { title: 'Entrar — NightPass' };
 
-export default function CustomerLoginPage() {
+export default async function CustomerLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string }>;
+}) {
+  const { from } = await searchParams;
+  // Propaga `from` al link de registro: si el usuario llegó por un link RP y
+  // decide crear cuenta, el código (anidado en from) sobrevive el cambio.
+  const registroHref = from
+    ? `${paths.registro}?from=${encodeURIComponent(from)}`
+    : paths.registro;
   return (
     <div className="mx-auto w-full max-w-md px-5 py-10 sm:px-8 sm:py-14">
       <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.28em] text-primary np-rise">
@@ -29,7 +39,7 @@ export default function CustomerLoginPage() {
 
       <p className="mt-6 text-center text-sm text-white/60 np-rise" style={{ animationDelay: '260ms' }}>
         ¿No tienes cuenta?{' '}
-        <Link href={paths.registro} className="font-semibold text-primary transition-colors hover:underline active:scale-95 inline-block transform-gpu">
+        <Link href={registroHref as never} className="font-semibold text-primary transition-colors hover:underline active:scale-95 inline-block transform-gpu">
           Crear una
         </Link>
       </p>
