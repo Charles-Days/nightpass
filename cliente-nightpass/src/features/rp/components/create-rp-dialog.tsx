@@ -29,6 +29,10 @@ export function CreateRpDialog({ open, onOpenChange }: CreateRpDialogProps) {
   const [promoters, setPromoters] = React.useState<Array<{ id: string; name: string }>>([]);
   const [eventId, setEventId] = React.useState('');
   const [events, setEvents] = React.useState<Array<{ id: string; title: string }>>([]);
+  const [commissionType, setCommissionType] = React.useState<'PER_N_TICKETS' | 'PERCENTAGE'>('PER_N_TICKETS');
+  const [nTickets, setNTickets] = React.useState('10');
+  const [reward, setReward] = React.useState('150');
+  const [percentage, setPercentage] = React.useState('5');
 
   React.useEffect(() => {
     if (open) {
@@ -37,6 +41,10 @@ export function CreateRpDialog({ open, onOpenChange }: CreateRpDialogProps) {
       setPassword('');
       setPromoterId('');
       setEventId('');
+      setCommissionType('PER_N_TICKETS');
+      setNTickets('10');
+      setReward('150');
+      setPercentage('5');
       
       // Load promoters list
       clientFetch<{ items: Array<{ id: string; name: string }> }>('/api/promoters')
@@ -65,14 +73,24 @@ export function CreateRpDialog({ open, onOpenChange }: CreateRpDialogProps) {
       return;
     }
 
+    const data: any = {
+      email,
+      displayName,
+      password: password || undefined,
+      promoterId: promoterId || undefined,
+      eventId: eventId || undefined,
+      commissionType,
+    };
+
+    if (commissionType === 'PER_N_TICKETS') {
+      data.nTickets = parseInt(nTickets, 10);
+      data.rewardCents = parseInt(reward, 10) * 100; // Convert to cents for database compatibility
+    } else {
+      data.percentage = parseFloat(percentage);
+    }
+
     createRp(
-      {
-        email,
-        displayName,
-        password: password || undefined,
-        promoterId: promoterId || undefined,
-        eventId: eventId || undefined,
-      },
+      data,
       {
         onSuccess: (rp) => {
           toast.success(`RP creado exitosamente con el código: ${rp.rpCode}`);
@@ -156,6 +174,73 @@ export function CreateRpDialog({ open, onOpenChange }: CreateRpDialogProps) {
               ))}
             </select>
           </div>
+
+          <div className="space-y-1.5 border-t border-white/5 pt-3">
+            <Label htmlFor="commissionType" className="text-white/70 text-xs font-semibold text-purple-300">
+              Esquema de Comisión Inicial *
+            </Label>
+            <select
+              id="commissionType"
+              value={commissionType}
+              onChange={(e) => setCommissionType(e.target.value as any)}
+              className="w-full bg-[#0f0f17] border border-white/10 rounded-xl h-10 px-3 text-white text-sm focus:border-primary/50 focus:outline-none"
+              required
+            >
+              <option value="PER_N_TICKETS">Por Cantidad (Ej. $150 MXN por cada 10 boletos)</option>
+              <option value="PERCENTAGE">Por Porcentaje (Ej. 5% por boleto)</option>
+            </select>
+          </div>
+
+          {commissionType === 'PER_N_TICKETS' ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="nTickets" className="text-white/70 text-xs">
+                  Número de Boletos (N)
+                </Label>
+                <Input
+                  id="nTickets"
+                  type="number"
+                  min="1"
+                  value={nTickets}
+                  onChange={(e) => setNTickets(e.target.value)}
+                  className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="reward" className="text-white/70 text-xs">
+                  Recompensa ($ Pesos)
+                </Label>
+                <Input
+                  id="reward"
+                  type="number"
+                  min="0"
+                  placeholder="150"
+                  value={reward}
+                  onChange={(e) => setReward(e.target.value)}
+                  className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
+                  required
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <Label htmlFor="percentage" className="text-white/70 text-xs">
+                Porcentaje (%)
+              </Label>
+              <Input
+                id="percentage"
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                value={percentage}
+                onChange={(e) => setPercentage(e.target.value)}
+                className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
+                required
+              />
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="promoter" className="text-white/70 text-xs">

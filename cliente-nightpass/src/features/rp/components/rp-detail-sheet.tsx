@@ -19,6 +19,7 @@ import {
   Percent,
   Coins,
   ArrowUpRight,
+  Pencil,
 } from 'lucide-react';
 
 
@@ -32,10 +33,12 @@ export function RpDetailSheet({ rpId, open, onOpenChange }: RpDetailSheetProps) 
   const { data: stats, isLoading, refetch } = useRpStats(rpId);
   const { mutate: deleteRule } = useDeleteCommissionRule();
   const [showAddRule, setShowAddRule] = React.useState(false);
+  const [editingRule, setEditingRule] = React.useState<any | null>(null);
 
   React.useEffect(() => {
     if (open) {
       setShowAddRule(false);
+      setEditingRule(null);
     }
   }, [open]);
 
@@ -132,11 +135,14 @@ export function RpDetailSheet({ rpId, open, onOpenChange }: RpDetailSheetProps) 
                   Reglas de Comisión
                 </h3>
                 <Button
-                  onClick={() => setShowAddRule(!showAddRule)}
+                  onClick={() => {
+                    setShowAddRule(!showAddRule);
+                    setEditingRule(null);
+                  }}
                   className="rounded-lg h-8 px-3 text-xs bg-purple-600/10 hover:bg-purple-600/20 text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition-all"
                 >
                   <Plus className="size-3.5" />
-                  {showAddRule ? 'Cerrar' : 'Agregar Regla'}
+                  {showAddRule ? 'Cerrar' : 'Agregar/Editar Regla'}
                 </Button>
               </div>
 
@@ -144,8 +150,10 @@ export function RpDetailSheet({ rpId, open, onOpenChange }: RpDetailSheetProps) 
                 <div className="np-fade-in">
                   <CommissionRuleForm
                     rpId={rpId}
+                    initialRule={editingRule}
                     onSuccess={() => {
                       setShowAddRule(false);
+                      setEditingRule(null);
                       refetch();
                     }}
                   />
@@ -186,14 +194,21 @@ export function RpDetailSheet({ rpId, open, onOpenChange }: RpDetailSheetProps) 
                           </span>
                         </div>
                       </div>
-                      {ruleStat.rule?.id && (
+                      {ruleStat.rule && (
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => handleDeleteRule(ruleStat.rule!.id)}
-                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg size-8 shrink-0"
+                          onClick={() => {
+                            setEditingRule({
+                              eventId: ruleStat.eventId,
+                              ...ruleStat.rule
+                            });
+                            setShowAddRule(true);
+                          }}
+                          className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 rounded-lg size-8 shrink-0"
+                          title="Editar Regla de Comisión"
                         >
-                          <Trash2 className="size-4" />
+                          <Pencil className="size-4" />
                         </Button>
                       )}
                     </div>

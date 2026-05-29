@@ -12,9 +12,16 @@ import { Loader2 } from 'lucide-react';
 interface CommissionRuleFormProps {
   rpId: string;
   onSuccess: () => void;
+  initialRule?: {
+    eventId?: string | null;
+    type: 'PER_N_TICKETS' | 'PERCENTAGE';
+    nTickets?: number | null;
+    rewardCents?: number | null;
+    percentage?: number | null;
+  } | null;
 }
 
-export function CommissionRuleForm({ rpId, onSuccess }: CommissionRuleFormProps) {
+export function CommissionRuleForm({ rpId, onSuccess, initialRule }: CommissionRuleFormProps) {
   const { mutate: setRule, isPending } = useSetCommissionRule();
   const [type, setType] = React.useState<'PER_N_TICKETS' | 'PERCENTAGE'>('PER_N_TICKETS');
   const [eventId, setEventId] = React.useState('');
@@ -22,6 +29,22 @@ export function CommissionRuleForm({ rpId, onSuccess }: CommissionRuleFormProps)
   const [reward, setReward] = React.useState('150'); // $150 MXN
   const [percentage, setPercentage] = React.useState('5');
   const [events, setEvents] = React.useState<Array<{ id: string; title: string }>>([]);
+
+  React.useEffect(() => {
+    if (initialRule) {
+      setType(initialRule.type);
+      setEventId(initialRule.eventId || '');
+      setNTickets(initialRule.nTickets?.toString() || '10');
+      setReward(initialRule.rewardCents ? (initialRule.rewardCents / 100).toString() : '150');
+      setPercentage(initialRule.percentage?.toString() || '5');
+    } else {
+      setType('PER_N_TICKETS');
+      setEventId('');
+      setNTickets('10');
+      setReward('150');
+      setPercentage('5');
+    }
+  }, [initialRule]);
 
   React.useEffect(() => {
     // Load events list for specific rule assignment

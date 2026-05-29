@@ -1,4 +1,5 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { RpCommissionType } from '@prisma/client';
+import { IsEmail, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, MaxLength, MinLength, Min } from 'class-validator';
 
 export class CreateRpDto {
   @IsEmail()
@@ -23,4 +24,23 @@ export class CreateRpDto {
   @IsOptional()
   @IsUUID()
   eventId?: string;
+
+  @IsOptional()
+  @IsEnum(RpCommissionType)
+  commissionType?: RpCommissionType;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  nTickets?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  rewardCents?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  percentage?: number;
 }

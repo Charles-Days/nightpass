@@ -112,13 +112,15 @@ export class RpService {
 
     // Create initial commission rule if event is assigned
     if (dto.eventId) {
+      const type = dto.commissionType || RpCommissionType.PER_N_TICKETS;
       await this.prisma.rpCommissionRule.create({
         data: {
           rpProfileId: rpProfile.id,
           eventId: dto.eventId,
-          type: RpCommissionType.PER_N_TICKETS,
-          nTickets: 10,
-          rewardCents: 15000, // $150 MXN default
+          type,
+          nTickets: type === RpCommissionType.PER_N_TICKETS ? (dto.nTickets || 10) : null,
+          rewardCents: type === RpCommissionType.PER_N_TICKETS ? (dto.rewardCents || 15000) : null,
+          percentage: type === RpCommissionType.PERCENTAGE ? (dto.percentage || 5) : null,
           isActive: true,
         },
       });
@@ -323,9 +325,9 @@ export class RpService {
   }
 
   async deleteCommissionRule(ruleId: string) {
-    return this.prisma.rpCommissionRule.delete({
-      where: { id: ruleId },
-    });
+    throw new ConflictException(
+      'No se permite eliminar esquemas de comisión para asegurar la trazabilidad histórica de las ventas. Por favor modifícala si es necesario.',
+    );
   }
 
   async resolveCode(code: string) {
