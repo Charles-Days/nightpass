@@ -1,0 +1,48 @@
+'use client';
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { clientFetch, ClientApiError } from '@/core/lib/api/client-client';
+import type { EventTier, LoyaltyTier, TierPricePhase } from '@/core/types/api';
+
+export interface UpdateTierInput {
+  name?: string;
+  priceCents?: number;
+  currency?: string;
+  capacity?: number;
+  position?: number;
+  minLoyaltyTier?: LoyaltyTier | null;
+  // `[]` borra todas las subidas; `undefined` deja el calendario intacto.
+  prices?: TierPricePhase[];
+}
+
+export function useUpdateTier(eventId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tierId, input }: { tierId: string; input: UpdateTierInput }) =>
+      clientFetch<EventTier>(`/api/events/${eventId}/tiers/${tierId}`, {
+        method: 'PATCH',
+        body: input,
+      }),
+    onSuccess: () => {
+      toast.success('Tier actualizado');
+      qc.invalidateQueries({ queryKey: ['event-detail', eventId] });
+    },
+    onError: (err) => {
+      const msg =
+        err instanceof ClientApiError && extractMessage(err.payload)
+          ? extractMessage(err.payload)
+          : 'No pudimos actualizar el tier';
+      toast.error(msg ?? 'Error');
+    },
+  });
+}
+
+function extractMessage(payload: unknown): string | null {
+  if (typeof payload === 'object' && payload !== null) {
+    const m = (payload as Record<string, unknown>).message;
+    if (typeof m === 'string') return m;
+    if (Array.isArray(m) && m.length > 0) return String(m[0]);
+  }
+  return null;
+}

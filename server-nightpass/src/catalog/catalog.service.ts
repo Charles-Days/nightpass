@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LocationsService } from '../locations/locations.service';
 import { ListCatalogVenuesQuery } from './dto/list-catalog-venues.query';
 import { ListCatalogEventsQuery } from './dto/list-catalog-events.query';
+import { resolveTierPrice } from '../events/tier-pricing';
 
 export type OccupancyBucket = 'low' | 'medium' | 'high';
 
@@ -278,6 +279,10 @@ export class CatalogService {
               priceCents: true,
               currency: true,
               position: true,
+              prices: {
+                orderBy: { daysBeforeEvent: 'desc' },
+                select: { priceCents: true, daysBeforeEvent: true },
+              },
             },
           },
         },
@@ -285,14 +290,30 @@ export class CatalogService {
       this.prisma.event.count({ where }),
     ]);
 
-    return { items, total, page: query.page, limit: query.limit };
+    // Sustituye priceCents por el precio vigente; no expone el calendario en la lista.
+    const mapped = items.map((event) => ({
+      ...event,
+      tiers: event.tiers.map((t) => {
+        const { prices, ...rest } = t;
+        return {
+          ...rest,
+          priceCents: resolveTierPrice(t.priceCents, prices, event.startsAt)
+            .currentCents,
+        };
+      }),
+    }));
+
+    return { items: mapped, total, page: query.page, limit: query.limit };
   }
 
   async getEventById(id: string) {
     const event = await this.prisma.event.findUnique({
       where: { id, status: EventStatus.PUBLISHED },
       include: {
-        tiers: { orderBy: { position: 'asc' } },
+        tiers: {
+          orderBy: { position: 'asc' },
+          include: { prices: { orderBy: { daysBeforeEvent: 'desc' } } },
+        },
         venue: {
           select: {
             id: true,
@@ -314,7 +335,22 @@ export class CatalogService {
       },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
-    return event;
+
+    // Expone el precio vigente y la próxima subida; oculta el calendario interno.
+    return {
+      ...event,
+      tiers: event.tiers.map((t) => {
+        const { prices, ...rest } = t;
+        const r = resolveTierPrice(t.priceCents, prices, event.startsAt);
+        return {
+          ...rest,
+          priceCents: r.currentCents,
+          nextPrice: r.next
+            ? { priceCents: r.next.priceCents, startsAt: r.next.startsAt }
+            : null,
+        };
+      }),
+    };
   }
 
   async getTierById(tierId: string) {
@@ -327,6 +363,10 @@ export class CatalogService {
         currency: true,
         capacity: true,
         minLoyaltyTier: true,
+        prices: {
+          orderBy: { daysBeforeEvent: 'desc' },
+          select: { priceCents: true, daysBeforeEvent: true },
+        },
         event: {
           select: {
             id: true,
@@ -383,13 +423,22 @@ export class CatalogService {
       venue?.stripeAccount?.chargesEnabled === true ||
       promoter?.stripeAccount?.chargesEnabled === true;
 
+    const resolved = resolveTierPrice(
+      tier.priceCents,
+      tier.prices,
+      tier.event.startsAt,
+    );
+
     return {
       id: tier.id,
       name: tier.name,
-      priceCents: tier.priceCents,
+      priceCents: resolved.currentCents,
       currency: tier.currency,
       capacity: tier.capacity,
       minLoyaltyTier: tier.minLoyaltyTier,
+      nextPrice: resolved.next
+        ? { priceCents: resolved.next.priceCents, startsAt: resolved.next.startsAt }
+        : null,
       event: {
         id: tier.event.id,
         slug: tier.event.slug,

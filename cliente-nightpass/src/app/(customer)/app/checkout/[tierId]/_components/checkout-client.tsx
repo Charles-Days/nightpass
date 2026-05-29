@@ -342,6 +342,16 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
             {formatMoney(summary.totalCents, summary.currency)}
           </span>
         </div>
+
+        {initialTier?.nextPrice ? (
+          <p className="mt-3 rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-center text-[11px] font-semibold text-amber-200">
+            Aprovecha: sube a{' '}
+            {formatMoney(initialTier.nextPrice.priceCents, summary.currency)} el{' '}
+            {new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short' }).format(
+              new Date(initialTier.nextPrice.startsAt),
+            )}
+          </p>
+        ) : null}
       </section>
 
       <section

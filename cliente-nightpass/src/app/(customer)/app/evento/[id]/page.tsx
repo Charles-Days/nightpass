@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Calendar, Lock, MapPin } from 'lucide-react';
+import { ArrowLeft, Calendar, Lock, MapPin, TrendingUp } from 'lucide-react';
 import { ServerApiError, publicFetch, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import { absoluteUrl } from '@/core/config/env';
@@ -52,6 +52,12 @@ function formatDate(iso: string) {
 function formatPrice(cents: number, currency: string) {
   const sym = currency.toLowerCase() === 'mxn' ? '$' : currency.toLowerCase() === 'eur' ? '€' : '$';
   return `${sym}${(cents / 100).toFixed(0)}${currency.toLowerCase() === 'mxn' ? ' MXN' : ''}`;
+}
+
+function formatShortDate(iso: string) {
+  return new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short' }).format(
+    new Date(iso),
+  );
 }
 
 export default async function EventDetailPage({ params }: Props) {
@@ -216,6 +222,13 @@ export default async function EventDetailPage({ params }: Props) {
                     <p className="mt-1 text-xs text-muted-foreground">
                       {tier.capacity ? `${tier.capacity} lugares` : 'Sin límite'}
                     </p>
+                    {tier.nextPrice ? (
+                      <p className="mt-1 inline-flex items-center gap-1 rounded-full border border-amber-300/30 bg-amber-300/10 px-2 py-0.5 text-[11px] font-semibold text-amber-200">
+                        <TrendingUp className="size-3" />
+                        Sube a {formatPrice(tier.nextPrice.priceCents, tier.currency)} el{' '}
+                        {formatShortDate(tier.nextPrice.startsAt)}
+                      </p>
+                    ) : null}
                     {locked ? (
                       <Link
                         href={paths.recompensas}

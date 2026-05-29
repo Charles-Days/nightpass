@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { StripeService } from '../stripe/stripe.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
+import { resolveTierPrice } from '../events/tier-pricing';
 
 const ORDER_LIMBO_MINUTES = 30;
 
@@ -66,6 +67,7 @@ export class OrdersService {
     const tier = await this.prisma.eventTier.findUnique({
       where: { id: tierId },
       include: {
+        prices: true,
         event: {
           include: {
             venue: { include: { stripeAccount: true } },
@@ -75,14 +77,24 @@ export class OrdersService {
       },
     });
     if (!tier) throw new NotFoundException('Tier no encontrado');
-    if (tier.priceCents <= 0) {
+
+    const event = tier.event;
+
+    // Precio vigente AHORA según el calendario de subidas. Se bloquea aquí: la
+    // orden conserva este precio aunque el tier suba después.
+    const priceCents = resolveTierPrice(
+      tier.priceCents,
+      tier.prices,
+      event.startsAt,
+    ).currentCents;
+
+    if (priceCents <= 0) {
       throw new HttpException(
         { message: 'Tier gratuito — sin pago requerido', errorCode: 'FREE_TIER' },
         HttpStatus.CONFLICT,
       );
     }
 
-    const event = tier.event;
     if (event.status !== 'PUBLISHED') {
       throw new HttpException(
         { message: 'Evento no publicado', errorCode: 'EVENT_NOT_PUBLISHED' },
@@ -150,7 +162,7 @@ export class OrdersService {
     await this.loyalty.assertTierRequirement(userId, tier.minLoyaltyTier);
 
     const feePct = this.stripe.getPlatformFeePct();
-    const applicationFeeCents = Math.floor((tier.priceCents * feePct) / 100);
+    const applicationFeeCents = Math.floor((priceCents * feePct) / 100);
 
     // 1. Crear order PENDING
     const order = await this.prisma.order.create({
@@ -159,7 +171,7 @@ export class OrdersService {
         eventId: event.id,
         tierId: tier.id,
         status: OrderStatus.PENDING,
-        totalCents: tier.priceCents,
+        totalCents: priceCents,
         applicationFeeCents,
         currency: tier.currency,
       },
@@ -167,7 +179,7 @@ export class OrdersService {
 
     // 2. Crear PaymentIntent en Stripe (idempotency = orderId)
     const pi = await this.stripe.createPaymentIntent({
-      amountCents: tier.priceCents,
+      amountCents: priceCents,
       currency: tier.currency,
       applicationFeeCents,
       connectedAccountId: stripeAccount.stripeAccountId,
@@ -200,7 +212,7 @@ export class OrdersService {
       orderId: order.id,
       clientSecret: pi.client_secret,
       publishableKey: this.stripe.getPublishableKey(),
-      totalCents: tier.priceCents,
+      totalCents: priceCents,
       currency: tier.currency,
     };
   }

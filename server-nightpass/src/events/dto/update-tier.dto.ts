@@ -1,4 +1,6 @@
 import {
+  ArrayMaxSize,
+  IsArray,
   IsEnum,
   IsInt,
   IsOptional,
@@ -7,8 +9,11 @@ import {
   Min,
   MinLength,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { LoyaltyTier } from '@prisma/client';
+import { TierPricePhaseDto } from './tier-price-phase.dto';
 
 export class UpdateTierDto {
   @IsOptional() @IsString() @MinLength(2) @MaxLength(80) name?: string;
@@ -21,4 +26,12 @@ export class UpdateTierDto {
   @IsOptional()
   @IsEnum(LoyaltyTier)
   minLoyaltyTier?: LoyaltyTier | null;
+  // Reemplaza por completo el calendario de subidas (replace-all). `undefined`
+  // = no tocar; `[]` = borrar todas las fases.
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @ValidateNested({ each: true })
+  @Type(() => TierPricePhaseDto)
+  prices?: TierPricePhaseDto[];
 }

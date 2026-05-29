@@ -226,7 +226,10 @@ export class EventsService {
     const event = await this.prisma.event.findUnique({
       where: { id },
       include: {
-        tiers: { orderBy: { position: 'asc' } },
+        tiers: {
+          orderBy: { position: 'asc' },
+          include: { prices: { orderBy: { daysBeforeEvent: 'desc' } } },
+        },
         venue: {
           select: {
             id: true,
@@ -435,7 +438,17 @@ export class EventsService {
         capacity: dto.capacity ?? null,
         position: dto.position ?? 0,
         minLoyaltyTier: dto.minLoyaltyTier ?? null,
+        prices: dto.prices?.length
+          ? {
+              create: dto.prices.map((p, i) => ({
+                priceCents: p.priceCents,
+                daysBeforeEvent: p.daysBeforeEvent,
+                position: i,
+              })),
+            }
+          : undefined,
       },
+      include: { prices: { orderBy: { daysBeforeEvent: 'desc' } } },
     });
   }
 
@@ -479,7 +492,23 @@ export class EventsService {
     if (dto.position !== undefined) data.position = dto.position;
     if (dto.minLoyaltyTier !== undefined) data.minLoyaltyTier = dto.minLoyaltyTier;
 
-    return this.prisma.eventTier.update({ where: { id: tierId }, data });
+    // Reemplazo total del calendario de subidas si viene `prices`.
+    if (dto.prices !== undefined) {
+      data.prices = {
+        deleteMany: {},
+        create: dto.prices.map((p, i) => ({
+          priceCents: p.priceCents,
+          daysBeforeEvent: p.daysBeforeEvent,
+          position: i,
+        })),
+      };
+    }
+
+    return this.prisma.eventTier.update({
+      where: { id: tierId },
+      data,
+      include: { prices: { orderBy: { daysBeforeEvent: 'desc' } } },
+    });
   }
 
   async removeTier(eventId: string, tierId: string, user: AuthUser) {

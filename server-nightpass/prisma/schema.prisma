@@ -444,9 +444,29 @@ model EventTier {
 
   event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
   orders Order[]
+  prices EventTierPrice[]
 
   @@index([eventId])
   @@map("event_tiers")
+}
+
+// Subidas de precio programadas (early-bird → sube al acercarse el evento).
+// El precio activo = la fase con mayor `daysBeforeEvent` ya alcanzada respecto a
+// `event.startsAt`; antes de cualquier fase aplica `EventTier.priceCents` (base).
+model EventTierPrice {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  tierId          String   @db.Uuid
+  priceCents      Int
+  // Se activa este número de días naturales antes de `event.startsAt`.
+  daysBeforeEvent Int
+  position        Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tier EventTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+
+  @@index([tierId])
+  @@map("event_tier_prices")
 }
 
 model StripeAccount {

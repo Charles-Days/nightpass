@@ -246,6 +246,12 @@ export interface VenueStaffMember {
 
 export type EventStatus = 'DRAFT' | 'PUBLISHED' | 'CANCELED';
 
+/** Una subida de precio programada (sube `priceCents` al acercarse el evento). */
+export interface TierPricePhase {
+  priceCents: number;
+  daysBeforeEvent: number;
+}
+
 export interface EventTier {
   id: string;
   eventId: string;
@@ -255,6 +261,10 @@ export interface EventTier {
   capacity: number | null;
   position: number;
   minLoyaltyTier?: LoyaltyTier | null;
+  /** Calendario de subidas (solo en lecturas del panel/owner). */
+  prices?: TierPricePhase[];
+  /** Próxima subida programada (solo en catálogo público). */
+  nextPrice?: { priceCents: number; startsAt: string } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -332,6 +342,7 @@ export interface CatalogTierDetail {
   priceCents: number;
   currency: string;
   capacity: number | null;
+  nextPrice?: { priceCents: number; startsAt: string } | null;
   event: {
     id: string;
     slug: string;
@@ -429,6 +440,7 @@ export interface CatalogEventDetail {
     capacity: number | null;
     position: number;
     minLoyaltyTier?: LoyaltyTier | null;
+    nextPrice?: { priceCents: number; startsAt: string } | null;
   }>;
   venue: {
     id: string;
