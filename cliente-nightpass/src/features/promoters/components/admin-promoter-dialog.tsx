@@ -25,6 +25,7 @@ import {
 } from '../schemas/admin-promoter.schema';
 import { useCreatePromoter } from '../hooks/use-create-promoter';
 import { useAdminUpdatePromoter } from '../hooks/use-admin-update-promoter';
+import { useSetPromoterPlatformFee } from '../hooks/use-set-promoter-platform-fee';
 
 // ── Create ───────────────────────────────────────────────────────────────────
 
@@ -212,6 +213,59 @@ function EditForm({
           {update.isPending ? 'Guardando…' : 'Guardar cambios'}
         </Button>
       </DialogFooter>
+
+      <CommissionSection promoter={promoter} />
     </form>
+  );
+}
+
+// ── Comisión NightPass ─────────────────────────────────────────────────────────
+// Endpoint separado (POST /promoters/:id/platform-fee), por eso vive fuera del
+// form de RHF y guarda con su propio botón.
+
+function CommissionSection({ promoter }: { promoter: Promoter }) {
+  const setFee = useSetPromoterPlatformFee(promoter.id);
+  const [feeInput, setFeeInput] = React.useState(String(promoter.platformFeePct ?? 0));
+
+  const value = Number(feeInput);
+  const invalid = isNaN(value) || value < 0 || value > 100;
+
+  return (
+    <div className="mt-2 space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">
+      <div>
+        <p className="text-sm font-semibold">Comisión NightPass</p>
+        <p className="mt-0.5 text-xs text-white/55">
+          % que NightPass retiene sobre cada entrada vendida de este organizador.
+          Se descuenta antes del payout. 0 = usa la comisión global del servidor.
+        </p>
+      </div>
+      <div className="flex items-end gap-3">
+        <div className="flex-1">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-white/45">
+            Porcentaje (%)
+          </p>
+          <Input
+            type="number"
+            step="0.1"
+            min="0"
+            max="100"
+            value={feeInput}
+            onChange={(e) => setFeeInput(e.target.value)}
+          />
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={setFee.isPending || invalid}
+          onClick={() => setFee.mutate(value)}
+        >
+          {setFee.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+          Guardar
+        </Button>
+      </div>
+      <p className="text-xs text-white/55">
+        Actual: <span className="font-semibold text-white">{promoter.platformFeePct ?? 0}%</span>
+      </p>
+    </div>
   );
 }

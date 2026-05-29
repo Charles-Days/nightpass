@@ -166,7 +166,13 @@ export class OrdersService {
     // no alcanza el tier mínimo requerido por el EventTier.
     await this.loyalty.assertTierRequirement(userId, tier.minLoyaltyTier);
 
-    const feePct = this.stripe.getPlatformFeePct();
+    // Fee del dueño del evento si lo tiene configurado (>0); si no, cae al fee
+    // global del servidor. Mismo orden de prioridad que resolveStripeAccount: el
+    // payout va al venue si existe, si no al promoter — la comisión sigue al mismo
+    // dueño. (platformFeePct default es 0, así que 0 = "sin configurar" → global.)
+    const ownerFeePct =
+      event.venue?.platformFeePct || event.promoter?.platformFeePct || 0;
+    const feePct = ownerFeePct > 0 ? ownerFeePct : this.stripe.getPlatformFeePct();
     const applicationFeeCents = Math.floor((priceCents * feePct) / 100);
 
     let referredByRpId: string | undefined = undefined;

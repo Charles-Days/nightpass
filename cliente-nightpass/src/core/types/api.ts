@@ -21,6 +21,7 @@ export interface Promoter {
   instagram?: string | null;
   website?: string | null;
   status: PromoterStatus;
+  platformFeePct?: number;
   createdAt: string;
   updatedAt: string;
   _count?: { members: number };
