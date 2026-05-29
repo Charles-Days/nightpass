@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { toast } from 'sonner';
 import { clientEnv } from '@/core/config/env';
@@ -12,6 +13,10 @@ interface SocialButtonsProps {
 export function SocialButtons({ variant = 'full' }: SocialButtonsProps) {
   const { mutate, isPending } = useGoogleSignin();
   const enabled = Boolean(clientEnv.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
+  // Tras cerrar el popup de Google con la X (o un error), el botón GSI no
+  // resetea su estado interno y queda inerte. Bumpear esta key lo remonta,
+  // dejándolo clickeable de nuevo sin recargar la página.
+  const [gsiKey, setGsiKey] = useState(0);
 
   if (!enabled) {
     return (
@@ -45,11 +50,13 @@ export function SocialButtons({ variant = 'full' }: SocialButtonsProps) {
       </div>
       <div className="relative z-10 opacity-0">
         <GoogleLogin
+          key={gsiKey}
           onSuccess={(resp) => {
             if (resp.credential) mutate(resp.credential);
           }}
           onError={() => {
             toast.error('No pudimos iniciar con Google. Intenta de nuevo.');
+            setGsiKey((k) => k + 1); // remonta para reactivar el botón
           }}
           theme="filled_black"
           shape="pill"

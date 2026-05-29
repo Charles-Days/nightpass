@@ -331,6 +331,31 @@ export interface Order {
   pass?: { id: string };
 }
 
+export interface OrderHistoryItem {
+  id: string;
+  status: OrderStatus;
+  totalCents: number;
+  currency: string;
+  stripePaymentIntentId: string | null;
+  createdAt: string;
+  tier?: { id: string; name: string; priceCents: number; currency: string } | null;
+  event?: {
+    id: string;
+    title: string;
+    startsAt: string;
+    coverImageUrl: string | null;
+    venue?: { id: string; name: string; slug: string } | null;
+  } | null;
+  pass?: { id: string; usedAt: string | null } | null;
+}
+
+export interface PaginatedOrders {
+  items: OrderHistoryItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface OrderCreationResponse {
   orderId: string;
   clientSecret: string;
@@ -632,6 +657,96 @@ export interface EventTierBreakdown {
   startsAt: string;
   tiers: EventTierBreakdownTier[];
   orders: EventTierBreakdownOrder[];
+}
+
+// ─── Admin Finance (panel global) ──────────────────────────────────────────
+
+export interface AdminFinanceTotals {
+  grossCents: number;
+  platformFeeCents: number;
+  stripeFeeEstCents: number;
+  netToVenuesCents: number;
+  rpCommissionsCents: number;
+  ordersCount: number;
+  passesSold: number;
+  passesRedeemed: number;
+  /** 0..1 */
+  redeemRate: number;
+  refundedCount: number;
+  refundedAmountCents: number;
+  failedCount: number;
+  avgTicketCents: number;
+}
+
+export interface AdminFinanceEventRow {
+  eventId: string;
+  title: string;
+  startsAt: string | null;
+  venueName: string | null;
+  capacity: number | null;
+  vendidos: number;
+  canjeados: number;
+  grossCents: number;
+  platformFeeCents: number;
+  ordersCount: number;
+}
+
+export interface AdminFinanceVenueRow {
+  venueId: string;
+  name: string;
+  grossCents: number;
+  platformFeeCents: number;
+  ordersCount: number;
+}
+
+export interface AdminFinancePromoterRow {
+  promoterId: string;
+  name: string;
+  grossCents: number;
+  platformFeeCents: number;
+  ordersCount: number;
+}
+
+export interface AdminFinanceRpRow {
+  rpId: string;
+  displayName: string;
+  rpCode: string;
+  salesCount: number;
+  earningsCents: number;
+}
+
+export interface AdminFinanceDailyPoint {
+  /** YYYY-MM-DD */
+  day: string;
+  sales: number;
+  grossCents: number;
+  platformFeeCents: number;
+}
+
+export interface AdminFinanceStripeHealth {
+  venuesConnected: number;
+  venuesTotal: number;
+  promotersConnected: number;
+  promotersTotal: number;
+}
+
+export interface AdminFinanceFeeAssumptions {
+  stripePct: number;
+  stripeFixedCents: number;
+  platformFeePctDefault: number;
+}
+
+export interface AdminFinanceStats {
+  range: { from: string; to: string };
+  totals: AdminFinanceTotals;
+  /** ordenado por grossCents desc */
+  byEvent: AdminFinanceEventRow[];
+  topVenues: AdminFinanceVenueRow[];
+  topPromoters: AdminFinancePromoterRow[];
+  topRps: AdminFinanceRpRow[];
+  dailySeries: AdminFinanceDailyPoint[];
+  stripeHealth: AdminFinanceStripeHealth;
+  feeAssumptions: AdminFinanceFeeAssumptions;
 }
 
 export type StoryMediaType = 'IMAGE' | 'VIDEO';

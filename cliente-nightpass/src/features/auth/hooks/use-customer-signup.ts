@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ClientApiError, clientFetch } from '@/core/lib/api/client-client';
 import { paths } from '@/core/config/paths';
@@ -29,7 +29,6 @@ function readErrorMessage(error: unknown): string {
 
 export function useCustomerSignup() {
   const qc = useQueryClient();
-  const router = useRouter();
   const params = useSearchParams();
 
   return useMutation({
@@ -43,8 +42,9 @@ export function useCustomerSignup() {
       // Preserva el código RP anidado en `from` antes del reload del registro.
       const ref = extractRefFromPath(safeFrom);
       if (ref) saveRpRef(ref);
-      router.replace((safeFrom ?? paths.appHome) as never);
-      router.refresh();
+      // Navegación dura — ver nota en use-customer-login. Evita que el
+      // refresh aborte la nav y deje al usuario atascado en el registro.
+      window.location.assign(safeFrom ?? paths.appHome);
     },
     onError: (error) => {
       toast.error(readErrorMessage(error));

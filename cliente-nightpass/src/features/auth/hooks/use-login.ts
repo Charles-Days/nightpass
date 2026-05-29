@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ClientApiError, clientFetch } from '@/core/lib/api/client-client';
 import { paths } from '@/core/config/paths';
@@ -30,7 +30,6 @@ function readErrorMessage(error: unknown): string {
 
 export function useLogin() {
   const qc = useQueryClient();
-  const router = useRouter();
   const params = useSearchParams();
 
   return useMutation({
@@ -40,8 +39,10 @@ export function useLogin() {
       qc.setQueryData(sessionQueryKey, data.user);
       toast.success(`Bienvenido${data.user.name ? `, ${data.user.name}` : ''}`);
       const from = params.get('from');
-      router.replace(from && from.startsWith('/') ? (from as never) : paths.dashboard);
-      router.refresh();
+      // Navegación dura: re-corre el middleware con la cookie recién seteada.
+      // router.replace()+refresh() encadenados se pisaban y dejaban al usuario
+      // atascado en el login hasta recargar a mano.
+      window.location.assign(from && from.startsWith('/') ? from : paths.dashboard);
     },
     onError: (error) => {
       toast.error(readErrorMessage(error));

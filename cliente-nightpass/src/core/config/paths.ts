@@ -45,6 +45,7 @@ export const paths = {
   evento: '/app/evento',
   checkout: '/app/checkout',
   pases: '/app/pases',
+  compras: '/app/compras',
   perfil: '/app/perfil',
   recompensas: '/app/recompensas',
   recompensasScan: '/app/recompensas/scan',

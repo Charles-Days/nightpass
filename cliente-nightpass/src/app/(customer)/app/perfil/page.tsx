@@ -2,22 +2,19 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import {
   ArrowLeft,
-  Bell,
   Camera,
   ChevronRight,
-  CreditCard,
-  HelpCircle,
   KeyRound,
   LayoutDashboard,
   Mail,
   MapPin,
   Shield,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
   Star,
   Ticket,
   TicketCheck,
-  User as UserIcon,
 } from 'lucide-react';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
@@ -345,12 +342,9 @@ export default async function PerfilPage() {
           Cuenta
         </h3>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <SettingItem icon={Ticket} title="Mis pases" desc="Ver historial" href={paths.pases} />
-          <SettingItem icon={Bell} title="Notificaciones" desc="Email y push" />
-          <SettingItem icon={CreditCard} title="Método de pago" desc="—" />
-          <SettingItem icon={UserIcon} title="Datos personales" desc="Nombre, foto, ciudad" />
+          <SettingItem icon={Ticket} title="Mis pases" desc="Tus pases activos" href={paths.pases} />
+          <SettingItem icon={ShoppingBag} title="Compras" desc="Historial de pagos" href={paths.compras} />
           <SettingItem icon={Shield} title="Privacidad" desc="Permisos y datos" href="/privacidad" />
-          <SettingItem icon={HelpCircle} title="Ayuda y soporte" desc="Chat con nosotros" />
           {!isCustomer && (
             <SettingItem
               icon={KeyRound}

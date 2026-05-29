@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Camera, LogIn, ShieldCheck } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { paths } from '@/core/config/paths';
@@ -113,24 +114,70 @@ export function TopBar({ user }: Props) {
               </Button>
             </>
           ) : (
-            <>
-              <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-                <Link href={paths.iniciarSesion}>
-                  <LogIn className="size-4" />
-                  Entrar
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="sm"
-                className="rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] shadow-[0_4px_20px_-4px_rgba(168,85,247,0.55)] transform-gpu transition-transform duration-150 active:scale-95"
-              >
-                <Link href={paths.registro}>Crear cuenta</Link>
-              </Button>
-            </>
+            <Suspense
+              fallback={
+                <AuthButtonsView loginHref={paths.iniciarSesion} registroHref={paths.registro} />
+              }
+            >
+              <GuestAuthButtons />
+            </Suspense>
           )}
         </div>
       </div>
     </header>
+  );
+}
+
+// Botones de invitado: cuelgan el `from` = ruta actual (con su query, incluido
+// el ?ref= del RP). Así, si el usuario abre un link RP y entra/crea cuenta desde
+// el nav (sin pasar por Comprar), tras login vuelve a la misma página con el ref
+// intacto en vez de caer en home.
+function GuestAuthButtons() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const AUTH_PATHS = [
+    paths.iniciarSesion,
+    paths.registro,
+    paths.recuperarPassword,
+    paths.restablecerPassword,
+  ];
+  const onAuthPage = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+  const qs = searchParams.toString();
+  const current = `${pathname}${qs ? `?${qs}` : ''}`;
+  const fromQuery = onAuthPage ? '' : `?from=${encodeURIComponent(current)}`;
+
+  return (
+    <AuthButtonsView
+      loginHref={`${paths.iniciarSesion}${fromQuery}`}
+      registroHref={`${paths.registro}${fromQuery}`}
+    />
+  );
+}
+
+function AuthButtonsView({
+  loginHref,
+  registroHref,
+}: {
+  loginHref: string;
+  registroHref: string;
+}) {
+  return (
+    <>
+      <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+        <Link href={loginHref as never}>
+          <LogIn className="size-4" />
+          Entrar
+        </Link>
+      </Button>
+      <Button
+        asChild
+        size="sm"
+        className="rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] shadow-[0_4px_20px_-4px_rgba(168,85,247,0.55)] transform-gpu transition-transform duration-150 active:scale-95"
+      >
+        <Link href={registroHref as never}>Crear cuenta</Link>
+      </Button>
+    </>
   );
 }

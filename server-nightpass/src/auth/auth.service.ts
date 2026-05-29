@@ -220,6 +220,23 @@ export class AuthService {
         throw new UnauthorizedException('Token mismatch');
       }
       if (stored.revokedAt) {
+        // Ventana de gracia (refresh leeway, à la Auth0): si el token se
+        // revocó hace muy poco, es una race benigna de refrescos concurrentes
+        // — p.ej. al volver el foco a la pestaña con el access expirado, varias
+        // queries refrescan a la vez con el mismo cookie. NO es reuse: no
+        // matamos la familia; reemitimos para que este request también quede
+        // con sesión válida. Fuera de la ventana = replay real → nuke familia.
+        const REFRESH_GRACE_MS = 10_000;
+        const sinceRevoked = Date.now() - stored.revokedAt.getTime();
+        if (sinceRevoked <= REFRESH_GRACE_MS) {
+          const userRecord = await tx.user.findUnique({
+            where: { id: payload.sub },
+          });
+          if (!userRecord) {
+            throw new UnauthorizedException('User not found');
+          }
+          return userRecord;
+        }
         await tx.refreshToken.updateMany({
           where: { userId: stored.userId, revokedAt: null },
           data: { revokedAt: new Date() },

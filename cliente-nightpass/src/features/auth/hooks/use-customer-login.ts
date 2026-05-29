@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ClientApiError, clientFetch } from '@/core/lib/api/client-client';
 import { paths } from '@/core/config/paths';
@@ -29,7 +29,6 @@ function readErrorMessage(error: unknown): string {
 
 export function useCustomerLogin() {
   const qc = useQueryClient();
-  const router = useRouter();
   const params = useSearchParams();
 
   return useMutation({
@@ -46,8 +45,11 @@ export function useCustomerLogin() {
       const ref = extractRefFromPath(safeFrom);
       if (ref) saveRpRef(ref);
       const fallback = data.user.role === 'CUSTOMER' ? paths.appHome : paths.dashboard;
-      router.replace((safeFrom ?? fallback) as never);
-      router.refresh();
+      // Navegación dura: re-ejecuta el middleware con la cookie ya seteada y
+      // aterriza autenticado. Un router.replace()+refresh() encadenados se
+      // pisaban (el refresh aborta la nav soft) y dejaban al usuario atascado
+      // en el login hasta recargar a mano.
+      window.location.assign(safeFrom ?? fallback);
     },
     onError: (error) => {
       toast.error(readErrorMessage(error));

@@ -14,7 +14,9 @@ import {
   Sparkles,
   Ban,
   CheckCircle,
-  Clock
+  Clock,
+  Link2,
+  ShieldCheck,
 } from 'lucide-react';
 
 export default function RpDashboardPage() {
@@ -88,6 +90,41 @@ export default function RpDashboardPage() {
           </div>
         </div>
       </header>
+
+      {/* Cómo se acreditan las ventas — explicación para el RP */}
+      <div className="rounded-[22px] border border-purple-500/15 bg-gradient-to-br from-purple-500/[0.06] to-transparent p-5 sm:p-6">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-purple-500/15 border border-purple-500/25">
+            <Link2 className="size-4 text-purple-300" />
+          </div>
+          <div className="space-y-2.5">
+            <h3 className="font-display text-base font-bold text-white">
+              Mientras abran tu link, la venta es tuya
+            </h3>
+            <p className="text-sm leading-relaxed text-white/70">
+              Cuando alguien abre tu link, guardamos tu código en su dispositivo. A partir de
+              ahí la compra se te acredita <strong className="text-white">automáticamente</strong> —
+              aunque cierre la página, navegue por la app, se vaya y regrese después, o tenga que
+              crear cuenta o iniciar sesión para pagar. No necesita comprar en el mismo momento.
+            </p>
+            <div className="flex flex-wrap gap-x-5 gap-y-1.5 pt-0.5 text-[13px]">
+              <span className="inline-flex items-center gap-1.5 text-emerald-300">
+                <CheckCircle className="size-3.5" />
+                Se guarda por 7 días en su dispositivo
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-white/50">
+                <ShieldCheck className="size-3.5" />
+                Cuenta aunque cierre y vuelva a abrir la web
+              </span>
+            </div>
+            <p className="text-[12px] leading-relaxed text-white/45">
+              Solo no aplica si compra desde otro teléfono/computadora, en modo incógnito, o si
+              pasan más de 7 días sin comprar. Por eso lo importante es que{' '}
+              <strong className="text-white/70">abran tu link</strong> — el resto lo hacemos nosotros.
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Main Stats grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
