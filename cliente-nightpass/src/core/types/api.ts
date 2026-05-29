@@ -460,7 +460,10 @@ export interface CatalogEventDetail {
     logoUrl: string | null;
   } | null;
   externalVenueName?: string | null;
+  externalVenueAddress?: string | null;
   externalVenueCity?: string | null;
+  externalVenueLat?: number | null;
+  externalVenueLng?: number | null;
 }
 
 export interface CatalogPromoterDetail {

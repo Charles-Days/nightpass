@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Calendar, Lock, MapPin, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Lock, MapPin, Navigation, TrendingUp, Users } from 'lucide-react';
 import { ServerApiError, publicFetch, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import { absoluteUrl } from '@/core/config/env';
@@ -63,6 +63,12 @@ function formatShortDate(iso: string) {
   );
 }
 
+function formatTime(iso: string) {
+  return new Intl.DateTimeFormat('es-MX', { hour: '2-digit', minute: '2-digit' }).format(
+    new Date(iso),
+  );
+}
+
 export default async function EventDetailPage({ params }: Props) {
   const { id } = await params;
   let event: CatalogEventDetail;
@@ -92,6 +98,19 @@ export default async function EventDetailPage({ params }: Props) {
     (min, t) => (min == null || t.priceCents < min.priceCents ? t : min),
     null,
   );
+
+  const placeName = event.venue?.name ?? event.externalVenueName ?? null;
+  const cityLabel = event.venue?.city ?? event.externalVenueCity ?? null;
+  const fullAddress = event.venue?.address ?? event.externalVenueAddress ?? null;
+  const mapsQuery =
+    event.externalVenueLat != null && event.externalVenueLng != null
+      ? `${event.externalVenueLat},${event.externalVenueLng}`
+      : [placeName, fullAddress, cityLabel].filter(Boolean).join(', ') || null;
+  const mapsUrl = mapsQuery
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
+    : null;
+  const sameDay =
+    new Date(event.startsAt).toDateString() === new Date(event.endsAt).toDateString();
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-6 sm:px-8 sm:py-10">
@@ -173,9 +192,107 @@ export default async function EventDetailPage({ params }: Props) {
 
         {event.description && (
           <div className="np-rise border-t border-white/8 p-5 sm:p-7" style={{ animationDelay: '340ms' }}>
-            <p className="text-sm leading-relaxed text-muted-foreground">{event.description}</p>
+            <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{event.description}</p>
           </div>
         )}
+      </section>
+
+      <section
+        className="np-rise mt-5 rounded-[22px] border border-white/10 bg-white/[0.025] p-5 sm:p-7"
+        style={{ animationDelay: '350ms' }}
+      >
+        <h2 className="mb-4 font-display text-lg font-bold tracking-tight">Detalles</h2>
+        <dl className="grid gap-5 sm:grid-cols-2">
+          <div className="flex items-start gap-3">
+            <Calendar className="mt-0.5 size-4 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Cuándo</dt>
+              <dd className="mt-0.5 text-sm capitalize text-foreground">{formatDate(event.startsAt)}</dd>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <Clock className="mt-0.5 size-4 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Horario</dt>
+              <dd className="mt-0.5 text-sm text-foreground">
+                {formatTime(event.startsAt)} – {formatTime(event.endsAt)}
+                {!sameDay ? ` (${formatShortDate(event.endsAt)})` : ''}
+              </dd>
+            </div>
+          </div>
+
+          {(placeName || cityLabel) && (
+            <div className="flex items-start gap-3">
+              <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Dónde</dt>
+                <dd className="mt-0.5 text-sm text-foreground">
+                  {placeName}
+                  {cityLabel ? ` · ${cityLabel}` : ''}
+                  {fullAddress ? <span className="block text-xs text-muted-foreground">{fullAddress}</span> : null}
+                </dd>
+                {mapsUrl && (
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-primary transition hover:underline active:scale-95"
+                  >
+                    <Navigation className="size-3" />
+                    Ver en mapa
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {event.promoter && (
+            <div className="flex items-start gap-3">
+              {event.promoter.logoUrl ? (
+                <Image
+                  src={event.promoter.logoUrl}
+                  alt={event.promoter.name}
+                  width={20}
+                  height={20}
+                  className="mt-0.5 size-5 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <Users className="mt-0.5 size-4 shrink-0 text-primary" />
+              )}
+              <div className="min-w-0">
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Organiza</dt>
+                <dd className="mt-0.5 text-sm text-foreground">
+                  <Link href={`${paths.promotora}/${event.promoter.slug}`} className="transition hover:text-primary">
+                    {event.promoter.name}
+                  </Link>
+                </dd>
+              </div>
+            </div>
+          )}
+
+          {event.capacity != null && (
+            <div className="flex items-start gap-3">
+              <Users className="mt-0.5 size-4 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Aforo</dt>
+                <dd className="mt-0.5 text-sm text-foreground">{event.capacity} lugares</dd>
+              </div>
+            </div>
+          )}
+
+          {cheapestTier && (
+            <div className="flex items-start gap-3">
+              <TrendingUp className="mt-0.5 size-4 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Desde</dt>
+                <dd className="mt-0.5 text-sm font-semibold text-foreground">
+                  {formatPrice(cheapestTier.priceCents, cheapestTier.currency)}
+                </dd>
+              </div>
+            </div>
+          )}
+        </dl>
       </section>
 
       {event.flyerImageUrl && (
