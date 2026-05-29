@@ -134,8 +134,12 @@ export default function ScanCheckinPage() {
     try {
       const { BrowserMultiFormatReader } = await import('@zxing/browser');
       const reader = new BrowserMultiFormatReader();
-      const controls = await reader.decodeFromVideoDevice(
-        undefined,
+      // Prefer the phone's rear camera. `decodeFromVideoDevice(undefined, …)`
+      // lets the browser pick the default device, which on phones is usually
+      // the front/selfie cam. `facingMode: environment` targets the back cam;
+      // `ideal` (not `exact`) so it still works on laptops with only a webcam.
+      const controls = await reader.decodeFromConstraints(
+        { video: { facingMode: { ideal: 'environment' } } },
         videoRef.current!,
         (result) => {
           if (!result) return;
