@@ -17,9 +17,18 @@ interface EventFormProps {
   onSuccess?: () => void;
   defaultValues?: Partial<CreateEventInput>;
   eventId?: string;
+  /** Renderiza la sección de tiers al pie del form. Default true. El admin la
+   *  pone en false porque ya muestra los tiers en una card aparte. */
+  showTiers?: boolean;
 }
 
-export function EventForm({ venueId, onSuccess, defaultValues, eventId }: EventFormProps) {
+export function EventForm({
+  venueId,
+  onSuccess,
+  defaultValues,
+  eventId,
+  showTiers = true,
+}: EventFormProps) {
   const create = useCreateEvent(venueId);
   const update = useUpdateEvent(venueId);
   const isPending = create.isPending || update.isPending;
@@ -164,7 +173,7 @@ export function EventForm({ venueId, onSuccess, defaultValues, eventId }: EventF
         </Button>
       </div>
 
-      {eventId ? <TiersSection eventId={eventId} /> : null}
+      {eventId && showTiers ? <TiersSection eventId={eventId} /> : null}
     </form>
   );
 }

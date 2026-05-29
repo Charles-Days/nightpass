@@ -82,6 +82,7 @@ export function AdminEventEdit({ event, onDone }: { event: Event; onDone: () => 
             venueId={event.venueId!}
             eventId={event.id}
             defaultValues={venueDefaults(event)}
+            showTiers={false}
             onSuccess={() => {
               qc.invalidateQueries({ queryKey: ['events'] });
               onDone();

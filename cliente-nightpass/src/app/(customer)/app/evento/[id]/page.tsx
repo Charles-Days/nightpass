@@ -18,6 +18,7 @@ import { EventForumSection } from '@/app/(customer)/_components/event-forum-sect
 
 interface Props {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ ref?: string }>;
 }
 
 export async function generateMetadata({ params }: Props) {
@@ -69,8 +70,14 @@ function formatTime(iso: string) {
   );
 }
 
-export default async function EventDetailPage({ params }: Props) {
+export default async function EventDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { ref } = await searchParams;
+  // El código RP viaja por la URL hasta el checkout. Así, aunque el usuario no
+  // tenga sesión, el middleware lo conserva en el `from` al mandar a login y el
+  // checkout lo recibe de vuelta — sin depender de localStorage (que Safari/ITP
+  // o incógnito pueden borrar). RefTracker igual lo guarda como respaldo.
+  const refQuery = ref ? `?ref=${encodeURIComponent(ref)}` : '';
   let event: CatalogEventDetail;
   try {
     event = await publicFetch<CatalogEventDetail>(`/catalog/events/${id}`, {
@@ -390,7 +397,7 @@ export default async function EventDetailPage({ params }: Props) {
                       </span>
                     ) : (
                       <Link
-                        href={`${paths.checkout}/${tier.id}`}
+                        href={`${paths.checkout}/${tier.id}${refQuery}`}
                         className="np-glow-pulse shrink-0 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95 hover:brightness-110"
                       >
                         Comprar

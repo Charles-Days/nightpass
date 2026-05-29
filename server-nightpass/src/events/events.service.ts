@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -365,7 +366,25 @@ export class EventsService {
       user.role,
     );
 
-    await this.prisma.event.delete({ where: { id } });
+    // Las órdenes COMPLETED son ventas reales (pases emitidos) — no se borran.
+    // El evento debe cancelarse (status=CANCELED), no eliminarse.
+    const soldCount = await this.prisma.order.count({
+      where: { eventId: id, status: 'COMPLETED' },
+    });
+    if (soldCount > 0) {
+      throw new ConflictException(
+        `No se puede eliminar: el evento tiene ${soldCount} pase(s) vendido(s). Cancélalo en su lugar.`,
+      );
+    }
+
+    // Órdenes PENDING/FAILED (carritos abandonados) no representan dinero
+    // liquidado — se borran junto al evento para no dejar el FK bloqueado.
+    // Los tiers caen por onDelete: Cascade.
+    await this.prisma.$transaction([
+      this.prisma.pass.deleteMany({ where: { eventId: id } }),
+      this.prisma.order.deleteMany({ where: { eventId: id } }),
+      this.prisma.event.delete({ where: { id } }),
+    ]);
 
     if (event.coverImageUrl) {
       this.storage.deleteByPublicUrl(event.coverImageUrl).catch(() => undefined);

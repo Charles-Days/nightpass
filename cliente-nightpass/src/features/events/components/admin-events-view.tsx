@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Calendar, Loader2, Pencil, Sparkles, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { clientFetch } from '@/core/lib/api/client-client';
+import { clientFetch, ClientApiError } from '@/core/lib/api/client-client';
 import { Button } from '@/core/components/ui/button';
 import { ConfirmDialog } from '@/core/components/ui/confirm-dialog';
 import {
@@ -76,7 +76,18 @@ export function AdminEventsView() {
       qc.invalidateQueries({ queryKey: ['events'] });
       setDeleting(null);
     },
-    onError: () => toast.error('No pudimos eliminar el evento'),
+    onError: (err) => {
+      // 409 del backend con motivo (ej. pases vendidos) — mostrarlo tal cual.
+      const payload = err instanceof ClientApiError ? err.payload : null;
+      const m =
+        payload && typeof payload === 'object'
+          ? (payload as Record<string, unknown>).message
+          : null;
+      toast.error(
+        typeof m === 'string' ? m : 'No pudimos eliminar el evento',
+      );
+      setDeleting(null);
+    },
   });
 
   const events = data?.items ?? [];
