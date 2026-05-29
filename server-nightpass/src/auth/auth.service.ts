@@ -297,7 +297,11 @@ export class AuthService {
     return this.publicUser(user);
   }
 
-  async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
+  async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<AuthTokens> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (!user.passwordHash) {
       throw new ConflictException({
@@ -318,6 +322,11 @@ export class AuthService {
         data: { revokedAt: new Date() },
       }),
     ]);
+
+    // Emitir tokens nuevos con mustChangePassword=false. Sin esto el cliente
+    // se queda con el JWT viejo (flag=true) y el middleware lo rebota a
+    // /cambiar-password en loop, ademas de que el refresh viejo quedo revocado.
+    return this.issueTokens(user.id, user.email, user.role, false);
   }
 
   async requestPasswordReset(email: string, ipAddress?: string): Promise<void> {

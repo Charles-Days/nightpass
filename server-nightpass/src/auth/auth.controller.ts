@@ -86,7 +86,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   changePassword(@Body() dto: ChangePasswordDto, @CurrentUser() user: AuthUser) {
-    return this.auth.changePassword(user.id, dto.oldPassword, dto.newPassword).then(() => ({ ok: true }));
+    return this.auth.changePassword(user.id, dto.oldPassword, dto.newPassword);
   }
 
   @Post('forgot-password')
