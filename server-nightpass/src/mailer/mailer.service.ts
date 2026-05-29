@@ -261,6 +261,23 @@ export class MailerService {
     });
   }
 
+  async sendRpInvited(
+    to: string,
+    rpName: string,
+    temporaryPassword?: string,
+  ): Promise<void> {
+    const loginUrl = `${this.adminWebUrl.replace(/\/$/, '')}/login`;
+    await this.send(to, {
+      subject: `Has sido invitado como RP en NightPass`,
+      html: `<p>Hola ${rpName},</p>
+             <p>Te hemos creado una cuenta de Relaciones Públicas (RP) en NightPass.</p>
+             ${temporaryPassword ? `<p>Tus credenciales temporales de acceso son:</p>
+             <p><strong>Email:</strong> ${to}<br/><strong>Contraseña:</strong> ${temporaryPassword}</p>` : `<p>Puedes ingresar usando tu contraseña existente.</p>`}
+             <p>Inicia sesión aquí: <a href="${loginUrl}">${loginUrl}</a></p>`,
+      text: `Hola ${rpName},\n\nTe hemos creado una cuenta de Relaciones Públicas (RP) en NightPass.\n\n${temporaryPassword ? `Tus credenciales temporales:\nEmail: ${to}\nContraseña: ${temporaryPassword}` : 'Puedes ingresar usando tu contraseña existente.'}\n\nInicia sesión aquí: ${loginUrl}\n\n— Equipo NightPass`,
+    });
+  }
+
   private async send(
     to: string,
     tpl: { subject: string; html: string; text: string },

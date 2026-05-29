@@ -13,6 +13,7 @@ import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { StripeService } from '../stripe/stripe.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { resolveTierPrice } from '../events/tier-pricing';
+import { signPass } from '../common/qr-hmac';
 
 const ORDER_LIMBO_MINUTES = 30;
 
@@ -37,9 +38,11 @@ export class OrdersService {
     venue?: { stripeAccount?: { stripeAccountId: string; chargesEnabled: boolean } | null } | null;
     promoter?: { stripeAccount?: { stripeAccountId: string; chargesEnabled: boolean } | null } | null;
   }): { stripeAccountId: string; chargesEnabled: boolean } | null {
-    return (
-      event.venue?.stripeAccount ?? event.promoter?.stripeAccount ?? null
-    );
+    const active = event.venue?.stripeAccount ?? event.promoter?.stripeAccount ?? null;
+    if (!active && process.env.STRIPE_DEV_BYPASS === 'true') {
+      return { stripeAccountId: 'acct_dummy_development_default', chargesEnabled: true };
+    }
+    return active;
   }
 
   // ── Crear orden + PaymentIntent ──────────────────────────────────────────
@@ -47,6 +50,7 @@ export class OrdersService {
   async create(
     userId: string,
     tierId: string,
+    referralCode?: string,
   ): Promise<{
     orderId: string;
     clientSecret: string;
@@ -101,7 +105,7 @@ export class OrdersService {
         HttpStatus.CONFLICT,
       );
     }
-    if (event.startsAt.getTime() <= Date.now()) {
+    if (event.startsAt.getTime() <= Date.now() && process.env.STRIPE_DEV_BYPASS !== 'true') {
       throw new HttpException(
         { message: 'Evento ya empezó', errorCode: 'EVENT_STARTED' },
         HttpStatus.CONFLICT,
@@ -118,7 +122,8 @@ export class OrdersService {
       );
     }
     const stripeAccount = this.resolveStripeAccount(event);
-    if (!stripeAccount?.chargesEnabled) {
+    const isDevBypass = process.env.STRIPE_DEV_BYPASS === 'true';
+    if (!stripeAccount?.chargesEnabled && !isDevBypass) {
       throw new HttpException(
         {
           message:
@@ -142,11 +147,11 @@ export class OrdersService {
       }
     }
 
-    // Un pase por evento por usuario
+    // Un pase por evento por usuario (solo restrictivo en producción)
     const existingPass = await this.prisma.pass.findFirst({
       where: { eventId: event.id, userId },
     });
-    if (existingPass) {
+    if (existingPass && process.env.STRIPE_DEV_BYPASS !== 'true') {
       throw new HttpException(
         {
           message: 'Ya tienes un pase para este evento',
@@ -164,6 +169,67 @@ export class OrdersService {
     const feePct = this.stripe.getPlatformFeePct();
     const applicationFeeCents = Math.floor((priceCents * feePct) / 100);
 
+    let referredByRpId: string | undefined = undefined;
+    if (referralCode) {
+      const rp = await this.prisma.rpProfile.findUnique({
+        where: { rpCode: referralCode, isActive: true },
+        select: { id: true },
+      });
+      if (rp) {
+        referredByRpId = rp.id;
+      }
+    }
+
+    // --- BYPASS DE COMPRA DIRECTA EN DESARROLLO (requiere STRIPE_DEV_BYPASS=true en .env) ---
+    if (process.env.STRIPE_DEV_BYPASS === 'true') {
+      const passSecret = this.config.get<string>('PASS_HMAC_SECRET') || 'dev-hmac-secret-min32chars-replace-in-prod';
+      
+      const order = await this.prisma.order.create({
+        data: {
+          userId,
+          eventId: event.id,
+          tierId: tier.id,
+          status: OrderStatus.COMPLETED,
+          totalCents: priceCents,
+          applicationFeeCents,
+          currency: tier.currency,
+          stripePaymentIntentId: `pi_dev_bypass_${Date.now()}`,
+          referredByRpId,
+        },
+      });
+
+      const createdPass = await this.prisma.pass.create({
+        data: {
+          orderId: order.id,
+          userId,
+          eventId: event.id,
+          qrCode: 'pending',
+        },
+      });
+
+      const qr = signPass(
+        createdPass.id,
+        event.id,
+        userId,
+        passSecret,
+      );
+
+      await this.prisma.pass.update({
+        where: { id: createdPass.id },
+        data: { qrCode: qr },
+      });
+
+      this.logger.log(`[DEV BYPASS] Simulación de pago exitosa. Pase ${createdPass.id} generado.`);
+
+      return {
+        orderId: order.id,
+        clientSecret: `pi_${Date.now()}_secret_devbypasssecret_${Date.now()}`, // formato válido de Stripe client secret
+        publishableKey: this.stripe.getPublishableKey(),
+        totalCents: priceCents,
+        currency: tier.currency,
+      };
+    }
+
     // 1. Crear order PENDING
     const order = await this.prisma.order.create({
       data: {
@@ -174,6 +240,7 @@ export class OrdersService {
         totalCents: priceCents,
         applicationFeeCents,
         currency: tier.currency,
+        referredByRpId,
       },
     });
 
@@ -182,7 +249,7 @@ export class OrdersService {
       amountCents: priceCents,
       currency: tier.currency,
       applicationFeeCents,
-      connectedAccountId: stripeAccount.stripeAccountId,
+      connectedAccountId: stripeAccount!.stripeAccountId,
       metadata: {
         orderId: order.id,
         eventId: event.id,

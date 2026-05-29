@@ -13,6 +13,7 @@ enum Role {
   VENUE_STAFF
   PROMOTER
   PROMOTER_STAFF
+  RP
   CUSTOMER
 }
 
@@ -110,6 +111,7 @@ model User {
   createdStories       Story[]               @relation("StoryAuthor")
   forumPosts           EventForumPost[]
   pushSubscriptions    PushSubscription[]
+  rpProfile            RpProfile?
 
   @@map("users")
 }
@@ -306,6 +308,7 @@ model Promoter {
   events        Event[]
   applications  PromoterApplication[] @relation("ApprovedPromoter")
   stripeAccount StripeAccount?
+  rpProfiles    RpProfile[]
 
   @@index([city])
   @@index([status, createdAt])
@@ -403,6 +406,7 @@ model Event {
   passes        Pass[]
   loyaltyEvents LoyaltyEvent[]
   stories       Story[]
+  rpCommissionRules RpCommissionRule[]
   forumPosts    EventForumPost[]
 
   @@unique([venueId, slug])
@@ -504,6 +508,8 @@ model Order {
   event Event     @relation(fields: [eventId], references: [id])
   tier  EventTier @relation(fields: [tierId], references: [id])
   pass  Pass?
+  referredByRpId  String?  @db.Uuid
+  referredByRp    RpProfile? @relation("RpReferredOrders", fields: [referredByRpId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
   @@index([eventId, status])
@@ -658,4 +664,50 @@ model Story {
   @@index([eventId, expiresAt])
   @@index([expiresAt])
   @@map("stories")
+}
+
+enum RpCommissionType {
+  PER_N_TICKETS
+  PERCENTAGE
+}
+
+model RpProfile {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  userId      String   @unique @db.Uuid
+  promoterId  String?  @db.Uuid
+  rpCode      String   @unique
+  displayName String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promoter  Promoter?        @relation(fields: [promoterId], references: [id], onDelete: SetNull)
+  orders    Order[]          @relation("RpReferredOrders")
+  commissionRules RpCommissionRule[]
+
+  @@index([rpCode])
+  @@index([promoterId])
+  @@map("rp_profiles")
+}
+
+model RpCommissionRule {
+  id            String              @id @default(uuid(7)) @db.Uuid
+  rpProfileId   String              @db.Uuid
+  eventId       String?             @db.Uuid
+  type          RpCommissionType    @default(PER_N_TICKETS)
+  nTickets      Int?
+  rewardCents   Int?
+  currency      String              @default("MXN")
+  percentage    Float?
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  rpProfile RpProfile @relation(fields: [rpProfileId], references: [id], onDelete: Cascade)
+  event     Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([rpProfileId, eventId])
+  @@index([rpProfileId])
+  @@map("rp_commission_rules")
 }

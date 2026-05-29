@@ -25,6 +25,7 @@ import { LocationsModule } from './locations/locations.module';
 import { LoyaltyModule } from './loyalty/loyalty.module';
 import { LoyaltyCheckinModule } from './loyalty-checkin/loyalty-checkin.module';
 import { StoriesModule } from './stories/stories.module';
+import { RpModule } from './rp/rp.module';
 import { validateEnv } from './config/env.schema';
 
 @Module({
@@ -63,6 +64,7 @@ import { validateEnv } from './config/env.schema';
     LoyaltyModule,
     LoyaltyCheckinModule,
     StoriesModule,
+    RpModule,
   ],
   providers: [
     {

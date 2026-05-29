@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 import { ThemeProvider } from './theme-provider';
 import { QueryProvider } from './query-provider';
 import { NPGoogleOAuthProvider } from './google-oauth-provider';
+import { RefTracker } from './ref-tracker';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -16,6 +17,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     >
       <NPGoogleOAuthProvider>
         <QueryProvider>
+          <RefTracker />
           {children}
           <Toaster
             position="top-right"

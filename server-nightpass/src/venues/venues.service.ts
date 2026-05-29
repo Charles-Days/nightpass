@@ -366,14 +366,31 @@ export class VenuesService {
     });
   }
 
+  private _resolveUploadUrl(url: string): string {
+    if (!url) return url;
+    // Relative → prefix with our uploads base
+    if (!url.startsWith('http')) {
+      return `${this.uploadsUrl}/${url}`.replace(/([^:]\/)\/+/g, '$1');
+    }
+    // CDN / R2 / external URL (no /uploads/ path) → keep as-is
+    if (!url.includes('/uploads/')) {
+      return url;
+    }
+    // Absolute local URL with /uploads/ path (possibly a different IP).
+    // Rebuild against our own LOCAL_UPLOADS_URL so the IP is always correct.
+    const uploadsIndex = url.indexOf('/uploads/');
+    const relativePath = url.slice(uploadsIndex + '/uploads/'.length);
+    return `${this.uploadsUrl}/${relativePath}`.replace(/([^:]\/)\/+/g, '$1');
+  }
+
   private _mapVenueUrls<T extends { coverImageUrl?: string | null; photos?: Photo[] }>(venue: T): T {
-    if (venue.coverImageUrl && !venue.coverImageUrl.startsWith('http')) {
-      venue.coverImageUrl = `${this.uploadsUrl}/${venue.coverImageUrl}`.replace(/([^:]\/)\/+/g, '$1');
+    if (venue.coverImageUrl) {
+      venue.coverImageUrl = this._resolveUploadUrl(venue.coverImageUrl);
     }
     if (venue.photos) {
       venue.photos = venue.photos.map(p => ({
         ...p,
-        url: p.url.startsWith('http') ? p.url : `${this.uploadsUrl}/${p.url}`.replace(/([^:]\/)\/+/g, '$1')
+        url: this._resolveUploadUrl(p.url)
       }));
     }
     return venue;
@@ -381,8 +398,10 @@ export class VenuesService {
 
   private _stripBaseUrl(url: string): string {
     if (!url || !this.uploadsUrl) return url;
-    if (url.startsWith(this.uploadsUrl)) {
-      return url.replace(this.uploadsUrl, '').replace(/^\/+/, '');
+    // Strip any absolute upload URL (regardless of which host/IP it uses)
+    if (url.includes('/uploads/')) {
+      const uploadsIndex = url.indexOf('/uploads/');
+      return url.slice(uploadsIndex + '/uploads/'.length);
     }
     return url;
   }

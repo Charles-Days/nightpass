@@ -36,6 +36,7 @@ const ROLE_LABEL: Record<Role, string> = {
   VENUE_STAFF: 'Staff de local',
   PROMOTER: 'Organizador',
   PROMOTER_STAFF: 'Staff organizador',
+  RP: 'Relaciones Públicas',
   CUSTOMER: 'Insider',
 };
 

@@ -49,6 +49,7 @@ const PLATFORM_NAV: NavItem[] = [
   { href: paths.adminOrganizadores, label: 'Organizadores', icon: Sparkles, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminUsers, label: 'Usuarios', icon: Users, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminStories, label: 'Historias', icon: Radio, enabled: true, roles: ['ADMIN'] },
+  { href: paths.adminRps, label: 'RPs', icon: Users, enabled: true, roles: ['ADMIN'] },
 ];
 
 const VENUE_NAV: NavItem[] = [
@@ -70,6 +71,10 @@ const PROMOTER_NAV: NavItem[] = [
   { href: paths.miOrganizadorScanner, label: 'Escanear pase', icon: QrCode, enabled: true, roles: ['PROMOTER', 'PROMOTER_STAFF'] },
   { href: paths.miOrganizadorHistorias, label: 'Historias', icon: Radio, enabled: true, roles: ['PROMOTER', 'PROMOTER_STAFF'] },
   { href: paths.miOrganizadorStaff, label: 'Staff', icon: Users, enabled: true, roles: ['PROMOTER'] },
+];
+
+const RP_NAV: NavItem[] = [
+  { href: paths.rpDashboard, label: 'Mi Panel RP', icon: LayoutDashboard, enabled: true, roles: ['RP'] },
 ];
 
 function visibleFor(role: Role, group: NavItem[]): NavItem[] {
@@ -146,6 +151,7 @@ const ROLE_LABEL: Record<Role, string> = {
   VENUE_STAFF: 'Staff de local',
   PROMOTER: 'Organizador',
   PROMOTER_STAFF: 'Staff de organizador',
+  RP: 'Relaciones Públicas',
   CUSTOMER: 'Cliente',
 };
 
@@ -155,6 +161,7 @@ interface SidebarBodyProps {
   platformItems: NavItem[];
   venueItems: NavItem[];
   promoterItems: NavItem[];
+  rpItems: NavItem[];
   pathname: string;
   onLogout: () => void;
   isLoggingOut: boolean;
@@ -177,6 +184,7 @@ function SidebarBody({
   platformItems,
   venueItems,
   promoterItems,
+  rpItems,
   pathname,
   onLogout,
   isLoggingOut,
@@ -207,6 +215,12 @@ function SidebarBody({
         <NavSection
           title="Mi panel"
           items={promoterItems}
+          pathname={pathname}
+          onNavigate={onNavigate}
+        />
+        <NavSection
+          title="Relaciones Públicas"
+          items={rpItems}
           pathname={pathname}
           onNavigate={onNavigate}
         />
@@ -250,6 +264,7 @@ export function AppShell({ user, contextName = null, children }: { user: User; c
   const platformItems = visibleFor(user.role, PLATFORM_NAV);
   const venueItems = visibleFor(user.role, VENUE_NAV);
   const promoterItems = visibleFor(user.role, PROMOTER_NAV);
+  const rpItems = visibleFor(user.role, RP_NAV);
 
   return (
     <div className="relative min-h-dvh bg-background">
@@ -268,6 +283,7 @@ export function AppShell({ user, contextName = null, children }: { user: User; c
           platformItems={platformItems}
           venueItems={venueItems}
           promoterItems={promoterItems}
+          rpItems={rpItems}
           pathname={pathname}
           onLogout={() => logout()}
           isLoggingOut={isPending}
@@ -289,6 +305,7 @@ export function AppShell({ user, contextName = null, children }: { user: User; c
             platformItems={platformItems}
             venueItems={venueItems}
             promoterItems={promoterItems}
+            rpItems={rpItems}
             pathname={pathname}
             onLogout={() => logout()}
             isLoggingOut={isPending}

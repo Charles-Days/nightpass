@@ -21,6 +21,8 @@ export const paths = {
   miLocalStories: '/mi-local/stories',
   adminStories: '/admin/stories',
   scanner: '/scanner',
+  adminRps: '/admin/rps',
+  rpDashboard: '/rp-dashboard',
   // Organizadores
   adminOrganizadores: '/admin/organizadores',
   miOrganizador: '/app/mi-organizador',

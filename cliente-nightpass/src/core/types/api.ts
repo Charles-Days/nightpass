@@ -4,6 +4,7 @@ export type Role =
   | 'VENUE_STAFF'
   | 'PROMOTER'
   | 'PROMOTER_STAFF'
+  | 'RP'
   | 'CUSTOMER';
 
 export type PromoterStatus = 'ACTIVE' | 'SUSPENDED';

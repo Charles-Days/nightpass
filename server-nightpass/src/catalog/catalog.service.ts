@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Prisma, EventStatus, Role, VenueStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LocationsService } from '../locations/locations.service';
@@ -41,10 +42,65 @@ const VENUE_PUBLIC_SELECT = {
 
 @Injectable()
 export class CatalogService {
+  private readonly uploadsUrl: string;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly locations: LocationsService,
-  ) {}
+    private readonly config: ConfigService,
+  ) {
+    this.uploadsUrl = this.config.get<string>('LOCAL_UPLOADS_URL') || '';
+  }
+
+  private _mapUrl(url: string | null | undefined): string | null {
+    if (!url) return null;
+    // Relative path → prefix with our local uploads URL
+    if (!url.startsWith('http')) {
+      return `${this.uploadsUrl}/${url}`.replace(/([^:]\/)\/+/g, '$1');
+    }
+    // Absolute URL already pointing to R2 or another CDN → keep as-is
+    if (!url.includes('/uploads/')) {
+      return url;
+    }
+    // Absolute URL pointing to an uploads path (possibly from a different local IP).
+    // Extract the path after /uploads/ and rebuild against our own local uploads URL.
+    const uploadsIndex = url.indexOf('/uploads/');
+    const relativePath = url.slice(uploadsIndex + '/uploads/'.length);
+    return `${this.uploadsUrl}/${relativePath}`.replace(/([^:]\/)\/+/g, '$1');
+  }
+
+  private _mapVenue<T extends { coverImageUrl?: string | null; photos?: any[]; events?: any[] }>(venue: T): T {
+    if (!venue) return venue;
+    if (venue.coverImageUrl) {
+      venue.coverImageUrl = this._mapUrl(venue.coverImageUrl);
+    }
+    if (venue.photos) {
+      venue.photos = venue.photos.map((p) => ({
+        ...p,
+        url: p.url ? this._mapUrl(p.url) : null,
+      }));
+    }
+    if (venue.events) {
+      venue.events = venue.events.map((e) => this._mapEvent(e));
+    }
+    return venue;
+  }
+
+  private _mapEvent<T extends { coverImageUrl?: string | null; venue?: any; promoter?: any }>(event: T): T {
+    if (!event) return event;
+    if (event.coverImageUrl) {
+      event.coverImageUrl = this._mapUrl(event.coverImageUrl);
+    }
+    if (event.venue) {
+      event.venue = this._mapVenue(event.venue);
+    }
+    if (event.promoter) {
+      if (event.promoter.logoUrl) {
+        event.promoter.logoUrl = this._mapUrl(event.promoter.logoUrl);
+      }
+    }
+    return event;
+  }
 
   async listVenues(query: ListCatalogVenuesQuery) {
     const where: Prisma.VenueWhereInput = { status: 'ACTIVE' };
@@ -90,7 +146,7 @@ export class CatalogService {
       this.prisma.venue.count({ where }),
     ]);
 
-    return { items, total, page: query.page, limit: query.limit };
+    return { items: items.map((v) => this._mapVenue(v)), total, page: query.page, limit: query.limit };
   }
 
   async getVenueBySlug(slug: string) {
@@ -130,7 +186,7 @@ export class CatalogService {
       },
     });
     if (!venue) throw new NotFoundException('Local no encontrado');
-    return venue;
+    return this._mapVenue(venue);
   }
 
   async getPromoterBySlug(slug: string) {
@@ -303,7 +359,7 @@ export class CatalogService {
       }),
     }));
 
-    return { items: mapped, total, page: query.page, limit: query.limit };
+    return { items: mapped.map((e) => this._mapEvent(e)), total, page: query.page, limit: query.limit };
   }
 
   async getEventById(id: string) {
@@ -337,7 +393,7 @@ export class CatalogService {
     if (!event) throw new NotFoundException('Evento no encontrado');
 
     // Expone el precio vigente y la próxima subida; oculta el calendario interno.
-    return {
+    return this._mapEvent({
       ...event,
       tiers: event.tiers.map((t) => {
         const { prices, ...rest } = t;
@@ -350,7 +406,7 @@ export class CatalogService {
             : null,
         };
       }),
-    };
+    });
   }
 
   async getTierById(tierId: string) {
@@ -420,6 +476,7 @@ export class CatalogService {
     }
 
     const paymentsEnabled =
+      process.env.STRIPE_DEV_BYPASS === 'true' ||
       venue?.stripeAccount?.chargesEnabled === true ||
       promoter?.stripeAccount?.chargesEnabled === true;
 
@@ -429,7 +486,7 @@ export class CatalogService {
       tier.event.startsAt,
     );
 
-    return {
+    const result = {
       id: tier.id,
       name: tier.name,
       priceCents: resolved.currentCents,
@@ -466,6 +523,10 @@ export class CatalogService {
       },
       paymentsEnabled,
     };
+    if (result.event) {
+      result.event = this._mapEvent(result.event);
+    }
+    return result;
   }
 
   /**

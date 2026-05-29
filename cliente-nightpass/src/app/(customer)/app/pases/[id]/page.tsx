@@ -89,7 +89,7 @@ export default async function PassDetailPage({ params }: Props) {
         </div>
 
         {/* QR */}
-        <div className="flex min-h-[70dvh] flex-col items-center justify-center px-5 pb-2 pt-7 sm:min-h-0 sm:px-6 sm:pt-9">
+        <div className="flex flex-col items-center justify-center px-5 pb-4 pt-8 sm:px-6 sm:pt-9">
           <PassQRWithGeoPing value={pass.qrCode} usedAt={pass.usedAt} />
 
           {used && pass.usedAt && (

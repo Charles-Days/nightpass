@@ -7,6 +7,7 @@ const LABEL: Record<Role, string> = {
   VENUE_STAFF: 'Staff',
   PROMOTER: 'Organizador',
   PROMOTER_STAFF: 'Staff organizador',
+  RP: 'RP',
   CUSTOMER: 'Cliente',
 };
 
@@ -16,6 +17,7 @@ const VARIANT: Record<Role, 'default' | 'success' | 'warning' | 'secondary'> = {
   VENUE_STAFF: 'warning',
   PROMOTER: 'success',
   PROMOTER_STAFF: 'warning',
+  RP: 'success',
   CUSTOMER: 'secondary',
 };
 

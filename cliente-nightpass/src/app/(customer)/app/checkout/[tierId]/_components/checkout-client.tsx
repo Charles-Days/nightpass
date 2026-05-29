@@ -17,6 +17,7 @@ import { Button } from '@/core/components/ui/button';
 import { clientFetch, ClientApiError } from '@/core/lib/api/client-client';
 import { paths } from '@/core/config/paths';
 import type { CatalogTierDetail, Order, OrderCreationResponse } from '@/core/types/api';
+import { saveRpRef, readRpRefCookie, clearRpRef } from '@/features/rp-referral/rp-referral';
 
 type Phase =
   | 'creating'
@@ -141,19 +142,43 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
   const [stripeInit, setStripeInit] = useState<StripeInitState | null>(null);
+  const [manualRpCode, setManualRpCode] = useState('');
+  const [appliedCode, setAppliedCode] = useState<string | null>(null);
 
   const initRef = useRef(false);
 
-  const createOrder = useCallback(async () => {
+  const createOrder = useCallback(async (customCode?: string) => {
     setPhase('creating');
     setErrorMessage(null);
     setDuplicatePassId(null);
     try {
+      const urlRef = searchParams.get('ref');
+      if (urlRef) {
+        saveRpRef(urlRef);
+      }
+      
+      const resolvedCode = customCode !== undefined
+        ? (customCode || undefined)
+        : (urlRef || readRpRefCookie() || undefined);
+
       const res = await clientFetch<OrderCreationResponse>('/api/orders', {
         method: 'POST',
-        body: { tierId },
+        body: { tierId, referralCode: resolvedCode },
       });
 
+      if (resolvedCode) {
+        setAppliedCode(resolvedCode);
+      }
+
+      // ── Dev bypass: el backend ya completó la orden sin Stripe ──────────
+      const isDevBypass = res.clientSecret.includes('devbypasssecret');
+      if (isDevBypass) {
+        setOrderId(res.orderId);
+        setPhase('processing'); // salta directo al polling; la orden ya es COMPLETED
+        return;
+      }
+
+      // ── Flujo normal Stripe ───────────────────────────────────────────────
       const stripeState = getStripePromise(res.publishableKey);
       if (!stripeState) {
         setPhase('no_stripe');
@@ -230,6 +255,7 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
           setOrder(fresh);
 
           if (fresh.status === 'COMPLETED' && fresh.pass?.id) {
+            clearRpRef();
             setPhase('success');
             router.replace(`${paths.pases}/${fresh.pass.id}`);
             return;
@@ -264,7 +290,7 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
   const summary = useMemo(() => {
     const tier = order?.eventTier;
     const event = order?.event;
-    const initEvent = initialTier?.event;
+    const initEvent = initialTier?.event as any;
     return {
       title: event?.title ?? initEvent?.title ?? 'Evento',
       venueName:
@@ -341,6 +367,39 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
           <span className="font-display text-2xl font-bold tabular-nums text-primary">
             {formatMoney(summary.totalCents, summary.currency)}
           </span>
+        </div>
+
+        {/* Código de RP */}
+        <div className="mt-4 border-t border-white/5 pt-4">
+          <details className="group text-xs">
+            <summary className="flex cursor-pointer items-center justify-between text-muted-foreground hover:text-foreground transition-colors">
+              <span>¿Tienes un código de RP?</span>
+              <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded-full group-open:hidden">
+                {appliedCode ? `Aplicado: ${appliedCode}` : 'Agregar'}
+              </span>
+            </summary>
+            <div className="mt-3 flex gap-2">
+              <input
+                type="text"
+                placeholder="Ej. CARLOS-A3F2"
+                value={manualRpCode}
+                onChange={e => setManualRpCode(e.target.value.toUpperCase())}
+                className="h-9 flex-1 rounded-xl border border-white/10 bg-black/40 px-3 text-xs text-white placeholder-white/30 focus:border-primary/50 focus:outline-none"
+              />
+              <Button
+                type="button"
+                onClick={() => void createOrder(manualRpCode)}
+                className="h-9 rounded-xl bg-white/10 px-4 text-xs font-semibold hover:bg-white/20 active:scale-95"
+              >
+                Aplicar
+              </Button>
+            </div>
+            {appliedCode && (
+              <p className="mt-2 text-[10px] text-emerald-400 font-medium">
+                Código activo: {appliedCode}
+              </p>
+            )}
+          </details>
         </div>
 
         {initialTier?.nextPrice ? (

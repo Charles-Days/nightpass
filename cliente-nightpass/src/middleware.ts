@@ -19,6 +19,7 @@ const ADMIN_PREFIXES = [
   '/app/mi-organizador',
   '/cambiar-password',
   '/scanner',
+  '/rp-dashboard',
 ];
 
 // Rutas reservadas a roles de local.
@@ -94,6 +95,7 @@ export async function middleware(req: NextRequest) {
       if (role === 'CUSTOMER') target = '/app';
       else if (role === 'PROMOTER' || role === 'PROMOTER_STAFF') target = '/app/mi-organizador';
       else if (role === 'VENUE_OWNER' || role === 'VENUE_STAFF') target = '/mi-local';
+      else if (role === 'RP') target = '/rp-dashboard';
       return NextResponse.redirect(new URL(target, req.url));
     }
 
@@ -110,6 +112,11 @@ export async function middleware(req: NextRequest) {
     // Roles de local no entran al panel organizador.
     if ((role === 'VENUE_OWNER' || role === 'VENUE_STAFF') && isPromoterRoute) {
       return NextResponse.redirect(new URL('/mi-local', req.url));
+    }
+
+    // RP no entra a /admin, /mi-local ni a panel organizador.
+    if (role === 'RP' && (isVenueRoute || isPromoterRoute || pathname.startsWith('/admin') || pathname === '/dashboard')) {
+      return NextResponse.redirect(new URL('/rp-dashboard', req.url));
     }
 
     // Forzar cambio de password (solo aplica a roles admin).
