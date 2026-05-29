@@ -1,14 +1,17 @@
 'use client';
 
 import * as React from 'react';
-import { Pause, Play, Sparkles } from 'lucide-react';
+import { Pause, Pencil, Play, Sparkles, Trash2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Badge } from '@/core/components/ui/badge';
 import { Button } from '@/core/components/ui/button';
+import { ConfirmDialog } from '@/core/components/ui/confirm-dialog';
 import { clientFetch } from '@/core/lib/api/client-client';
 import type { PaginatedPromoters, Promoter } from '@/core/types/api';
+import { EditPromoterDialog } from './admin-promoter-dialog';
+import { useDeletePromoter } from '../hooks/use-delete-promoter';
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleString('es-PE', { dateStyle: 'medium' });
@@ -17,6 +20,9 @@ function fmtDate(iso: string) {
 function PromoterRowActions({ promoter }: { promoter: Promoter }) {
   const qc = useQueryClient();
   const router = useRouter();
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const del = useDeletePromoter({ onSuccess: () => setDeleteOpen(false) });
 
   const suspend = useMutation({
     mutationFn: () =>
@@ -48,12 +54,24 @@ function PromoterRowActions({ promoter }: { promoter: Promoter }) {
 
   return (
     <div className="flex items-center justify-end gap-0.5">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-10 w-10 p-0 text-muted-foreground hover:text-foreground"
+        title="Editar"
+        disabled={isMutating}
+        onClick={() => setEditOpen(true)}
+      >
+        <Pencil className="size-4" />
+      </Button>
+
       {promoter.status === 'ACTIVE' ? (
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          className="h-10 w-10 p-0 text-destructive/60 hover:text-destructive"
+          className="h-10 w-10 p-0 text-amber-500/60 hover:text-amber-400"
           title="Suspender"
           disabled={isMutating}
           onClick={() => suspend.mutate()}
@@ -73,6 +91,34 @@ function PromoterRowActions({ promoter }: { promoter: Promoter }) {
           <Play className="size-4" />
         </Button>
       )}
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-10 w-10 p-0 text-destructive/60 hover:text-destructive"
+        title="Eliminar"
+        disabled={isMutating}
+        onClick={() => setDeleteOpen(true)}
+      >
+        <Trash2 className="size-4" />
+      </Button>
+
+      <EditPromoterDialog
+        promoter={promoter}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        variant="destructive"
+        title={`¿Eliminar "${promoter.name}"?`}
+        description="Esta acción no se puede deshacer. Solo se permite si el organizador no tiene eventos; de lo contrario, suspéndelo."
+        confirmLabel="Eliminar"
+        loading={del.isPending}
+        onConfirm={() => del.mutate(promoter.id)}
+      />
     </div>
   );
 }

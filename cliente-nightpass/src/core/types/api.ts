@@ -46,6 +46,13 @@ export interface PaginatedPromoters {
   limit: number;
 }
 
+/** Response when an admin creates a promoter. `temporaryPassword` is only
+ *  present when a fresh owner account was created/promoted (sent by email). */
+export interface CreatePromoterResponse {
+  promoter: Promoter;
+  temporaryPassword?: string;
+}
+
 export interface User {
   id: string;
   email: string;

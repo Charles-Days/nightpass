@@ -8,3 +8,19 @@ export async function GET(
   const { id } = await params;
   return proxyToApi(req, `/promoters/${id}`, { method: 'GET' });
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  return proxyToApi(req, `/promoters/${id}`, { method: 'PATCH' });
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  return proxyToApi(req, `/promoters/${id}`, { method: 'DELETE' });
+}

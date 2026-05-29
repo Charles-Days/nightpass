@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
@@ -16,7 +17,10 @@ import { randomBytes } from 'crypto';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailerService } from '../mailer/mailer.service';
+import { StorageService } from '../storage/storage.service';
 import { generateTemporaryPassword } from '../auth/utils/temporary-password';
+import { CreatePromoterDto } from './dto/create-promoter.dto';
+import { AdminUpdatePromoterDto } from './dto/admin-update-promoter.dto';
 import { UpdatePromoterDto } from './dto/update-promoter.dto';
 import { InvitePromoterStaffDto } from './dto/invite-promoter-staff.dto';
 import { ListPromotersQuery } from './dto/list-promoters.query';
@@ -44,7 +48,153 @@ export class PromotersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailer: MailerService,
+    private readonly storage: StorageService,
   ) {}
+
+  // ── Admin CRUD ─────────────────────────────────────────────────────────────
+
+  /**
+   * Admin creates a promoter + its owner directly (no application flow).
+   * Owner resolution by email:
+   *  - new email        → create CUSTOMER→PROMOTER account, temp password + email
+   *  - existing CUSTOMER → promote to PROMOTER, temp password + email
+   *  - existing panel account (ADMIN, VENUE or PROMOTER member) → link as OWNER,
+   *    keep its role and password (no temp creds — already has panel access).
+   */
+  async createByAdmin(
+    dto: CreatePromoterDto,
+  ): Promise<{ promoter: Prisma.PromoterGetPayload<object>; temporaryPassword?: string }> {
+    const email = dto.ownerEmail.toLowerCase().trim();
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+
+    // Only brand-new accounts and plain CUSTOMERs need fresh credentials.
+    const needsCreds = !existing || existing.role === Role.CUSTOMER;
+    const isExistingUser = !!existing && existing.role === Role.CUSTOMER;
+    // Hash OUTSIDE the transaction (argon2 is CPU-heavy — never hold a tx open).
+    const tempPassword = needsCreds ? generateTemporaryPassword(12) : undefined;
+    const passwordHash = tempPassword
+      ? await argon2.hash(tempPassword, ARGON2_OPTS)
+      : undefined;
+
+    const promoter = await this.prisma.$transaction(async (tx) => {
+      let ownerUserId: string;
+
+      if (!existing) {
+        const user = await tx.user.create({
+          data: {
+            email,
+            passwordHash: passwordHash!,
+            name: dto.ownerName,
+            role: Role.PROMOTER,
+            mustChangePassword: true,
+          },
+        });
+        ownerUserId = user.id;
+      } else if (existing.role === Role.CUSTOMER) {
+        await tx.user.update({
+          where: { id: existing.id },
+          data: {
+            passwordHash: passwordHash!,
+            role: Role.PROMOTER,
+            mustChangePassword: true,
+          },
+        });
+        ownerUserId = existing.id;
+      } else {
+        ownerUserId = existing.id;
+      }
+
+      const created = await this.createWithMember(tx, {
+        name: dto.name.trim(),
+        city: dto.city.trim(),
+        phone: dto.phone?.trim() || null,
+        instagram: dto.instagram?.trim() || null,
+        website: dto.website?.trim() || null,
+        ownerUserId,
+      });
+
+      // `createWithMember` doesn't take a bio — set it in the same tx if given.
+      if (dto.bio?.trim()) {
+        return tx.promoter.update({
+          where: { id: created.id },
+          data: { bio: dto.bio.trim() },
+        });
+      }
+      return created;
+    });
+
+    if (tempPassword) {
+      void this.mailer
+        .sendPromoterApplicationApproved(
+          email,
+          dto.ownerName,
+          promoter.name,
+          tempPassword,
+          isExistingUser,
+        )
+        .catch((err) =>
+          this.logger.error(
+            `Email creación organizador (admin) falló (${email}): ${err instanceof Error ? err.message : err}`,
+          ),
+        );
+    }
+
+    return { promoter, temporaryPassword: tempPassword };
+  }
+
+  async updateAdmin(id: string, dto: AdminUpdatePromoterDto) {
+    const exists = await this.prisma.promoter.findUnique({
+      where: { id },
+      select: { id: true, logoUrl: true },
+    });
+    if (!exists) throw new NotFoundException('Organizador no encontrado');
+
+    const data: Prisma.PromoterUpdateInput = {
+      name: dto.name?.trim() || undefined,
+      city: dto.city?.trim() || undefined,
+      phone: dto.phone === '' ? null : dto.phone?.trim() || undefined,
+      instagram:
+        dto.instagram === '' ? null : dto.instagram?.trim() || undefined,
+      website: dto.website === '' ? null : dto.website?.trim() || undefined,
+      bio: dto.bio === '' ? null : dto.bio?.trim() || undefined,
+      logoUrl: dto.logoUrl === '' ? null : dto.logoUrl?.trim() || undefined,
+    };
+    Object.keys(data).forEach(
+      (key) => (data as any)[key] === undefined && delete (data as any)[key],
+    );
+
+    const updated = await this.prisma.promoter.update({ where: { id }, data });
+
+    // Cleanup: if the logo was replaced or cleared, drop the orphaned file.
+    const newLogo = 'logoUrl' in data ? (data.logoUrl as string | null) : undefined;
+    if (newLogo !== undefined && exists.logoUrl && exists.logoUrl !== newLogo) {
+      this.storage.deleteByPublicUrl(exists.logoUrl).catch(() => undefined);
+    }
+
+    return updated;
+  }
+
+  async deleteAdmin(id: string): Promise<{ ok: true }> {
+    const promoter = await this.prisma.promoter.findUnique({
+      where: { id },
+      select: { id: true, logoUrl: true, _count: { select: { events: true } } },
+    });
+    if (!promoter) throw new NotFoundException('Organizador no encontrado');
+    if (promoter._count.events > 0) {
+      throw new ConflictException(
+        'No puedes eliminar un organizador con eventos. Suspéndelo en su lugar.',
+      );
+    }
+
+    // members + stripeAccount cascade on delete (see schema relations).
+    await this.prisma.promoter.delete({ where: { id } });
+
+    if (promoter.logoUrl) {
+      this.storage.deleteByPublicUrl(promoter.logoUrl).catch(() => undefined);
+    }
+
+    return { ok: true };
+  }
 
   async createWithMember(
     tx: Prisma.TransactionClient,

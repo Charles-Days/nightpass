@@ -5,7 +5,14 @@ export { PromoterEventEdit } from './components/promoter-event-edit';
 export { PromoterStaffList } from './components/promoter-staff-list';
 export { PromoterStaffInviteForm } from './components/promoter-staff-invite-form';
 export { AdminPromoterTable } from './components/admin-promoter-table';
+export {
+  CreatePromoterDialog,
+  EditPromoterDialog,
+} from './components/admin-promoter-dialog';
 export { usePromoterMe } from './hooks/use-promoter-me';
+export { useCreatePromoter } from './hooks/use-create-promoter';
+export { useAdminUpdatePromoter } from './hooks/use-admin-update-promoter';
+export { useDeletePromoter } from './hooks/use-delete-promoter';
 export { useUpdatePromoter } from './hooks/use-update-promoter';
 export { usePromoterStaff } from './hooks/use-promoter-staff';
 export { useInvitePromoterStaff } from './hooks/use-invite-promoter-staff';
@@ -14,3 +21,9 @@ export {
   updatePromoterSchema,
   type UpdatePromoterInput,
 } from './schemas/promoter.schema';
+export {
+  createPromoterSchema,
+  adminUpdatePromoterSchema,
+  type CreatePromoterInput,
+  type AdminUpdatePromoterInput,
+} from './schemas/admin-promoter.schema';

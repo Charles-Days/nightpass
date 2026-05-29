@@ -25,6 +25,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PasesService } from '../pases/pases.service';
 import { PasesQueryDto } from '../pases/dto/pases-query.dto';
 import { PromotersService } from './promoters.service';
+import { CreatePromoterDto } from './dto/create-promoter.dto';
+import { AdminUpdatePromoterDto } from './dto/admin-update-promoter.dto';
 import { UpdatePromoterDto } from './dto/update-promoter.dto';
 import { InvitePromoterStaffDto } from './dto/invite-promoter-staff.dto';
 import { ListPromotersQuery } from './dto/list-promoters.query';
@@ -99,10 +101,33 @@ export class PromotersController {
     return this.service.listAdmin(query);
   }
 
+  @Post()
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.CREATED)
+  create(@Body() dto: CreatePromoterDto) {
+    return this.service.createByAdmin(dto);
+  }
+
   @Get(':id')
   @Roles(Role.ADMIN)
   getOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.getByIdAdmin(id);
+  }
+
+  @Patch(':id')
+  @Roles(Role.ADMIN)
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AdminUpdatePromoterDto,
+  ) {
+    return this.service.updateAdmin(id, dto);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.deleteAdmin(id);
   }
 
   @Post(':id/suspend')

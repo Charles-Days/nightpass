@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import type { PaginatedPromoters, PromoterStatus } from '@/core/types/api';
-import { AdminPromoterTable } from '@/features/promoters';
+import { AdminPromoterTable, CreatePromoterDialog } from '@/features/promoters';
 
 export const metadata = { title: 'Organizadores' };
 
@@ -41,6 +41,7 @@ export default async function PromotorasListPage({ searchParams }: PageProps) {
             Todos los organizadores registrados en NightPass.
           </p>
         </div>
+        <CreatePromoterDialog />
       </header>
 
       <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
