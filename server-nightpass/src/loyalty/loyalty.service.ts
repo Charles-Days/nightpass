@@ -400,39 +400,23 @@ export class LoyaltyService {
 
     try {
       return await this.prisma.$transaction(async (tx) => {
-        try {
-          await tx.loyaltyEvent.create({
-            data: {
-              userId: opts.userId,
-              type: opts.type,
-              points: effective,
-              multiplier,
-              venueId: opts.venueId,
-              eventId: opts.eventId,
-              passId: opts.passId,
-              idempotencyKey: opts.idempotencyKey,
-              occurredAt: opts.occurredAt,
-            },
-          });
-        } catch (err) {
-          if (this.isUniqueViolation(err)) {
-            const total = await tx.userLoyaltyTotal.findUnique({
-              where: { userId: opts.userId },
-              select: { tier: true },
-            });
-            const streak = await tx.userStreak.findUnique({
-              where: { userId: opts.userId },
-              select: { currentDays: true },
-            });
-            return {
-              awarded: 0,
-              newStreakDays: streak?.currentDays ?? 0,
-              tier: total?.tier ?? LoyaltyTier.ROOKIE,
-              alreadyAwarded: true,
-            };
-          }
-          throw err;
-        }
+        // A unique-violation here aborts the whole Postgres transaction
+        // (SQLSTATE 25P02): any further query on `tx` would fail. So we do
+        // NOT catch it inside the tx — we let it roll back and absorb the
+        // duplicate below, reading current state on a clean connection.
+        await tx.loyaltyEvent.create({
+          data: {
+            userId: opts.userId,
+            type: opts.type,
+            points: effective,
+            multiplier,
+            venueId: opts.venueId,
+            eventId: opts.eventId,
+            passId: opts.passId,
+            idempotencyKey: opts.idempotencyKey,
+            occurredAt: opts.occurredAt,
+          },
+        });
 
         let streakDays = 0;
         let milestoneBonus = 0;
@@ -470,6 +454,28 @@ export class LoyaltyService {
         };
       });
     } catch (err) {
+      // Duplicate idempotencyKey → reward already applied. The transaction
+      // rolled back, so read current state on a fresh connection (`this.prisma`,
+      // NOT the poisoned `tx`) and report it as already-awarded.
+      if (this.isUniqueViolation(err)) {
+        const [total, streak] = await Promise.all([
+          this.prisma.userLoyaltyTotal.findUnique({
+            where: { userId: opts.userId },
+            select: { tier: true },
+          }),
+          this.prisma.userStreak.findUnique({
+            where: { userId: opts.userId },
+            select: { currentDays: true },
+          }),
+        ]);
+        return {
+          awarded: 0,
+          newStreakDays: streak?.currentDays ?? 0,
+          tier: total?.tier ?? LoyaltyTier.ROOKIE,
+          alreadyAwarded: true,
+        };
+      }
+
       this.logger.error(
         `applyReward failed user=${opts.userId} key=${opts.idempotencyKey}: ${err instanceof Error ? err.message : err}`,
       );
@@ -562,23 +568,30 @@ export class LoyaltyService {
     const milestone = STREAK_MILESTONES.find((m) => m.days === currentDays);
     if (!milestone) return 0;
 
-    try {
-      await tx.loyaltyEvent.create({
-        data: {
-          userId,
-          type: LoyaltyEventType.STREAK_MILESTONE,
-          points: milestone.bonus,
-          multiplier: 1,
-          idempotencyKey: `milestone:${userId}:${milestone.days}`,
-          occurredAt,
-          metadata: { days: milestone.days } as Prisma.InputJsonValue,
-        },
-      });
-      return milestone.bonus;
-    } catch (err) {
-      if (this.isUniqueViolation(err)) return 0;
-      throw err;
-    }
+    const idempotencyKey = `milestone:${userId}:${milestone.days}`;
+
+    // Pre-check instead of catch-on-create: a failed create would abort the
+    // surrounding Postgres transaction (25P02), breaking the subsequent
+    // recomputeTotals(tx). This runs inside an interactive tx, so it's
+    // serialized — no real race window.
+    const existing = await tx.loyaltyEvent.findUnique({
+      where: { idempotencyKey },
+      select: { id: true },
+    });
+    if (existing) return 0;
+
+    await tx.loyaltyEvent.create({
+      data: {
+        userId,
+        type: LoyaltyEventType.STREAK_MILESTONE,
+        points: milestone.bonus,
+        multiplier: 1,
+        idempotencyKey,
+        occurredAt,
+        metadata: { days: milestone.days } as Prisma.InputJsonValue,
+      },
+    });
+    return milestone.bonus;
   }
 
   private async recomputeTotals(
