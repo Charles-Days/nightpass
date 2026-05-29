@@ -564,6 +564,8 @@ export function EventFormPromoter({
               field.onChange(url ?? '');
             }}
             label="Portada del evento"
+            hint="Horizontal 16:9 — recomendado 1600×900 px. Se recorta a 16:9."
+            aspect="video"
           />
         )}
       />
@@ -580,6 +582,8 @@ export function EventFormPromoter({
               field.onChange(url ?? '');
             }}
             label="Flyer del evento (vertical)"
+            hint="Vertical 9:16 — recomendado 1080×1920 px. Se muestra completa."
+            aspect="portrait"
           />
         )}
       />

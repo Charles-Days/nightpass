@@ -10,9 +10,26 @@ interface ImageUploaderProps {
   onChange: (url: string | undefined) => void;
   kind: 'venue' | 'event' | 'story';
   label?: string;
+  /** Texto guía bajo el label (ej. medida recomendada). */
+  hint?: string;
+  /** Proporción del preview/dropzone. 'video' = 16:9 landscape, 'portrait' = 9:16 vertical. */
+  aspect?: 'video' | 'portrait';
 }
 
-export function ImageUploader({ value, onChange, kind, label = 'Imagen' }: ImageUploaderProps) {
+// Tamaño del preview según la proporción — refleja cómo se renderiza en la UI real.
+const ASPECT_BOX: Record<'video' | 'portrait', string> = {
+  video: 'h-32 w-56', // 16:9 aprox
+  portrait: 'h-56 w-32', // 9:16 aprox
+};
+
+export function ImageUploader({
+  value,
+  onChange,
+  kind,
+  label = 'Imagen',
+  hint,
+  aspect = 'video',
+}: ImageUploaderProps) {
   const [uploading, setUploading] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -33,12 +50,19 @@ export function ImageUploader({ value, onChange, kind, label = 'Imagen' }: Image
     }
   }
 
+  const box = ASPECT_BOX[aspect];
+
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <div className="space-y-0.5">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        {hint ? (
+          <p className="text-[11px] text-muted-foreground/70">{hint}</p>
+        ) : null}
+      </div>
       {value ? (
         <div className="relative inline-block">
-          <Image src={value} alt="preview" width={192} height={128} unoptimized className="h-32 w-48 rounded-lg object-cover border border-white/10" />
+          <Image src={value} alt="preview" width={224} height={224} unoptimized className={`${box} rounded-lg object-cover border border-white/10`} />
           <button
             type="button"
             onClick={() => onChange(undefined)}
@@ -52,7 +76,7 @@ export function ImageUploader({ value, onChange, kind, label = 'Imagen' }: Image
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="flex h-32 w-48 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/20 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary disabled:opacity-50"
+          className={`${box} flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/20 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary disabled:opacity-50`}
         >
           <Upload className="size-5" />
           <span className="text-xs">{uploading ? 'Subiendo…' : 'Click para subir'}</span>
