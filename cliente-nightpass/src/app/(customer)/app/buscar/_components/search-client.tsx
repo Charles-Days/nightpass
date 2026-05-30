@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ArrowRight, Calendar, Loader2, MapPin, Search, Sparkles } from 'lucide-react';
 import { clientFetch } from '@/core/lib/api/client-client';
-import { cn } from '@/core/lib/utils/cn';
 import { Input } from '@/core/components/ui/input';
 import { paths } from '@/core/config/paths';
 import { VenueCard } from '../../../_components/venue-card';
@@ -217,23 +216,6 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
   const [venues, setVenues] = useState<CatalogVenueSummary[]>([]);
   const [events, setEvents] = useState<EventFeed[]>([]);
   const [loading, setLoading] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  // Barra de búsqueda: transparente (parte de la página) arriba, bg sólido sutil al scrollear.
-  useEffect(() => {
-    let ticking = false;
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        setScrolled(window.scrollY > 8);
-        ticking = false;
-      });
-    };
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -281,17 +263,8 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
 
   return (
     <div>
-      {/* Sticky controls — blend with page at rest, subtle solid bg only on scroll.
-          Sin np-rise aquí: su transform residual (forwards) crearía un containing block
-          y rompería el sticky (se arrastraría con el scroll). */}
-      <div
-        className={cn(
-          'sticky top-[calc(56px+env(safe-area-inset-top,0px))] z-10 -mx-5 mt-4 px-5 pb-3 pt-3 transition-colors duration-300 sm:-mx-8 sm:px-8',
-          scrolled
-            ? 'bg-background/95 shadow-[0_10px_24px_-14px_rgba(0,0,0,0.8)]'
-            : 'bg-transparent',
-        )}
-      >
+      {/* Controles en flujo normal: scrollean con la página (NO sticky). */}
+      <div className="-mx-5 mt-4 px-5 pb-3 pt-3 sm:-mx-8 sm:px-8">
         {/* Tabs + search on one row — tabs hidden when mode is fixed by the page */}
         <div className="flex items-center gap-2.5">
           {!mode && (
