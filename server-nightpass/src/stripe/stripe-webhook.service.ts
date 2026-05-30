@@ -97,7 +97,7 @@ export class StripeWebhookService {
       );
     }
 
-    const passId = await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx) => {
       const updated = await tx.order.update({
         where: { id: order.id },
         data: {
@@ -106,37 +106,36 @@ export class StripeWebhookService {
         },
       });
 
-      // Si por alguna razón ya hay Pass (race), saltar
-      const existing = await tx.pass.findUnique({
+      const existingCount = await tx.pass.count({
         where: { orderId: order.id },
       });
-      if (existing) return existing.id;
+      if (existingCount >= order.quantity) return;
 
-      const created = await tx.pass.create({
-        data: {
-          orderId: updated.id,
-          userId: updated.userId,
-          eventId: updated.eventId,
-          qrCode: 'pending',
-        },
-      });
+      for (let i = existingCount; i < order.quantity; i++) {
+        const created = await tx.pass.create({
+          data: {
+            orderId: updated.id,
+            userId: updated.userId,
+            eventId: updated.eventId,
+            qrCode: `pending_${i}_${Date.now()}`,
+          },
+        });
 
-      const qr = signPass(
-        created.id,
-        updated.eventId,
-        updated.userId,
-        passSecret,
-      );
-      await tx.pass.update({
-        where: { id: created.id },
-        data: { qrCode: qr },
-      });
-
-      return created.id;
+        const qr = signPass(
+          created.id,
+          updated.eventId,
+          updated.userId,
+          passSecret,
+        );
+        await tx.pass.update({
+          where: { id: created.id },
+          data: { qrCode: qr },
+        });
+      }
     });
 
     this.logger.log(
-      `Pago confirmado — Order ${order.id} COMPLETED, Pass ${passId} emitido`,
+      `Pago confirmado — Order ${order.id} COMPLETED, ${order.quantity} pases emitidos`,
     );
   }
 

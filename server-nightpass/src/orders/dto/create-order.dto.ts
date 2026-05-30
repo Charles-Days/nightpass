@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsOptional, IsString, IsUUID, IsInt, Min, Max } from 'class-validator';
 
 export class CreateOrderDto {
   @IsUUID('all')
@@ -7,4 +7,10 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   referralCode?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(6)
+  quantity?: number;
 }

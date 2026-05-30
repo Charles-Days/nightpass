@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   OrderStatus,
+  PaymentMethod,
   PromoterStatus,
   RpCommissionType,
   VenueStatus,
@@ -40,9 +41,11 @@ export class AdminFinanceService {
 
     const completedWhere = {
       status: OrderStatus.COMPLETED,
+      paymentMethod: PaymentMethod.STRIPE,
       createdAt: { gte: from, lte: to },
     } as const;
     const passWhere = {
+      order: { paymentMethod: PaymentMethod.STRIPE },
       createdAt: { gte: from, lte: to },
     } as const;
 
@@ -50,7 +53,7 @@ export class AdminFinanceService {
       completedAgg,
       refundedAgg,
       failedCount,
-      passesSold,
+      rawPassesSold,
       passesRedeemed,
       byEventRaw,
       dailySeries,
@@ -65,6 +68,7 @@ export class AdminFinanceService {
       this.prisma.order.aggregate({
         where: {
           status: OrderStatus.REFUNDED,
+          paymentMethod: PaymentMethod.STRIPE,
           createdAt: { gte: from, lte: to },
         },
         _sum: { totalCents: true },
@@ -73,6 +77,7 @@ export class AdminFinanceService {
       this.prisma.order.count({
         where: {
           status: OrderStatus.FAILED,
+          paymentMethod: PaymentMethod.STRIPE,
           createdAt: { gte: from, lte: to },
         },
       }),
@@ -96,6 +101,7 @@ export class AdminFinanceService {
                COALESCE(SUM(o."applicationFeeCents"), 0)::int as "platformFee"
         FROM orders o
         WHERE o.status = 'COMPLETED'
+          AND o."paymentMethod" = 'STRIPE'
           AND o."createdAt" >= ${from}
           AND o."createdAt" <= ${to}
         GROUP BY DATE(o."createdAt")
@@ -119,6 +125,7 @@ export class AdminFinanceService {
         JOIN events e ON e.id = o."eventId"
         JOIN venues v ON v.id = e."venueId"
         WHERE o.status = 'COMPLETED'
+          AND o."paymentMethod" = 'STRIPE'
           AND o."createdAt" >= ${from}
           AND o."createdAt" <= ${to}
         GROUP BY v.id, v.name
@@ -143,6 +150,7 @@ export class AdminFinanceService {
         JOIN events e ON e.id = o."eventId"
         JOIN promoters p ON p.id = e."promoterId"
         WHERE o.status = 'COMPLETED'
+          AND o."paymentMethod" = 'STRIPE'
           AND o."createdAt" >= ${from}
           AND o."createdAt" <= ${to}
         GROUP BY p.id, p.name
@@ -150,6 +158,18 @@ export class AdminFinanceService {
         LIMIT 10
       `,
     ]);
+
+    const adminClaims = await this.prisma.passClaim.aggregate({
+      where: {
+        status: { in: ['PENDING', 'CLAIMED'] },
+        createdAt: { gte: from, lte: to },
+      },
+      _sum: { amountCents: true },
+      _count: true,
+    });
+    const passesSoldAdmin = adminClaims._count;
+    const revenueAdmin = adminClaims._sum.amountCents ?? 0;
+    const passesSold = rawPassesSold;
 
     // ─── Totals ──────────────────────────────────────────────────────────────
     const grossCents = completedAgg._sum.totalCents ?? 0;
@@ -188,11 +208,21 @@ export class AdminFinanceService {
     const passesSoldByEvent = eventIds.length
       ? await this.prisma.pass.groupBy({
           by: ['eventId'],
-          where: { eventId: { in: eventIds } },
+          where: { eventId: { in: eventIds }, order: { paymentMethod: PaymentMethod.STRIPE } },
+          _count: true,
+        })
+      : [];
+    const pendingClaimsByEvent = eventIds.length
+      ? await this.prisma.passClaim.groupBy({
+          by: ['eventId'],
+          where: { eventId: { in: eventIds }, status: { in: ['PENDING', 'CLAIMED'] } },
+          _sum: { amountCents: true },
           _count: true,
         })
       : [];
     const soldById = new Map(passesSoldByEvent.map((r) => [r.eventId, r._count]));
+    const soldAdminById = new Map(pendingClaimsByEvent.map((r) => [r.eventId, r._count]));
+    const revenueAdminById = new Map(pendingClaimsByEvent.map((r) => [r.eventId, r._sum.amountCents ?? 0]));
 
     const redeemedByEvent = eventIds.length
       ? await this.prisma.pass.groupBy({
@@ -217,6 +247,8 @@ export class AdminFinanceService {
           venueName,
           capacity: meta?.capacity ?? null,
           vendidos: soldById.get(row.eventId) ?? 0,
+          vendidosAdmin: soldAdminById.get(row.eventId) ?? 0,
+          ingresosAdmin: revenueAdminById.get(row.eventId) ?? 0,
           canjeados: redeemedById.get(row.eventId) ?? 0,
           grossCents: row._sum?.totalCents ?? 0,
           platformFeeCents: row._sum?.applicationFeeCents ?? 0,
@@ -289,6 +321,8 @@ export class AdminFinanceService {
         refundedAmountCents,
         failedCount,
         avgTicketCents,
+        passesSoldAdmin,
+        revenueAdmin,
       },
       byEvent,
       topVenues,

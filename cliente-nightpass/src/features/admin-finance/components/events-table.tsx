@@ -11,11 +11,12 @@ function formatDate(iso: string | null): string {
   });
 }
 
-function FillBar({ vendidos, capacity }: { vendidos: number; capacity: number | null }) {
+function FillBar({ vendidos, vendidosAdmin, capacity }: { vendidos: number; vendidosAdmin?: number; capacity: number | null }) {
   if (!capacity || capacity <= 0) {
     return <span className="text-[11px] text-muted-foreground">Sin cupo</span>;
   }
-  const ratio = Math.min(1, vendidos / capacity);
+  const total = vendidos + (vendidosAdmin ?? 0);
+  const ratio = Math.min(1, total / capacity);
   const percent = Math.round(ratio * 100);
   const full = ratio >= 0.9;
   return (
@@ -74,14 +75,28 @@ export function EventsTable({ rows }: { rows: AdminFinanceEventRow[] }) {
                       <p className="text-[11px] text-muted-foreground">{formatDate(row.startsAt)}</p>
                     </td>
                     <td className="px-5 py-3.5 text-muted-foreground">{row.venueName ?? '—'}</td>
-                    <td className="px-5 py-3.5 text-right font-medium text-white">{intCount(row.vendidos)}</td>
+                    <td className="px-5 py-3.5 text-right font-medium text-white">
+                      <div>{intCount(row.vendidos)}</div>
+                      {row.vendidosAdmin ? (
+                        <div className="text-[11px] text-purple-400 font-medium">
+                          Admin: {row.vendidosAdmin}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="px-5 py-3.5 text-right text-muted-foreground">
                       {row.capacity != null ? intCount(row.capacity) : '—'}
                     </td>
                     <td className="px-5 py-3.5">
-                      <FillBar vendidos={row.vendidos} capacity={row.capacity} />
+                      <FillBar vendidos={row.vendidos} vendidosAdmin={row.vendidosAdmin} capacity={row.capacity} />
                     </td>
-                    <td className="px-5 py-3.5 text-right font-mono font-medium text-white">{money(row.grossCents)}</td>
+                    <td className="px-5 py-3.5 text-right font-mono font-medium text-white">
+                      <div>{money(row.grossCents)}</div>
+                      {row.ingresosAdmin ? (
+                        <div className="text-[11px] text-purple-400 font-medium">
+                          Admin: {money(row.ingresosAdmin)}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="px-5 py-3.5 text-right font-mono text-[#10b981]">{money(row.platformFeeCents)}</td>
                     <td className="px-5 py-3.5 text-right text-muted-foreground">{intCount(row.ordersCount)}</td>
                   </tr>

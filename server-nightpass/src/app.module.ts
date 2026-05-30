@@ -27,6 +27,7 @@ import { LoyaltyCheckinModule } from './loyalty-checkin/loyalty-checkin.module';
 import { StoriesModule } from './stories/stories.module';
 import { RpModule } from './rp/rp.module';
 import { AdminFinanceModule } from './admin-finance/admin-finance.module';
+import { AdminPassesModule } from './admin-passes/admin-passes.module';
 import { validateEnv } from './config/env.schema';
 
 @Module({
@@ -67,6 +68,7 @@ import { validateEnv } from './config/env.schema';
     StoriesModule,
     RpModule,
     AdminFinanceModule,
+    AdminPassesModule,
   ],
   providers: [
     {

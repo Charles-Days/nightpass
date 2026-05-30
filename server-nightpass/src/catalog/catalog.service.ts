@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma, EventStatus, Role, VenueStatus } from '@prisma/client';
+import { Prisma, EventStatus, Role, VenueStatus, PassClaimStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LocationsService } from '../locations/locations.service';
 import { ListCatalogVenuesQuery } from './dto/list-catalog-venues.query';
@@ -377,12 +377,28 @@ export class CatalogService {
   /** Mapa eventId → nº de pases emitidos (Stripe + efectivo). */
   private async _soldCountByEvent(eventIds: string[]): Promise<Map<string, number>> {
     if (eventIds.length === 0) return new Map();
-    const counts = await this.prisma.pass.groupBy({
-      by: ['eventId'],
-      where: { eventId: { in: eventIds } },
-      _count: { _all: true },
-    });
-    return new Map(counts.map((c) => [c.eventId, c._count._all]));
+    const [counts, pendingCounts] = await Promise.all([
+      this.prisma.pass.groupBy({
+        by: ['eventId'],
+        where: { eventId: { in: eventIds } },
+        _count: { _all: true },
+      }),
+      this.prisma.passClaim.groupBy({
+        by: ['eventId'],
+        where: { eventId: { in: eventIds }, status: PassClaimStatus.PENDING },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const resultMap = new Map<string, number>();
+    for (const c of counts) {
+      resultMap.set(c.eventId, c._count._all);
+    }
+    for (const pc of pendingCounts) {
+      const existing = resultMap.get(pc.eventId) ?? 0;
+      resultMap.set(pc.eventId, existing + pc._count._all);
+    }
+    return resultMap;
   }
 
   async getEventById(id: string) {
@@ -415,8 +431,12 @@ export class CatalogService {
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
-    // Aforo vendido (pases emitidos: Stripe + efectivo).
-    const sold = await this.prisma.pass.count({ where: { eventId: event.id } });
+    // Aforo vendido (pases emitidos: Stripe + efectivo + vales pendientes).
+    const soldPasses = await this.prisma.pass.count({ where: { eventId: event.id } });
+    const pendingClaims = await this.prisma.passClaim.count({
+      where: { eventId: event.id, status: PassClaimStatus.PENDING },
+    });
+    const sold = soldPasses + pendingClaims;
 
     // Expone el precio vigente y la próxima subida; oculta el calendario interno.
     return {

@@ -125,6 +125,7 @@ model User {
   pushSubscriptions    PushSubscription[]
   rpProfile            RpProfile?
   claimedPasses        PassClaim[]           @relation("UserClaimedPasses")
+  adminGeneratedClaims PassClaim[]           @relation("AdminGeneratedClaims")
 
   @@map("users")
 }
@@ -512,6 +513,7 @@ model Order {
   tierId                 String      @db.Uuid
   status                 OrderStatus @default(PENDING)
   paymentMethod          PaymentMethod @default(STRIPE)
+  quantity               Int         @default(1)
   totalCents             Int
   applicationFeeCents    Int
   currency               String      @default("MXN")
@@ -523,7 +525,7 @@ model Order {
   user  User      @relation(fields: [userId], references: [id])
   event Event     @relation(fields: [eventId], references: [id])
   tier  EventTier @relation(fields: [tierId], references: [id])
-  pass  Pass?
+  passes Pass[]
   passClaim PassClaim?
   referredByRpId  String?  @db.Uuid
   referredByRp    RpProfile? @relation("RpReferredOrders", fields: [referredByRpId], references: [id], onDelete: SetNull)
@@ -535,7 +537,7 @@ model Order {
 
 model Pass {
   id                String    @id @default(uuid(7)) @db.Uuid
-  orderId           String    @unique @db.Uuid
+  orderId           String    @db.Uuid
   userId            String    @db.Uuid
   eventId           String    @db.Uuid
   qrCode            String    @unique
@@ -718,6 +720,7 @@ model PassClaim {
   eventId         String          @db.Uuid
   tierId          String          @db.Uuid
   issuedByRpId    String?         @db.Uuid
+  generatedByAdminId String?      @db.Uuid
   amountCents     Int
   currency        String          @default("MXN")
   status          PassClaimStatus @default(PENDING)
@@ -731,6 +734,7 @@ model PassClaim {
   tier       EventTier  @relation(fields: [tierId], references: [id], onDelete: Cascade)
   issuedByRp RpProfile? @relation("RpIssuedClaims", fields: [issuedByRpId], references: [id], onDelete: SetNull)
   claimedBy  User?      @relation("UserClaimedPasses", fields: [claimedByUserId], references: [id], onDelete: SetNull)
+  generatedByAdmin User?   @relation("AdminGeneratedClaims", fields: [generatedByAdminId], references: [id], onDelete: SetNull)
   order      Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([issuedByRpId, status])

@@ -611,6 +611,8 @@ export interface PassesStatsEventRow {
   startsAt: string;
   capacity: number | null;
   vendidos: number;
+  vendidosAdmin?: number;
+  ingresosAdmin?: number;
   canjeados: number;
   ingresos: number;
 }
@@ -619,6 +621,8 @@ export interface PassesStats {
   totalRevenue: number;
   totalFees: number;
   passesSold: number;
+  passesSoldAdmin?: number;
+  revenueAdmin?: number;
   passesRedeemed: number;
   passesPending: number;
   redeemRate: number;
@@ -670,6 +674,8 @@ export interface AdminFinanceTotals {
   rpCommissionsCents: number;
   ordersCount: number;
   passesSold: number;
+  passesSoldAdmin?: number;
+  revenueAdmin?: number;
   passesRedeemed: number;
   /** 0..1 */
   redeemRate: number;
@@ -686,6 +692,8 @@ export interface AdminFinanceEventRow {
   venueName: string | null;
   capacity: number | null;
   vendidos: number;
+  vendidosAdmin?: number;
+  ingresosAdmin?: number;
   canjeados: number;
   grossCents: number;
   platformFeeCents: number;

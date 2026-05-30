@@ -20,6 +20,7 @@ import type { CatalogTierDetail, Order, OrderCreationResponse } from '@/core/typ
 import { saveRpRef, readRpRef, clearRpRef } from '@/features/rp-referral/rp-referral';
 
 type Phase =
+  | 'select_quantity'
   | 'creating'
   | 'paying'
   | 'processing'
@@ -104,6 +105,7 @@ function phaseForErrorCode(code: string | null): Phase {
     case 'STRIPE_DISABLED':
     case 'STRIPE_MISSING_CLIENT_SECRET':
       return 'no_stripe';
+    case 'LIMIT_EXCEEDED':
     case 'DUPLICATE_PASS':
       return 'duplicate';
     case 'TIER_SOLD_OUT':
@@ -130,7 +132,7 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
   const existingOrderId = searchParams.get('orderId');
 
   const [phase, setPhase] = useState<Phase>(
-    initialTier && initialTier.paymentsEnabled === false ? 'no_stripe' : 'creating',
+    initialTier && initialTier.paymentsEnabled === false ? 'no_stripe' : 'select_quantity',
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(
     initialTier && initialTier.paymentsEnabled === false
@@ -144,10 +146,11 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
   const [stripeInit, setStripeInit] = useState<StripeInitState | null>(null);
   const [manualRpCode, setManualRpCode] = useState('');
   const [appliedCode, setAppliedCode] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
 
   const initRef = useRef(false);
 
-  const createOrder = useCallback(async (customCode?: string) => {
+  const createOrder = useCallback(async (customCode?: string, currentQty = quantity) => {
     setPhase('creating');
     setErrorMessage(null);
     setDuplicatePassId(null);
@@ -163,7 +166,7 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
 
       const res = await clientFetch<OrderCreationResponse>('/api/orders', {
         method: 'POST',
-        body: { tierId, referralCode: resolvedCode },
+        body: { tierId, referralCode: resolvedCode, quantity: currentQty },
       });
 
       if (resolvedCode) {
@@ -220,7 +223,7 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
       if (info.passId) setDuplicatePassId(info.passId);
       if (nextPhase === 'error') toast.error(info.message);
     }
-  }, [initialTier, tierId]);
+  }, [initialTier, tierId, quantity]);
 
   useEffect(() => {
     if (initRef.current) return;
@@ -235,9 +238,7 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
       setPhase('processing');
       return;
     }
-
-    void createOrder();
-  }, [createOrder, existingOrderId, initialTier]);
+  }, [existingOrderId, initialTier]);
 
   useEffect(() => {
     if (phase !== 'processing' || !orderId) return;
@@ -250,14 +251,17 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
       while (!cancelled && attempts < maxAttempts) {
         attempts += 1;
         try {
-          const fresh = await clientFetch<Order>(`/api/orders/${orderId}`);
+          const fresh = await clientFetch<Order & { passes?: Array<{ id: string }> }>(`/api/orders/${orderId}`);
           if (cancelled) return;
           setOrder(fresh);
 
-          if (fresh.status === 'COMPLETED' && fresh.pass?.id) {
+          if (fresh.status === 'COMPLETED' && fresh.passes && fresh.passes.length > 0) {
             clearRpRef();
             setPhase('success');
-            router.replace(`${paths.pases}/${fresh.pass.id}`);
+            const target = fresh.passes.length === 1
+              ? `${paths.pases}/${fresh.passes[0].id}`
+              : paths.pases;
+            router.replace(target);
             return;
           }
 
@@ -291,6 +295,8 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
     const tier = order?.eventTier;
     const event = order?.event;
     const initEvent = initialTier?.event as any;
+    const currentQty = order?.quantity ?? quantity;
+    const singlePrice = tier?.priceCents ?? initialTier?.priceCents ?? 0;
     return {
       title: event?.title ?? initEvent?.title ?? 'Evento',
       venueName:
@@ -305,11 +311,12 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
       startsAt: event?.startsAt ?? initEvent?.startsAt,
       tierName: tier?.name ?? initialTier?.name ?? 'Pase',
       totalCents:
-        order?.totalCents ?? tier?.priceCents ?? initialTier?.priceCents ?? 0,
+        order?.totalCents ?? (singlePrice * quantity),
       currency:
         order?.currency ?? tier?.currency ?? initialTier?.currency ?? 'MXN',
+      quantity: currentQty,
     };
-  }, [order, initialTier]);
+  }, [order, initialTier, quantity]);
 
   const backToEvent = initialTier
     ? `${paths.evento}/${initialTier.event.id}`
@@ -354,7 +361,9 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
         <div className="my-4 h-px bg-white/8" />
 
         <div className="flex items-center justify-between py-1.5">
-          <span className="text-sm text-muted-foreground">{summary.tierName}</span>
+          <span className="text-sm text-muted-foreground">
+            {summary.tierName} <span className="text-xs text-muted-foreground/60">(x{summary.quantity})</span>
+          </span>
           <span className="font-display text-sm font-medium tabular-nums">
             {formatMoney(summary.totalCents, summary.currency)}
           </span>
@@ -418,6 +427,43 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
         className={`mt-5 rounded-[22px] border border-white/10 bg-white/[0.025] p-5 np-rise transform-gpu ${isErrorPhase ? 'np-shake border-red-400/20' : ''}`}
         style={{ animationDelay: '180ms' }}
       >
+        {phase === 'select_quantity' && (
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-neutral-300 font-medium text-center">¿Cuántas entradas deseas comprar?</p>
+            <div className="flex items-center justify-center gap-6 py-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                disabled={quantity <= 1}
+                className="size-11 rounded-full border-white/10 bg-white/[0.02] hover:bg-white/10 text-lg font-bold text-white"
+              >
+                -
+              </Button>
+              <span className="font-display text-3xl font-bold tabular-nums text-white w-8 text-center">
+                {quantity}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setQuantity(q => Math.min(6, q + 1))}
+                disabled={quantity >= 6}
+                className="size-11 rounded-full border-white/10 bg-white/[0.02] hover:bg-white/10 text-lg font-bold text-white"
+              >
+                +
+              </Button>
+            </div>
+            <p className="text-center text-[11px] text-muted-foreground">Límite de 6 pases por cuenta por evento</p>
+            <Button
+              type="button"
+              onClick={() => void createOrder()}
+              className="w-full mt-2 h-11 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 font-semibold text-white shadow-[0_4px_18px_-4px_rgba(124,58,237,0.5)] transition-transform hover:brightness-110 active:scale-95 transform-gpu"
+            >
+              Continuar al pago ({formatMoney(summary.totalCents, summary.currency)})
+            </Button>
+          </div>
+        )}
+
         {phase === 'creating' && <PhaseLoader label="Preparando pago seguro…" />}
 
         {phase === 'paying' && clientSecret && stripeInit && (

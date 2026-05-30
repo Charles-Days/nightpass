@@ -138,7 +138,11 @@ export default async function MiPromotoraPage() {
           label="Ingresos último mes"
           value={stats ? formatMoney(stats.totalRevenue) : '—'}
           icon={DollarSign}
-          hint={stats ? `${stats.passesSold} pases vendidos` : 'Sin datos aún'}
+          hint={
+            stats
+              ? `${stats.passesSold} vendidos (App)${stats.revenueAdmin ? ` · Admin: ${formatMoney(stats.revenueAdmin)}` : ''}`
+              : 'Sin datos aún'
+          }
         />
         <StatCard
           label="Pases vendidos"
@@ -146,7 +150,7 @@ export default async function MiPromotoraPage() {
           icon={Ticket}
           hint={
             stats
-              ? `${stats.passesRedeemed} canjeados · ${stats.passesPending} pendientes`
+              ? `${stats.passesRedeemed} canjeados${stats.passesSoldAdmin ? ` · Admin: ${stats.passesSoldAdmin}` : ''}`
               : undefined
           }
         />
@@ -260,7 +264,7 @@ export default async function MiPromotoraPage() {
                       >
                         <td className="px-5 py-3">
                           <Link
-                            href={`${paths.miOrganizadorEventos}/${ev.eventId}`}
+                             href={`${paths.miOrganizadorEventos}/${ev.eventId}`}
                             className="block max-w-[28ch] truncate font-medium text-foreground hover:text-primary"
                           >
                             {ev.title}
@@ -270,18 +274,30 @@ export default async function MiPromotoraPage() {
                           </p>
                         </td>
                         <td className="px-5 py-3 text-right tabular-nums">
-                          {ev.vendidos}
-                          {ev.capacity ? (
-                            <span className="text-xs text-muted-foreground">
-                              /{ev.capacity}
-                            </span>
+                          <div>
+                            {ev.vendidos}
+                            {ev.capacity ? (
+                              <span className="text-xs text-muted-foreground">
+                                /{ev.capacity}
+                              </span>
+                            ) : null}
+                          </div>
+                          {ev.vendidosAdmin ? (
+                            <div className="text-[11px] text-purple-400 font-medium">
+                              Admin: {ev.vendidosAdmin}
+                            </div>
                           ) : null}
                         </td>
                         <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">
                           {ev.canjeados}
                         </td>
                         <td className="px-5 py-3 text-right tabular-nums">
-                          {formatMoney(ev.ingresos)}
+                          <div>{formatMoney(ev.ingresos)}</div>
+                          {ev.ingresosAdmin ? (
+                            <div className="text-[11px] text-purple-400 font-medium">
+                              Admin: {formatMoney(ev.ingresosAdmin)}
+                            </div>
+                          ) : null}
                         </td>
                       </tr>
                     ))}

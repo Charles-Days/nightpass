@@ -129,7 +129,10 @@ export class PassesService {
       const soldTier = await this.prisma.pass.count({
         where: { eventId: claim.eventId, order: { tierId: claim.tierId } },
       });
-      if (soldTier >= tier.capacity) {
+      const pendingClaimsTier = await this.prisma.passClaim.count({
+        where: { tierId: claim.tierId, status: PassClaimStatus.PENDING },
+      });
+      if (soldTier + pendingClaimsTier >= tier.capacity) {
         throw new ConflictException('Tier agotado');
       }
     }
@@ -137,7 +140,10 @@ export class PassesService {
       const soldEvent = await this.prisma.pass.count({
         where: { eventId: claim.eventId },
       });
-      if (soldEvent >= event.capacity) {
+      const pendingClaimsEvent = await this.prisma.passClaim.count({
+        where: { eventId: claim.eventId, status: PassClaimStatus.PENDING },
+      });
+      if (soldEvent + pendingClaimsEvent >= event.capacity) {
         throw new ConflictException('Evento agotado');
       }
     }

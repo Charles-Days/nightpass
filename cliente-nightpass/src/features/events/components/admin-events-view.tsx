@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Calendar, Loader2, Pencil, Sparkles, Trash2 } from 'lucide-react';
+import { Calendar, Loader2, Pencil, Sparkles, Trash2, QrCode } from 'lucide-react';
 import { toast } from 'sonner';
 import { clientFetch, ClientApiError } from '@/core/lib/api/client-client';
 import { Button } from '@/core/components/ui/button';
@@ -16,6 +16,7 @@ import {
 import type { Event, EventStatus, PaginatedEvents } from '@/core/types/api';
 import { EventStatusBadge } from './event-status-badge';
 import { AdminEventEdit } from './admin-event-edit';
+import { GeneratePassDialog } from '@/features/admin-passes/components/generate-pass-dialog';
 
 const FILTERS: { key: string; label: string; status?: EventStatus }[] = [
   { key: 'all', label: 'Todos' },
@@ -177,6 +178,22 @@ export function AdminEventsView() {
                           className={event.isFeatured ? 'size-4 text-primary' : 'size-4'}
                         />
                       </Button>
+                      {event.status === 'PUBLISHED' && (
+                        <GeneratePassDialog
+                          eventId={event.id}
+                          eventName={event.title}
+                          trigger={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Generar Vale QR"
+                              className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
+                            >
+                              <QrCode className="size-4" />
+                            </Button>
+                          }
+                        />
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"

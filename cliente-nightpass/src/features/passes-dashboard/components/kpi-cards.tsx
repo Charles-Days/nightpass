@@ -55,11 +55,20 @@ export function KpiCards({ stats }: { stats: PassesStats }) {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <KpiCard label="Pases vendidos" value={stats.passesSold} icon={Ticket} />
       <KpiCard
-        label="Ingresos brutos"
+        label="Pases vendidos (App)"
+        value={stats.passesSold}
+        subtitle={stats.passesSoldAdmin ? `Generados por Admin: ${stats.passesSoldAdmin}` : 'Sin pases de Admin'}
+        icon={Ticket}
+      />
+      <KpiCard
+        label="Ingresos brutos (App)"
         value={fmtMxn(stats.totalRevenue)}
-        subtitle={`Fee NightPass: ${fmtMxn(stats.totalFees)}`}
+        subtitle={
+          stats.revenueAdmin
+            ? `Fee NightPass: ${fmtMxn(stats.totalFees)} · Admin: ${fmtMxn(stats.revenueAdmin)}`
+            : `Fee NightPass: ${fmtMxn(stats.totalFees)}`
+        }
         icon={Coins}
       />
       <KpiCard

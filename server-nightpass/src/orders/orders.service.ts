@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { OrderStatus, Role } from '@prisma/client';
+import { OrderStatus, Role, PassClaimStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { StripeService } from '../stripe/stripe.service';
@@ -51,6 +51,7 @@ export class OrdersService {
     userId: string,
     tierId: string,
     referralCode?: string,
+    quantity = 1,
   ): Promise<{
     orderId: string;
     clientSecret: string;
@@ -58,6 +59,13 @@ export class OrdersService {
     totalCents: number;
     currency: string;
   }> {
+    if (quantity < 1 || quantity > 6) {
+      throw new HttpException(
+        { message: 'Cantidad de pases inválida (máximo 6)', errorCode: 'INVALID_QUANTITY' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     if (!this.stripe.isEnabled()) {
       throw new HttpException(
         {
@@ -86,11 +94,12 @@ export class OrdersService {
 
     // Precio vigente AHORA según el calendario de subidas. Se bloquea aquí: la
     // orden conserva este precio aunque el tier suba después.
-    const priceCents = resolveTierPrice(
+    const singlePriceCents = resolveTierPrice(
       tier.priceCents,
       tier.prices,
       event.startsAt,
     ).currentCents;
+    const priceCents = singlePriceCents * quantity;
 
     if (priceCents <= 0) {
       throw new HttpException(
@@ -107,7 +116,7 @@ export class OrdersService {
     }
     if (event.startsAt.getTime() <= Date.now() && process.env.STRIPE_DEV_BYPASS !== 'true') {
       throw new HttpException(
-        { message: 'Evento ya empezó', errorCode: 'EVENT_STARTED' },
+        { message: 'El evento ya comenzó', errorCode: 'EVENT_STARTED' },
         HttpStatus.CONFLICT,
       );
     }
@@ -139,24 +148,26 @@ export class OrdersService {
       const sold = await this.prisma.pass.count({
         where: { eventId: event.id, order: { tierId: tier.id } },
       });
-      if (sold >= tier.capacity) {
+      const pendingClaims = await this.prisma.passClaim.count({
+        where: { tierId: tier.id, status: PassClaimStatus.PENDING },
+      });
+      if (sold + pendingClaims + quantity > tier.capacity) {
         throw new HttpException(
-          { message: 'Tier agotado', errorCode: 'TIER_SOLD_OUT' },
+          { message: 'Cupo insuficiente para la cantidad solicitada', errorCode: 'TIER_SOLD_OUT' },
           HttpStatus.CONFLICT,
         );
       }
     }
 
-    // Un pase por evento por usuario (solo restrictivo en producción)
-    const existingPass = await this.prisma.pass.findFirst({
+    // Máximo 6 pases por cuenta por evento
+    const existingCount = await this.prisma.pass.count({
       where: { eventId: event.id, userId },
     });
-    if (existingPass && process.env.STRIPE_DEV_BYPASS !== 'true') {
+    if (existingCount + quantity > 6 && process.env.STRIPE_DEV_BYPASS !== 'true') {
       throw new HttpException(
         {
-          message: 'Ya tienes un pase para este evento',
-          errorCode: 'DUPLICATE_PASS',
-          passId: existingPass.id,
+          message: `Límite excedido. Ya tienes ${existingCount} pases y estás intentando adquirir ${quantity} más (máximo 6 por cuenta).`,
+          errorCode: 'LIMIT_EXCEEDED',
         },
         HttpStatus.CONFLICT,
       );
@@ -196,6 +207,7 @@ export class OrdersService {
           eventId: event.id,
           tierId: tier.id,
           status: OrderStatus.COMPLETED,
+          quantity,
           totalCents: priceCents,
           applicationFeeCents,
           currency: tier.currency,
@@ -204,32 +216,36 @@ export class OrdersService {
         },
       });
 
-      const createdPass = await this.prisma.pass.create({
-        data: {
-          orderId: order.id,
+      const createdPasses = [];
+      for (let i = 0; i < quantity; i++) {
+        const createdPass = await this.prisma.pass.create({
+          data: {
+            orderId: order.id,
+            userId,
+            eventId: event.id,
+            qrCode: `pending_${i}_${Date.now()}`,
+          },
+        });
+
+        const qr = signPass(
+          createdPass.id,
+          event.id,
           userId,
-          eventId: event.id,
-          qrCode: 'pending',
-        },
-      });
+          passSecret,
+        );
 
-      const qr = signPass(
-        createdPass.id,
-        event.id,
-        userId,
-        passSecret,
-      );
+        const updatedPass = await this.prisma.pass.update({
+          where: { id: createdPass.id },
+          data: { qrCode: qr },
+        });
+        createdPasses.push(updatedPass);
+      }
 
-      await this.prisma.pass.update({
-        where: { id: createdPass.id },
-        data: { qrCode: qr },
-      });
-
-      this.logger.log(`[DEV BYPASS] Simulación de pago exitosa. Pase ${createdPass.id} generado.`);
+      this.logger.log(`[DEV BYPASS] Simulación de pago exitosa. ${quantity} pases generados.`);
 
       return {
         orderId: order.id,
-        clientSecret: `pi_${Date.now()}_secret_devbypasssecret_${Date.now()}`, // formato válido de Stripe client secret
+        clientSecret: `pi_${Date.now()}_secret_devbypasssecret_${Date.now()}`,
         publishableKey: this.stripe.getPublishableKey(),
         totalCents: priceCents,
         currency: tier.currency,
@@ -243,6 +259,7 @@ export class OrdersService {
         eventId: event.id,
         tierId: tier.id,
         status: OrderStatus.PENDING,
+        quantity,
         totalCents: priceCents,
         applicationFeeCents,
         currency: tier.currency,
@@ -261,6 +278,7 @@ export class OrdersService {
         eventId: event.id,
         userId,
         tierId: tier.id,
+        quantity: String(quantity),
       },
       idempotencyKey: `order-${order.id}`,
     });
@@ -313,7 +331,7 @@ export class OrdersService {
               venue: { select: { id: true, name: true, slug: true } },
             },
           },
-          pass: { select: { id: true, usedAt: true } },
+          passes: { select: { id: true, usedAt: true } },
         },
       }),
       this.prisma.order.count({ where: { userId } }),
@@ -330,7 +348,7 @@ export class OrdersService {
       include: {
         tier: true,
         event: { include: { venue: true } },
-        pass: true,
+        passes: true,
         user: { select: { id: true, email: true, name: true } },
       },
     });
@@ -370,7 +388,7 @@ export class OrdersService {
       include: {
         tier: { select: { id: true, name: true } },
         user: { select: { id: true, email: true, name: true } },
-        pass: { select: { id: true, usedAt: true } },
+        passes: { select: { id: true, usedAt: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -385,7 +403,7 @@ export class OrdersService {
     );
 
     const byTier = event.tiers.map((tier) => {
-      const sold = completedOrders.filter((o) => o.tierId === tier.id).length;
+      const sold = completedOrders.filter((o) => o.tierId === tier.id).reduce((acc, o) => acc + o.quantity, 0);
       return {
         tierId: tier.id,
         name: tier.name,
@@ -401,7 +419,7 @@ export class OrdersService {
       totalCents,
       totalFeeCents,
       orderCount: completedOrders.length,
-      passesIssued: completedOrders.filter((o) => o.pass).length,
+      passesIssued: completedOrders.reduce((acc, o) => acc + o.passes.length, 0),
       currency: event.tiers[0]?.currency ?? this.stripe.getDefaultCurrency().toUpperCase(),
       byTier,
       orders: completedOrders.map((o) => ({
@@ -411,7 +429,7 @@ export class OrdersService {
         currency: o.currency,
         tier: o.tier,
         user: o.user,
-        passUsed: o.pass?.usedAt != null,
+        passUsed: o.passes.some((p) => p.usedAt != null),
       })),
     };
   }

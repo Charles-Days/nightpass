@@ -19,7 +19,6 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthUser, CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreateRpDto } from './dto/create-rp.dto';
-import { IssuePassDto } from './dto/issue-pass.dto';
 import { ListRpQuery } from './dto/list-rp.query';
 import { SetCommissionRuleDto } from './dto/set-commission-rule.dto';
 import { RpService } from './rp.service';
@@ -54,21 +53,6 @@ export class RpController {
   async getMe(@CurrentUser() user: AuthUser) {
     const rp = await this.service.getByUserId(user.id);
     return this.service.getById(rp.id);
-  }
-
-  @Post('passes/issue')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.RP)
-  @HttpCode(HttpStatus.CREATED)
-  issuePass(@CurrentUser() user: AuthUser, @Body() dto: IssuePassDto) {
-    return this.service.issuePass(user.id, dto);
-  }
-
-  @Get('passes/issued')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.RP)
-  listIssuedPasses(@CurrentUser() user: AuthUser) {
-    return this.service.listIssuedPasses(user.id);
   }
 
   @Get('me/stats')

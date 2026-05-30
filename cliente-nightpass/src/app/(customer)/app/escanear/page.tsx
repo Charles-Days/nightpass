@@ -2,7 +2,7 @@ import { absoluteUrl } from '@/core/config/env';
 import { ClaimScanner } from '../../_components/claim-scanner';
 
 const title = 'Escanear pase — NightPass';
-const description = 'Escanea el QR de tu RP para recibir tu pase digital al instante.';
+const description = 'Escanea el QR del equipo de NightPass para recibir tu pase digital al instante.';
 
 export const metadata = {
   title,
@@ -20,7 +20,7 @@ export default function EscanearPage() {
         Escanea tu pase
       </h1>
       <p className="mt-2 text-sm leading-relaxed text-white/60">
-        Si pagaste tu entrada en efectivo, tu RP te mostrará un código QR. Escanéalo aquí y tu pase
+        Si pagaste tu entrada en efectivo con el equipo de NightPass, te mostrarán un código QR. Escanéalo aquí y tu pase
         digital quedará guardado en “Mis pases” con su QR para entrar.
       </p>
 

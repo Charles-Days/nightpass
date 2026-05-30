@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import {
   OrderStatus,
+  PassClaimStatus,
+  PaymentMethod,
   PromoterMemberRole,
   Role,
   VenueStaffStatus,
@@ -108,14 +110,16 @@ export class PasesService {
     const venueOrderWhere = {
       event: { venueId },
       status: OrderStatus.COMPLETED,
+      paymentMethod: PaymentMethod.STRIPE,
       createdAt: { gte: from, lte: to },
     } as const;
     const venuePassWhere = {
       event: { venueId },
+      order: { paymentMethod: PaymentMethod.STRIPE },
       createdAt: { gte: from, lte: to },
     } as const;
 
-    const [revenue, ordersCount, passesSold, passesRedeemed, byEventRaw, dailySeries] =
+    const [revenue, ordersCount, rawPassesSold, passesRedeemed, byEventRaw, dailySeries] =
       await this.prisma.$transaction([
         this.prisma.order.aggregate({
           where: venueOrderWhere,
@@ -151,6 +155,19 @@ export class PasesService {
         `,
       ]);
 
+    const adminClaims = await this.prisma.passClaim.aggregate({
+      where: {
+        event: { venueId },
+        status: { in: ['PENDING', 'CLAIMED'] },
+        createdAt: { gte: from, lte: to },
+      },
+      _sum: { amountCents: true },
+      _count: true,
+    });
+    const passesSoldAdmin = adminClaims._count;
+    const revenueAdmin = adminClaims._sum.amountCents ?? 0;
+    const passesSold = rawPassesSold;
+
     const eventIds = byEventRaw.map((row) => row.eventId);
     const eventsMeta = eventIds.length
       ? await this.prisma.event.findMany({
@@ -177,13 +194,21 @@ export class PasesService {
     const passesSoldByEvent = eventIds.length
       ? await this.prisma.pass.groupBy({
           by: ['eventId'],
-          where: { eventId: { in: eventIds } },
+          where: { eventId: { in: eventIds }, order: { paymentMethod: PaymentMethod.STRIPE } },
           _count: true,
         })
       : [];
-    const soldById = new Map(
-      passesSoldByEvent.map((r) => [r.eventId, r._count]),
-    );
+    const pendingClaimsByEvent = eventIds.length
+      ? await this.prisma.passClaim.groupBy({
+          by: ['eventId'],
+          where: { eventId: { in: eventIds }, status: { in: ['PENDING', 'CLAIMED'] } },
+          _sum: { amountCents: true },
+          _count: true,
+        })
+      : [];
+    const soldById = new Map(passesSoldByEvent.map((r) => [r.eventId, r._count]));
+    const soldAdminById = new Map(pendingClaimsByEvent.map((r) => [r.eventId, r._count]));
+    const revenueAdminById = new Map(pendingClaimsByEvent.map((r) => [r.eventId, r._sum.amountCents ?? 0]));
 
     const byEvent = byEventRaw.map((row) => {
       const meta = eventsById.get(row.eventId);
@@ -192,7 +217,9 @@ export class PasesService {
         title: meta?.title ?? '',
         startsAt: meta?.startsAt ?? null,
         capacity: meta?.capacity ?? null,
-        vendidos: soldById.get(row.eventId) ?? row._count,
+        vendidos: soldById.get(row.eventId) ?? 0,
+        vendidosAdmin: soldAdminById.get(row.eventId) ?? 0,
+        ingresosAdmin: revenueAdminById.get(row.eventId) ?? 0,
         canjeados: redeemedById.get(row.eventId) ?? 0,
         ingresos: row._sum?.totalCents ?? 0,
         fees: row._sum?.applicationFeeCents ?? 0,
@@ -218,9 +245,13 @@ export class PasesService {
       vendidos: number;
     } | null = null;
     if (upcoming) {
-      const vendidos = await this.prisma.pass.count({
+      const vendidosPasses = await this.prisma.pass.count({
         where: { eventId: upcoming.id },
       });
+      const vendidosPending = await this.prisma.passClaim.count({
+        where: { eventId: upcoming.id, status: 'PENDING' },
+      });
+      const vendidos = vendidosPasses + vendidosPending;
       upcomingEvent = {
         id: upcoming.id,
         title: upcoming.title,
@@ -253,6 +284,8 @@ export class PasesService {
       })),
       byEvent,
       range: { from: from.toISOString(), to: to.toISOString() },
+      passesSoldAdmin,
+      revenueAdmin,
     };
   }
 
@@ -269,14 +302,16 @@ export class PasesService {
     const promoterOrderWhere = {
       event: { promoterId },
       status: OrderStatus.COMPLETED,
+      paymentMethod: PaymentMethod.STRIPE,
       createdAt: { gte: from, lte: to },
     } as const;
     const promoterPassWhere = {
       event: { promoterId },
+      order: { paymentMethod: PaymentMethod.STRIPE },
       createdAt: { gte: from, lte: to },
     } as const;
 
-    const [revenue, ordersCount, passesSold, passesRedeemed, byEventRaw, dailySeries] =
+    const [revenue, ordersCount, rawPassesSold, passesRedeemed, byEventRaw, dailySeries] =
       await this.prisma.$transaction([
         this.prisma.order.aggregate({
           where: promoterOrderWhere,
@@ -305,12 +340,26 @@ export class PasesService {
           JOIN events e ON e.id = o."eventId"
           WHERE e."promoterId" = ${promoterId}::uuid
             AND o.status = 'COMPLETED'
+            AND o."paymentMethod" = 'STRIPE'
             AND o."createdAt" >= ${from}
             AND o."createdAt" <= ${to}
           GROUP BY DATE(o."createdAt")
           ORDER BY day ASC
         `,
       ]);
+
+    const adminClaims = await this.prisma.passClaim.aggregate({
+      where: {
+        event: { promoterId },
+        status: { in: ['PENDING', 'CLAIMED'] },
+        createdAt: { gte: from, lte: to },
+      },
+      _sum: { amountCents: true },
+      _count: true,
+    });
+    const passesSoldAdmin = adminClaims._count;
+    const revenueAdmin = adminClaims._sum.amountCents ?? 0;
+    const passesSold = rawPassesSold;
 
     const eventIds = byEventRaw.map((row) => row.eventId);
     const eventsMeta = eventIds.length
@@ -338,13 +387,21 @@ export class PasesService {
     const passesSoldByEvent = eventIds.length
       ? await this.prisma.pass.groupBy({
           by: ['eventId'],
-          where: { eventId: { in: eventIds } },
+          where: { eventId: { in: eventIds }, order: { paymentMethod: PaymentMethod.STRIPE } },
           _count: true,
         })
       : [];
-    const soldById = new Map(
-      passesSoldByEvent.map((r) => [r.eventId, r._count]),
-    );
+    const pendingClaimsByEvent = eventIds.length
+      ? await this.prisma.passClaim.groupBy({
+          by: ['eventId'],
+          where: { eventId: { in: eventIds }, status: { in: ['PENDING', 'CLAIMED'] } },
+          _sum: { amountCents: true },
+          _count: true,
+        })
+      : [];
+    const soldById = new Map(passesSoldByEvent.map((r) => [r.eventId, r._count]));
+    const soldAdminById = new Map(pendingClaimsByEvent.map((r) => [r.eventId, r._count]));
+    const revenueAdminById = new Map(pendingClaimsByEvent.map((r) => [r.eventId, r._sum.amountCents ?? 0]));
 
     const byEvent = byEventRaw.map((row) => {
       const meta = eventsById.get(row.eventId);
@@ -353,7 +410,9 @@ export class PasesService {
         title: meta?.title ?? '',
         startsAt: meta?.startsAt ?? null,
         capacity: meta?.capacity ?? null,
-        vendidos: soldById.get(row.eventId) ?? row._count,
+        vendidos: soldById.get(row.eventId) ?? 0,
+        vendidosAdmin: soldAdminById.get(row.eventId) ?? 0,
+        ingresosAdmin: revenueAdminById.get(row.eventId) ?? 0,
         canjeados: redeemedById.get(row.eventId) ?? 0,
         ingresos: row._sum?.totalCents ?? 0,
         fees: row._sum?.applicationFeeCents ?? 0,
@@ -379,9 +438,13 @@ export class PasesService {
       vendidos: number;
     } | null = null;
     if (upcoming) {
-      const vendidos = await this.prisma.pass.count({
-        where: { eventId: upcoming.id },
+      const vendidosPasses = await this.prisma.pass.count({
+        where: { eventId: upcoming.id, order: { paymentMethod: PaymentMethod.STRIPE } },
       });
+      const vendidosPending = await this.prisma.passClaim.count({
+        where: { eventId: upcoming.id, status: { in: ['PENDING', 'CLAIMED'] } },
+      });
+      const vendidos = vendidosPasses + vendidosPending;
       upcomingEvent = {
         id: upcoming.id,
         title: upcoming.title,
@@ -414,6 +477,8 @@ export class PasesService {
       })),
       byEvent,
       range: { from: from.toISOString(), to: to.toISOString() },
+      passesSoldAdmin,
+      revenueAdmin,
     };
   }
 
