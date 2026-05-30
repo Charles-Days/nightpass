@@ -280,8 +280,10 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
   const showChips = tab === 'events' || (tab === 'venues' && categories.length > 0);
 
   return (
-    <div className="np-rise" style={{ animationDelay: '220ms' }}>
-      {/* Sticky controls — blend with page at rest, subtle solid bg only on scroll */}
+    <div>
+      {/* Sticky controls — blend with page at rest, subtle solid bg only on scroll.
+          Sin np-rise aquí: su transform residual (forwards) crearía un containing block
+          y rompería el sticky (se arrastraría con el scroll). */}
       <div
         className={cn(
           'sticky top-[calc(56px+env(safe-area-inset-top,0px))] z-10 -mx-5 mt-4 px-5 pb-3 pt-3 transition-colors duration-300 sm:-mx-8 sm:px-8',
