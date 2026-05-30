@@ -5,6 +5,7 @@ import { TopBar } from './_components/top-bar';
 import { BottomNav } from './_components/bottom-nav';
 import { CustomerBokeh } from './_components/customer-bokeh';
 import { SWRegister } from './_components/sw-register';
+import { NoPinchZoom } from './_components/no-pinch-zoom';
 
 export const metadata: Metadata = {
   title: 'NightPass',
@@ -30,8 +31,8 @@ export const viewport: Viewport = {
   themeColor: '#0A0A0F',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: 'cover',
 };
 
@@ -54,6 +55,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   return (
     <div className="relative flex min-h-dvh flex-col">
       <SWRegister />
+      <NoPinchZoom />
       <CustomerBokeh />
       <TopBar user={user} />
       <main className="flex-1 pb-[calc(88px+env(safe-area-inset-bottom))] md:pb-12">
