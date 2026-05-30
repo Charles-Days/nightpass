@@ -16,14 +16,8 @@ export const metadata = {
 
 export default function EventosPage() {
   return (
-    <div className="mx-auto w-full max-w-5xl px-5 py-5 sm:px-8 sm:py-7">
-      <h1
-        className="np-rise font-display text-2xl font-bold tracking-tight sm:text-3xl"
-        style={{ animationDelay: '0ms' }}
-      >
-        ¿Qué <span className="font-serif italic font-normal text-purple-200">eventos</span> hay
-        esta semana?
-      </h1>
+    <div className="mx-auto w-full max-w-5xl px-5 pb-5 sm:px-8 sm:pb-7">
+      <h1 className="sr-only">¿Qué eventos hay esta semana?</h1>
 
       <Suspense>
         <SearchClient mode="events" />
