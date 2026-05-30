@@ -17,15 +17,21 @@ export const metadata = {
 
 export default function AntrosPage() {
   return (
-    <div className="mx-auto w-full max-w-5xl px-5 pb-5 sm:px-8 sm:pb-7">
+    <div className="mx-auto w-full max-w-5xl px-5 py-5 sm:px-8 sm:py-7">
+      <InstallBanner />
       <AppOpenPinger />
-      <h1 className="sr-only">¿A qué antro vas esta noche?</h1>
+
+      <h1
+        className="np-rise font-display text-2xl font-bold tracking-tight sm:text-3xl"
+        style={{ animationDelay: '0ms' }}
+      >
+        ¿A qué <span className="font-serif italic font-normal text-purple-200">antro</span> vas
+        esta noche?
+      </h1>
 
       <Suspense>
         <SearchClient mode="venues" />
       </Suspense>
-
-      <InstallBanner />
     </div>
   );
 }

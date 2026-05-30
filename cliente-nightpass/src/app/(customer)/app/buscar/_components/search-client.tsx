@@ -286,7 +286,7 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
           y rompería el sticky (se arrastraría con el scroll). */}
       <div
         className={cn(
-          'sticky top-[calc(56px+env(safe-area-inset-top,0px))] z-10 -mx-5 px-5 pb-3 pt-3 transition-colors duration-300 sm:-mx-8 sm:px-8',
+          'sticky top-[calc(56px+env(safe-area-inset-top,0px))] z-10 -mx-5 mt-4 px-5 pb-3 pt-3 transition-colors duration-300 sm:-mx-8 sm:px-8',
           scrolled
             ? 'bg-background/95 shadow-[0_10px_24px_-14px_rgba(0,0,0,0.8)]'
             : 'bg-transparent',
