@@ -6,7 +6,7 @@ import type { User } from '@/core/types/api';
 
 export const sessionQueryKey = ['session'] as const;
 
-export function useSession() {
+export function useSession(initialUser?: User | null) {
   return useQuery<User | null>({
     queryKey: sessionQueryKey,
     queryFn: async () => {
@@ -19,6 +19,12 @@ export function useSession() {
         throw error;
       }
     },
+    // Sembramos con el user del Server Component para pintar el estado correcto
+    // sin parpadeo. `initialDataUpdatedAt: 0` lo marca como obsoleto → revalida
+    // contra /api/auth/me al montar, corrigiendo el caso en que el prop del
+    // layout llegó viejo (RSC cacheado / shell de PWA generado como invitado).
+    initialData: initialUser,
+    initialDataUpdatedAt: initialUser !== undefined ? 0 : undefined,
     // Mantenemos los datos actuales mientras refetcheamos, pero validamos pronto.
     staleTime: 30 * 1000,
     refetchOnWindowFocus: true,

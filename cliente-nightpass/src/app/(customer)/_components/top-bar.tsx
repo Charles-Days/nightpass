@@ -6,14 +6,19 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { Camera, LogIn, ShieldCheck } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { paths } from '@/core/config/paths';
-import type { Role } from '@/core/types/api';
+import type { User } from '@/core/types/api';
 import { cn } from '@/core/lib/utils/cn';
+import { useSession } from '@/features/auth';
 
 interface Props {
-  user: { name: string | null; email: string; role: Role } | null;
+  user: User | null;
 }
 
-export function TopBar({ user }: Props) {
+export function TopBar({ user: initialUser }: Props) {
+  // Fuente de verdad reactiva: arranca con el user del server (sin parpadeo) y
+  // revalida al montar. Corrige el bug en que tras iniciar sesión seguía
+  // mostrando "Crear cuenta" hasta recargar a mano (prop del layout viejo).
+  const { data: user } = useSession(initialUser);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
