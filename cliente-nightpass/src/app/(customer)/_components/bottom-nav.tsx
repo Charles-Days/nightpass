@@ -22,7 +22,7 @@ function BottomNavImpl() {
   );
 
   return (
-    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(env(safe-area-inset-bottom)+10px)] md:hidden">
+    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(env(safe-area-inset-bottom),12px)] md:hidden">
       <ul className="np-nav-in pointer-events-auto relative mx-auto grid h-16 max-w-md grid-cols-5 rounded-[28px] border border-white/[0.08] bg-gradient-to-b from-[#1c1728] to-[#0d0b13] ring-1 ring-inset ring-white/[0.06] shadow-[0_16px_50px_-12px_rgba(0,0,0,0.9),0_0_36px_-14px_rgba(168,85,247,0.55)]">
         {/* Sliding active pill */}
         <li
