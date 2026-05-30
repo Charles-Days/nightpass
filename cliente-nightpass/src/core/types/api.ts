@@ -461,6 +461,7 @@ export interface CatalogEventDetail {
   coverImageUrl: string | null;
   flyerImageUrl: string | null;
   capacity: number | null;
+  sold?: number | null;
   tiers: Array<{
     id: string;
     name: string;

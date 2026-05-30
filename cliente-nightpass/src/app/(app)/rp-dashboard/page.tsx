@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useRpMeStats } from '@/features/rp/hooks/use-rp';
+import { IssuePassDialog } from '@/features/rp/components/issue-pass-dialog';
 import { toast } from 'sonner';
 import { Button } from '@/core/components/ui/button';
 import {
@@ -82,6 +83,9 @@ export default function RpDashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-3 self-start sm:self-center">
+          <IssuePassDialog
+            events={activeEvents.map((e) => ({ eventId: e.eventId, eventName: e.eventName }))}
+          />
           <div className="flex flex-col items-end">
             <span className="text-[10px] uppercase tracking-widest text-white/40">Código Único</span>
             <span className="text-xs bg-purple-500/10 border border-purple-500/30 px-3 py-1 rounded-full font-mono text-purple-300 font-semibold mt-1">

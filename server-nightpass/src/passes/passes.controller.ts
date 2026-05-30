@@ -16,6 +16,7 @@ import {
   type AuthUser,
 } from '../auth/decorators/current-user.decorator';
 import { PassesService } from './passes.service';
+import { ClaimPassDto } from './dto/claim-pass.dto';
 import { ScanPassDto } from './dto/scan-pass.dto';
 
 @Controller('passes')
@@ -33,6 +34,14 @@ export class PassesController {
   @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF)
   scan(@Body() dto: ScanPassDto, @CurrentUser() user: AuthUser) {
     return this.service.scan(dto.qrCode, user);
+  }
+
+  // El cliente escanea el QR emitido por un RP y reclama su pase.
+  @Post('claim')
+  @UseGuards(RolesGuard)
+  @Roles(Role.CUSTOMER)
+  claim(@Body() dto: ClaimPassDto, @CurrentUser() user: AuthUser) {
+    return this.service.claim(dto.code, user);
   }
 
   @Get(':id')

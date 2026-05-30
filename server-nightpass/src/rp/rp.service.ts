@@ -1,12 +1,25 @@
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Role, RpCommissionType } from '@prisma/client';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { EventStatus, PassClaimStatus, Role, RpCommissionType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailerService } from '../mailer/mailer.service';
+import { resolveTierPrice } from '../events/tier-pricing';
 import { CreateRpDto } from './dto/create-rp.dto';
+import { IssuePassDto } from './dto/issue-pass.dto';
 import { ListRpQuery } from './dto/list-rp.query';
 import { SetCommissionRuleDto } from './dto/set-commission-rule.dto';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
+
+// Vigencia del vale emitido por el RP. Pasado esto, el QR ya no se puede
+// reclamar (status pasa a EXPIRED de forma perezosa al intentar reclamar).
+const CLAIM_TTL_HOURS = 24;
 
 const ARGON2_OPTS = {
   type: argon2.argon2id,
@@ -476,5 +489,110 @@ export class RpService {
         totalCents: o.totalCents,
       })),
     };
+  }
+
+  // ── Emisión de pase por venta física (efectivo) ───────────────────────────
+
+  /**
+   * El RP emite un vale para un evento+tier. Devuelve un token que el panel
+   * pinta como QR; el cliente lo escanea en su app y reclama el pase (ver
+   * PassesService.claim). El precio se congela al precio vigente del tier.
+   */
+  async issuePass(userId: string, dto: IssuePassDto) {
+    const rp = await this.getByUserId(userId);
+    if (!rp.isActive) {
+      throw new ForbiddenException('Tu perfil de RP está inactivo');
+    }
+
+    const tier = await this.prisma.eventTier.findUnique({
+      where: { id: dto.tierId },
+      include: { prices: true, event: true },
+    });
+    if (!tier || tier.eventId !== dto.eventId) {
+      throw new NotFoundException('Tier no encontrado para este evento');
+    }
+    const event = tier.event;
+    if (event.status !== EventStatus.PUBLISHED) {
+      throw new BadRequestException('El evento no está publicado');
+    }
+    if (event.startsAt.getTime() <= Date.now()) {
+      throw new BadRequestException('El evento ya empezó');
+    }
+
+    // Autorización: el RP solo emite para eventos de su promotor o donde tiene
+    // una regla de comisión asignada.
+    const sameOwner = event.promoterId != null && event.promoterId === rp.promoterId;
+    let allowed = sameOwner;
+    if (!allowed) {
+      const rule = await this.prisma.rpCommissionRule.findFirst({
+        where: { rpProfileId: rp.id, eventId: event.id },
+        select: { id: true },
+      });
+      allowed = rule != null;
+    }
+    if (!allowed) {
+      throw new ForbiddenException('No tienes este evento asignado');
+    }
+
+    const amountCents = resolveTierPrice(tier.priceCents, tier.prices, event.startsAt)
+      .currentCents;
+
+    const token = `npc_${randomBytes(24).toString('hex')}`;
+    // El vale no vive más allá del inicio del evento.
+    const ttl = new Date(Date.now() + CLAIM_TTL_HOURS * 60 * 60 * 1000);
+    const expiresAt = ttl < event.startsAt ? ttl : event.startsAt;
+
+    const claim = await this.prisma.passClaim.create({
+      data: {
+        token,
+        eventId: event.id,
+        tierId: tier.id,
+        issuedByRpId: rp.id,
+        amountCents,
+        currency: tier.currency,
+        expiresAt,
+      },
+    });
+
+    return {
+      id: claim.id,
+      token: claim.token,
+      status: claim.status,
+      amountCents: claim.amountCents,
+      currency: claim.currency,
+      expiresAt: claim.expiresAt,
+      event: { id: event.id, title: event.title, startsAt: event.startsAt },
+      tier: { id: tier.id, name: tier.name },
+    };
+  }
+
+  /** Vales emitidos por el RP (para mostrar estado en el panel). */
+  async listIssuedPasses(userId: string) {
+    const rp = await this.getByUserId(userId);
+    const claims = await this.prisma.passClaim.findMany({
+      where: { issuedByRpId: rp.id },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        event: { select: { id: true, title: true, startsAt: true } },
+        tier: { select: { id: true, name: true } },
+        claimedBy: { select: { id: true, name: true, email: true } },
+      },
+    });
+    return claims.map((c) => ({
+      id: c.id,
+      token: c.token,
+      status: c.status,
+      amountCents: c.amountCents,
+      currency: c.currency,
+      expiresAt: c.expiresAt,
+      claimedAt: c.claimedAt,
+      createdAt: c.createdAt,
+      event: c.event,
+      tier: c.tier,
+      claimedBy: c.claimedBy
+        ? { name: c.claimedBy.name, email: c.claimedBy.email }
+        : null,
+    }));
   }
 }

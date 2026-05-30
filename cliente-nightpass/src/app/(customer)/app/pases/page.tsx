@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Calendar, CheckCircle2, MapPin, Ticket } from 'lucide-react';
+import { Calendar, CheckCircle2, MapPin, QrCode, Ticket } from 'lucide-react';
 import { serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import type { Pass } from '@/core/types/api';
@@ -40,6 +40,15 @@ export default async function PassesPage() {
       <p className="mt-2 max-w-lg text-sm text-muted-foreground np-rise" style={{ animationDelay: '120ms' }}>
         Muestra el QR en la puerta y olvídate de las filas.
       </p>
+
+      <Link
+        href={paths.escanearPase}
+        className="mt-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/15 active:scale-95 np-rise"
+        style={{ animationDelay: '150ms' }}
+      >
+        <QrCode className="size-4" />
+        ¿Pagaste en efectivo? Escanear pase
+      </Link>
 
       {passes.length === 0 ? (
         <div className="mt-8 flex flex-col items-center rounded-[22px] border border-white/10 bg-white/[0.025] p-10 text-center np-rise" style={{ animationDelay: '180ms' }}>

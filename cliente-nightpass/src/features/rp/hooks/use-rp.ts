@@ -107,6 +107,41 @@ export function useRpMeStats() {
   });
 }
 
+export interface IssuedPass {
+  id: string;
+  token: string;
+  status: 'PENDING' | 'CLAIMED' | 'EXPIRED' | 'CANCELLED';
+  amountCents: number;
+  currency: string;
+  expiresAt: string;
+  event: { id: string; title: string; startsAt: string };
+  tier: { id: string; name: string };
+}
+
+// Tiers de un evento (vía catálogo público, con precio vigente).
+export function useEventTiers(eventId: string | null) {
+  return useQuery({
+    queryKey: ['catalog-event-tiers', eventId],
+    enabled: !!eventId,
+    queryFn: () =>
+      clientFetch<{ tiers: Array<{ id: string; name: string; priceCents: number; currency: string }> }>(
+        `/api/catalog/events/${eventId}`,
+      ),
+  });
+}
+
+// El RP emite un vale (venta en efectivo) → devuelve el token para pintar el QR.
+export function useIssueRpPass() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { eventId: string; tierId: string }) =>
+      clientFetch<IssuedPass>('/api/rp/passes/issue', { method: 'POST', body: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rp-me', 'issued'] });
+    },
+  });
+}
+
 export function useCreateRp() {
   const queryClient = useQueryClient();
   return useMutation({

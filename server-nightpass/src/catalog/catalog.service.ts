@@ -359,7 +359,30 @@ export class CatalogService {
       }),
     }));
 
-    return { items: mapped.map((e) => this._mapEvent(e)), total, page: query.page, limit: query.limit };
+    // Pases emitidos por evento (aforo vendido) en una sola consulta agrupada.
+    const soldByEvent = await this._soldCountByEvent(items.map((e) => e.id));
+
+    return {
+      items: mapped.map((e) => ({
+        ...this._mapEvent(e),
+        sold: soldByEvent.get(e.id) ?? 0,
+        capacity: e.capacity ?? null,
+      })),
+      total,
+      page: query.page,
+      limit: query.limit,
+    };
+  }
+
+  /** Mapa eventId → nº de pases emitidos (Stripe + efectivo). */
+  private async _soldCountByEvent(eventIds: string[]): Promise<Map<string, number>> {
+    if (eventIds.length === 0) return new Map();
+    const counts = await this.prisma.pass.groupBy({
+      by: ['eventId'],
+      where: { eventId: { in: eventIds } },
+      _count: { _all: true },
+    });
+    return new Map(counts.map((c) => [c.eventId, c._count._all]));
   }
 
   async getEventById(id: string) {
@@ -392,21 +415,28 @@ export class CatalogService {
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
+    // Aforo vendido (pases emitidos: Stripe + efectivo).
+    const sold = await this.prisma.pass.count({ where: { eventId: event.id } });
+
     // Expone el precio vigente y la próxima subida; oculta el calendario interno.
-    return this._mapEvent({
-      ...event,
-      tiers: event.tiers.map((t) => {
-        const { prices, ...rest } = t;
-        const r = resolveTierPrice(t.priceCents, prices, event.startsAt);
-        return {
-          ...rest,
-          priceCents: r.currentCents,
-          nextPrice: r.next
-            ? { priceCents: r.next.priceCents, startsAt: r.next.startsAt }
-            : null,
-        };
+    return {
+      ...this._mapEvent({
+        ...event,
+        tiers: event.tiers.map((t) => {
+          const { prices, ...rest } = t;
+          const r = resolveTierPrice(t.priceCents, prices, event.startsAt);
+          return {
+            ...rest,
+            priceCents: r.currentCents,
+            nextPrice: r.next
+              ? { priceCents: r.next.priceCents, startsAt: r.next.startsAt }
+              : null,
+          };
+        }),
       }),
-    });
+      sold,
+      capacity: event.capacity ?? null,
+    };
   }
 
   async getTierById(tierId: string) {

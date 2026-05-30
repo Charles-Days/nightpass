@@ -51,6 +51,18 @@ enum OrderStatus {
   FAILED
 }
 
+enum PaymentMethod {
+  STRIPE
+  CASH
+}
+
+enum PassClaimStatus {
+  PENDING
+  CLAIMED
+  EXPIRED
+  CANCELLED
+}
+
 enum LoyaltyTier {
   ROOKIE
   REGULAR
@@ -112,6 +124,7 @@ model User {
   forumPosts           EventForumPost[]
   pushSubscriptions    PushSubscription[]
   rpProfile            RpProfile?
+  claimedPasses        PassClaim[]           @relation("UserClaimedPasses")
 
   @@map("users")
 }
@@ -408,6 +421,7 @@ model Event {
   stories       Story[]
   rpCommissionRules RpCommissionRule[]
   forumPosts    EventForumPost[]
+  passClaims    PassClaim[]
 
   @@unique([venueId, slug])
   @@unique([promoterId, slug])
@@ -450,6 +464,7 @@ model EventTier {
   event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
   orders Order[]
   prices EventTierPrice[]
+  passClaims PassClaim[]
 
   @@index([eventId])
   @@map("event_tiers")
@@ -496,6 +511,7 @@ model Order {
   eventId                String      @db.Uuid
   tierId                 String      @db.Uuid
   status                 OrderStatus @default(PENDING)
+  paymentMethod          PaymentMethod @default(STRIPE)
   totalCents             Int
   applicationFeeCents    Int
   currency               String      @default("MXN")
@@ -508,6 +524,7 @@ model Order {
   event Event     @relation(fields: [eventId], references: [id])
   tier  EventTier @relation(fields: [tierId], references: [id])
   pass  Pass?
+  passClaim PassClaim?
   referredByRpId  String?  @db.Uuid
   referredByRp    RpProfile? @relation("RpReferredOrders", fields: [referredByRpId], references: [id], onDelete: SetNull)
 
@@ -685,10 +702,40 @@ model RpProfile {
   promoter  Promoter?        @relation(fields: [promoterId], references: [id], onDelete: SetNull)
   orders    Order[]          @relation("RpReferredOrders")
   commissionRules RpCommissionRule[]
+  issuedClaims    PassClaim[] @relation("RpIssuedClaims")
 
   @@index([rpCode])
   @@index([promoterId])
   @@map("rp_profiles")
+}
+
+// Pase emitido por un RP para una venta física (efectivo). Es un "vale" con un
+// token que viaja dentro de un QR. El cliente lo escanea en su app → se crea la
+// Order (CASH, COMPLETED) + el Pass real a su nombre y el claim queda CLAIMED.
+model PassClaim {
+  id              String          @id @default(uuid(7)) @db.Uuid
+  token           String          @unique
+  eventId         String          @db.Uuid
+  tierId          String          @db.Uuid
+  issuedByRpId    String?         @db.Uuid
+  amountCents     Int
+  currency        String          @default("MXN")
+  status          PassClaimStatus @default(PENDING)
+  claimedByUserId String?         @db.Uuid
+  claimedAt       DateTime?
+  orderId         String?         @unique @db.Uuid
+  expiresAt       DateTime
+  createdAt       DateTime        @default(now())
+
+  event      Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tier       EventTier  @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  issuedByRp RpProfile? @relation("RpIssuedClaims", fields: [issuedByRpId], references: [id], onDelete: SetNull)
+  claimedBy  User?      @relation("UserClaimedPasses", fields: [claimedByUserId], references: [id], onDelete: SetNull)
+  order      Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([issuedByRpId, status])
+  @@index([eventId, status])
+  @@map("pass_claims")
 }
 
 model RpCommissionRule {

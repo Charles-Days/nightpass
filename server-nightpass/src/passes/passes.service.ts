@@ -11,6 +11,8 @@ import { ConfigService } from '@nestjs/config';
 import {
   LocationPingSource,
   OrderStatus,
+  PassClaimStatus,
+  PaymentMethod,
   Role,
   VenueStaffStatus,
 } from '@prisma/client';
@@ -18,8 +20,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { LocationsService } from '../locations/locations.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
-import { parseQr, recomputeHmac, verifyHmac } from '../common/qr-hmac';
+import { parseQr, recomputeHmac, signPass, verifyHmac } from '../common/qr-hmac';
 import { haversineMeters } from '../common/geo';
+
+const PASS_SECRET_FALLBACK = 'dev-hmac-secret-min32chars-replace-in-prod';
 
 @Injectable()
 export class PassesService {
@@ -60,6 +64,134 @@ export class PassesService {
         order: { include: { tier: { select: { id: true, name: true } } } },
       },
     });
+  }
+
+  // ── Reclamar un vale emitido por un RP (venta en efectivo) ────────────────
+
+  /**
+   * El cliente escanea el QR del RP (`npc_<token>`). Si el vale está vigente se
+   * crea la Order (CASH, COMPLETED) + el Pass real a su nombre, atribuyendo la
+   * venta al RP que lo emitió. Idempotente si el mismo usuario lo reescanea.
+   */
+  async claim(code: string, user: AuthUser) {
+    const token = code.trim();
+    const claim = await this.prisma.passClaim.findUnique({
+      where: { token },
+    });
+    if (!claim) throw new NotFoundException('Vale no válido');
+
+    // Ya reclamado: idempotente para el mismo dueño, bloqueado para otros.
+    if (claim.status === PassClaimStatus.CLAIMED) {
+      if (claim.claimedByUserId === user.id && claim.orderId) {
+        const existing = await this.prisma.pass.findFirst({
+          where: { orderId: claim.orderId },
+          select: { id: true },
+        });
+        if (existing) return { passId: existing.id, alreadyClaimed: true };
+      }
+      throw new ConflictException('Este pase ya fue reclamado');
+    }
+    if (claim.status !== PassClaimStatus.PENDING) {
+      throw new ConflictException('Este vale ya no está disponible');
+    }
+    if (claim.expiresAt.getTime() <= Date.now()) {
+      await this.prisma.passClaim.update({
+        where: { id: claim.id },
+        data: { status: PassClaimStatus.EXPIRED },
+      });
+      throw new ConflictException('Este vale expiró');
+    }
+
+    const event = await this.prisma.event.findUnique({
+      where: { id: claim.eventId },
+      select: { id: true, capacity: true, endsAt: true },
+    });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+    if (event.endsAt.getTime() <= Date.now()) {
+      throw new ConflictException('El evento ya terminó');
+    }
+
+    // Un pase por evento por usuario (igual que en la compra normal).
+    const dup = await this.prisma.pass.findFirst({
+      where: { eventId: claim.eventId, userId: user.id },
+      select: { id: true },
+    });
+    if (dup) {
+      throw new ConflictException('Ya tienes un pase para este evento');
+    }
+
+    // Aforo: por tier y por evento.
+    const tier = await this.prisma.eventTier.findUnique({
+      where: { id: claim.tierId },
+      select: { capacity: true },
+    });
+    if (tier?.capacity != null) {
+      const soldTier = await this.prisma.pass.count({
+        where: { eventId: claim.eventId, order: { tierId: claim.tierId } },
+      });
+      if (soldTier >= tier.capacity) {
+        throw new ConflictException('Tier agotado');
+      }
+    }
+    if (event.capacity != null) {
+      const soldEvent = await this.prisma.pass.count({
+        where: { eventId: claim.eventId },
+      });
+      if (soldEvent >= event.capacity) {
+        throw new ConflictException('Evento agotado');
+      }
+    }
+
+    const secret =
+      this.config.get<string>('PASS_HMAC_SECRET') || PASS_SECRET_FALLBACK;
+
+    const passId = await this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.create({
+        data: {
+          userId: user.id,
+          eventId: claim.eventId,
+          tierId: claim.tierId,
+          status: OrderStatus.COMPLETED,
+          paymentMethod: PaymentMethod.CASH,
+          totalCents: claim.amountCents,
+          applicationFeeCents: 0,
+          currency: claim.currency,
+          referredByRpId: claim.issuedByRpId,
+        },
+      });
+
+      const pass = await tx.pass.create({
+        data: {
+          orderId: order.id,
+          userId: user.id,
+          eventId: claim.eventId,
+          qrCode: `pending_${order.id}`,
+        },
+      });
+
+      const qr = signPass(pass.id, claim.eventId, user.id, secret);
+      await tx.pass.update({ where: { id: pass.id }, data: { qrCode: qr } });
+
+      // Marca el vale consumido. La condición de status evita doble reclamo en
+      // carreras: si otro request ya lo movió, updateMany afecta 0 filas.
+      const consumed = await tx.passClaim.updateMany({
+        where: { id: claim.id, status: PassClaimStatus.PENDING },
+        data: {
+          status: PassClaimStatus.CLAIMED,
+          claimedByUserId: user.id,
+          claimedAt: new Date(),
+          orderId: order.id,
+        },
+      });
+      if (consumed.count === 0) {
+        throw new ConflictException('Este pase ya fue reclamado');
+      }
+
+      return pass.id;
+    });
+
+    this.logger.log(`Vale ${claim.id} reclamado por ${user.id} → pass ${passId}`);
+    return { passId, alreadyClaimed: false };
   }
 
   // ── Detalle del pase (incluye qrCode) ────────────────────────────────────
