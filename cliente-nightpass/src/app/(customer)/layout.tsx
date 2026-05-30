@@ -56,7 +56,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
       <SWRegister />
       <CustomerBokeh />
       <TopBar user={user} />
-      <main className="flex-1 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-12">
+      <main className="flex-1 pb-[calc(88px+env(safe-area-inset-bottom))] md:pb-12">
         {children}
       </main>
       <BottomNav />

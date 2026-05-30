@@ -138,7 +138,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
       <JsonLd
         data={breadcrumbLd([
           { name: 'Inicio', path: paths.appHome },
-          { name: 'Eventos', path: paths.buscar },
+          { name: 'Eventos', path: paths.eventos },
           { name: event.title, path: eventPath },
         ])}
       />
@@ -260,8 +260,10 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
                 <Image
                   src={event.promoter.logoUrl}
                   alt={event.promoter.name}
-                  width={20}
-                  height={20}
+                  width={60}
+                  height={60}
+                  sizes="20px"
+                  quality={90}
                   className="mt-0.5 size-5 shrink-0 rounded-full object-cover"
                 />
               ) : (

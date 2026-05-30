@@ -12,14 +12,15 @@ interface ImageUploaderProps {
   label?: string;
   /** Texto guía bajo el label (ej. medida recomendada). */
   hint?: string;
-  /** Proporción del preview/dropzone. 'video' = 16:9 landscape, 'portrait' = 9:16 vertical. */
-  aspect?: 'video' | 'portrait';
+  /** Proporción del preview/dropzone. 'video' = 16:9 landscape, 'portrait' = 9:16 vertical, 'circle' = avatar redondo. */
+  aspect?: 'video' | 'portrait' | 'circle';
 }
 
 // Tamaño del preview según la proporción — refleja cómo se renderiza en la UI real.
-const ASPECT_BOX: Record<'video' | 'portrait', string> = {
+const ASPECT_BOX: Record<'video' | 'portrait' | 'circle', string> = {
   video: 'h-32 w-56', // 16:9 aprox
   portrait: 'h-56 w-32', // 9:16 aprox
+  circle: 'size-28', // avatar 1:1
 };
 
 export function ImageUploader({
@@ -51,6 +52,8 @@ export function ImageUploader({
   }
 
   const box = ASPECT_BOX[aspect];
+  const isCircle = aspect === 'circle';
+  const radius = isCircle ? 'rounded-full' : 'rounded-lg';
 
   return (
     <div className="space-y-2">
@@ -62,7 +65,7 @@ export function ImageUploader({
       </div>
       {value ? (
         <div className="relative inline-block">
-          <Image src={value} alt="preview" width={224} height={224} unoptimized className={`${box} rounded-lg object-cover border border-white/10`} />
+          <Image src={value} alt="preview" width={224} height={224} unoptimized className={`${box} ${radius} object-cover border border-white/15 ${isCircle ? 'bg-gradient-to-br from-purple-700/40 to-fuchsia-600/30 shadow-[0_8px_24px_-6px_rgba(168,85,247,0.45)]' : ''}`} />
           <button
             type="button"
             onClick={() => onChange(undefined)}
@@ -76,7 +79,7 @@ export function ImageUploader({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className={`${box} flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/20 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary disabled:opacity-50`}
+          className={`${box} flex flex-col items-center justify-center gap-2 ${radius} border-2 border-dashed border-white/20 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary disabled:opacity-50`}
         >
           <Upload className="size-5" />
           <span className="text-xs">{uploading ? 'Subiendo…' : 'Click para subir'}</span>

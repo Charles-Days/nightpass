@@ -100,7 +100,7 @@ export default async function ComprasPage() {
             Cuando compres un pase aparecerá aquí con su importe y estado.
           </p>
           <Link
-            href={paths.buscar}
+            href={paths.eventos}
             className="mt-6 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transition hover:brightness-110 active:scale-95 transform-gpu"
           >
             Explorar eventos

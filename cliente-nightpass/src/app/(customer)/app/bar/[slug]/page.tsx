@@ -93,7 +93,7 @@ export default async function VenueDetailPage({ params }: Props) {
       <JsonLd
         data={breadcrumbLd([
           { name: 'Inicio', path: paths.appHome },
-          { name: 'Bares', path: paths.buscar },
+          { name: 'Bares', path: paths.appHome },
           { name: venue.name, path: venuePath },
         ])}
       />

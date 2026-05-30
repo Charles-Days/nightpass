@@ -39,7 +39,7 @@ export function websiteLd(): Record<string, unknown> {
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: `${absoluteUrl('/app/buscar')}?q={search_term_string}`,
+        urlTemplate: `${absoluteUrl('/app')}?q={search_term_string}`,
       },
       'query-input': 'required name=search_term_string',
     },

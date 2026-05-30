@@ -73,7 +73,7 @@ export default async function PromoterDetailPage({ params }: Props) {
       <JsonLd
         data={breadcrumbLd([
           { name: 'Inicio', path: paths.appHome },
-          { name: 'Organizadores', path: paths.buscar },
+          { name: 'Organizadores', path: paths.eventos },
           { name: promoter.name, path: promoterPath },
         ])}
       />

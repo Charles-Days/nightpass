@@ -274,7 +274,7 @@ export default async function PerfilPage() {
             <div className="flex flex-col items-start gap-3 py-2">
               <p className="text-sm text-white/70">No tienes pases activos.</p>
               <Link
-                href={paths.buscar}
+                href={paths.eventos}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.55)] transition hover:opacity-95 active:scale-95 transform-gpu"
               >
                 Buscar eventos →

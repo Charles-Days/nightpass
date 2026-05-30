@@ -60,9 +60,11 @@ export function PromoterEditForm({ promoter }: Props) {
         render={({ field }) => (
           <ImageUploader
             kind="venue"
+            aspect="circle"
             value={field.value || undefined}
             onChange={(url) => field.onChange(url ?? '')}
             label="Logo del organizador"
+            hint="Se muestra en círculo en tu perfil. Usa una imagen cuadrada y centrada (mín. 400×400) para que no se corte."
           />
         )}
       />

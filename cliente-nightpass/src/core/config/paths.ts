@@ -40,6 +40,7 @@ export const paths = {
   recuperarPassword: '/app/recuperar-password',
   restablecerPassword: '/app/restablecer-password',
   buscar: '/app/buscar',
+  eventos: '/app/eventos',
   bar: '/app/bar',
   promotora: '/app/promotora',
   evento: '/app/evento',

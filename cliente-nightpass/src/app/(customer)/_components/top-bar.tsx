@@ -59,13 +59,13 @@ export function TopBar({ user }: Props) {
             href={paths.appHome}
             className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground active:scale-95"
           >
-            Inicio
+            Antros
           </Link>
           <Link
-            href={paths.buscar}
+            href={paths.eventos}
             className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground active:scale-95"
           >
-            Buscar
+            Eventos
           </Link>
           <Link
             href={paths.pases}
