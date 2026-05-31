@@ -287,6 +287,44 @@ export class AuthService {
     return this.publicUser(user);
   }
 
+  async getMyStats(userId: string) {
+    const [passCount, usedEvents, usedVenueIds, spendAgg] = await Promise.all([
+      // Pases comprados = todos los pases del usuario
+      this.prisma.pass.count({ where: { userId } }),
+
+      // Noches = eventos distintos donde el pase fue escaneado (usedAt != null)
+      this.prisma.pass.findMany({
+        where: { userId, usedAt: { not: null } },
+        select: { eventId: true },
+        distinct: ['eventId'],
+      }),
+
+      // Bares visitados = venues distintos de pases escaneados
+      this.prisma.pass.findMany({
+        where: { userId, usedAt: { not: null }, event: { venueId: { not: null } } },
+        select: { event: { select: { venueId: true } } },
+        distinct: ['eventId'],
+      }),
+
+      // Ahorrado = total pagado en pases (vs pagar puerta sin reserva)
+      this.prisma.order.aggregate({
+        where: { userId, status: 'COMPLETED' },
+        _sum: { totalCents: true },
+      }),
+    ]);
+
+    const uniqueVenueIds = new Set(
+      usedVenueIds.map((p) => p.event?.venueId).filter(Boolean),
+    );
+
+    return {
+      pasesComprados: passCount,
+      noches: usedEvents.length,
+      baresVisitados: uniqueVenueIds.size,
+      ahorradoCents: spendAgg._sum.totalCents ?? 0,
+    };
+  }
+
   async markLocationOnboarded(userId: string): Promise<PublicUser> {
     const user = await this.prisma.user.update({
       where: { id: userId },

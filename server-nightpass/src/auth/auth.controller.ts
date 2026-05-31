@@ -70,6 +70,12 @@ export class AuthController {
     return this.auth.getMe(user.id);
   }
 
+  @Get('me/stats')
+  @UseGuards(JwtAuthGuard)
+  myStats(@CurrentUser() user: AuthUser) {
+    return this.auth.getMyStats(user.id);
+  }
+
   @Patch('me')
   @UseGuards(JwtAuthGuard)
   updateMe(@CurrentUser() user: AuthUser, @Body() dto: UpdateMeDto) {
