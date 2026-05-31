@@ -224,7 +224,7 @@ export class PassesService {
       where: { id: passId },
       include: {
         event: { select: { startsAt: true, endsAt: true } },
-        order: { select: { status: true } },
+        order: { select: { status: true, userId: true } },
         transfers: {
           where: { status: TransferStatus.PENDING },
           orderBy: { createdAt: 'desc' },
@@ -234,6 +234,14 @@ export class PassesService {
     if (!pass) throw new NotFoundException('Pase no encontrado');
     if (pass.userId !== user.id) {
       throw new ForbiddenException('No es tu pase');
+    }
+    // Solo el COMPRADOR ORIGINAL puede generar el link. Quien recibió el pase
+    // por transferencia (Pass.userId cambió pero Order.userId sigue siendo el
+    // comprador) NO puede re-transferirlo → evita reventa en cadena.
+    if (pass.order.userId !== user.id) {
+      throw new ForbiddenException(
+        'Solo quien compró el pase puede transferirlo',
+      );
     }
     if (pass.order.status !== OrderStatus.COMPLETED) {
       throw new ConflictException('Pase no pagado o reembolsado');
@@ -472,7 +480,10 @@ export class PassesService {
     if (user.role !== Role.ADMIN && pass.userId !== user.id) {
       throw new ForbiddenException('No tienes acceso a este pase');
     }
-    return pass;
+    // Solo el comprador original (Order.userId) puede transferir. Quien lo
+    // recibió por transferencia ve el pase pero no puede re-transferirlo.
+    const canTransfer = pass.order.userId === pass.userId;
+    return { ...pass, canTransfer };
   }
 
   // ── Escaneo (STAFF / ADMIN) ──────────────────────────────────────────────

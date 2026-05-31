@@ -58,6 +58,7 @@ export function PassTransferActions({ passId, initialTransfer }: Props) {
   );
   const [error, setError] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
+  const [confirming, setConfirming] = React.useState(false);
 
   const create = useMutation<PassTransferCreated, ClientApiError>({
     mutationFn: () =>
@@ -66,6 +67,7 @@ export function PassTransferActions({ passId, initialTransfer }: Props) {
       }),
     onSuccess: (data) => {
       setError(null);
+      setConfirming(false);
       setTransfer({ token: data.token, expiresAt: data.expiresAt });
       router.refresh();
     },
@@ -137,18 +139,53 @@ export function PassTransferActions({ passId, initialTransfer }: Props) {
               </p>
             </div>
           </div>
-          <Button
-            onClick={() => create.mutate()}
-            disabled={busy}
-            className="mt-4 w-full rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] py-5 text-sm font-semibold"
-          >
-            {create.isPending ? (
-              <Loader2 className="mr-1.5 size-4 animate-spin" />
-            ) : (
+          {confirming ? (
+            <div className="mt-4 space-y-3 rounded-[16px] border border-amber-400/30 bg-amber-400/10 p-4">
+              <p className="flex items-start gap-2 text-xs leading-relaxed text-amber-100">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-300" />
+                <span>
+                  Cuando alguien canjee este link, el pase quedará{' '}
+                  <strong className="font-semibold">únicamente de esa persona</strong>{' '}
+                  y ya nadie más podrá transferirlo (ni tú, ni quien lo reciba).
+                  ¿Crear el link?
+                </span>
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => create.mutate()}
+                  disabled={busy}
+                  className="flex-1 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] py-5 text-sm font-semibold"
+                >
+                  {create.isPending ? (
+                    <Loader2 className="mr-1.5 size-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-1.5 size-4" />
+                  )}
+                  Sí, crear link
+                </Button>
+                <Button
+                  onClick={() => setConfirming(false)}
+                  disabled={busy}
+                  variant="outline"
+                  className="rounded-full border-white/15 bg-transparent py-5 text-sm font-semibold text-white/80 hover:bg-white/[0.06]"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              onClick={() => {
+                setError(null);
+                setConfirming(true);
+              }}
+              disabled={busy}
+              className="mt-4 w-full rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] py-5 text-sm font-semibold"
+            >
               <Send className="mr-1.5 size-4" />
-            )}
-            Crear link de transferencia
-          </Button>
+              Crear link de transferencia
+            </Button>
+          )}
         </>
       ) : (
         <>

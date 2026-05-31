@@ -170,7 +170,7 @@ export default async function PassDetailPage({ params }: Props) {
         </div>
       </section>
 
-      {!used && (
+      {!used && pass.canTransfer && (
         <PassTransferActions
           passId={pass.id}
           initialTransfer={pass.transfers?.[0] ?? null}

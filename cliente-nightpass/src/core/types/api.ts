@@ -421,6 +421,8 @@ export interface Pass {
     expiresAt: string;
     createdAt?: string;
   }>;
+  /** Solo el comprador original puede transferir (no quien lo recibió). */
+  canTransfer?: boolean;
 }
 
 export type TransferStatus = 'PENDING' | 'CLAIMED' | 'CANCELLED' | 'EXPIRED';

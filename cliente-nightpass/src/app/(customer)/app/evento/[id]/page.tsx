@@ -160,6 +160,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
       </Link>
 
       <section className="np-rise mt-5 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]" style={{ animationDelay: '80ms' }}>
+        {/* Foto limpia — sin texto encima para no encimarse con el flyer. */}
         <div className="group relative aspect-video bg-gradient-to-br from-purple-900/40 to-purple-600/10">
           {event.coverImageUrl ? (
             <Image
@@ -172,40 +173,41 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
             />
           ) : null}
           <EventHeroFx seed={event.id} />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
-            <p className="np-rise text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary" style={{ animationDelay: '160ms' }}>
-              <Calendar className="mr-1 inline size-3" />
-              {formatDate(event.startsAt)}
-            </p>
-            <h1 className="np-rise mt-2 break-words font-display text-2xl font-bold leading-tight tracking-tight text-white sm:text-4xl" style={{ animationDelay: '220ms' }}>
-              {event.title}
-            </h1>
-            <p className="np-rise mt-1.5 flex items-center gap-1.5 text-sm text-white/75" style={{ animationDelay: '280ms' }}>
-              <MapPin className="size-3.5" />
-              {event.venue
-                ? `${event.venue.name} · ${event.venue.city}`
-                : event.externalVenueName
-                  ? `${event.externalVenueName}${event.externalVenueCity ? ` · ${event.externalVenueCity}` : ''}`
-                  : event.promoter?.name ?? ''}
-            </p>
-            {event.promoter && event.venue && (
-              <Link
-                href={`${paths.promotora}/${event.promoter.slug}`}
-                className="np-rise mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/80 backdrop-blur transition hover:bg-white/[0.12] active:scale-95"
-                style={{ animationDelay: '320ms' }}
-              >
-                Organiza · {event.promoter.name}
-              </Link>
-            )}
-          </div>
         </div>
 
-        {event.description && (
-          <div className="np-rise border-t border-white/8 p-5 sm:p-7" style={{ animationDelay: '340ms' }}>
-            <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{event.description}</p>
-          </div>
-        )}
+        {/* Título / fecha / lugar — debajo de la foto. */}
+        <div className="p-5 sm:p-7">
+          <p className="np-rise text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary" style={{ animationDelay: '160ms' }}>
+            <Calendar className="mr-1 inline size-3" />
+            {formatDate(event.startsAt)}
+          </p>
+          <h1 className="np-rise mt-2 break-words font-display text-2xl font-bold leading-tight tracking-tight text-white sm:text-4xl" style={{ animationDelay: '220ms' }}>
+            {event.title}
+          </h1>
+          <p className="np-rise mt-1.5 flex items-center gap-1.5 text-sm text-white/75" style={{ animationDelay: '280ms' }}>
+            <MapPin className="size-3.5 shrink-0" />
+            {event.venue
+              ? `${event.venue.name} · ${event.venue.city}`
+              : event.externalVenueName
+                ? `${event.externalVenueName}${event.externalVenueCity ? ` · ${event.externalVenueCity}` : ''}`
+                : event.promoter?.name ?? ''}
+          </p>
+          {event.promoter && event.venue && (
+            <Link
+              href={`${paths.promotora}/${event.promoter.slug}`}
+              className="np-rise mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/80 backdrop-blur transition hover:bg-white/[0.12] active:scale-95"
+              style={{ animationDelay: '320ms' }}
+            >
+              Organiza · {event.promoter.name}
+            </Link>
+          )}
+
+          {event.description && (
+            <p className="np-rise mt-4 whitespace-pre-line border-t border-white/8 pt-4 text-sm leading-relaxed text-muted-foreground" style={{ animationDelay: '340ms' }}>
+              {event.description}
+            </p>
+          )}
+        </div>
       </section>
 
       <EventCountdown

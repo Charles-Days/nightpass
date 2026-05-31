@@ -108,10 +108,15 @@ export async function middleware(req: NextRequest) {
   const onMaintenancePage = pathname === MAINTENANCE_PATH;
   if (maintenanceOn) {
     // El ADMIN puede seguir navegando para apagar el flag desde el panel.
+    // Leemos el rol del JWT aunque esté expirado (el payload sigue siendo
+    // legible): así el admin nunca queda atrapado fuera por el TTL de 15 min.
+    // La acción real (POST /maintenance) la valida el backend con firma, así
+    // que esto solo decide la UI, no da acceso a nada.
     const adminToken = req.cookies.get(ACCESS_COOKIE)?.value;
+    const refreshToken = req.cookies.get(REFRESH_COOKIE)?.value;
     const isAdmin =
       Boolean(adminToken) &&
-      !isJwtExpired(adminToken!) &&
+      Boolean(refreshToken) &&
       decodeJwt(adminToken!)?.role === 'ADMIN';
     if (!isAdmin && !onMaintenancePage) {
       return NextResponse.rewrite(new URL(MAINTENANCE_PATH, req.url));
