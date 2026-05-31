@@ -72,9 +72,54 @@ export default async function UsersListPage({ searchParams }: PageProps) {
 
       <UserTable data={data} />
 
-      <p className="text-xs text-muted-foreground">
-        {data.total} usuarios · página {data.page}
-      </p>
+      {(() => {
+        const limit = data.limit || 20;
+        const totalPages = Math.max(1, Math.ceil(data.total / limit));
+        const current = data.page;
+        const linkFor = (p: number) => {
+          const sp = new URLSearchParams();
+          if (filter !== 'ALL') sp.set('role', filter);
+          if (search) sp.set('search', search);
+          if (p > 1) sp.set('page', String(p));
+          const q = sp.toString();
+          return q ? `${paths.adminUsers}?${q}` : paths.adminUsers;
+        };
+        return (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              {data.total} usuarios · página {current} de {totalPages}
+            </p>
+            {totalPages > 1 ? (
+              <div className="flex gap-2">
+                {current > 1 ? (
+                  <Link
+                    href={linkFor(current - 1)}
+                    className="rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    Anterior
+                  </Link>
+                ) : (
+                  <span className="rounded-md border px-3 py-1.5 text-sm font-medium text-muted-foreground/40">
+                    Anterior
+                  </span>
+                )}
+                {current < totalPages ? (
+                  <Link
+                    href={linkFor(current + 1)}
+                    className="rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    Siguiente
+                  </Link>
+                ) : (
+                  <span className="rounded-md border px-3 py-1.5 text-sm font-medium text-muted-foreground/40">
+                    Siguiente
+                  </span>
+                )}
+              </div>
+            ) : null}
+          </div>
+        );
+      })()}
     </div>
   );
 }
