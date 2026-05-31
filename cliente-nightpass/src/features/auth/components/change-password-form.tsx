@@ -26,7 +26,7 @@ const schema = z
 
 type FormInput = z.infer<typeof schema>;
 
-export function ChangePasswordForm() {
+export function ChangePasswordForm({ redirectTo = '/dashboard' }: { redirectTo?: string }) {
   const router = useRouter();
 
   const mutation = useMutation({
@@ -37,7 +37,7 @@ export function ChangePasswordForm() {
       }),
     onSuccess: () => {
       toast.success('Contraseña cambiada correctamente');
-      router.push('/dashboard');
+      router.push(redirectTo as Parameters<typeof router.push>[0]);
       router.refresh();
     },
     onError: (err) => {

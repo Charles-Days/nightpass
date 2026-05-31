@@ -19,6 +19,7 @@ import {
   Radio,
   Smartphone,
   Wrench,
+  UserCircle2,
   type LucideIcon,
 } from 'lucide-react';
 import { useLogout } from '@/features/auth';
@@ -230,13 +231,20 @@ function SidebarBody({
         />
       </nav>
       <div className="border-t border-white/8 pt-4">
-        <div className="mb-3 px-2">
-          <p className="truncate text-sm font-medium">{user.name ?? user.email}</p>
-          <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-          <p className="mt-1 text-[10px] uppercase tracking-wide text-primary/80">
-            {ROLE_LABEL[user.role]}
-          </p>
-        </div>
+        <Link
+          href={paths.miCuenta}
+          onClick={onNavigate}
+          className="group mb-2 flex items-start gap-2.5 rounded-md px-2 py-2 transition hover:bg-white/[0.06]"
+        >
+          <UserCircle2 className="mt-0.5 size-8 shrink-0 text-primary/70 transition group-hover:text-primary" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{user.name ?? user.email}</p>
+            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+            <p className="mt-1 text-[10px] uppercase tracking-wide text-primary/80">
+              {ROLE_LABEL[user.role]} · Mi cuenta
+            </p>
+          </div>
+        </Link>
         <Link
           href={paths.appHome}
           onClick={onNavigate}

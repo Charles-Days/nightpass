@@ -10,6 +10,8 @@ export const paths = {
   adminVenues: '/admin/locales',
   adminVenuesCreate: '/admin/locales/nuevo',
   cambiarPassword: '/cambiar-password',
+  miCuenta: '/mi-cuenta',
+  confirmarEmail: '/confirmar-email',
   forgotPassword: '/forgot-password',
   resetPassword: '/reset-password',
   miLocal: '/mi-local',

@@ -18,6 +18,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
+import { RequestEmailChangeDto } from './dto/request-email-change.dto';
+import { ConfirmEmailChangeDto } from './dto/confirm-email-change.dto';
 import { GoogleSigninDto } from './dto/google-signin.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthUser, CurrentUser } from './decorators/current-user.decorator';
@@ -87,6 +89,26 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   changePassword(@Body() dto: ChangePasswordDto, @CurrentUser() user: AuthUser) {
     return this.auth.changePassword(user.id, dto.oldPassword, dto.newPassword);
+  }
+
+  @Post('me/email-change')
+  @HttpCode(HttpStatus.OK)
+  @Throttle(STRICT_AUTH_THROTTLE)
+  @UseGuards(JwtAuthGuard)
+  async requestEmailChange(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: RequestEmailChangeDto,
+  ) {
+    await this.auth.requestEmailChange(user.id, dto.newEmail, dto.currentPassword);
+    return { ok: true };
+  }
+
+  @Post('confirm-email-change')
+  @HttpCode(HttpStatus.OK)
+  @Throttle(STRICT_AUTH_THROTTLE)
+  async confirmEmailChange(@Body() dto: ConfirmEmailChangeDto) {
+    await this.auth.confirmEmailChange(dto.token);
+    return { ok: true };
   }
 
   @Post('forgot-password')

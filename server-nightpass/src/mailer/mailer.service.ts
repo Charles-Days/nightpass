@@ -19,6 +19,8 @@ import {
   customerWelcome,
   passwordReset,
   passwordChanged,
+  emailChangeVerification,
+  emailChanged,
 } from './templates/auth-emails';
 import {
   venueSuspended,
@@ -214,6 +216,30 @@ export class MailerService {
 
   async sendPasswordChanged(to: string, name: string): Promise<void> {
     const tpl = passwordChanged({ name });
+    await this.send(to, tpl);
+  }
+
+  async sendEmailChangeVerification(
+    to: string,
+    name: string,
+    confirmUrl: string,
+    expiresInMinutes: number,
+  ): Promise<void> {
+    const tpl = emailChangeVerification({
+      name,
+      newEmail: to,
+      confirmUrl,
+      expiresInMinutes,
+    });
+    await this.send(to, tpl);
+  }
+
+  async sendEmailChanged(
+    to: string,
+    name: string,
+    newEmail: string,
+  ): Promise<void> {
+    const tpl = emailChanged({ name, newEmail });
     await this.send(to, tpl);
   }
 

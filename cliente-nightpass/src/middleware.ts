@@ -18,6 +18,7 @@ const ADMIN_PREFIXES = [
   '/mi-local',
   '/app/mi-organizador',
   '/cambiar-password',
+  '/mi-cuenta',
   '/scanner',
   '/rp-dashboard',
 ];

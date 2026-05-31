@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -441,6 +442,117 @@ export class AuthService {
       .catch((err) =>
         this.logger.error(
           `Email password changed falló (${record.user.email}): ${err instanceof Error ? err.message : err}`,
+        ),
+      );
+  }
+
+  /**
+   * Paso 1 del cambio de correo: valida la contraseña actual, verifica que el
+   * nuevo correo esté libre y envía un link de confirmación al NUEVO correo.
+   * El correo no cambia hasta que el usuario confirme desde ese link.
+   */
+  async requestEmailChange(
+    userId: string,
+    newEmailRaw: string,
+    currentPassword: string,
+  ): Promise<void> {
+    const newEmail = newEmailRaw.toLowerCase().trim();
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('Usuario no encontrado');
+    if (!user.passwordHash) {
+      throw new BadRequestException('Tu cuenta no tiene contraseña configurada');
+    }
+
+    const valid = await argon2.verify(user.passwordHash, currentPassword);
+    if (!valid) throw new UnauthorizedException('Contraseña incorrecta');
+
+    if (newEmail === user.email.toLowerCase()) {
+      throw new BadRequestException('Ese ya es tu correo actual');
+    }
+
+    const existing = await this.prisma.user.findUnique({
+      where: { email: newEmail },
+    });
+    if (existing) throw new ConflictException('Ese correo ya está en uso');
+
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = this.hashToken(token);
+    const expiresInMinutes = 60;
+    const expiresAt = new Date(Date.now() + expiresInMinutes * 60_000);
+
+    await this.prisma.emailChangeToken.updateMany({
+      where: { userId: user.id, usedAt: null, expiresAt: { gt: new Date() } },
+      data: { usedAt: new Date() },
+    });
+
+    await this.prisma.emailChangeToken.create({
+      data: { userId: user.id, newEmail, tokenHash, expiresAt },
+    });
+
+    const webUrl =
+      this.config.get<string>('ADMIN_WEB_URL') ?? 'http://localhost:7100';
+    const confirmUrl = `${webUrl.replace(/\/$/, '')}/confirmar-email?token=${token}`;
+
+    void this.mailer
+      .sendEmailChangeVerification(
+        newEmail,
+        user.name ?? 'amig@',
+        confirmUrl,
+        expiresInMinutes,
+      )
+      .catch((err) =>
+        this.logger.error(
+          `Email verificación de correo falló (${newEmail}): ${err instanceof Error ? err.message : err}`,
+        ),
+      );
+  }
+
+  /**
+   * Paso 2: aplica el cambio de correo si el token es válido. Revoca todos los
+   * refresh tokens (fuerza re-login) y avisa al correo anterior.
+   */
+  async confirmEmailChange(token: string): Promise<void> {
+    const tokenHash = this.hashToken(token);
+    const record = await this.prisma.emailChangeToken.findUnique({
+      where: { tokenHash },
+      include: { user: { select: { id: true, email: true, name: true } } },
+    });
+
+    if (!record || record.usedAt || record.expiresAt < new Date()) {
+      throw new UnauthorizedException('Token inválido o expirado');
+    }
+
+    // Recheck de unicidad — alguien pudo registrar ese correo entre solicitud y confirmación.
+    const taken = await this.prisma.user.findUnique({
+      where: { email: record.newEmail },
+    });
+    if (taken && taken.id !== record.userId) {
+      throw new ConflictException('Ese correo ya está en uso');
+    }
+
+    const oldEmail = record.user.email;
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: record.userId },
+        data: { email: record.newEmail },
+      }),
+      this.prisma.emailChangeToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId: record.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+
+    void this.mailer
+      .sendEmailChanged(oldEmail, record.user.name ?? 'amig@', record.newEmail)
+      .catch((err) =>
+        this.logger.error(
+          `Email aviso de cambio de correo falló (${oldEmail}): ${err instanceof Error ? err.message : err}`,
         ),
       );
   }
