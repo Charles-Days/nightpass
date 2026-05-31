@@ -797,6 +797,12 @@ export interface AdminFinanceFeeAssumptions {
   platformFeePctDefault: number;
 }
 
+export interface VisitorStats {
+  today: number;
+  allTime: number;
+  last7: { date: string; count: number }[];
+}
+
 export interface AdminFinanceStats {
   range: { from: string; to: string };
   totals: AdminFinanceTotals;

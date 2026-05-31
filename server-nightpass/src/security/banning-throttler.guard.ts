@@ -8,7 +8,7 @@ import {
 } from '@nestjs/throttler';
 import type { ThrottlerLimitDetail } from '@nestjs/throttler/dist/throttler.guard.interface';
 import { IpBlocklistService } from './ip-blocklist.service';
-import { clientIp } from './ip.util';
+import { clientIp, isInternalIp } from './ip.util';
 
 /**
  * ThrottlerGuard que, además de responder 429, anota cada exceso en la
@@ -29,6 +29,18 @@ export class BanningThrottlerGuard extends ThrottlerGuard {
 
   protected async getTracker(req: Record<string, any>): Promise<string> {
     return clientIp(req);
+  }
+
+  // No throttlear (ni contar violaciones) cuando:
+  //  - la IP es interna/infra (proxy/SSR de Next que concentra todo el tráfico),
+  //  - el endpoint es de infra polleado por el front (/maintenance, /health).
+  // Sin esto, una sola IP interna se autobanea y tumba el sitio entero.
+  protected async shouldSkip(context: ExecutionContext): Promise<boolean> {
+    const req = context.switchToHttp().getRequest();
+    if (isInternalIp(clientIp(req))) return true;
+    const url: string = req?.url ?? '';
+    if (url.includes('/maintenance') || url.includes('/health')) return true;
+    return super.shouldSkip(context);
   }
 
   protected async throwThrottlingException(

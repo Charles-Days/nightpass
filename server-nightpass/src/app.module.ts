@@ -32,6 +32,7 @@ import { RpModule } from './rp/rp.module';
 import { AdminFinanceModule } from './admin-finance/admin-finance.module';
 import { AdminPassesModule } from './admin-passes/admin-passes.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
+import { MetricsModule } from './metrics/metrics.module';
 import { validateEnv } from './config/env.schema';
 
 @Module({
@@ -79,6 +80,7 @@ import { validateEnv } from './config/env.schema';
     AdminFinanceModule,
     AdminPassesModule,
     MaintenanceModule,
+    MetricsModule,
   ],
   // Los guards globales (blocklist + throttler) se registran en SecurityModule.
 })

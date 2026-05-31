@@ -6,6 +6,7 @@ import { BottomNav } from './_components/bottom-nav';
 import { CustomerBokeh } from './_components/customer-bokeh';
 import { SWRegister } from './_components/sw-register';
 import { NoPinchZoom } from './_components/no-pinch-zoom';
+import { VisitTracker } from '@/core/components/visit-tracker';
 
 export const metadata: Metadata = {
   title: 'NightPass',
@@ -56,6 +57,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
     <div className="relative flex min-h-dvh flex-col">
       <SWRegister />
       <NoPinchZoom />
+      <VisitTracker />
       <CustomerBokeh />
       <TopBar user={user} />
       <main className="flex-1 pb-[calc(88px+env(safe-area-inset-bottom))] md:pb-12">

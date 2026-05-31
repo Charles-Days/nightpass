@@ -85,15 +85,20 @@ async function isMaintenanceOn(): Promise<boolean> {
       cache: 'no-store',
       signal: AbortSignal.timeout(2500),
     });
-    if (!res.ok) {
-      // Backend respondió mal → lo tratamos como caído.
-      on = true;
-    } else {
+    if (res.ok) {
       const data = (await res.json()) as { maintenance?: boolean };
       on = Boolean(data.maintenance);
+    } else if (res.status >= 500) {
+      // Backend roto (5xx) → mantenimiento automático.
+      on = true;
+    } else {
+      // 4xx puntual (403 por ban transitorio, 429, etc.): el backend está vivo,
+      // solo respondió un error a ESTE request. No tumbar el sitio entero —
+      // conservar el último estado conocido o asumir operativo.
+      on = maintCache?.on ?? false;
     }
   } catch {
-    // Backend caído / timeout → mantenimiento automático.
+    // Backend caído / timeout (sin respuesta) → mantenimiento automático.
     on = true;
   }
   maintCache = { on, at: Date.now() };

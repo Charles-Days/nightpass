@@ -1,4 +1,4 @@
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Users } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from '@/core/components/ui/card';
 import { serverFetch } from '@/core/lib/api/server-client';
-import type { AdminFinanceStats, User } from '@/core/types/api';
+import type { AdminFinanceStats, User, VisitorStats } from '@/core/types/api';
 import {
   KpiCards,
   MoneyBreakdown,
@@ -53,6 +53,13 @@ export default async function DashboardPage(props: {
     stats = null;
   }
 
+  let visitors: VisitorStats | null = null;
+  try {
+    visitors = await serverFetch<VisitorStats>('/metrics/visitors');
+  } catch {
+    visitors = null;
+  }
+
   return (
     <div className="space-y-8">
       <header className="flex flex-col gap-4 border-b border-white/5 pb-6 sm:flex-row sm:items-end sm:justify-between">
@@ -69,6 +76,8 @@ export default async function DashboardPage(props: {
         </div>
         <RangePicker from={from} to={to} />
       </header>
+
+      {visitors && <VisitorsCard visitors={visitors} />}
 
       {stats === null ? (
         <Card className="rounded-[22px] border border-amber-500/20 bg-amber-500/[0.04]">
@@ -115,6 +124,64 @@ export default async function DashboardPage(props: {
         </>
       )}
     </div>
+  );
+}
+
+function VisitorsCard({ visitors }: { visitors: VisitorStats }) {
+  const max = Math.max(1, ...visitors.last7.map((d) => d.count));
+  const fmt = new Intl.NumberFormat('es-MX');
+  const dayLabel = (iso: string) =>
+    new Intl.DateTimeFormat('es-MX', { weekday: 'short' }).format(new Date(`${iso}T12:00:00Z`));
+
+  return (
+    <Card className="rounded-[22px] border border-white/10 bg-white/[0.025]">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Users className="size-4 text-primary" />
+          Visitantes únicos
+        </CardTitle>
+        <CardDescription>
+          No cuenta recargas — dedup por visitante (cookie / IP). Aproximado.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Hoy
+            </p>
+            <p className="font-display text-3xl font-bold tabular-nums text-white">
+              {fmt.format(visitors.today)}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Total histórico
+            </p>
+            <p className="font-display text-3xl font-bold tabular-nums text-primary">
+              {fmt.format(visitors.allTime)}
+            </p>
+          </div>
+
+          <div className="ml-auto flex items-end gap-2">
+            {visitors.last7.map((d) => (
+              <div key={d.date} className="flex flex-col items-center gap-1.5">
+                <span className="text-[10px] tabular-nums text-white/60">{d.count}</span>
+                <div className="flex h-16 w-5 items-end rounded-md bg-white/[0.04]">
+                  <div
+                    className="w-full rounded-md bg-gradient-to-t from-[#9333ea] to-[#a855f7]"
+                    style={{ height: `${Math.round((d.count / max) * 100)}%` }}
+                  />
+                </div>
+                <span className="text-[9px] uppercase tracking-wide text-muted-foreground">
+                  {dayLabel(d.date)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

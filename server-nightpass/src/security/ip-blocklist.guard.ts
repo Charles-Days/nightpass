@@ -6,7 +6,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { IpBlocklistService } from './ip-blocklist.service';
-import { clientIp } from './ip.util';
+import { clientIp, isInternalIp } from './ip.util';
 
 /**
  * Corre ANTES del throttler. Si la IP está baneada, corta con 403 + Retry-After
@@ -18,7 +18,11 @@ export class IpBlocklistGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
-    const ttl = await this.blocklist.banTtl(clientIp(req));
+    const ip = clientIp(req);
+    // IPs internas (proxy / SSR de Next) nunca se bloquean — son infra, no
+    // atacantes, y concentran todo el tráfico server-side.
+    if (isInternalIp(ip)) return true;
+    const ttl = await this.blocklist.banTtl(ip);
     if (ttl > 0) {
       const res = context.switchToHttp().getResponse();
       res.header?.('Retry-After', String(ttl));

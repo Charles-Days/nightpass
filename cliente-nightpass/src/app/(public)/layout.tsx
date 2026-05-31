@@ -3,10 +3,12 @@ import { LogIn } from 'lucide-react';
 import { clientEnv } from '@/core/config/env';
 import { paths } from '@/core/config/paths';
 import { Button } from '@/core/components/ui/button';
+import { VisitTracker } from '@/core/components/visit-tracker';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative flex min-h-screen flex-col">
+        <VisitTracker />
         <header className="sticky top-0 z-20 border-b border-white/5 bg-background/40 backdrop-blur-xl">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
             <Link href={paths.home} className="font-display text-lg font-bold tracking-tight">
