@@ -11,12 +11,26 @@ import fastifyStatic from '@fastify/static';
 import fastifyMultipart from '@fastify/multipart';
 import { AppModule } from './app.module';
 
+/**
+ * Interpreta TRUST_PROXY a lo que espera Fastify (ver env.schema.ts).
+ * Default 'true' para no romper dev/local; en prod definir número o lista de
+ * IPs confiables — si no, X-Forwarded-For es falsificable y evade el rate-limit.
+ */
+function parseTrustProxy(raw?: string): boolean | number | string[] {
+  if (raw === undefined || raw.trim() === '') return true;
+  const v = raw.trim();
+  if (v === 'true') return true;
+  if (v === 'false') return false;
+  if (/^\d+$/.test(v)) return Number(v);
+  return v.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
       logger: true,
-      trustProxy: true,
+      trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
     }),
     // rawBody: true → Nest expone req.rawBody (Buffer) en cualquier controlador
     // que use @RawBodyRequest. Necesario para verificar firmas de Stripe webhooks.

@@ -322,7 +322,7 @@ export class PassesService {
    * Vista previa de una transferencia por token (lo abre el destinatario antes
    * de aceptar). No muta nada — solo dice si está vigente y qué evento es.
    */
-  async getTransferByToken(token: string, user: AuthUser) {
+  async getTransferByToken(token: string, user?: AuthUser) {
     const transfer = await this.prisma.passTransfer.findUnique({
       where: { token: token.trim() },
       include: {
@@ -352,7 +352,7 @@ export class PassesService {
     return {
       status: transfer.status,
       expired,
-      isOwnPass: transfer.fromUserId === user.id,
+      isOwnPass: user ? transfer.fromUserId === user.id : false,
       alreadyUsed: Boolean(transfer.pass.usedAt),
       fromName: transfer.fromUser.name,
       expiresAt: transfer.expiresAt,

@@ -158,12 +158,14 @@ export function PassTransferActions({ passId, initialTransfer }: Props) {
               Transferencia activa
             </p>
             <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-              Expira {formatExpiry(transfer.expiresAt)}
+              Link expira {formatExpiry(transfer.expiresAt)}
             </span>
           </div>
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
             Comparte este link. Quien lo abra y lo acepte se quedará con el pase.
-            Mientras tanto tu QR está bloqueado.
+            Mientras tanto tu QR está bloqueado. Si nadie lo acepta antes de esa
+            fecha, el link caduca y tu pase vuelve a activarse — el pase no se
+            pierde.
           </p>
 
           <div className="mt-3 flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2">

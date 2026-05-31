@@ -17,7 +17,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "db:seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed.ts"
+    "db:seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed.ts",
+    "grant:passes": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/scripts/grant-passes.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed.ts"
@@ -28,6 +29,7 @@
     "@fastify/helmet": "11.1.1",
     "@fastify/multipart": "^8.3.1",
     "@fastify/static": "^7.0.4",
+    "@nest-lab/throttler-storage-redis": "1.2.0",
     "@nestjs/common": "^10.4.15",
     "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^10.4.15",
@@ -43,6 +45,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "google-auth-library": "10.6.2",
+    "ioredis": "5.11.0",
     "nodemailer": "8.0.7",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

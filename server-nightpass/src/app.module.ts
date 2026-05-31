@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import type Redis from 'ioredis';
+import { RedisModule, REDIS_CLIENT } from './redis/redis.module';
+import { SecurityModule } from './security/security.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
@@ -38,12 +41,17 @@ import { validateEnv } from './config/env.schema';
       envFilePath: ['.env'],
       validate: validateEnv,
     }),
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60_000,
-        limit: 100,
-      },
-    ]),
+    RedisModule,
+    // Throttler con storage en Redis → límites compartidos entre instancias y
+    // persistentes a reinicios (el storage en memoria por defecto no lo es).
+    ThrottlerModule.forRootAsync({
+      inject: [REDIS_CLIENT],
+      useFactory: (redis: Redis) => ({
+        throttlers: [{ ttl: 60_000, limit: 100 }],
+        storage: new ThrottlerStorageRedisService(redis),
+      }),
+    }),
+    SecurityModule,
     ScheduleModule.forRoot(),
     PrismaModule,
     MailerModule,
@@ -72,11 +80,6 @@ import { validateEnv } from './config/env.schema';
     AdminPassesModule,
     MaintenanceModule,
   ],
-  providers: [
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
-  ],
+  // Los guards globales (blocklist + throttler) se registran en SecurityModule.
 })
 export class AppModule {}

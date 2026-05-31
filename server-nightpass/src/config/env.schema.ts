@@ -24,6 +24,16 @@ export const envSchema = z.object({
 
   CORS_ORIGINS: z.string().optional(),
 
+  // Confianza en proxies para derivar la IP real del cliente (X-Forwarded-For).
+  // El rate-limit y la blocklist son por IP, así que esto debe ser correcto o
+  // un atacante falsea XFF y evade los límites.
+  //   'true'  → confía en cualquier proxy (solo dev/local).
+  //   'false' → no confía (usa la IP del socket directo).
+  //   número  → cuántos saltos de proxy confiar (p.ej. '2' = Cloudflare→Railway).
+  //   lista   → IPs/CIDR confiables separadas por coma.
+  // En producción usar número o lista, nunca 'true'.
+  TRUST_PROXY: z.string().optional(),
+
   // Mailer SMTP. Sin SMTP_USER/SMTP_PASS el mailer corre en modo no-op.
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.string().optional(),

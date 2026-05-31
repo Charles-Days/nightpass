@@ -19,10 +19,13 @@ interface CommissionRuleFormProps {
     rewardCents?: number | null;
     percentage?: number | null;
   } | null;
+  /** Eventos que el RP ya tiene asignados — se ocultan del selector al agregar
+   *  (salvo el que se esté editando) para dejar claro qué eventos faltan. */
+  assignedEventIds?: string[];
   basePath?: string;
 }
 
-export function CommissionRuleForm({ rpId, onSuccess, initialRule, basePath = '/api/rp' }: CommissionRuleFormProps) {
+export function CommissionRuleForm({ rpId, onSuccess, initialRule, assignedEventIds = [], basePath = '/api/rp' }: CommissionRuleFormProps) {
   const { mutate: setRule, isPending } = useSetCommissionRule(basePath);
   const [type, setType] = React.useState<'PER_N_TICKETS' | 'PERCENTAGE'>('PER_N_TICKETS');
   const [eventId, setEventId] = React.useState('');
@@ -58,6 +61,13 @@ export function CommissionRuleForm({ rpId, onSuccess, initialRule, basePath = '/
       });
   }, []);
 
+  const isEditing = !!initialRule;
+  // Al agregar, oculta los eventos ya asignados (cada evento solo admite una
+  // regla por RP). Al editar, mantiene el evento actual disponible.
+  const availableEvents = events.filter(
+    (ev) => !assignedEventIds.includes(ev.id) || ev.id === initialRule?.eventId,
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -89,25 +99,40 @@ export function CommissionRuleForm({ rpId, onSuccess, initialRule, basePath = '/
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-white/10 bg-white/[0.01] p-4 text-white">
-      <h3 className="font-display text-sm font-semibold tracking-tight">Nueva Regla de Comisión</h3>
-      
+      <h3 className="font-display text-sm font-semibold tracking-tight">
+        {isEditing ? 'Editar Regla de Comisión' : 'Asignar Evento y Comisión'}
+      </h3>
+
       <div className="space-y-1.5">
         <Label htmlFor="event" className="text-white/70 text-xs">
-          Evento Asociado (Vacío = Global)
+          Evento a asignar
         </Label>
         <select
           id="event"
           value={eventId}
           onChange={(e) => setEventId(e.target.value)}
-          className="w-full bg-[#0f0f17] border border-white/10 rounded-xl h-10 px-3 text-white text-sm focus:border-primary/50 focus:outline-none"
+          disabled={isEditing}
+          className="w-full bg-[#0f0f17] border border-white/10 rounded-xl h-10 px-3 text-white text-sm focus:border-primary/50 focus:outline-none disabled:opacity-60"
         >
           <option value="">Cualquier Evento (Regla General)</option>
-          {events.map((ev) => (
+          {availableEvents.map((ev) => (
             <option key={ev.id} value={ev.id}>
               {ev.title}
             </option>
           ))}
         </select>
+        {!isEditing && availableEvents.length === 0 ? (
+          <span className="text-[10px] text-amber-300/80 block mt-1">
+            Ya asignaste todos tus eventos a este RP. Puedes editar una regla
+            existente o crear la regla general.
+          </span>
+        ) : (
+          <span className="text-[10px] text-muted-foreground block mt-1">
+            {isEditing
+              ? 'El evento no se puede cambiar al editar. Crea otra regla para asignar un evento distinto.'
+              : 'Elige el evento del RP. Déjalo en “Regla General” para una comisión por defecto.'}
+          </span>
+        )}
       </div>
 
       <div className="space-y-1.5">

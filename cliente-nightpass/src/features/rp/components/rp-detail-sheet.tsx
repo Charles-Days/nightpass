@@ -143,7 +143,7 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
                   className="rounded-lg h-8 px-3 text-xs bg-purple-600/10 hover:bg-purple-600/20 text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition-all"
                 >
                   <Plus className="size-3.5" />
-                  {showAddRule ? 'Cerrar' : 'Agregar/Editar Regla'}
+                  {showAddRule ? 'Cerrar' : 'Asignar evento'}
                 </Button>
               </div>
 
@@ -153,6 +153,9 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
                     rpId={rpId}
                     basePath={basePath}
                     initialRule={editingRule}
+                    assignedEventIds={stats.eventStats
+                      .map((e) => e.eventId)
+                      .filter((id): id is string => !!id)}
                     onSuccess={() => {
                       setShowAddRule(false);
                       setEditingRule(null);
