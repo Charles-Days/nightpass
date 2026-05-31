@@ -22,6 +22,7 @@ import type { Role, User } from '@/core/types/api';
 import { LocationPermissionStatus } from '@/features/geolocation';
 import { LoyaltyCard } from '@/features/loyalty';
 import { LogoutButton } from './_components/logout-button';
+import { RankingPreferences } from './_components/ranking-preferences';
 
 export const metadata = {
   title: 'Mi perfil — NightPass',
@@ -335,6 +336,20 @@ export default async function PerfilPage() {
           .
         </p>
       </section>
+
+      {/* RANKING */}
+      {isCustomer ? (
+        <section className="mt-8">
+          <h3 className="mb-3 px-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            Ranking
+          </h3>
+          <RankingPreferences
+            initialState={user.state}
+            initialCity={user.city}
+            initialRankingOptIn={user.rankingOptIn}
+          />
+        </section>
+      ) : null}
 
       {/* CUENTA SETTINGS GRID */}
       <section className="mt-8">

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Calendar, Clock, Lock, MapPin, Navigation, TrendingUp, Users } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Lock, MapPin, MessageCircle, Navigation, TrendingUp, Users } from 'lucide-react';
 import { ServerApiError, publicFetch, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import { absoluteUrl } from '@/core/config/env';
@@ -315,6 +315,47 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
           )}
         </dl>
       </section>
+
+      {event.whatsappGroups && event.whatsappGroups.length > 0 && (
+        <section
+          className="np-rise mt-5 rounded-[22px] border border-white/10 bg-white/[0.025] p-5 sm:p-6"
+          style={{ animationDelay: '340ms' }}
+        >
+          <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+            <MessageCircle className="size-4" />
+            Grupos de WhatsApp
+          </p>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Únete para enterarte de todo sobre el evento.
+          </p>
+          <div className="mt-4 flex flex-col gap-2.5">
+            {event.whatsappGroups.map((group, i) => (
+              <a
+                key={`${group.url}-${i}`}
+                href={group.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center justify-between gap-3 rounded-[16px] border border-emerald-400/20 bg-emerald-400/[0.06] px-4 py-3 transition hover:bg-emerald-400/[0.12]"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-emerald-400/15">
+                    <MessageCircle className="size-4 text-emerald-300" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-foreground">
+                      {group.label?.trim() || `Grupo ${i + 1}`}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      Unirse al grupo
+                    </span>
+                  </span>
+                </span>
+                <ArrowLeft className="size-4 shrink-0 rotate-180 text-emerald-300/70 transition group-hover:translate-x-0.5" />
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {event.flyerImageUrl && (
         <section

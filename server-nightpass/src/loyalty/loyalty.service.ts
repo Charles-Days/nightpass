@@ -332,7 +332,12 @@ export class LoyaltyService {
     const ids = userIds.map((u) => u.userId);
 
     const totals = await this.prisma.userLoyaltyTotal.findMany({
-      where: { userId: { in: ids }, yearPoints: { gt: 0 } },
+      // Solo usuarios que dieron consentimiento explícito (rankingOptIn=true).
+      where: {
+        userId: { in: ids },
+        yearPoints: { gt: 0 },
+        user: { rankingOptIn: true },
+      },
       orderBy: { yearPoints: 'desc' },
       take: limit,
       include: { user: { select: { id: true, name: true } } },

@@ -64,6 +64,9 @@ export interface User {
   updatedAt?: string;
   mustChangePassword?: boolean;
   locationOnboardedAt?: string | null;
+  state?: string | null;
+  city?: string | null;
+  rankingOptIn?: boolean | null;
 }
 
 export interface AuthTokens {
@@ -297,6 +300,13 @@ export interface Event {
   isFeatured?: boolean;
   featuredAt?: string | null;
   featuredReason?: string | null;
+  whatsappGroups?: WhatsappGroup[] | null;
+}
+
+/** Link a un grupo de WhatsApp del evento (lo agrega el organizador). */
+export interface WhatsappGroup {
+  label?: string | null;
+  url: string;
 }
 
 export interface PaginatedEvents {
@@ -529,6 +539,7 @@ export interface CatalogEventDetail {
   externalVenueCity?: string | null;
   externalVenueLat?: number | null;
   externalVenueLng?: number | null;
+  whatsappGroups?: WhatsappGroup[] | null;
 }
 
 export interface CatalogPromoterDetail {

@@ -36,6 +36,9 @@ export interface PublicUser {
   role: Role;
   mustChangePassword: boolean;
   locationOnboardedAt: Date | null;
+  state: string | null;
+  city: string | null;
+  rankingOptIn: boolean | null;
   createdAt: Date;
 }
 
@@ -278,6 +281,9 @@ export class AuthService {
         role: true,
         mustChangePassword: true,
         locationOnboardedAt: true,
+        state: true,
+        city: true,
+        rankingOptIn: true,
         createdAt: true,
       },
     });
@@ -298,17 +304,31 @@ export class AuthService {
         role: true,
         mustChangePassword: true,
         locationOnboardedAt: true,
+        state: true,
+        city: true,
+        rankingOptIn: true,
         createdAt: true,
       },
     });
     return this.publicUser(user);
   }
 
-  async updateMe(userId: string, data: { name?: string }) {
+  async updateMe(
+    userId: string,
+    data: {
+      name?: string;
+      state?: string;
+      city?: string;
+      rankingOptIn?: boolean;
+    },
+  ) {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: {
         name: data.name,
+        state: data.state,
+        city: data.city,
+        rankingOptIn: data.rankingOptIn,
       },
     });
     return this.publicUser(user);
@@ -487,6 +507,9 @@ export class AuthService {
     role: Role;
     mustChangePassword: boolean;
     locationOnboardedAt?: Date | null;
+    state?: string | null;
+    city?: string | null;
+    rankingOptIn?: boolean | null;
     createdAt: Date;
   }): PublicUser {
     return {
@@ -496,6 +519,9 @@ export class AuthService {
       role: user.role,
       mustChangePassword: user.mustChangePassword,
       locationOnboardedAt: user.locationOnboardedAt ?? null,
+      state: user.state ?? null,
+      city: user.city ?? null,
+      rankingOptIn: user.rankingOptIn ?? null,
       createdAt: user.createdAt,
     };
   }

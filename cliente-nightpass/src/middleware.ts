@@ -67,8 +67,59 @@ function isJwtExpired(token: string): boolean {
 const matches = (pathname: string, prefixes: string[]) =>
   prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
+// ── Modo mantenimiento ──────────────────────────────────────────────────────
+// Se consulta en cada request, así que cacheamos el resultado por instancia con
+// un TTL corto para no pegarle al backend en cada navegación.
+const MAINTENANCE_PATH = '/mantenimiento';
+const MAINT_TTL_MS = 10_000;
+let maintCache: { on: boolean; at: number } | null = null;
+
+async function isMaintenanceOn(): Promise<boolean> {
+  if (maintCache && Date.now() - maintCache.at < MAINT_TTL_MS) {
+    return maintCache.on;
+  }
+  const apiUrl = process.env.API_URL ?? 'http://localhost:7101';
+  let on: boolean;
+  try {
+    const res = await fetch(`${apiUrl}/api/v1/maintenance`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(2500),
+    });
+    if (!res.ok) {
+      // Backend respondió mal → lo tratamos como caído.
+      on = true;
+    } else {
+      const data = (await res.json()) as { maintenance?: boolean };
+      on = Boolean(data.maintenance);
+    }
+  } catch {
+    // Backend caído / timeout → mantenimiento automático.
+    on = true;
+  }
+  maintCache = { on, at: Date.now() };
+  return on;
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // ── Gate de mantenimiento (antes de cualquier auth) ──────────────────────
+  const maintenanceOn = await isMaintenanceOn();
+  const onMaintenancePage = pathname === MAINTENANCE_PATH;
+  if (maintenanceOn) {
+    // El ADMIN puede seguir navegando para apagar el flag desde el panel.
+    const adminToken = req.cookies.get(ACCESS_COOKIE)?.value;
+    const isAdmin =
+      Boolean(adminToken) &&
+      !isJwtExpired(adminToken!) &&
+      decodeJwt(adminToken!)?.role === 'ADMIN';
+    if (!isAdmin && !onMaintenancePage) {
+      return NextResponse.rewrite(new URL(MAINTENANCE_PATH, req.url));
+    }
+  } else if (onMaintenancePage) {
+    // Mantenimiento terminó pero el usuario sigue en la página → a casa.
+    return NextResponse.redirect(new URL('/', req.url));
+  }
 
   const accessToken = req.cookies.get(ACCESS_COOKIE)?.value;
   const refreshToken = req.cookies.get(REFRESH_COOKIE)?.value;

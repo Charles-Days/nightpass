@@ -1,6 +1,8 @@
 import { EventStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsDate,
   IsEnum,
   IsInt,
@@ -11,7 +13,9 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
+import { WhatsappGroupDto } from './whatsapp-group.dto';
 
 export class UpdateEventDto {
   @IsOptional() @IsString() @MinLength(2) @MaxLength(160) title?: string;
@@ -28,4 +32,11 @@ export class UpdateEventDto {
   @IsOptional() @IsString() @MaxLength(80) externalVenueCity?: string;
   @IsOptional() @Type(() => Number) @IsNumber() @Min(-90) @Max(90) externalVenueLat?: number;
   @IsOptional() @Type(() => Number) @IsNumber() @Min(-180) @Max(180) externalVenueLng?: number;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @ValidateNested({ each: true })
+  @Type(() => WhatsappGroupDto)
+  whatsappGroups?: WhatsappGroupDto[];
 }

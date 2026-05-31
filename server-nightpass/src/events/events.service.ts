@@ -152,6 +152,7 @@ export class EventsService {
       externalVenueCity: externalAllowed ? dto.externalVenueCity ?? null : null,
       externalVenueLat: externalAllowed ? dto.externalVenueLat ?? null : null,
       externalVenueLng: externalAllowed ? dto.externalVenueLng ?? null : null,
+      whatsappGroups: (dto.whatsappGroups ?? []) as unknown as Prisma.InputJsonValue,
     });
 
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -314,6 +315,9 @@ export class EventsService {
     if (dto.flyerImageUrl !== undefined) data.flyerImageUrl = dto.flyerImageUrl;
     if (dto.status !== undefined) data.status = dto.status;
     if (dto.capacity !== undefined) data.capacity = dto.capacity;
+    if (dto.whatsappGroups !== undefined) {
+      data.whatsappGroups = dto.whatsappGroups as unknown as Prisma.InputJsonValue;
+    }
 
     if (isPromoterEvent) {
       if (dto.externalVenueName !== undefined) data.externalVenueName = dto.externalVenueName;

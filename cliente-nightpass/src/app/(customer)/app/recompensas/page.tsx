@@ -3,15 +3,17 @@ import { redirect } from 'next/navigation';
 import { ArrowLeft, QrCode } from 'lucide-react';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
-import { HistoryList, LoyaltyCard } from '@/features/loyalty';
+import { CityRanking, HistoryList, LoyaltyCard } from '@/features/loyalty';
+import type { User } from '@/core/types/api';
 
 export const metadata = {
   title: 'Recompensas — NightPass',
 };
 
 export default async function RecompensasPage() {
+  let me: User;
   try {
-    await serverFetch('/auth/me');
+    me = await serverFetch<User>('/auth/me');
   } catch (error) {
     // 401/403 = cookie inválida → login. 5xx/network = backend caído → dejar
     // que el error.tsx renderee fallback; redirigir a login en ese caso
@@ -56,6 +58,15 @@ export default async function RecompensasPage() {
           <QrCode className="size-4" />
           Escanear QR del bar
         </Link>
+      </section>
+
+      <section className="np-rise mt-12" style={{ animationDelay: '640ms' }}>
+        <CityRanking
+          initialState={me.state}
+          initialCity={me.city}
+          initialRankingOptIn={me.rankingOptIn}
+          currentUserId={me.id}
+        />
       </section>
 
       <section className="np-rise mt-10" style={{ animationDelay: '700ms' }}>

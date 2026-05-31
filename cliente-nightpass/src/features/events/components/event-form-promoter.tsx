@@ -1,11 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Loader2, MapPin, Search } from 'lucide-react';
+import { Loader2, MapPin, MessageCircle, Plus, Search, Trash2 } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { Input } from '@/core/components/ui/input';
 import { Field } from '@/core/components/ui/field';
@@ -27,6 +27,18 @@ const baseEventFields = z.object({
   flyerImageUrl: z.string().url('URL inválida').optional().or(z.literal('')),
   capacity: z.coerce.number().int().min(1).optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'CANCELED']).default('DRAFT'),
+  whatsappGroups: z
+    .array(
+      z.object({
+        label: z.string().max(60).optional().or(z.literal('')),
+        url: z
+          .string()
+          .url('Link inválido')
+          .or(z.literal('')),
+      }),
+    )
+    .max(10)
+    .optional(),
 });
 
 const venueLocationSchema = baseEventFields.extend({
@@ -63,6 +75,10 @@ export function toPromoterEventDefaults(event: Event): Partial<PromoterEventInpu
     flyerImageUrl: event.flyerImageUrl ?? '',
     status: event.status,
     capacity: event.capacity ?? undefined,
+    whatsappGroups: (event.whatsappGroups ?? []).map((g) => ({
+      label: g.label ?? '',
+      url: g.url,
+    })),
   };
   if (event.venueId) {
     return {
@@ -252,13 +268,25 @@ export function EventFormPromoter({
       coverImageUrl: '',
       flyerImageUrl: '',
       status: 'DRAFT',
+      whatsappGroups: [],
       ...defaultValues,
     } as PromoterEventInput,
   });
 
   const locationKind = watch('locationKind');
 
+  const {
+    fields: waFields,
+    append: waAppend,
+    remove: waRemove,
+  } = useFieldArray({ control, name: 'whatsappGroups' });
+
   const submit = handleSubmit((values) => {
+    // Limpia filas vacías y normaliza el shape { label?, url }.
+    const whatsappGroups = (values.whatsappGroups ?? [])
+      .map((g) => ({ label: g.label?.trim() || undefined, url: g.url.trim() }))
+      .filter((g) => g.url.length > 0);
+
     // Common payload bits.
     const common = {
       title: values.title,
@@ -269,6 +297,7 @@ export function EventFormPromoter({
       flyerImageUrl: values.flyerImageUrl || undefined,
       status: values.status,
       capacity: values.capacity ?? undefined,
+      whatsappGroups,
     };
     if (values.locationKind === 'venue') {
       void onSubmit({ ...common, promoterId, venueId: values.venueId });
@@ -587,6 +616,60 @@ export function EventFormPromoter({
           />
         )}
       />
+
+      {/* Grupos de WhatsApp — varios links que verá el cliente en el evento. */}
+      <fieldset className="space-y-3 rounded-[18px] border border-white/10 bg-white/[0.02] p-4">
+        <legend className="flex items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/70">
+          <MessageCircle className="size-3.5" />
+          Grupos de WhatsApp
+        </legend>
+        <p className="px-1 text-xs text-muted-foreground">
+          Agrega uno o varios links de grupos. Aparecerán en la información del
+          evento para que los asistentes se unan.
+        </p>
+
+        {waFields.map((f, i) => (
+          <div key={f.id} className="flex flex-col gap-2 sm:flex-row sm:items-start">
+            <Input
+              placeholder="Nombre (ej. General, VIP)"
+              className="sm:w-44"
+              {...register(`whatsappGroups.${i}.label` as const)}
+            />
+            <div className="flex-1">
+              <Input
+                placeholder="https://chat.whatsapp.com/…"
+                {...register(`whatsappGroups.${i}.url` as const)}
+              />
+              {errors.whatsappGroups?.[i]?.url && (
+                <p className="mt-1 text-xs text-red-400">
+                  {errors.whatsappGroups[i]?.url?.message}
+                </p>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => waRemove(i)}
+              className="shrink-0 rounded-md border-white/15 bg-transparent text-white/70 hover:bg-white/[0.06]"
+              aria-label="Quitar grupo"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </div>
+        ))}
+
+        {waFields.length < 10 && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => waAppend({ label: '', url: '' })}
+            className="rounded-full border-white/15 bg-transparent text-sm text-white/80 hover:bg-white/[0.06]"
+          >
+            <Plus className="mr-1.5 size-4" />
+            Agregar grupo
+          </Button>
+        )}
+      </fieldset>
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:gap-4">
         <Button

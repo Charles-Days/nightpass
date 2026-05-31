@@ -28,6 +28,7 @@ import { StoriesModule } from './stories/stories.module';
 import { RpModule } from './rp/rp.module';
 import { AdminFinanceModule } from './admin-finance/admin-finance.module';
 import { AdminPassesModule } from './admin-passes/admin-passes.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
 import { validateEnv } from './config/env.schema';
 
 @Module({
@@ -69,6 +70,7 @@ import { validateEnv } from './config/env.schema';
     RpModule,
     AdminFinanceModule,
     AdminPassesModule,
+    MaintenanceModule,
   ],
   providers: [
     {

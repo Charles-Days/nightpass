@@ -18,6 +18,7 @@ import {
   Pencil,
   Radio,
   Smartphone,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react';
 import { useLogout } from '@/features/auth';
@@ -51,6 +52,7 @@ const PLATFORM_NAV: NavItem[] = [
   { href: paths.adminUsers, label: 'Usuarios', icon: Users, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminStories, label: 'Historias', icon: Radio, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminRps, label: 'RPs', icon: Users, enabled: true, roles: ['ADMIN'] },
+  { href: paths.adminMaintenance, label: 'Mantenimiento', icon: Wrench, enabled: true, roles: ['ADMIN'] },
 ];
 
 const VENUE_NAV: NavItem[] = [

@@ -20,6 +20,7 @@ export const paths = {
   miLocalPases: '/mi-local/pases',
   miLocalStories: '/mi-local/stories',
   adminStories: '/admin/stories',
+  adminMaintenance: '/admin/mantenimiento',
   scanner: '/scanner',
   adminRps: '/admin/rps',
   rpDashboard: '/rp-dashboard',

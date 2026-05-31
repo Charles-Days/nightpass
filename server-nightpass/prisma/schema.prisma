@@ -107,6 +107,12 @@ model User {
 
   mustChangePassword  Boolean   @default(false)
   locationOnboardedAt DateTime?
+  // Ubicación declarada para el ranking de loyalty (no es el GPS de LocationPing).
+  state               String?
+  city                String?
+  // Consentimiento para aparecer en el ranking público. null = aún no decide
+  // (se le pregunta una vez), true = aparece, false = optó por no salir.
+  rankingOptIn        Boolean?
 
   oauthAccounts OAuthAccount[]
 
@@ -420,6 +426,10 @@ model Event {
   externalVenueCity    String?
   externalVenueLat     Float?
   externalVenueLng     Float?
+
+  // Links de grupos de WhatsApp del evento. Array de { label, url }. El cliente
+  // los ve en la info del evento. Lo gestiona el organizador/dueño.
+  whatsappGroups Json?
 
   venue         Venue?         @relation(fields: [venueId], references: [id])
   promoter      Promoter?      @relation(fields: [promoterId], references: [id])
@@ -780,6 +790,17 @@ model PassClaim {
   @@index([issuedByRpId, status])
   @@index([eventId, status])
   @@map("pass_claims")
+}
+
+// Key-value de configuración global de la app. Hoy solo guarda el flag de
+// mantenimiento (`key = "maintenance"`, `value = { enabled, message }`), pero
+// sirve para futuros toggles sin migración nueva.
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
 }
 
 model RpCommissionRule {
