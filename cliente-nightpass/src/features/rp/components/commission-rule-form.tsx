@@ -19,10 +19,11 @@ interface CommissionRuleFormProps {
     rewardCents?: number | null;
     percentage?: number | null;
   } | null;
+  basePath?: string;
 }
 
-export function CommissionRuleForm({ rpId, onSuccess, initialRule }: CommissionRuleFormProps) {
-  const { mutate: setRule, isPending } = useSetCommissionRule();
+export function CommissionRuleForm({ rpId, onSuccess, initialRule, basePath = '/api/rp' }: CommissionRuleFormProps) {
+  const { mutate: setRule, isPending } = useSetCommissionRule(basePath);
   const [type, setType] = React.useState<'PER_N_TICKETS' | 'PERCENTAGE'>('PER_N_TICKETS');
   const [eventId, setEventId] = React.useState('');
   const [nTickets, setNTickets] = React.useState('10');

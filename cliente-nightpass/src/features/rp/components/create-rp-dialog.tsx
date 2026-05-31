@@ -18,10 +18,21 @@ import { Loader2 } from 'lucide-react';
 interface CreateRpDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  basePath?: string;
+  /**
+   * 'admin' permite elegir el organizador asociado. 'promoter' lo oculta — el
+   * backend fuerza el promoterId del organizador autenticado.
+   */
+  scope?: 'admin' | 'promoter';
 }
 
-export function CreateRpDialog({ open, onOpenChange }: CreateRpDialogProps) {
-  const { mutate: createRp, isPending } = useCreateRp();
+export function CreateRpDialog({
+  open,
+  onOpenChange,
+  basePath = '/api/rp',
+  scope = 'admin',
+}: CreateRpDialogProps) {
+  const { mutate: createRp, isPending } = useCreateRp(basePath);
   const [email, setEmail] = React.useState('');
   const [displayName, setDisplayName] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -46,14 +57,16 @@ export function CreateRpDialog({ open, onOpenChange }: CreateRpDialogProps) {
       setReward('150');
       setPercentage('5');
       
-      // Load promoters list
-      clientFetch<{ items: Array<{ id: string; name: string }> }>('/api/promoters')
-        .then((res) => {
-          setPromoters(res.items || []);
-        })
-        .catch(() => {
-          // Silent ignore
-        });
+      // Load promoters list (solo admin elige organizador)
+      if (scope === 'admin') {
+        clientFetch<{ items: Array<{ id: string; name: string }> }>('/api/promoters')
+          .then((res) => {
+            setPromoters(res.items || []);
+          })
+          .catch(() => {
+            // Silent ignore
+          });
+      }
 
       // Load events list
       clientFetch<{ items: Array<{ id: string; title: string }> }>('/api/events?limit=100')
@@ -64,7 +77,7 @@ export function CreateRpDialog({ open, onOpenChange }: CreateRpDialogProps) {
           // Silent ignore
         });
     }
-  }, [open]);
+  }, [open, scope]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -242,24 +255,26 @@ export function CreateRpDialog({ open, onOpenChange }: CreateRpDialogProps) {
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="promoter" className="text-white/70 text-xs">
-              Organizador Asociado (Opcional)
-            </Label>
-            <select
-              id="promoter"
-              value={promoterId}
-              onChange={(e) => setPromoterId(e.target.value)}
-              className="w-full bg-[#0f0f17] border border-white/10 rounded-xl h-10 px-3 text-white text-sm placeholder-white/30 focus:border-primary/50 focus:outline-none"
-            >
-              <option value="">Ninguno - Global</option>
-              {promoters.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {scope === 'admin' && (
+            <div className="space-y-1.5">
+              <Label htmlFor="promoter" className="text-white/70 text-xs">
+                Organizador Asociado (Opcional)
+              </Label>
+              <select
+                id="promoter"
+                value={promoterId}
+                onChange={(e) => setPromoterId(e.target.value)}
+                className="w-full bg-[#0f0f17] border border-white/10 rounded-xl h-10 px-3 text-white text-sm placeholder-white/30 focus:border-primary/50 focus:outline-none"
+              >
+                <option value="">Ninguno - Global</option>
+                {promoters.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-3">
             <Button

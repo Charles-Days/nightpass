@@ -67,6 +67,80 @@ export class RpController {
     return this.service.getStats(rp.id, from, to);
   }
 
+  // ── RPs gestionados por el organizador (scoped a su propio promoter) ───────
+  // Estas rutas son estáticas en su primer segmento ('promoter'), por lo que el
+  // router de Fastify las prioriza sobre el param `:id` de abajo.
+
+  @Get('promoter/mine')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER)
+  listMine(@CurrentUser() user: AuthUser, @Query() query: ListRpQuery) {
+    return this.service.listForPromoter(user.id, query);
+  }
+
+  @Post('promoter/mine')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER)
+  @HttpCode(HttpStatus.CREATED)
+  createMine(@CurrentUser() user: AuthUser, @Body() dto: CreateRpDto) {
+    return this.service.createForPromoter(user.id, dto);
+  }
+
+  @Get('promoter/mine/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER)
+  getMineOne(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.service.getByIdForPromoter(user.id, id);
+  }
+
+  @Get('promoter/mine/:id/stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER)
+  getMineStats(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.service.getStatsForPromoter(user.id, id, from, to);
+  }
+
+  @Patch('promoter/mine/:id/toggle-active')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER)
+  @HttpCode(HttpStatus.OK)
+  toggleMineActive(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.service.toggleActiveForPromoter(user.id, id);
+  }
+
+  @Post('promoter/mine/:id/commission-rules')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER)
+  @HttpCode(HttpStatus.OK)
+  setMineCommissionRule(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetCommissionRuleDto,
+  ) {
+    return this.service.setCommissionRuleForPromoter(user.id, id, dto);
+  }
+
+  @Get('promoter/mine/:id/commission-rules')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER)
+  getMineCommissionRules(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.service.getCommissionRulesForPromoter(user.id, id);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.RP)

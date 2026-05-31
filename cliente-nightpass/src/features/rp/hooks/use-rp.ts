@@ -69,7 +69,13 @@ export interface CommissionRule {
   } | null;
 }
 
-export function useRpList(query: { search?: string; promoterId?: string; page?: number; limit?: number }) {
+// `basePath` permite reusar estos hooks tanto en el panel admin (`/api/rp`)
+// como en el panel del organizador (`/api/rp/promoter/mine`), que expone las
+// mismas operaciones pero scopeadas a su propia organización.
+export function useRpList(
+  query: { search?: string; promoterId?: string; page?: number; limit?: number },
+  basePath: string = '/api/rp',
+) {
   const params = new URLSearchParams();
   if (query.search) params.set('search', query.search);
   if (query.promoterId) params.set('promoterId', query.promoterId);
@@ -78,9 +84,9 @@ export function useRpList(query: { search?: string; promoterId?: string; page?: 
   const queryString = params.toString() ? `?${params.toString()}` : '';
 
   return useQuery({
-    queryKey: ['rps', query],
+    queryKey: ['rps', basePath, query],
     queryFn: () =>
-      clientFetch<{ items: RpProfile[]; total: number; page: number; limit: number }>(`/api/rp${queryString}`),
+      clientFetch<{ items: RpProfile[]; total: number; page: number; limit: number }>(`${basePath}${queryString}`),
   });
 }
 
@@ -92,10 +98,10 @@ export function useRpDetail(id: string | null) {
   });
 }
 
-export function useRpStats(id: string | null) {
+export function useRpStats(id: string | null, basePath: string = '/api/rp') {
   return useQuery({
-    queryKey: ['rps', 'stats', id],
-    queryFn: () => clientFetch<RpStats>(`/api/rp/${id}/stats`),
+    queryKey: ['rps', 'stats', basePath, id],
+    queryFn: () => clientFetch<RpStats>(`${basePath}/${id}/stats`),
     enabled: !!id,
   });
 }
@@ -142,11 +148,11 @@ export function useIssueRpPass() {
   });
 }
 
-export function useCreateRp() {
+export function useCreateRp(basePath: string = '/api/rp') {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: { email: string; displayName: string; password?: string; promoterId?: string; eventId?: string }) =>
-      clientFetch<RpProfile>('/api/rp', {
+      clientFetch<RpProfile>(basePath, {
         method: 'POST',
         body: data,
       }),
@@ -156,21 +162,20 @@ export function useCreateRp() {
   });
 }
 
-export function useToggleRpActive() {
+export function useToggleRpActive(basePath: string = '/api/rp') {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      clientFetch<RpProfile>(`/api/rp/${id}/toggle-active`, {
+      clientFetch<RpProfile>(`${basePath}/${id}/toggle-active`, {
         method: 'PATCH',
       }),
-    onSuccess: (_, id) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rps'] });
-      queryClient.invalidateQueries({ queryKey: ['rps', 'detail', id] });
     },
   });
 }
 
-export function useSetCommissionRule() {
+export function useSetCommissionRule(basePath: string = '/api/rp') {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -187,13 +192,12 @@ export function useSetCommissionRule() {
         percentage?: number;
       };
     }) =>
-      clientFetch<CommissionRule>(`/api/rp/${rpId}/commission-rules`, {
+      clientFetch<CommissionRule>(`${basePath}/${rpId}/commission-rules`, {
         method: 'POST',
         body: data,
       }),
-    onSuccess: (_, { rpId }) => {
-      queryClient.invalidateQueries({ queryKey: ['rps', 'detail', rpId] });
-      queryClient.invalidateQueries({ queryKey: ['rps', 'stats', rpId] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rps'] });
     },
   });
 }

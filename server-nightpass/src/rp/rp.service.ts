@@ -147,6 +147,96 @@ export class RpService {
     return rpProfile;
   }
 
+  // ── Gestión scopeada al organizador (PROMOTER) ────────────────────────────
+  // El organizador solo ve, crea y administra RPs ligados a su propio promoter,
+  // y solo puede asignarles reglas de comisión sobre eventos de su organización.
+
+  /** Resuelve el promoterId del usuario PROMOTER (su primera membresía). */
+  private async resolvePromoterId(userId: string): Promise<string> {
+    const membership = await this.prisma.promoterMember.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      select: { promoterId: true },
+    });
+    if (!membership) {
+      throw new NotFoundException('No se encontró un organizador para este usuario');
+    }
+    return membership.promoterId;
+  }
+
+  private async assertRpBelongsToPromoter(rpId: string, promoterId: string) {
+    const rp = await this.prisma.rpProfile.findUnique({
+      where: { id: rpId },
+      select: { promoterId: true },
+    });
+    if (!rp) throw new NotFoundException('Perfil de RP no encontrado');
+    if (rp.promoterId !== promoterId) {
+      throw new ForbiddenException('Este RP no pertenece a tu organización');
+    }
+  }
+
+  private async assertEventBelongsToPromoter(eventId: string, promoterId: string) {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: { promoterId: true },
+    });
+    if (!event || event.promoterId !== promoterId) {
+      throw new ForbiddenException('Este evento no pertenece a tu organización');
+    }
+  }
+
+  async listForPromoter(userId: string, query: ListRpQuery) {
+    const promoterId = await this.resolvePromoterId(userId);
+    return this.list({ ...query, promoterId } as ListRpQuery);
+  }
+
+  async createForPromoter(userId: string, dto: CreateRpDto) {
+    const promoterId = await this.resolvePromoterId(userId);
+    if (dto.eventId) {
+      await this.assertEventBelongsToPromoter(dto.eventId, promoterId);
+    }
+    // Forzamos el promoterId al del organizador autenticado — ignora cualquier
+    // promoterId que venga en el body.
+    return this.create({ ...dto, promoterId });
+  }
+
+  async getByIdForPromoter(userId: string, rpId: string) {
+    const promoterId = await this.resolvePromoterId(userId);
+    await this.assertRpBelongsToPromoter(rpId, promoterId);
+    return this.getById(rpId);
+  }
+
+  async getStatsForPromoter(userId: string, rpId: string, from?: string, to?: string) {
+    const promoterId = await this.resolvePromoterId(userId);
+    await this.assertRpBelongsToPromoter(rpId, promoterId);
+    return this.getStats(rpId, from, to);
+  }
+
+  async toggleActiveForPromoter(userId: string, rpId: string) {
+    const promoterId = await this.resolvePromoterId(userId);
+    await this.assertRpBelongsToPromoter(rpId, promoterId);
+    return this.toggleActive(rpId);
+  }
+
+  async setCommissionRuleForPromoter(
+    userId: string,
+    rpId: string,
+    dto: SetCommissionRuleDto,
+  ) {
+    const promoterId = await this.resolvePromoterId(userId);
+    await this.assertRpBelongsToPromoter(rpId, promoterId);
+    if (dto.eventId) {
+      await this.assertEventBelongsToPromoter(dto.eventId, promoterId);
+    }
+    return this.setCommissionRule(rpId, dto);
+  }
+
+  async getCommissionRulesForPromoter(userId: string, rpId: string) {
+    const promoterId = await this.resolvePromoterId(userId);
+    await this.assertRpBelongsToPromoter(rpId, promoterId);
+    return this.getCommissionRules(rpId);
+  }
+
   async list(query: ListRpQuery) {
     const where: any = {};
     if (query.promoterId) {

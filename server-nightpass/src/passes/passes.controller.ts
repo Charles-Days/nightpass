@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -42,6 +43,47 @@ export class PassesController {
   @Roles(Role.CUSTOMER)
   claim(@Body() dto: ClaimPassDto, @CurrentUser() user: AuthUser) {
     return this.service.claim(dto.code, user);
+  }
+
+  // ── Transferencia de pases ──────────────────────────────────────────────
+
+  // El dueño genera un link de transferencia para ceder su pase.
+  @Post(':id/transfer')
+  @UseGuards(RolesGuard)
+  @Roles(Role.CUSTOMER)
+  createTransfer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.service.createTransfer(id, user);
+  }
+
+  // El dueño cancela su transferencia pendiente.
+  @Delete(':id/transfer')
+  @UseGuards(RolesGuard)
+  @Roles(Role.CUSTOMER)
+  cancelTransfer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.service.cancelTransfer(id, user);
+  }
+
+  // Vista previa de una transferencia por token (la abre el destinatario).
+  @Get('transfers/:token')
+  getTransfer(@Param('token') token: string, @CurrentUser() user: AuthUser) {
+    return this.service.getTransferByToken(token, user);
+  }
+
+  // El destinatario acepta la transferencia → el pase pasa a su nombre.
+  @Post('transfers/:token/accept')
+  @UseGuards(RolesGuard)
+  @Roles(Role.CUSTOMER)
+  acceptTransfer(
+    @Param('token') token: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.service.acceptTransfer(token, user);
   }
 
   @Get(':id')

@@ -702,6 +702,137 @@
   animation: np-success-pop 520ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
+/* ── Hero cinematográfico ─────────────────────────────────────────────── */
+
+/* Ken Burns: zoom + pan lento e infinito sobre la portada. */
+@keyframes np-kenburns {
+  0% {
+    transform: scale(1.06) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.14) translate3d(-1.5%, -1.5%, 0);
+  }
+  100% {
+    transform: scale(1.06) translate3d(0, 0, 0);
+  }
+}
+.np-kenburns {
+  animation: np-kenburns 26s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Aurora: dos manchas de color que respiran y se desplazan detrás del título. */
+@keyframes np-aurora-drift {
+  0% {
+    transform: translate3d(-8%, 4%, 0) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate3d(10%, -6%, 0) scale(1.25);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(-8%, 4%, 0) scale(1);
+    opacity: 0.55;
+  }
+}
+.np-aurora {
+  position: absolute;
+  inset: -30% -10% auto -10%;
+  height: 90%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  filter: blur(38px);
+  animation: np-aurora-drift 14s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Embers: chispas que suben y se desvanecen. Posición/duración por variables. */
+@keyframes np-ember {
+  0% {
+    transform: translate3d(0, 10%, 0) scale(0.6);
+    opacity: 0;
+  }
+  12% {
+    opacity: var(--np-ember-peak, 0.7);
+  }
+  80% {
+    opacity: var(--np-ember-peak, 0.7);
+  }
+  100% {
+    transform: translate3d(var(--np-ember-drift, 0px), -240px, 0) scale(1.1);
+    opacity: 0;
+  }
+}
+.np-ember {
+  position: absolute;
+  bottom: 0;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(216, 180, 254, 0.95), rgba(168, 85, 247, 0) 70%);
+  animation: np-ember var(--np-ember-dur, 6s) ease-in-out var(--np-ember-delay, 0s) infinite;
+  will-change: transform, opacity;
+}
+
+/* ── Countdown en vivo ────────────────────────────────────────────────── */
+
+/* Pop del dígito cuando cambia (key remonta el span). */
+@keyframes np-digit-pop {
+  0% {
+    transform: translate3d(0, -55%, 0);
+    opacity: 0;
+  }
+  55% {
+    transform: translate3d(0, 6%, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+.np-digit-pop {
+  display: inline-block;
+  animation: np-digit-pop 360ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+/* Glow respirante del borde del banner de countdown. */
+@keyframes np-countdown-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(168, 85, 247, 0.18),
+      0 8px 30px -10px rgba(168, 85, 247, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(168, 85, 247, 0.4),
+      0 12px 44px -8px rgba(168, 85, 247, 0.55);
+  }
+}
+.np-countdown-glow {
+  animation: np-countdown-glow 3.2s ease-in-out infinite;
+}
+
+/* Anillo de "en vivo" que expande y se desvanece alrededor del punto. */
+@keyframes np-live-ping {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+.np-live-ping::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: np-live-ping 1.8s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .np-rise,
   .np-zoom-in,
@@ -738,6 +869,26 @@
     transform: none !important;
   }
   .np-shimmer::after {
+    animation: none !important;
+    display: none !important;
+  }
+  .np-kenburns,
+  .np-aurora,
+  .np-ember,
+  .np-digit-pop,
+  .np-countdown-glow {
+    animation: none !important;
+  }
+  .np-kenburns {
+    transform: none !important;
+  }
+  .np-aurora {
+    opacity: 0.5 !important;
+  }
+  .np-ember {
+    display: none !important;
+  }
+  .np-live-ping::after {
     animation: none !important;
     display: none !important;
   }

@@ -124,20 +124,34 @@ function phaseForErrorCode(code: string | null): Phase {
 interface CheckoutClientProps {
   tierId: string;
   initialTier: CatalogTierDetail | null;
+  /** Pases que el user ya tiene para este evento (capa el máximo a 6 por cuenta). */
+  alreadyOwned?: number;
 }
 
-export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
+const MAX_PER_ACCOUNT = 6;
+
+export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: CheckoutClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const existingOrderId = searchParams.get('orderId');
 
+  // Cuántos pases más puede comprar antes de tocar el límite por cuenta.
+  const maxQuantity = Math.max(0, MAX_PER_ACCOUNT - alreadyOwned);
+  const limitReached = !!initialTier && maxQuantity <= 0;
+
   const [phase, setPhase] = useState<Phase>(
-    initialTier && initialTier.paymentsEnabled === false ? 'no_stripe' : 'select_quantity',
+    initialTier && initialTier.paymentsEnabled === false
+      ? 'no_stripe'
+      : limitReached
+        ? 'duplicate'
+        : 'select_quantity',
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(
     initialTier && initialTier.paymentsEnabled === false
       ? 'Este local aún no completó la configuración de pagos. Vuelve más tarde.'
-      : null,
+      : limitReached
+        ? `Ya compraste el máximo de ${MAX_PER_ACCOUNT} pases para este evento con esta cuenta. No puedes comprar más.`
+        : null,
   );
   const [duplicatePassId, setDuplicatePassId] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(existingOrderId);
@@ -205,6 +219,7 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
           eventId: initialTier?.event.id ?? '',
           tierId,
           status: 'PENDING',
+          quantity: currentQty,
           totalCents: res.totalCents,
           applicationFeeCents: 0,
           currency: res.currency,
@@ -424,7 +439,7 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
 
       <section
         key={phase}
-        className={`mt-5 rounded-[22px] border border-white/10 bg-white/[0.025] p-5 np-rise transform-gpu ${isErrorPhase ? 'np-shake border-red-400/20' : ''}`}
+        className={`mt-5 rounded-[22px] border border-white/10 bg-white/[0.025] p-5 transform-gpu ${isErrorPhase ? 'np-shake border-red-400/20' : 'np-rise'}`}
         style={{ animationDelay: '180ms' }}
       >
         {phase === 'select_quantity' && (
@@ -446,14 +461,18 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setQuantity(q => Math.min(6, q + 1))}
-                disabled={quantity >= 6}
+                onClick={() => setQuantity(q => Math.min(maxQuantity, q + 1))}
+                disabled={quantity >= maxQuantity}
                 className="size-11 rounded-full border-white/10 bg-white/[0.02] hover:bg-white/10 text-lg font-bold text-white"
               >
                 +
               </Button>
             </div>
-            <p className="text-center text-[11px] text-muted-foreground">Límite de 6 pases por cuenta por evento</p>
+            <p className="text-center text-[11px] text-muted-foreground">
+              {alreadyOwned > 0
+                ? `Ya tienes ${alreadyOwned} — puedes comprar ${maxQuantity} más`
+                : `Límite de ${MAX_PER_ACCOUNT} pases por cuenta por evento`}
+            </p>
             <Button
               type="button"
               onClick={() => void createOrder()}
@@ -526,8 +545,8 @@ export function CheckoutClient({ tierId, initialTier }: CheckoutClientProps) {
         {phase === 'duplicate' && (
           <StateBlock
             tone="info"
-            title="Ya tienes un pase"
-            message={errorMessage ?? 'Ya compraste un pase para este evento.'}
+            title="Ya compraste todos tus pases"
+            message={errorMessage ?? `Ya compraste el máximo de ${MAX_PER_ACCOUNT} pases para este evento con esta cuenta. No puedes comprar más.`}
             primary={
               duplicatePassId
                 ? { label: 'Ver mi pase', href: `${paths.pases}/${duplicatePassId}` }

@@ -14,8 +14,10 @@ import {
   PassClaimStatus,
   PaymentMethod,
   Role,
+  TransferStatus,
   VenueStaffStatus,
 } from '@prisma/client';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { LocationsService } from '../locations/locations.service';
@@ -24,6 +26,10 @@ import { parseQr, recomputeHmac, signPass, verifyHmac } from '../common/qr-hmac'
 import { haversineMeters } from '../common/geo';
 
 const PASS_SECRET_FALLBACK = 'dev-hmac-secret-min32chars-replace-in-prod';
+
+// Una transferencia abierta vive como máximo 7 días — y nunca más allá del
+// inicio del evento (lo que ocurra primero).
+const TRANSFER_TTL_DAYS = 7;
 
 @Injectable()
 export class PassesService {
@@ -62,6 +68,10 @@ export class PassesService {
           },
         },
         order: { include: { tier: { select: { id: true, name: true } } } },
+        transfers: {
+          where: { status: TransferStatus.PENDING },
+          select: { id: true, token: true, expiresAt: true },
+        },
       },
     });
   }
@@ -200,6 +210,241 @@ export class PassesService {
     return { passId, alreadyClaimed: false };
   }
 
+  // ── Transferencia de un pase ya pagado ───────────────────────────────────
+
+  /**
+   * El dueño genera un link de transferencia (`npt_<token>`) para regalar/ceder
+   * su pase. No emite un pase nuevo ni recuenta aforo: al aceptarse, se reasigna
+   * `Pass.userId` y se RE-FIRMA el QR. Mientras está PENDING el pase queda
+   * bloqueado para escaneo (ver `scan`). Idempotente: si ya hay una transferencia
+   * vigente devuelve la misma.
+   */
+  async createTransfer(passId: string, user: AuthUser) {
+    const pass = await this.prisma.pass.findUnique({
+      where: { id: passId },
+      include: {
+        event: { select: { startsAt: true, endsAt: true } },
+        order: { select: { status: true } },
+        transfers: {
+          where: { status: TransferStatus.PENDING },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+    if (!pass) throw new NotFoundException('Pase no encontrado');
+    if (pass.userId !== user.id) {
+      throw new ForbiddenException('No es tu pase');
+    }
+    if (pass.order.status !== OrderStatus.COMPLETED) {
+      throw new ConflictException('Pase no pagado o reembolsado');
+    }
+    if (pass.usedAt) {
+      throw new ConflictException('El pase ya fue usado');
+    }
+    if (pass.event.endsAt.getTime() <= Date.now()) {
+      throw new ConflictException('El evento ya terminó');
+    }
+
+    // Idempotente: una transferencia vigente se reutiliza. Las pendientes ya
+    // expiradas se marcan EXPIRED para que no bloqueen el escaneo eternamente.
+    const now = Date.now();
+    const live = pass.transfers.find((t) => t.expiresAt.getTime() > now);
+    if (live) {
+      return {
+        token: live.token,
+        expiresAt: live.expiresAt,
+        transferId: live.id,
+        alreadyExists: true,
+      };
+    }
+    const staleIds = pass.transfers
+      .filter((t) => t.expiresAt.getTime() <= now)
+      .map((t) => t.id);
+    if (staleIds.length > 0) {
+      await this.prisma.passTransfer.updateMany({
+        where: { id: { in: staleIds }, status: TransferStatus.PENDING },
+        data: { status: TransferStatus.EXPIRED },
+      });
+    }
+
+    // Vive como máximo TRANSFER_TTL_DAYS, y nunca más allá del inicio del evento.
+    const ttlCap = now + TRANSFER_TTL_DAYS * 24 * 60 * 60 * 1000;
+    const expiresAt = new Date(
+      Math.min(ttlCap, pass.event.startsAt.getTime()),
+    );
+    if (expiresAt.getTime() <= now) {
+      throw new ConflictException(
+        'El evento está por comenzar — ya no se puede transferir',
+      );
+    }
+
+    const token = `npt_${randomBytes(24).toString('hex')}`;
+    const transfer = await this.prisma.passTransfer.create({
+      data: {
+        passId: pass.id,
+        token,
+        fromUserId: user.id,
+        expiresAt,
+      },
+    });
+
+    this.logger.log(`Transferencia ${transfer.id} creada para pass ${pass.id}`);
+    return {
+      token: transfer.token,
+      expiresAt: transfer.expiresAt,
+      transferId: transfer.id,
+      alreadyExists: false,
+    };
+  }
+
+  /** El dueño cancela su transferencia pendiente — el QR vuelve a ser válido. */
+  async cancelTransfer(passId: string, user: AuthUser) {
+    const pass = await this.prisma.pass.findUnique({
+      where: { id: passId },
+      select: { id: true, userId: true },
+    });
+    if (!pass) throw new NotFoundException('Pase no encontrado');
+    if (pass.userId !== user.id) {
+      throw new ForbiddenException('No es tu pase');
+    }
+
+    const cancelled = await this.prisma.passTransfer.updateMany({
+      where: { passId: pass.id, status: TransferStatus.PENDING },
+      data: { status: TransferStatus.CANCELLED },
+    });
+    if (cancelled.count === 0) {
+      throw new NotFoundException('No hay transferencia activa');
+    }
+    return { ok: true };
+  }
+
+  /**
+   * Vista previa de una transferencia por token (lo abre el destinatario antes
+   * de aceptar). No muta nada — solo dice si está vigente y qué evento es.
+   */
+  async getTransferByToken(token: string, user: AuthUser) {
+    const transfer = await this.prisma.passTransfer.findUnique({
+      where: { token: token.trim() },
+      include: {
+        fromUser: { select: { name: true } },
+        pass: {
+          include: {
+            event: {
+              select: {
+                id: true,
+                title: true,
+                startsAt: true,
+                coverImageUrl: true,
+                venue: { select: { name: true, city: true, address: true } },
+              },
+            },
+            order: { include: { tier: { select: { id: true, name: true } } } },
+          },
+        },
+      },
+    });
+    if (!transfer) throw new NotFoundException('Transferencia no válida');
+
+    const expired =
+      transfer.status === TransferStatus.PENDING &&
+      transfer.expiresAt.getTime() <= Date.now();
+
+    return {
+      status: transfer.status,
+      expired,
+      isOwnPass: transfer.fromUserId === user.id,
+      alreadyUsed: Boolean(transfer.pass.usedAt),
+      fromName: transfer.fromUser.name,
+      expiresAt: transfer.expiresAt,
+      event: transfer.pass.event,
+      tier: transfer.pass.order.tier,
+    };
+  }
+
+  /**
+   * El destinatario acepta la transferencia: el pase pasa a su nombre y el QR se
+   * re-firma con su `userId` (el HMAC mezcla el userId, así que el QR del
+   * remitente queda inválido). La Order NO cambia de dueño — el registro de
+   * compra sigue siendo de quien pagó. Idempotente para el mismo destinatario.
+   */
+  async acceptTransfer(token: string, user: AuthUser) {
+    const transfer = await this.prisma.passTransfer.findUnique({
+      where: { token: token.trim() },
+      include: { pass: { select: { id: true, eventId: true, usedAt: true } } },
+    });
+    if (!transfer) throw new NotFoundException('Transferencia no válida');
+
+    if (transfer.status !== TransferStatus.PENDING) {
+      if (
+        transfer.status === TransferStatus.CLAIMED &&
+        transfer.toUserId === user.id
+      ) {
+        return { passId: transfer.passId, alreadyYours: true };
+      }
+      throw new ConflictException('Esta transferencia ya no está disponible');
+    }
+    if (transfer.expiresAt.getTime() <= Date.now()) {
+      await this.prisma.passTransfer.update({
+        where: { id: transfer.id },
+        data: { status: TransferStatus.EXPIRED },
+      });
+      throw new ConflictException('Esta transferencia expiró');
+    }
+    if (transfer.fromUserId === user.id) {
+      throw new ConflictException('No puedes aceptar tu propia transferencia');
+    }
+    if (transfer.pass.usedAt) {
+      throw new ConflictException('El pase ya fue usado');
+    }
+
+    // Un pase por evento por usuario (igual que en compra y claim).
+    const dup = await this.prisma.pass.findFirst({
+      where: {
+        eventId: transfer.pass.eventId,
+        userId: user.id,
+        id: { not: transfer.passId },
+      },
+      select: { id: true },
+    });
+    if (dup) {
+      throw new ConflictException('Ya tienes un pase para este evento');
+    }
+
+    const secret =
+      this.config.get<string>('PASS_HMAC_SECRET') || PASS_SECRET_FALLBACK;
+
+    await this.prisma.$transaction(async (tx) => {
+      const qr = signPass(
+        transfer.passId,
+        transfer.pass.eventId,
+        user.id,
+        secret,
+      );
+      await tx.pass.update({
+        where: { id: transfer.passId },
+        data: { userId: user.id, qrCode: qr },
+      });
+
+      // El status guard evita doble aceptación en carreras.
+      const consumed = await tx.passTransfer.updateMany({
+        where: { id: transfer.id, status: TransferStatus.PENDING },
+        data: {
+          status: TransferStatus.CLAIMED,
+          toUserId: user.id,
+          claimedAt: new Date(),
+        },
+      });
+      if (consumed.count === 0) {
+        throw new ConflictException('Esta transferencia ya no está disponible');
+      }
+    });
+
+    this.logger.log(
+      `Transferencia ${transfer.id} aceptada por ${user.id} → pass ${transfer.passId}`,
+    );
+    return { passId: transfer.passId, alreadyYours: false };
+  }
+
   // ── Detalle del pase (incluye qrCode) ────────────────────────────────────
 
   async getById(id: string, user: AuthUser) {
@@ -215,6 +460,12 @@ export class PassesService {
         },
         order: { include: { tier: true } },
         user: { select: { id: true, email: true, name: true } },
+        transfers: {
+          where: { status: TransferStatus.PENDING },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { id: true, token: true, expiresAt: true, createdAt: true },
+        },
       },
     });
     if (!pass) throw new NotFoundException('Pase no encontrado');
@@ -243,6 +494,10 @@ export class PassesService {
         event: { include: { venue: true } },
         order: { include: { tier: { select: { id: true, name: true } } } },
         user: { select: { id: true, email: true, name: true } },
+        transfers: {
+          where: { status: TransferStatus.PENDING },
+          select: { id: true },
+        },
       },
     });
     if (!pass) throw new NotFoundException('Pase no encontrado');
@@ -261,6 +516,15 @@ export class PassesService {
     // 2. Order debe estar COMPLETED
     if (pass.order.status !== OrderStatus.COMPLETED) {
       throw new ConflictException('Pase no pagado o reembolsado');
+    }
+
+    // 2b. Pase en transferencia: el remitente sigue siendo el dueño hasta que
+    //     el destinatario acepte. Bloqueamos el escaneo para que nadie entre
+    //     con un QR que está en pleno traspaso (evita doble entrada).
+    if (pass.transfers.length > 0) {
+      throw new ConflictException(
+        'Pase en transferencia — el destinatario aún no lo acepta',
+      );
     }
 
     // 3. Permisos: ADMIN siempre; STAFF solo si pertenece al venue

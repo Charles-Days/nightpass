@@ -319,6 +319,7 @@ export interface Order {
   eventId: string;
   tierId: string;
   status: OrderStatus;
+  quantity: number;
   totalCents: number;
   applicationFeeCents: number;
   currency: string;
@@ -404,6 +405,43 @@ export interface Pass {
     venue?: { id: string; name: string; city: string; address: string | null };
   };
   tier?: { id: string; name: string; priceCents: number; currency: string };
+  transfers?: Array<{
+    id: string;
+    token: string;
+    expiresAt: string;
+    createdAt?: string;
+  }>;
+}
+
+export type TransferStatus = 'PENDING' | 'CLAIMED' | 'CANCELLED' | 'EXPIRED';
+
+export interface PassTransferCreated {
+  token: string;
+  expiresAt: string;
+  transferId: string;
+  alreadyExists: boolean;
+}
+
+export interface PassTransferPreview {
+  status: TransferStatus;
+  expired: boolean;
+  isOwnPass: boolean;
+  alreadyUsed: boolean;
+  fromName: string | null;
+  expiresAt: string;
+  event: {
+    id: string;
+    title: string;
+    startsAt: string;
+    coverImageUrl: string | null;
+    venue?: { name: string; city: string; address: string | null } | null;
+  };
+  tier?: { id: string; name: string } | null;
+}
+
+export interface PassTransferAccepted {
+  passId: string;
+  alreadyYours: boolean;
 }
 
 export interface CatalogVenueSummary {

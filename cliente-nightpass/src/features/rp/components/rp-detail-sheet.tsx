@@ -27,10 +27,11 @@ interface RpDetailSheetProps {
   rpId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  basePath?: string;
 }
 
-export function RpDetailSheet({ rpId, open, onOpenChange }: RpDetailSheetProps) {
-  const { data: stats, isLoading, refetch } = useRpStats(rpId);
+export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }: RpDetailSheetProps) {
+  const { data: stats, isLoading, refetch } = useRpStats(rpId, basePath);
   const { mutate: deleteRule } = useDeleteCommissionRule();
   const [showAddRule, setShowAddRule] = React.useState(false);
   const [editingRule, setEditingRule] = React.useState<any | null>(null);
@@ -150,6 +151,7 @@ export function RpDetailSheet({ rpId, open, onOpenChange }: RpDetailSheetProps) 
                 <div className="np-fade-in">
                   <CommissionRuleForm
                     rpId={rpId}
+                    basePath={basePath}
                     initialRule={editingRule}
                     onSuccess={() => {
                       setShowAddRule(false);

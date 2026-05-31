@@ -63,6 +63,13 @@ enum PassClaimStatus {
   CANCELLED
 }
 
+enum TransferStatus {
+  PENDING
+  CLAIMED
+  CANCELLED
+  EXPIRED
+}
+
 enum LoyaltyTier {
   ROOKIE
   REGULAR
@@ -126,6 +133,8 @@ model User {
   rpProfile            RpProfile?
   claimedPasses        PassClaim[]           @relation("UserClaimedPasses")
   adminGeneratedClaims PassClaim[]           @relation("AdminGeneratedClaims")
+  transfersSent        PassTransfer[]        @relation("TransfersSent")
+  transfersReceived    PassTransfer[]        @relation("TransfersReceived")
 
   @@map("users")
 }
@@ -552,10 +561,41 @@ model Pass {
   event         Event          @relation(fields: [eventId], references: [id])
   usedByStaff   User?          @relation("PassesScanned", fields: [usedByStaffId], references: [id])
   loyaltyEvents LoyaltyEvent[]
+  transfers     PassTransfer[]
 
   @@index([userId])
   @@index([eventId, usedAt])
   @@map("passes")
+}
+
+// Transferencia de un pase YA pagado a otra persona. A diferencia de PassClaim
+// (que emite un pase nuevo), esto solo reasigna el dueño del Pass existente: al
+// aceptarla se cambia `Pass.userId` y se RE-FIRMA el QR (el HMAC incluye userId),
+// por lo que el QR viejo del remitente queda inválido automáticamente. No crea
+// Order nuevo ni recuenta aforo — el pase ya existía y ya estaba pagado.
+//
+// Modo link-abierto: cualquiera con el `token` puede aceptarla (bearer, como un
+// boleto físico). Single-use, cancelable por el remitente, expira en el inicio
+// del evento (o +7d, lo que ocurra antes). Mientras está PENDING el pase queda
+// bloqueado para escaneo (ver PassesService.scan) para evitar doble entrada.
+model PassTransfer {
+  id              String         @id @default(uuid(7)) @db.Uuid
+  passId          String         @db.Uuid
+  token           String         @unique
+  fromUserId      String         @db.Uuid
+  toUserId        String?        @db.Uuid
+  status          TransferStatus @default(PENDING)
+  expiresAt       DateTime
+  claimedAt       DateTime?
+  createdAt       DateTime       @default(now())
+
+  pass     Pass  @relation(fields: [passId], references: [id], onDelete: Cascade)
+  fromUser User  @relation("TransfersSent", fields: [fromUserId], references: [id])
+  toUser   User? @relation("TransfersReceived", fields: [toUserId], references: [id])
+
+  @@index([passId, status])
+  @@index([fromUserId, status])
+  @@map("pass_transfers")
 }
 
 enum LocationPingSource {

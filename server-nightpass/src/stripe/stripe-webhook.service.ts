@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { OrderStatus, Prisma } from '@prisma/client';
 import type { Stripe } from 'stripe/cjs/stripe.core';
 import { PrismaService } from '../prisma/prisma.service';
-import { signPass } from '../common/qr-hmac';
+import { issuePasses } from '../passes/issue-passes';
 import { StripeService } from './stripe.service';
 
 @Injectable()
@@ -106,32 +106,7 @@ export class StripeWebhookService {
         },
       });
 
-      const existingCount = await tx.pass.count({
-        where: { orderId: order.id },
-      });
-      if (existingCount >= order.quantity) return;
-
-      for (let i = existingCount; i < order.quantity; i++) {
-        const created = await tx.pass.create({
-          data: {
-            orderId: updated.id,
-            userId: updated.userId,
-            eventId: updated.eventId,
-            qrCode: `pending_${i}_${Date.now()}`,
-          },
-        });
-
-        const qr = signPass(
-          created.id,
-          updated.eventId,
-          updated.userId,
-          passSecret,
-        );
-        await tx.pass.update({
-          where: { id: created.id },
-          data: { qrCode: qr },
-        });
-      }
+      await issuePasses(tx, updated, passSecret);
     });
 
     this.logger.log(

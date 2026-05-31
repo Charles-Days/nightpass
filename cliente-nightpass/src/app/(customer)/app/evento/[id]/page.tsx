@@ -16,6 +16,8 @@ import { TIER_STYLES } from '@/features/loyalty';
 import { EventStoriesSection } from '@/app/(customer)/_components/event-stories-section';
 import { EventForumSection } from '@/app/(customer)/_components/event-forum-section';
 import { EventAforo } from '@/app/(customer)/_components/event-aforo';
+import { EventHeroFx } from '@/app/(customer)/_components/event-hero-fx';
+import { EventCountdown } from '@/app/(customer)/_components/event-countdown';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -166,10 +168,11 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
               fill
               priority
               sizes="(max-width: 768px) 100vw, 768px"
-              className="object-cover transform-gpu transition-transform duration-[1200ms] ease-out group-hover:scale-[1.04]"
+              className="np-kenburns object-cover transform-gpu"
             />
           ) : null}
-          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+          <EventHeroFx seed={event.id} />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
             <p className="np-rise text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary" style={{ animationDelay: '160ms' }}>
               <Calendar className="mr-1 inline size-3" />
@@ -204,6 +207,13 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
           </div>
         )}
       </section>
+
+      <EventCountdown
+        startsAt={event.startsAt}
+        endsAt={event.endsAt}
+        className="mt-5"
+        style={{ animationDelay: '120ms' }}
+      />
 
       <section
         className="np-rise mt-5 rounded-[22px] border border-white/10 bg-white/[0.025] p-5 sm:p-7"

@@ -16,10 +16,11 @@ interface RpTableProps {
   rps: RpProfile[];
   isLoading: boolean;
   onViewDetail: (rpId: string) => void;
+  basePath?: string;
 }
 
-export function RpTable({ rps, isLoading, onViewDetail }: RpTableProps) {
-  const { mutate: toggleActive, isPending: toggling } = useToggleRpActive();
+export function RpTable({ rps, isLoading, onViewDetail, basePath = '/api/rp' }: RpTableProps) {
+  const { mutate: toggleActive, isPending: toggling } = useToggleRpActive(basePath);
 
   const handleToggle = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();

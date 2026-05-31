@@ -5,6 +5,7 @@ import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import type { Pass } from '@/core/types/api';
 import { PassQRWithGeoPing } from '../../../_components/pass-qr-with-geo-ping';
+import { PassTransferActions } from '../../../_components/pass-transfer-actions';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -168,6 +169,13 @@ export default async function PassDetailPage({ params }: Props) {
           <p className="mt-0.5 truncate font-mono text-[11px] text-white/55">{pass.id}</p>
         </div>
       </section>
+
+      {!used && (
+        <PassTransferActions
+          passId={pass.id}
+          initialTransfer={pass.transfers?.[0] ?? null}
+        />
+      )}
 
       <p className="mt-5 text-center text-[11px] text-muted-foreground">
         El QR es único y de un solo uso. No lo compartas con nadie.

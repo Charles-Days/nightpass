@@ -13,7 +13,7 @@ import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { StripeService } from '../stripe/stripe.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { resolveTierPrice } from '../events/tier-pricing';
-import { signPass } from '../common/qr-hmac';
+import { issuePasses } from '../passes/issue-passes';
 
 const ORDER_LIMBO_MINUTES = 30;
 
@@ -143,6 +143,14 @@ export class OrdersService {
       );
     }
 
+    // Colapsa las órdenes PENDING previas del user para este evento: una vez
+    // que sale de la pantalla de pago son irrecuperables, así que se cancelan
+    // (incl. su PaymentIntent) para que no se acumulen ni bloqueen su propio
+    // cupo. Tras esto el user tiene a lo sumo 1 PENDING activa por evento.
+    await this.failPendingOrdersForEvent(userId, event.id);
+
+    const limboCutoff = new Date(Date.now() - ORDER_LIMBO_MINUTES * 60 * 1000);
+
     // Capacity (solo si tier tiene límite)
     if (tier.capacity != null) {
       const sold = await this.prisma.pass.count({
@@ -151,7 +159,19 @@ export class OrdersService {
       const pendingClaims = await this.prisma.passClaim.count({
         where: { tierId: tier.id, status: PassClaimStatus.PENDING },
       });
-      if (sold + pendingClaims + quantity > tier.capacity) {
+      // Reservas en órdenes PENDING activas (de cualquier user) que aún no
+      // emitieron pases: cuentan contra el aforo para evitar sobreventa cuando
+      // varios compran a la vez. Las vencidas las limpia cleanupLimbo.
+      const pendingReserved = await this.prisma.order.aggregate({
+        _sum: { quantity: true },
+        where: {
+          tierId: tier.id,
+          status: OrderStatus.PENDING,
+          createdAt: { gte: limboCutoff },
+        },
+      });
+      const reserved = sold + pendingClaims + (pendingReserved._sum.quantity ?? 0);
+      if (reserved + quantity > tier.capacity) {
         throw new HttpException(
           { message: 'Cupo insuficiente para la cantidad solicitada', errorCode: 'TIER_SOLD_OUT' },
           HttpStatus.CONFLICT,
@@ -159,14 +179,27 @@ export class OrdersService {
       }
     }
 
-    // Máximo 6 pases por cuenta por evento
-    const existingCount = await this.prisma.pass.count({
+    // Máximo 6 pases por cuenta por evento. Cuenta pases ya emitidos + cantidad
+    // reservada en órdenes PENDING activas del user. Sin esto, como los pases
+    // se emiten async en el webhook tras pagar, se podían crear varias órdenes
+    // sin pagar (todas viendo 0) y pagarlas para superar el límite.
+    const issuedCount = await this.prisma.pass.count({
       where: { eventId: event.id, userId },
     });
-    if (existingCount + quantity > 6 && process.env.STRIPE_DEV_BYPASS !== 'true') {
+    const pendingMine = await this.prisma.order.aggregate({
+      _sum: { quantity: true },
+      where: {
+        userId,
+        eventId: event.id,
+        status: OrderStatus.PENDING,
+        createdAt: { gte: limboCutoff },
+      },
+    });
+    const demand = issuedCount + (pendingMine._sum.quantity ?? 0);
+    if (demand + quantity > 6 && process.env.STRIPE_DEV_BYPASS !== 'true') {
       throw new HttpException(
         {
-          message: `Límite excedido. Ya tienes ${existingCount} pases y estás intentando adquirir ${quantity} más (máximo 6 por cuenta).`,
+          message: `Límite excedido. Ya tienes ${demand} pases y estás intentando adquirir ${quantity} más (máximo 6 por cuenta).`,
           errorCode: 'LIMIT_EXCEEDED',
         },
         HttpStatus.CONFLICT,
@@ -216,30 +249,7 @@ export class OrdersService {
         },
       });
 
-      const createdPasses = [];
-      for (let i = 0; i < quantity; i++) {
-        const createdPass = await this.prisma.pass.create({
-          data: {
-            orderId: order.id,
-            userId,
-            eventId: event.id,
-            qrCode: `pending_${i}_${Date.now()}`,
-          },
-        });
-
-        const qr = signPass(
-          createdPass.id,
-          event.id,
-          userId,
-          passSecret,
-        );
-
-        const updatedPass = await this.prisma.pass.update({
-          where: { id: createdPass.id },
-          data: { qrCode: qr },
-        });
-        createdPasses.push(updatedPass);
-      }
+      await issuePasses(this.prisma, order, passSecret);
 
       this.logger.log(`[DEV BYPASS] Simulación de pago exitosa. ${quantity} pases generados.`);
 
@@ -465,6 +475,40 @@ export class OrdersService {
       } catch (err) {
         this.logger.warn(
           `Cleanup limbo Order ${order.id} falló: ${(err as Error).message}`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Marca FAILED y cancela en Stripe todas las órdenes PENDING del user para un
+   * evento dado. Se llama al iniciar un nuevo checkout: las PENDING previas son
+   * irrecuperables (no hay forma de retomarlas tras salir de la pantalla de
+   * pago), así que se colapsan para que no bloqueen el cupo ni permitan pagar
+   * dos órdenes a la vez. Best-effort: los errores solo se loguean.
+   */
+  private async failPendingOrdersForEvent(
+    userId: string,
+    eventId: string,
+  ): Promise<void> {
+    const pending = await this.prisma.order.findMany({
+      where: { userId, eventId, status: OrderStatus.PENDING },
+      select: { id: true, stripePaymentIntentId: true },
+    });
+    if (pending.length === 0) return;
+
+    for (const order of pending) {
+      try {
+        if (order.stripePaymentIntentId && this.stripe.isEnabled()) {
+          await this.stripe.cancelPaymentIntent(order.stripePaymentIntentId);
+        }
+        await this.prisma.order.update({
+          where: { id: order.id },
+          data: { status: OrderStatus.FAILED },
+        });
+      } catch (err) {
+        this.logger.warn(
+          `Fail PENDING Order ${order.id} falló: ${(err as Error).message}`,
         );
       }
     }
