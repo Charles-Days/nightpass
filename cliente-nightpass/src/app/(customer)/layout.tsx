@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
+import { cookies } from 'next/headers';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
+import { RETURNING_COOKIE } from '@/core/config/cookies';
 import type { User } from '@/core/types/api';
 import { TopBar } from './_components/top-bar';
 import { BottomNav } from './_components/bottom-nav';
@@ -53,13 +55,17 @@ export default async function CustomerLayout({ children }: { children: React.Rea
     }
   }
 
+  // Visitante que ya tuvo cuenta en este dispositivo → el header lo invita a
+  // "Iniciar sesión" en vez de "Crear cuenta". Solo decide UI, no es auth.
+  const isReturning = (await cookies()).get(RETURNING_COOKIE)?.value === '1';
+
   return (
     <div className="relative flex min-h-dvh flex-col">
       <SWRegister />
       <NoPinchZoom />
       <VisitTracker />
       <CustomerBokeh />
-      <TopBar user={user} />
+      <TopBar user={user} isReturning={isReturning} />
       <main className="flex-1 pb-[calc(88px+env(safe-area-inset-bottom))] md:pb-12">
         {children}
       </main>

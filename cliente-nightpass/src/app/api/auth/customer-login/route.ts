@@ -3,8 +3,10 @@ import { serverEnv } from '@/core/config/env';
 import {
   ACCESS_COOKIE,
   REFRESH_COOKIE,
+  RETURNING_COOKIE,
   accessCookieOptions,
   refreshCookieOptions,
+  returningCookieOptions,
 } from '@/core/config/cookies';
 import type { AuthResponse } from '@/core/types/api';
 
@@ -26,5 +28,6 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json({ user: data.user });
   res.cookies.set(ACCESS_COOKIE, data.accessToken, accessCookieOptions);
   res.cookies.set(REFRESH_COOKIE, data.refreshToken, refreshCookieOptions);
+  res.cookies.set(RETURNING_COOKIE, '1', returningCookieOptions);
   return res;
 }

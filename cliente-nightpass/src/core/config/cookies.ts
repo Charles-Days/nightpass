@@ -2,6 +2,10 @@ import type { ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies';
 
 export const ACCESS_COOKIE = 'np_access';
 export const REFRESH_COOKIE = 'np_refresh';
+// Marca "este dispositivo ya tuvo cuenta" — solo decide si el header invita a
+// "Crear cuenta" (visitante nuevo) o "Iniciar sesión" (regresa). No es auth ni
+// revela qué email: persiste tras logout, no se borra al cerrar sesión.
+export const RETURNING_COOKIE = 'np_returning';
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -28,4 +32,9 @@ export const refreshCookieOptions = {
 export const clearedCookieOptions = {
   ...baseCookieOptions,
   maxAge: 0,
+} satisfies Partial<ResponseCookie>;
+
+export const returningCookieOptions = {
+  ...baseCookieOptions,
+  maxAge: 60 * 60 * 24 * 365,
 } satisfies Partial<ResponseCookie>;

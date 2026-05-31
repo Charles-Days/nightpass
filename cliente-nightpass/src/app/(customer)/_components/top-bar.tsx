@@ -12,9 +12,10 @@ import { useSession } from '@/features/auth';
 
 interface Props {
   user: User | null;
+  isReturning?: boolean;
 }
 
-export function TopBar({ user: initialUser }: Props) {
+export function TopBar({ user: initialUser, isReturning = false }: Props) {
   // Fuente de verdad reactiva: arranca con el user del server (sin parpadeo) y
   // revalida al montar. Corrige el bug en que tras iniciar sesión seguía
   // mostrando "Crear cuenta" hasta recargar a mano (prop del layout viejo).
@@ -121,10 +122,14 @@ export function TopBar({ user: initialUser }: Props) {
           ) : (
             <Suspense
               fallback={
-                <AuthButtonsView loginHref={paths.iniciarSesion} registroHref={paths.registro} />
+                <AuthButtonsView
+                  loginHref={paths.iniciarSesion}
+                  registroHref={paths.registro}
+                  isReturning={isReturning}
+                />
               }
             >
-              <GuestAuthButtons />
+              <GuestAuthButtons isReturning={isReturning} />
             </Suspense>
           )}
         </div>
@@ -137,7 +142,7 @@ export function TopBar({ user: initialUser }: Props) {
 // el ?ref= del RP). Así, si el usuario abre un link RP y entra/crea cuenta desde
 // el nav (sin pasar por Comprar), tras login vuelve a la misma página con el ref
 // intacto en vez de caer en home.
-function GuestAuthButtons() {
+function GuestAuthButtons({ isReturning }: { isReturning: boolean }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -157,6 +162,7 @@ function GuestAuthButtons() {
     <AuthButtonsView
       loginHref={`${paths.iniciarSesion}${fromQuery}`}
       registroHref={`${paths.registro}${fromQuery}`}
+      isReturning={isReturning}
     />
   );
 }
@@ -164,16 +170,25 @@ function GuestAuthButtons() {
 function AuthButtonsView({
   loginHref,
   registroHref,
+  isReturning,
 }: {
   loginHref: string;
   registroHref: string;
+  isReturning: boolean;
 }) {
+  // Visitante que regresa: el botón primario (siempre visible, también en móvil)
+  // lo lleva a iniciar sesión; el secundario ofrece crear cuenta. Nuevo: al revés.
+  const primaryHref = isReturning ? loginHref : registroHref;
+  const primaryLabel = isReturning ? 'Iniciar sesión' : 'Crear cuenta';
+  const secondaryHref = isReturning ? registroHref : loginHref;
+  const secondaryLabel = isReturning ? 'Crear cuenta' : 'Entrar';
+
   return (
     <>
       <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-        <Link href={loginHref as never}>
-          <LogIn className="size-4" />
-          Entrar
+        <Link href={secondaryHref as never}>
+          {!isReturning && <LogIn className="size-4" />}
+          {secondaryLabel}
         </Link>
       </Button>
       <Button
@@ -181,7 +196,10 @@ function AuthButtonsView({
         size="sm"
         className="rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] shadow-[0_4px_20px_-4px_rgba(168,85,247,0.55)] transform-gpu transition-transform duration-150 active:scale-95"
       >
-        <Link href={registroHref as never}>Crear cuenta</Link>
+        <Link href={primaryHref as never}>
+          {isReturning && <LogIn className="size-4" />}
+          {primaryLabel}
+        </Link>
       </Button>
     </>
   );
