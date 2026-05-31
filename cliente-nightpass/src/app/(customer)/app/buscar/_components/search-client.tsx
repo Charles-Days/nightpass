@@ -89,7 +89,7 @@ function FeaturedVenueCard({ venue }: { venue: CatalogVenueSummary }) {
   return (
     <Link
       href={`${paths.bar}/${venue.slug}`}
-      className="np-rise group relative mb-4 block overflow-hidden rounded-[24px] border border-primary/25 bg-white/[0.02] shadow-[0_0_44px_-18px_rgba(168,85,247,0.55)] transition hover:border-primary/45 sm:grid sm:grid-cols-[1.45fr_1fr]"
+      className="np-zoom-in group relative mb-4 block overflow-hidden rounded-[24px] border border-primary/25 bg-white/[0.02] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.005] hover:border-primary/55 sm:grid sm:grid-cols-[1.45fr_1fr]"
     >
       <div className="relative aspect-[16/10] overflow-hidden sm:aspect-auto sm:min-h-[270px]">
         {venue.coverImageUrl ? (
@@ -97,7 +97,7 @@ function FeaturedVenueCard({ venue }: { venue: CatalogVenueSummary }) {
           <img
             src={venue.coverImageUrl}
             alt={venue.name}
-            className="absolute inset-0 size-full object-cover transition duration-700 group-hover:scale-105"
+            className="np-kenburns absolute inset-0 size-full object-cover"
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 to-purple-600/10" />
@@ -142,11 +142,14 @@ function FeaturedVenueCard({ venue }: { venue: CatalogVenueSummary }) {
         )}
         <div className="mt-1 flex items-center justify-between gap-3">
           <span className="text-sm font-medium text-white/55">Reserva tu lugar</span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.6)] transition group-hover:brightness-110">
-            Ver <ArrowRight className="size-4" />
+          <span className="np-shimmer inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.6)] transition group-hover:brightness-110">
+            Ver{' '}
+            <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
           </span>
         </div>
       </div>
+      {/* Barrido de luz al pasar el mouse. */}
+      <span className="pointer-events-none absolute inset-0 z-10 -translate-x-full bg-gradient-to-r from-transparent via-white/12 to-transparent opacity-0 transition-all duration-700 group-hover:translate-x-full group-hover:opacity-100" />
     </Link>
   );
 }
@@ -161,7 +164,7 @@ function FeaturedEventCard({ ev }: { ev: EventFeed }) {
   return (
     <Link
       href={`${paths.evento}/${ev.id}`}
-      className="np-rise group relative mb-4 block overflow-hidden rounded-[24px] border border-primary/25 bg-white/[0.02] shadow-[0_0_44px_-18px_rgba(168,85,247,0.55)] transition hover:border-primary/45 sm:grid sm:grid-cols-[1.45fr_1fr]"
+      className="np-zoom-in group relative mb-4 block overflow-hidden rounded-[24px] border border-primary/25 bg-white/[0.02] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.005] hover:border-primary/55 sm:grid sm:grid-cols-[1.45fr_1fr]"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-600/10 sm:aspect-auto sm:min-h-[270px]">
         {ev.coverImageUrl ? (
@@ -169,7 +172,7 @@ function FeaturedEventCard({ ev }: { ev: EventFeed }) {
           <img
             src={ev.coverImageUrl}
             alt={ev.title}
-            className="absolute inset-0 size-full object-cover transition duration-700 group-hover:scale-105"
+            className="np-kenburns absolute inset-0 size-full object-cover"
           />
         ) : (
           <div className="absolute inset-0 grid place-items-center text-5xl text-white/30">★</div>
@@ -199,10 +202,13 @@ function FeaturedEventCard({ ev }: { ev: EventFeed }) {
           </p>
         )}
         <EventAforo sold={ev.sold} capacity={ev.capacity} className="max-w-[240px]" />
-        <span className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.6)] transition group-hover:brightness-110">
-          Conseguir pase <ArrowRight className="size-4" />
+        <span className="np-shimmer mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.6)] transition group-hover:brightness-110">
+          Conseguir pase{' '}
+          <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
         </span>
       </div>
+      {/* Barrido de luz al pasar el mouse. */}
+      <span className="pointer-events-none absolute inset-0 z-10 -translate-x-full bg-gradient-to-r from-transparent via-white/12 to-transparent opacity-0 transition-all duration-700 group-hover:translate-x-full group-hover:opacity-100" />
     </Link>
   );
 }

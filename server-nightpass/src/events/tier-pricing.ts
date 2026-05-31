@@ -24,6 +24,8 @@ export interface ResolvedTierPrice {
   baseCents: number;
   /** Próxima subida programada aún en el futuro, o null si no hay más. */
   next: { priceCents: number; startsAt: Date } | null;
+  /** Todas las subidas futuras, cronológico (la más cercana primero). */
+  upcoming: { priceCents: number; startsAt: Date }[];
 }
 
 export function resolveTierPrice(
@@ -47,13 +49,14 @@ export function resolveTierPrice(
     if (nowMs >= p.activationMs) currentCents = p.priceCents;
   }
 
-  const upcoming = withActivation.find((p) => p.activationMs > nowMs) ?? null;
+  const upcoming = withActivation
+    .filter((p) => p.activationMs > nowMs)
+    .map((p) => ({ priceCents: p.priceCents, startsAt: new Date(p.activationMs) }));
 
   return {
     currentCents,
     baseCents,
-    next: upcoming
-      ? { priceCents: upcoming.priceCents, startsAt: new Date(upcoming.activationMs) }
-      : null,
+    next: upcoming[0] ?? null,
+    upcoming,
   };
 }

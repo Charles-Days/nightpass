@@ -1,5 +1,6 @@
-import { notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
+import { paths } from '@/core/config/paths';
 import type { PromoterMe } from '@/core/types/api';
 import { PromoterEventsList } from '@/features/promoters';
 
@@ -10,7 +11,7 @@ export default async function MiPromotoraEventosPage() {
   try {
     me = await serverFetch<PromoterMe>('/promoters/me');
   } catch (err) {
-    if (err instanceof ServerApiError && err.status === 404) notFound();
+    if (err instanceof ServerApiError && err.status === 404) redirect(paths.miOrganizador);
     throw err;
   }
 

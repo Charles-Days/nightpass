@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { serverFetch } from '@/core/lib/api/server-client';
@@ -12,9 +12,9 @@ export default async function MiLocalEditarPage() {
   const venues = await serverFetch<Venue[]>('/venues/my');
   const venue = venues[0];
 
-  if (!venue) notFound();
-
-  console.log(`[MiLocalEditarPage] Fetching full details for venue: ${venue.id}`);
+  // Rol VENUE_OWNER sin local (huérfano) → al panel del local, que muestra
+  // "Sin local asignado" en vez de un 404 seco.
+  if (!venue) redirect(paths.miLocal);
 
   // Fetch full details (photos, etc) because /venues/my might be partial
   const fullVenue = await serverFetch<Venue>(`/venues/${venue.id}`);

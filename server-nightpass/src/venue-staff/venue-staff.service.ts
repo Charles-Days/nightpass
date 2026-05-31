@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MailerService } from '../mailer/mailer.service';
 import { generateTemporaryPassword } from '../auth/utils/temporary-password';
 import { InviteStaffDto } from './dto/invite-staff.dto';
+import { reconcileUserRole } from '../common/reconcile-user-role';
 
 const ARGON2_OPTS: argon2.Options = {
   type: argon2.argon2id,
@@ -63,24 +64,26 @@ export class VenueStaffService {
         return { userId: existing.id };
       }
 
-      // CUSTOMER: generate temp password, update user, upsert VenueStaff
+      // CUSTOMER: generate temp password, promote to VENUE_STAFF, upsert VenueStaff
       const tempPassword = generateTemporaryPassword(12);
       const passwordHash = await argon2.hash(tempPassword, ARGON2_OPTS);
-      await this.prisma.user.update({
-        where: { id: existing.id },
-        data: { passwordHash, mustChangePassword: true },
-      });
-      await this.prisma.venueStaff.upsert({
-        where: { venueId_userId: { venueId, userId: existing.id } },
-        update: { status: VenueStaffStatus.ACTIVE, joinedAt: new Date(), staffRole: dto.staffRole ?? undefined },
-        create: {
-          venueId,
-          userId: existing.id,
-          invitedById,
-          staffRole: dto.staffRole,
-          status: VenueStaffStatus.ACTIVE,
-          joinedAt: new Date(),
-        },
+      await this.prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: existing.id },
+          data: { passwordHash, mustChangePassword: true, role: Role.VENUE_STAFF },
+        });
+        await tx.venueStaff.upsert({
+          where: { venueId_userId: { venueId, userId: existing.id } },
+          update: { status: VenueStaffStatus.ACTIVE, joinedAt: new Date(), staffRole: dto.staffRole ?? undefined },
+          create: {
+            venueId,
+            userId: existing.id,
+            invitedById,
+            staffRole: dto.staffRole,
+            status: VenueStaffStatus.ACTIVE,
+            joinedAt: new Date(),
+          },
+        });
       });
       void this.mailer
         .sendStaffInvited(email, existing.name ?? dto.name, venue.name, tempPassword, dto.staffRole)
@@ -95,24 +98,27 @@ export class VenueStaffService {
     // New user
     const tempPassword = generateTemporaryPassword(12);
     const passwordHash = await argon2.hash(tempPassword, ARGON2_OPTS);
-    const newUser = await this.prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-        name: dto.name,
-        role: Role.VENUE_STAFF,
-        mustChangePassword: true,
-      },
-    });
-    await this.prisma.venueStaff.create({
-      data: {
-        venueId,
-        userId: newUser.id,
-        invitedById,
-        staffRole: dto.staffRole,
-        status: VenueStaffStatus.ACTIVE,
-        joinedAt: new Date(),
-      },
+    const newUser = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          email,
+          passwordHash,
+          name: dto.name,
+          role: Role.VENUE_STAFF,
+          mustChangePassword: true,
+        },
+      });
+      await tx.venueStaff.create({
+        data: {
+          venueId,
+          userId: created.id,
+          invitedById,
+          staffRole: dto.staffRole,
+          status: VenueStaffStatus.ACTIVE,
+          joinedAt: new Date(),
+        },
+      });
+      return created;
     });
     void this.mailer
       .sendStaffInvited(email, dto.name, venue.name, tempPassword, dto.staffRole)
@@ -142,9 +148,18 @@ export class VenueStaffService {
       },
     });
 
-    const result = await this.prisma.venueStaff.updateMany({
-      where: { venueId, userId },
-      data: { status: VenueStaffStatus.REVOKED },
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.venueStaff.updateMany({
+        where: { venueId, userId },
+        data: { status: VenueStaffStatus.REVOKED },
+      });
+
+      // Si el user se queda sin ningún respaldo de panel, degradarlo a
+      // CUSTOMER o queda con rol huérfano → panel roto. El helper cuenta TODAS
+      // las membresías (local, staff, organizador, RP) — nunca toca ADMIN.
+      await reconcileUserRole(tx, userId);
+
+      return updated;
     });
 
     if (staff && staff.status !== VenueStaffStatus.REVOKED) {

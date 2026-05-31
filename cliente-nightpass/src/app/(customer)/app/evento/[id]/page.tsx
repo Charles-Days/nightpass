@@ -397,6 +397,13 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
               const requiredRank = requires ? LOYALTY_TIER_RANK[requires] : 0;
               const locked = !!requires && userRank < requiredRank;
               const requiredLabel = requires ? TIER_STYLES[requires].label : null;
+              // Próximas subidas a mostrar (hasta 2). Fallback a nextPrice si el
+              // backend aún no envía upcomingPrices.
+              const bumps = tier.upcomingPrices?.length
+                ? tier.upcomingPrices
+                : tier.nextPrice
+                  ? [tier.nextPrice]
+                  : [];
               return (
                 <li
                   key={tier.id}
@@ -425,12 +432,19 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
                     <p className="mt-1 text-xs text-muted-foreground">
                       {tier.capacity ? `${tier.capacity} lugares` : 'Sin límite'}
                     </p>
-                    {tier.nextPrice ? (
-                      <p className="mt-1 inline-flex items-center gap-1 rounded-full border border-amber-300/30 bg-amber-300/10 px-2 py-0.5 text-[11px] font-semibold text-amber-200">
-                        <TrendingUp className="size-3" />
-                        Sube a {formatPrice(tier.nextPrice.priceCents, tier.currency)} el{' '}
-                        {formatShortDate(tier.nextPrice.startsAt)}
-                      </p>
+                    {bumps.length > 0 ? (
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {bumps.map((bump, bi) => (
+                          <p
+                            key={`${bump.startsAt}-${bi}`}
+                            className="inline-flex items-center gap-1 rounded-full border border-amber-300/30 bg-amber-300/10 px-2 py-0.5 text-[11px] font-semibold text-amber-200"
+                          >
+                            <TrendingUp className="size-3" />
+                            Sube a {formatPrice(bump.priceCents, tier.currency)} el{' '}
+                            {formatShortDate(bump.startsAt)}
+                          </p>
+                        ))}
+                      </div>
                     ) : null}
                     {locked ? (
                       <Link

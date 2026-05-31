@@ -90,7 +90,7 @@ export function EventCountdown({ startsAt, endsAt, className, style }: Props) {
     return (
       <section
         className={cn(
-          'np-rise np-countdown-glow relative overflow-hidden rounded-[22px] border border-rose-400/30 bg-gradient-to-r from-rose-500/15 via-fuchsia-500/10 to-purple-500/15 px-5 py-4',
+          'np-countdown-glow relative overflow-hidden rounded-[22px] border border-rose-400/30 bg-gradient-to-r from-rose-500/15 via-fuchsia-500/10 to-purple-500/15 px-5 py-4',
           className,
         )}
         style={style}
@@ -114,7 +114,7 @@ export function EventCountdown({ startsAt, endsAt, className, style }: Props) {
   return (
     <section
       className={cn(
-        'np-rise np-countdown-glow relative overflow-hidden rounded-[22px] border border-primary/25 bg-gradient-to-r from-primary/12 via-fuchsia-500/8 to-transparent px-5 py-4',
+        'np-countdown-glow relative overflow-hidden rounded-[22px] border border-primary/25 bg-gradient-to-r from-primary/12 via-fuchsia-500/8 to-transparent px-5 py-4',
         className,
       )}
       style={style}

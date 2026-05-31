@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
@@ -13,7 +13,9 @@ export default async function MiPromotoraEditarPage() {
   try {
     me = await serverFetch<PromoterMe>('/promoters/me');
   } catch (err) {
-    if (err instanceof ServerApiError && err.status === 404) notFound();
+    // Rol PROMOTER sin organización (huérfano) → al dashboard, que muestra
+    // el mensaje "Sin organizador asignado" en vez de un 404 seco.
+    if (err instanceof ServerApiError && err.status === 404) redirect(paths.miOrganizador);
     throw err;
   }
 

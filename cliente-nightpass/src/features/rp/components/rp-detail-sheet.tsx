@@ -72,12 +72,12 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl border-l border-white/10 bg-[#0c0c12] text-white overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="font-display text-xl font-bold tracking-tight text-white flex items-center justify-between">
-            <span>Detalle de Relaciones Públicas</span>
+      <SheetContent className="flex w-full flex-col overflow-hidden p-0 sm:max-w-2xl border-l border-white/10 bg-[#0c0c12] text-white">
+        <SheetHeader className="shrink-0 border-b border-white/8 px-6 pb-4 pt-5">
+          <SheetTitle className="font-display text-lg sm:text-xl font-bold tracking-tight text-white flex items-center justify-between gap-3">
+            <span className="min-w-0 truncate">Detalle de Relaciones Públicas</span>
             {stats && (
-              <span className="text-xs bg-white/5 border border-white/10 px-3 py-1 rounded-full font-mono text-purple-300">
+              <span className="shrink-0 text-xs bg-white/5 border border-white/10 px-3 py-1 rounded-full font-mono text-purple-300">
                 {stats.rpCode}
               </span>
             )}
@@ -85,13 +85,13 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
         </SheetHeader>
 
         {isLoading ? (
-          <div className="flex h-60 items-center justify-center">
+          <div className="flex flex-1 items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : !stats ? (
           <p className="mt-8 text-center text-muted-foreground">RP no encontrado</p>
         ) : (
-          <div className="space-y-6 mt-6">
+          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5">
             {/* Header / Info card */}
             <div className="rounded-[22px] border border-white/8 bg-white/[0.02] p-5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

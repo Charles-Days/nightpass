@@ -521,6 +521,7 @@ export interface CatalogEventDetail {
     position: number;
     minLoyaltyTier?: LoyaltyTier | null;
     nextPrice?: { priceCents: number; startsAt: string } | null;
+    upcomingPrices?: { priceCents: number; startsAt: string }[];
   }>;
   venue: {
     id: string;

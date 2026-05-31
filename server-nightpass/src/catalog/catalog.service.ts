@@ -451,6 +451,8 @@ export class CatalogService {
             nextPrice: r.next
               ? { priceCents: r.next.priceCents, startsAt: r.next.startsAt }
               : null,
+            // Próximas subidas (las 2 más cercanas a hoy) para mostrar el plan.
+            upcomingPrices: r.upcoming.slice(0, 2),
           };
         }),
       }),

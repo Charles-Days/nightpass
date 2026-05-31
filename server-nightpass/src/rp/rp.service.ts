@@ -46,98 +46,109 @@ export class RpService {
       include: { rpProfile: true },
     });
 
-    let userId: string;
     let temporaryPassword: string | undefined;
-    let isExistingUser = false;
+    // Hash de la password se computa FUERA de la transacción (argon2 es lento).
+    let passwordHash: string | undefined;
 
     if (existingUser) {
-      isExistingUser = true;
       if (existingUser.role !== Role.CUSTOMER && existingUser.role !== Role.RP) {
         throw new ConflictException('Este email ya está registrado con un rol administrativo');
       }
       if (existingUser.rpProfile) {
         throw new ConflictException('Este usuario ya tiene un perfil de RP activo');
       }
-
-      // Promote to Role.RP
-      await this.prisma.user.update({
-        where: { id: existingUser.id },
-        data: { role: Role.RP },
-      });
-      userId = existingUser.id;
     } else {
-      // Create new user
       temporaryPassword = dto.password || randomBytes(6).toString('hex'); // 12-char hex
-      const passwordHash = await argon2.hash(temporaryPassword, ARGON2_OPTS);
-
-      const newUser = await this.prisma.user.create({
-        data: {
-          email,
-          name: displayName,
-          role: Role.RP,
-          passwordHash,
-          mustChangePassword: true,
-        },
-      });
-      userId = newUser.id;
+      passwordHash = await argon2.hash(temporaryPassword, ARGON2_OPTS);
     }
 
-    // Generate unique rpCode
+    // Base para el rpCode; los intentos de unicidad se hacen dentro de la tx.
     const baseCode = displayName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase();
-    let rpCode = '';
-    let isUnique = false;
-    let attempts = 0;
 
-    while (!isUnique && attempts < 10) {
-      const suffix = randomBytes(2).toString('hex').toUpperCase();
-      rpCode = `${baseCode}-${suffix}`;
-      const codeExists = await this.prisma.rpProfile.findUnique({
-        where: { rpCode },
-      });
-      if (!codeExists) {
-        isUnique = true;
-      }
-      attempts++;
-    }
+    // Toda la escritura (rol del user + rpProfile + regla de comisión) es atómica:
+    // sin esto un fallo a mitad dejaba al user con rol RP pero sin perfil (huérfano).
+    const rpProfile = await this.prisma.$transaction(async (tx) => {
+      let userId: string;
 
-    if (!isUnique) {
-      rpCode = `${baseCode}-${Date.now().toString().slice(-4)}`;
-    }
-
-    const rpProfile = await this.prisma.rpProfile.create({
-      data: {
-        userId,
-        displayName,
-        rpCode,
-        promoterId: dto.promoterId || null,
-        isActive: true,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            role: true,
+      if (existingUser) {
+        // Promote to Role.RP
+        await tx.user.update({
+          where: { id: existingUser.id },
+          data: { role: Role.RP },
+        });
+        userId = existingUser.id;
+      } else {
+        // Create new user
+        const newUser = await tx.user.create({
+          data: {
+            email,
+            name: displayName,
+            role: Role.RP,
+            passwordHash: passwordHash!,
+            mustChangePassword: true,
           },
-        },
-      },
-    });
+        });
+        userId = newUser.id;
+      }
 
-    // Create initial commission rule if event is assigned
-    if (dto.eventId) {
-      const type = dto.commissionType || RpCommissionType.PER_N_TICKETS;
-      await this.prisma.rpCommissionRule.create({
+      // Generate unique rpCode
+      let rpCode = '';
+      let isUnique = false;
+      let attempts = 0;
+
+      while (!isUnique && attempts < 10) {
+        const suffix = randomBytes(2).toString('hex').toUpperCase();
+        rpCode = `${baseCode}-${suffix}`;
+        const codeExists = await tx.rpProfile.findUnique({
+          where: { rpCode },
+        });
+        if (!codeExists) {
+          isUnique = true;
+        }
+        attempts++;
+      }
+
+      if (!isUnique) {
+        rpCode = `${baseCode}-${Date.now().toString().slice(-4)}`;
+      }
+
+      const profile = await tx.rpProfile.create({
         data: {
-          rpProfileId: rpProfile.id,
-          eventId: dto.eventId,
-          type,
-          nTickets: type === RpCommissionType.PER_N_TICKETS ? (dto.nTickets || 10) : null,
-          rewardCents: type === RpCommissionType.PER_N_TICKETS ? (dto.rewardCents || 15000) : null,
-          percentage: type === RpCommissionType.PERCENTAGE ? (dto.percentage || 5) : null,
+          userId,
+          displayName,
+          rpCode,
+          promoterId: dto.promoterId || null,
           isActive: true,
         },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              role: true,
+            },
+          },
+        },
       });
-    }
+
+      // Create initial commission rule if event is assigned
+      if (dto.eventId) {
+        const type = dto.commissionType || RpCommissionType.PER_N_TICKETS;
+        await tx.rpCommissionRule.create({
+          data: {
+            rpProfileId: profile.id,
+            eventId: dto.eventId,
+            type,
+            nTickets: type === RpCommissionType.PER_N_TICKETS ? (dto.nTickets || 10) : null,
+            rewardCents: type === RpCommissionType.PER_N_TICKETS ? (dto.rewardCents || 15000) : null,
+            percentage: type === RpCommissionType.PERCENTAGE ? (dto.percentage || 5) : null,
+            isActive: true,
+          },
+        });
+      }
+
+      return profile;
+    });
 
     // Send invitation email in background
     this.mailer.sendRpInvited(email, displayName, temporaryPassword).catch((err) => {
@@ -345,9 +356,30 @@ export class RpService {
 
   async toggleActive(id: string) {
     const rp = await this.getById(id);
-    return this.prisma.rpProfile.update({
-      where: { id },
-      data: { isActive: !rp.isActive },
+    const nextActive = !rp.isActive;
+
+    // El flip de isActive y la reconciliación del rol del user deben ser atómicos:
+    // al desactivar degradamos el user a CUSTOMER (solo si sigue siendo RP, para no
+    // tocar otros roles); al reactivar lo volvemos a RP. El RpProfile se conserva.
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.rpProfile.update({
+        where: { id },
+        data: { isActive: nextActive },
+      });
+
+      if (nextActive) {
+        await tx.user.updateMany({
+          where: { id: rp.userId, role: Role.CUSTOMER },
+          data: { role: Role.RP },
+        });
+      } else {
+        await tx.user.updateMany({
+          where: { id: rp.userId, role: Role.RP },
+          data: { role: Role.CUSTOMER },
+        });
+      }
+
+      return updated;
     });
   }
 

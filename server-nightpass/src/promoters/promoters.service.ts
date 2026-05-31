@@ -24,6 +24,7 @@ import { AdminUpdatePromoterDto } from './dto/admin-update-promoter.dto';
 import { UpdatePromoterDto } from './dto/update-promoter.dto';
 import { InvitePromoterStaffDto } from './dto/invite-promoter-staff.dto';
 import { ListPromotersQuery } from './dto/list-promoters.query';
+import { reconcileUserRole } from '../common/reconcile-user-role';
 
 const ARGON2_OPTS: argon2.Options = {
   type: argon2.argon2id,
@@ -186,8 +187,22 @@ export class PromotersService {
       );
     }
 
-    // members + stripeAccount cascade on delete (see schema relations).
-    await this.prisma.promoter.delete({ where: { id } });
+    // Miembros antes del delete: al borrar el organizador hay que degradar a
+    // CUSTOMER a quien quede sin ninguna otra membresía, o queda con rol
+    // PROMOTER huérfano (sin organización) → panel roto / 404.
+    const members = await this.prisma.promoterMember.findMany({
+      where: { promoterId: id },
+      select: { userId: true },
+    });
+
+    await this.prisma.$transaction(async (tx) => {
+      // members + stripeAccount cascade on delete (see schema relations).
+      await tx.promoter.delete({ where: { id } });
+
+      for (const { userId } of members) {
+        await reconcileUserRole(tx, userId);
+      }
+    });
 
     if (promoter.logoUrl) {
       this.storage.deleteByPublicUrl(promoter.logoUrl).catch(() => undefined);
@@ -305,7 +320,8 @@ export class PromotersService {
         existing.role === Role.VENUE_OWNER ||
         existing.role === Role.VENUE_STAFF ||
         existing.role === Role.PROMOTER ||
-        existing.role === Role.PROMOTER_STAFF;
+        existing.role === Role.PROMOTER_STAFF ||
+        existing.role === Role.RP;
 
       if (isPanelRole) {
         await this.prisma.promoterMember.upsert({
@@ -337,24 +353,26 @@ export class PromotersService {
 
       const tempPassword = generateTemporaryPassword(12);
       const passwordHash = await argon2.hash(tempPassword, ARGON2_OPTS);
-      await this.prisma.user.update({
-        where: { id: existing.id },
-        data: {
-          passwordHash,
-          role: Role.PROMOTER_STAFF,
-          mustChangePassword: true,
-        },
-      });
-      await this.prisma.promoterMember.upsert({
-        where: {
-          userId_promoterId: { userId: existing.id, promoterId },
-        },
-        update: { role: PromoterMemberRole.STAFF },
-        create: {
-          userId: existing.id,
-          promoterId,
-          role: PromoterMemberRole.STAFF,
-        },
+      await this.prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: existing.id },
+          data: {
+            passwordHash,
+            role: Role.PROMOTER_STAFF,
+            mustChangePassword: true,
+          },
+        });
+        await tx.promoterMember.upsert({
+          where: {
+            userId_promoterId: { userId: existing.id, promoterId },
+          },
+          update: { role: PromoterMemberRole.STAFF },
+          create: {
+            userId: existing.id,
+            promoterId,
+            role: PromoterMemberRole.STAFF,
+          },
+        });
       });
       void this.mailer
         .sendStaffInvited(
@@ -374,21 +392,24 @@ export class PromotersService {
 
     const tempPassword = generateTemporaryPassword(12);
     const passwordHash = await argon2.hash(tempPassword, ARGON2_OPTS);
-    const newUser = await this.prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-        name: dto.name,
-        role: Role.PROMOTER_STAFF,
-        mustChangePassword: true,
-      },
-    });
-    await this.prisma.promoterMember.create({
-      data: {
-        userId: newUser.id,
-        promoterId,
-        role: PromoterMemberRole.STAFF,
-      },
+    const newUser = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          email,
+          passwordHash,
+          name: dto.name,
+          role: Role.PROMOTER_STAFF,
+          mustChangePassword: true,
+        },
+      });
+      await tx.promoterMember.create({
+        data: {
+          userId: created.id,
+          promoterId,
+          role: PromoterMemberRole.STAFF,
+        },
+      });
+      return created;
     });
     void this.mailer
       .sendStaffInvited(
@@ -454,8 +475,14 @@ export class PromotersService {
       throw new NotFoundException('Esta relación no existe');
     }
 
-    await this.prisma.promoterMember.delete({
-      where: { userId_promoterId: { userId, promoterId } },
+    // Borrar la membresía y, si el usuario queda sin ninguna otra, degradarlo
+    // a CUSTOMER — si no, queda con rol PROMOTER_STAFF huérfano (panel roto).
+    await this.prisma.$transaction(async (tx) => {
+      await tx.promoterMember.delete({
+        where: { userId_promoterId: { userId, promoterId } },
+      });
+
+      await reconcileUserRole(tx, userId);
     });
 
     void this.mailer

@@ -19,6 +19,7 @@ import { UpdateVenueDto } from './dto/update-venue.dto';
 import { AssignOwnerDto } from './dto/assign-owner.dto';
 import { generateTemporaryPassword } from '../auth/utils/temporary-password';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
+import { reconcileUserRole } from '../common/reconcile-user-role';
 
 const ARGON2_OPTS: argon2.Options = {
   type: argon2.argon2id,
@@ -163,24 +164,38 @@ export class VenuesService {
         const coverImageUrl = venueData.coverImageUrl ? this._stripBaseUrl(venueData.coverImageUrl) : undefined;
         const strippedImages = images?.map(img => this._stripBaseUrl(img));
 
-        const venue = await this.prisma.venue.create({
-          data: {
-            ...venueData,
-            coverImageUrl,
-            slug,
-            name: dto.name.trim(),
-            city: dto.city.trim(),
-            address: dto.address?.trim() || null,
-            phone: dto.phone?.trim() || null,
-            owners: ownerUserId
-              ? { create: { userId: ownerUserId } }
-              : undefined,
-            photos: strippedImages?.length
-              ? {
-                  create: strippedImages.map((url, i) => ({ url, position: i })),
-                }
-              : undefined,
-          },
+        const venue = await this.prisma.$transaction(async (tx) => {
+          const created = await tx.venue.create({
+            data: {
+              ...venueData,
+              coverImageUrl,
+              slug,
+              name: dto.name.trim(),
+              city: dto.city.trim(),
+              address: dto.address?.trim() || null,
+              phone: dto.phone?.trim() || null,
+              owners: ownerUserId
+                ? { create: { userId: ownerUserId } }
+                : undefined,
+              photos: strippedImages?.length
+                ? {
+                    create: strippedImages.map((url, i) => ({ url, position: i })),
+                  }
+                : undefined,
+            },
+          });
+
+          // Promover al dueño asignado: si era CUSTOMER pasa a VENUE_OWNER, o
+          // queda con la membresía pero sin rol → no puede entrar al panel.
+          // Scoped a CUSTOMER — no degrada ADMIN ni un panel role existente.
+          if (ownerUserId) {
+            await tx.user.updateMany({
+              where: { id: ownerUserId, role: Role.CUSTOMER },
+              data: { role: Role.VENUE_OWNER },
+            });
+          }
+
+          return created;
         });
         return venue;
       } catch (err) {
@@ -585,8 +600,10 @@ export class VenuesService {
     };
   }
 
-  /** Quita la relación VenueOwner. No degrada el rol del user (puede ser dueño
-   *  de otros locales o tener otro rol asignado). ADMIN-only. */
+  /** Quita la relación VenueOwner. Degrada a CUSTOMER al user si se queda sin
+   *  ningún respaldo de panel (sin ser dueño ni staff activo de ningún local) —
+   *  de lo contrario queda con rol VENUE_OWNER huérfano y el panel se rompe.
+   *  Solo degrada VENUE_OWNER — nunca staff/ADMIN. ADMIN-only. */
   async removeOwner(venueId: string, userId: string) {
     const exists = await this.prisma.venueOwner.findUnique({
       where: { userId_venueId: { userId, venueId } },
@@ -594,9 +611,14 @@ export class VenuesService {
     });
     if (!exists) throw new NotFoundException('Esta relación no existe');
 
-    await this.prisma.venueOwner.delete({
-      where: { userId_venueId: { userId, venueId } },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.venueOwner.delete({
+        where: { userId_venueId: { userId, venueId } },
+      });
+
+      await reconcileUserRole(tx, userId);
     });
+
     return { ok: true };
   }
 
