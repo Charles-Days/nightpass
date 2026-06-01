@@ -52,15 +52,6 @@ export default async function PassesPage() {
         Muestra el QR en la puerta y olvídate de las filas.
       </p>
 
-      <Link
-        href={paths.escanearPase}
-        className="mt-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/15 active:scale-95 np-rise"
-        style={{ animationDelay: '150ms' }}
-      >
-        <QrCode className="size-4" />
-        ¿Pagaste en efectivo? Escanear pase
-      </Link>
-
       {passes.length === 0 ? (
         <div className="mt-8 flex flex-col items-center rounded-[22px] border border-white/10 bg-white/[0.025] p-10 text-center np-rise" style={{ animationDelay: '180ms' }}>
           <div className="grid size-14 place-items-center rounded-full border border-white/10 bg-white/[0.04] np-pop-in">
