@@ -389,6 +389,7 @@ export interface CatalogTierDetail {
     startsAt: string;
     endsAt: string;
     coverImageUrl: string | null;
+    allowCashPayment?: boolean;
     venue: {
       id: string;
       slug: string;

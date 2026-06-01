@@ -25,6 +25,8 @@ type Phase =
   | 'paying'
   | 'processing'
   | 'success'
+  | 'cash_submitting'
+  | 'cash_done'
   | 'duplicate'
   | 'no_stripe'
   | 'sold_out'
@@ -139,19 +141,30 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
   const maxQuantity = Math.max(0, MAX_PER_ACCOUNT - alreadyOwned);
   const limitReached = !!initialTier && maxQuantity <= 0;
 
+  // Pago en efectivo (boleto digital, cobro físico vía RP) habilitado por evento.
+  const allowCash = initialTier?.event?.allowCashPayment === true;
+  // Stripe no configurado para este evento. Con efectivo disponible NO bloquea:
+  // el cliente igual puede solicitar pago en efectivo.
+  const paymentsOff = !!initialTier && initialTier.paymentsEnabled === false;
+  const onlineUnavailable = paymentsOff;
+
   const [phase, setPhase] = useState<Phase>(
-    initialTier && initialTier.paymentsEnabled === false
+    paymentsOff && !allowCash
       ? 'no_stripe'
       : limitReached
         ? 'duplicate'
         : 'select_quantity',
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(
-    initialTier && initialTier.paymentsEnabled === false
+    paymentsOff && !allowCash
       ? 'Este local aún no completó la configuración de pagos. Vuelve más tarde.'
       : limitReached
         ? `Ya compraste el máximo de ${MAX_PER_ACCOUNT} pases para este evento con esta cuenta. No puedes comprar más.`
         : null,
+  );
+  // Método elegido. Si online no está disponible pero hay efectivo, arranca en efectivo.
+  const [method, setMethod] = useState<'online' | 'cash'>(
+    onlineUnavailable && allowCash ? 'cash' : 'online',
   );
   const [duplicatePassId, setDuplicatePassId] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(existingOrderId);
@@ -239,6 +252,27 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
       if (nextPhase === 'error') toast.error(info.message);
     }
   }, [initialTier, tierId, quantity]);
+
+  // Solicita pago en EFECTIVO: notifica por correo a los RPs asignados; uno
+  // cobra en persona y confirma → el pase se emite a la cuenta del cliente.
+  const requestCash = useCallback(async (currentQty = quantity) => {
+    setPhase('cash_submitting');
+    setErrorMessage(null);
+    try {
+      const urlRef = searchParams.get('ref');
+      if (urlRef) saveRpRef(urlRef);
+      await clientFetch('/api/physical-payments', {
+        method: 'POST',
+        body: { tierId, quantity: currentQty },
+      });
+      setPhase('cash_done');
+    } catch (error) {
+      const info = readApiError(error);
+      setPhase('error');
+      setErrorMessage(info.message);
+      toast.error(info.message);
+    }
+  }, [tierId, quantity, searchParams]);
 
   useEffect(() => {
     if (initRef.current) return;
@@ -444,6 +478,43 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
       >
         {phase === 'select_quantity' && (
           <div className="space-y-4 py-2">
+            {allowCash && (
+              <div className="space-y-2">
+                <p className="text-center text-sm font-medium text-neutral-300">
+                  ¿Cómo quieres pagar?
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={onlineUnavailable}
+                    onClick={() => setMethod('online')}
+                    className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+                      method === 'online'
+                        ? 'border-primary/50 bg-primary/15 text-white'
+                        : 'border-white/10 bg-white/[0.02] text-muted-foreground hover:bg-white/[0.05]'
+                    } ${onlineUnavailable ? 'cursor-not-allowed opacity-40' : ''}`}
+                  >
+                    En línea
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMethod('cash')}
+                    className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+                      method === 'cash'
+                        ? 'border-primary/50 bg-primary/15 text-white'
+                        : 'border-white/10 bg-white/[0.02] text-muted-foreground hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    En efectivo
+                  </button>
+                </div>
+                {method === 'cash' && (
+                  <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+                    Boleto digital, pago físico. Un vendedor (RP) te contactará para cobrarte; tu pase se emite cuando confirme.
+                  </p>
+                )}
+              </div>
+            )}
             <p className="text-sm text-neutral-300 font-medium text-center">¿Cuántas entradas deseas comprar?</p>
             <div className="flex items-center justify-center gap-6 py-2">
               <Button
@@ -475,10 +546,12 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
             </p>
             <Button
               type="button"
-              onClick={() => void createOrder()}
+              onClick={() => (method === 'cash' ? void requestCash() : void createOrder())}
               className="w-full mt-2 h-11 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 font-semibold text-white shadow-[0_4px_18px_-4px_rgba(124,58,237,0.5)] transition-transform hover:brightness-110 active:scale-95 transform-gpu"
             >
-              Continuar al pago ({formatMoney(summary.totalCents, summary.currency)})
+              {method === 'cash'
+                ? 'Solicitar pago en efectivo'
+                : `Continuar al pago (${formatMoney(summary.totalCents, summary.currency)})`}
             </Button>
           </div>
         )}
@@ -526,6 +599,31 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
             <p className="text-sm text-muted-foreground np-fade-in" style={{ animationDelay: '180ms' }}>
               Redirigiendo a tu pase…
             </p>
+          </div>
+        )}
+
+        {phase === 'cash_submitting' && <PhaseLoader label="Enviando tu solicitud…" />}
+
+        {phase === 'cash_done' && (
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <div className="grid size-14 place-items-center rounded-full bg-emerald-500/15 text-emerald-300 np-success-pop transform-gpu">
+              <Check className="size-7" />
+            </div>
+            <div>
+              <p className="font-display text-base font-semibold text-emerald-300">
+                Solicitud enviada
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Un vendedor (RP) te contactará para cobrarte en efectivo. Tu pase
+                aparecerá en “Mis pases” en cuanto confirme el pago.
+              </p>
+            </div>
+            <Link
+              href={backToEvent}
+              className="mt-1 inline-flex h-11 items-center justify-center rounded-md bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 text-sm font-semibold text-white shadow-[0_4px_24px_rgba(168,85,247,0.35)] transition hover:brightness-110 active:scale-95 transform-gpu"
+            >
+              Entendido
+            </Link>
           </div>
         )}
 
