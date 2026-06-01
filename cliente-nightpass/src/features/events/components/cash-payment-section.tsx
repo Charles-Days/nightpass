@@ -124,15 +124,11 @@ export function CashPaymentSection({ eventId }: { eventId: string }) {
           aria-checked={allow}
           disabled={saveToggle.isPending}
           onClick={() => saveToggle.mutate(!allow)}
-          className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-            allow ? 'bg-primary' : 'bg-white/15'
+          className={`inline-flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition-colors ${
+            allow ? 'justify-end bg-primary' : 'justify-start bg-white/15'
           }`}
         >
-          <span
-            className={`absolute top-0.5 size-5 rounded-full bg-white transition-transform ${
-              allow ? 'translate-x-[22px]' : 'translate-x-0.5'
-            }`}
-          />
+          <span className="size-5 rounded-full bg-white shadow-sm" />
         </button>
       </div>
 
