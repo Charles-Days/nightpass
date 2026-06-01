@@ -10,9 +10,9 @@ import { JsonLd, organizationLd, websiteLd } from '@/core/seo/json-ld';
 import { DemoDialogLazy } from './_components/demo-dialog-lazy';
 import { PhoneMockup } from './_components/phone-mockup';
 
-const title = 'NightPass';
+const title = 'NightPass — Compra tu cover para antros y bares en Cuernavaca y CDMX';
 const description =
-  'NightPass es la app para descubrir bares, comprar tu cover digital y compartir la noche con tus amigos. Sin colas, sin efectivo, sin ticket que perder.';
+  'NightPass es la app para descubrir los mejores bares y antros, comprar tu cover digital de forma anticipada y entrar sin colas. Sin efectivo ni boletos perdidos.';
 
 export const metadata = {
   title: { absolute: title },

@@ -26,6 +26,10 @@ export function organizationLd(): Record<string, unknown> {
     url: siteUrl(),
     logo: absoluteUrl('/icons/icon-512.png'),
     description: 'Tu pase a la noche: descubre bares, eventos y compra tus pases.',
+    sameAs: [
+      'https://www.instagram.com/nightpassmx',
+      'https://www.tiktok.com/@nightpassmx',
+    ],
   };
 }
 
