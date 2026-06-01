@@ -125,7 +125,12 @@ export class StripeService {
       {
         amount: params.amountCents,
         currency: params.currency.toLowerCase(),
-        application_fee_amount: params.applicationFeeCents,
+        // Stripe rechaza application_fee_amount = 0 (debe ser ≥1). Si NightPass
+        // no cobra comisión, se omite el campo → el connected account recibe
+        // todo menos la tarifa de Stripe.
+        ...(params.applicationFeeCents > 0
+          ? { application_fee_amount: params.applicationFeeCents }
+          : {}),
         transfer_data: { destination: params.connectedAccountId },
         metadata: params.metadata,
         automatic_payment_methods: { enabled: true },
