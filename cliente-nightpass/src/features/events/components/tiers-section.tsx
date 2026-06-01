@@ -19,7 +19,7 @@ import { useEventDetail } from '../hooks/use-event-detail';
 import { useCreateTier } from '../hooks/use-create-tier';
 import { useUpdateTier } from '../hooks/use-update-tier';
 import { useDeleteTier } from '../hooks/use-delete-tier';
-import { computeTierBreakdown, formatCents, STRIPE_FEE_PCT, STRIPE_FIXED_CENTS } from '@/core/lib/utils/fees';
+import { computeTierBreakdown, computeGrossForNet, formatCents, STRIPE_FEE_PCT, STRIPE_FIXED_CENTS } from '@/core/lib/utils/fees';
 
 const LOYALTY_TIER_OPTIONS: { value: '' | LoyaltyTier; label: string }[] = [
   { value: '', label: 'Abierto a todos' },
@@ -395,7 +395,13 @@ export function TiersSection({ eventId }: Props) {
   const createTier = useCreateTier(eventId);
 
   const [name, setName] = React.useState('');
+  // Modo de definición del precio base:
+  //  - 'gross': el dueño escribe lo que paga el cliente (se le descuentan fees).
+  //  - 'net':   el dueño escribe lo que quiere RECIBIR; calculamos el precio a
+  //             cobrar para que le quede eso completo.
+  const [priceMode, setPriceMode] = React.useState<'gross' | 'net'>('gross');
   const [priceMxn, setPriceMxn] = React.useState('');
+  const [netMxn, setNetMxn] = React.useState('');
   const [capacity, setCapacity] = React.useState('');
   const [minLoyaltyTier, setMinLoyaltyTier] = React.useState<'' | LoyaltyTier>('');
   const [phases, setPhases] = React.useState<PhaseDraft[]>([]);
@@ -411,14 +417,24 @@ export function TiersSection({ eventId }: Props) {
     detail.data?.venue?.platformFeePct ??
     detail.data?.promoter?.platformFeePct ??
     0;
+  // Precio bruto (lo que paga el cliente) según el modo elegido.
   const priceFloat = parseFloat(priceMxn);
+  const netFloat = parseFloat(netMxn);
   const previewCents =
-    !isNaN(priceFloat) && priceFloat > 0 ? Math.round(priceFloat * 100) : 0;
-  const breakdown = computeTierBreakdown(previewCents, platformFeePct);
+    priceMode === 'net'
+      ? !isNaN(netFloat) && netFloat > 0
+        ? computeGrossForNet(Math.round(netFloat * 100), platformFeePct ?? 0)
+        : 0
+      : !isNaN(priceFloat) && priceFloat > 0
+        ? Math.round(priceFloat * 100)
+        : 0;
+  const breakdown = computeTierBreakdown(previewCents, platformFeePct ?? 0);
 
   const reset = () => {
     setName('');
     setPriceMxn('');
+    setNetMxn('');
+    setPriceMode('gross');
     setCapacity('');
     setMinLoyaltyTier('');
     setPhases([]);
@@ -433,12 +449,13 @@ export function TiersSection({ eventId }: Props) {
       setError('Nombre debe tener al menos 2 caracteres');
       return;
     }
-    const priceFloat = parseFloat(priceMxn);
-    if (isNaN(priceFloat) || priceFloat < 0) {
-      setError('Precio inválido');
+    // El precio que se guarda siempre es el bruto (lo que paga el cliente). En
+    // modo 'net' ya viene calculado desde el neto deseado (previewCents).
+    if (previewCents <= 0) {
+      setError(priceMode === 'net' ? 'Indica cuánto quieres recibir' : 'Precio inválido');
       return;
     }
-    const priceCents = Math.round(priceFloat * 100);
+    const priceCents = previewCents;
 
     const capacityInt = capacity ? parseInt(capacity, 10) : undefined;
     if (capacity && (isNaN(capacityInt!) || capacityInt! < 1)) {
@@ -541,16 +558,57 @@ export function TiersSection({ eventId }: Props) {
               onChange={(e) => setName(e.target.value)}
             />
           </Field>
-          <Field label="Precio base (MXN)" htmlFor="tier-price" error={undefined}>
+          <Field
+            label={priceMode === 'net' ? 'Quiero recibir (MXN)' : 'Precio base (MXN)'}
+            htmlFor="tier-price"
+            error={undefined}
+          >
             <Input
               id="tier-price"
               type="number"
               step="0.01"
               min="0"
-              placeholder="200.00"
-              value={priceMxn}
-              onChange={(e) => setPriceMxn(e.target.value)}
+              placeholder={priceMode === 'net' ? '200.00' : '200.00'}
+              value={priceMode === 'net' ? netMxn : priceMxn}
+              onChange={(e) =>
+                priceMode === 'net'
+                  ? setNetMxn(e.target.value)
+                  : setPriceMxn(e.target.value)
+              }
             />
+            <div className="mt-1.5 flex gap-1">
+              <button
+                type="button"
+                onClick={() => setPriceMode('gross')}
+                className={`flex-1 rounded-md border px-2 py-1 text-[10px] font-semibold transition ${
+                  priceMode === 'gross'
+                    ? 'border-primary/50 bg-primary/15 text-primary'
+                    : 'border-white/10 text-muted-foreground hover:bg-white/5'
+                }`}
+              >
+                Precio al cliente
+              </button>
+              <button
+                type="button"
+                onClick={() => setPriceMode('net')}
+                className={`flex-1 rounded-md border px-2 py-1 text-[10px] font-semibold transition ${
+                  priceMode === 'net'
+                    ? 'border-primary/50 bg-primary/15 text-primary'
+                    : 'border-white/10 text-muted-foreground hover:bg-white/5'
+                }`}
+              >
+                Lo que quiero recibir
+              </button>
+            </div>
+            {priceMode === 'net' && previewCents > 0 ? (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Debes listarlo en{' '}
+                <span className="font-semibold text-emerald-300">
+                  {formatCents(previewCents)}
+                </span>{' '}
+                para recibir ~{formatCents(parseFloat(netMxn || '0') * 100 || 0)}
+              </p>
+            ) : null}
           </Field>
           <Field
             label="Cupo (opcional)"
