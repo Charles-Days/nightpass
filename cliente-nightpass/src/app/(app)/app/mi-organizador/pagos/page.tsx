@@ -3,7 +3,8 @@ import { CreditCard } from 'lucide-react';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import { StripeConnectCard } from '@/features/stripe';
-import type { User } from '@/core/types/api';
+import { CashWalletCard } from '@/features/cash-wallet';
+import type { Promoter, User } from '@/core/types/api';
 
 export const metadata = { title: 'Pagos · Mi organizador' };
 
@@ -22,6 +23,19 @@ export default async function PagosOrganizadorPage() {
   // el staff queda bloqueado para que no toque la cuenta bancaria.
   if (user.role !== 'PROMOTER' && user.role !== 'ADMIN') {
     redirect(paths.miOrganizador);
+  }
+
+  // El saldo en efectivo es por organizador; lo cargamos solo para el dueño.
+  let promoterId: string | null = null;
+  if (user.role === 'PROMOTER') {
+    try {
+      const promoter = await serverFetch<Promoter>('/promoters/me', {
+        revalidate: 60,
+      });
+      promoterId = promoter?.id ?? null;
+    } catch {
+      promoterId = null;
+    }
   }
 
   return (
@@ -83,6 +97,24 @@ export default async function PagosOrganizadorPage() {
           </ol>
         </aside>
       </section>
+
+      {promoterId ? (
+        <section className="space-y-3">
+          <div>
+            <h2 className="font-display text-xl font-bold tracking-tight">
+              Ventas en efectivo
+            </h2>
+            <p className="mt-1 max-w-prose text-sm text-muted-foreground">
+              El efectivo no pasa por Stripe, así que la comisión de NightPass se
+              cobra de un saldo prepagado. Recárgalo para que tus vendedores puedan
+              confirmar pases pagados en efectivo.
+            </p>
+          </div>
+          <div className="max-w-xl">
+            <CashWalletCard owner={{ promoterId }} />
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

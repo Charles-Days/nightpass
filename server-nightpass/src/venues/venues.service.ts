@@ -367,6 +367,18 @@ export class VenuesService {
     });
   }
 
+  async setCashCommissionExempt(id: string, exempt: boolean) {
+    const venue = await this.prisma.venue.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!venue) throw new NotFoundException('Local no encontrado');
+    return this.prisma.venue.update({
+      where: { id },
+      data: { cashCommissionExempt: exempt },
+    });
+  }
+
   async setFeatured(id: string, featured: boolean, reason?: string | null) {
     const venue = await this.prisma.venue.findUnique({
       where: { id },

@@ -601,6 +601,18 @@ export class PromotersService {
     });
   }
 
+  async setCashCommissionExempt(id: string, exempt: boolean) {
+    const promoter = await this.prisma.promoter.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!promoter) throw new NotFoundException('Organizador no encontrado');
+    return this.prisma.promoter.update({
+      where: { id },
+      data: { cashCommissionExempt: exempt },
+    });
+  }
+
   private toSlug(name: string): string {
     return (
       name

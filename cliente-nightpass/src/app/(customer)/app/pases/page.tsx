@@ -29,6 +29,17 @@ export default async function PassesPage() {
     passes = [];
   }
 
+  // Agrupar por evento — si compraste varios boletos de un mismo evento aparecen
+  // juntos bajo su encabezado, y no se mezclan con los de otros eventos.
+  // El backend ya devuelve los pases ordenados por fecha de evento (asc).
+  const groups: Array<{ key: string; event: Pass['event']; passes: Pass[] }> = [];
+  for (const pass of passes) {
+    const key = pass.event?.id ?? pass.eventId;
+    const existing = groups.find((g) => g.key === key);
+    if (existing) existing.passes.push(pass);
+    else groups.push({ key, event: pass.event, passes: [pass] });
+  }
+
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-6 sm:px-8 sm:py-10">
       <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary np-rise">
@@ -69,38 +80,46 @@ export default async function PassesPage() {
           </Link>
         </div>
       ) : (
-        <ul className="mt-8 space-y-3">
-          {passes.map((pass, idx) => {
-            const used = Boolean(pass.usedAt);
-            const event = pass.event;
+        <div className="mt-8 space-y-7">
+          {groups.map((group, gIdx) => {
+            const event = group.event;
             const venue = event?.venue;
+            const multi = group.passes.length > 1;
             return (
-              <li key={pass.id} className="np-rise transform-gpu" style={{ animationDelay: `${Math.min(80 + idx * 40, 480)}ms` }}>
-                <Link
-                  href={`${paths.pases}/${pass.id}`}
-                  className="flex items-stretch gap-4 rounded-[20px] border border-white/10 bg-white/[0.025] p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/[0.04] hover:border-white/15 active:scale-[0.98] transform-gpu sm:p-4"
-                >
-                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[14px] bg-gradient-to-br from-purple-900/40 to-purple-600/10 sm:h-28 sm:w-32">
+              <section
+                key={group.key}
+                className="np-rise transform-gpu"
+                style={{ animationDelay: `${Math.min(80 + gIdx * 60, 480)}ms` }}
+              >
+                {/* Encabezado del evento */}
+                <div className="flex items-center gap-4">
+                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[16px] bg-gradient-to-br from-purple-900/40 to-purple-600/10 sm:h-24 sm:w-28">
                     {event?.coverImageUrl ? (
                       <Image
                         src={event.coverImageUrl}
                         alt={event.title}
                         fill
-                        sizes="128px"
+                        sizes="112px"
                         loading="lazy"
                         className="object-cover"
                       />
                     ) : (
-                      <div className="absolute inset-0 grid place-items-center text-2xl text-white/30">
-                        <Ticket className="size-7" />
+                      <div className="absolute inset-0 grid place-items-center text-white/30">
+                        <Ticket className="size-6" />
                       </div>
                     )}
                   </div>
-
                   <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
-                    <h3 className="truncate font-display text-base font-bold leading-tight tracking-tight sm:text-lg">
-                      {event?.title ?? 'Evento'}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h2 className="truncate font-display text-lg font-bold leading-tight tracking-tight sm:text-xl">
+                        {event?.title ?? 'Evento'}
+                      </h2>
+                      {multi && (
+                        <span className="shrink-0 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+                          {group.passes.length} boletos
+                        </span>
+                      )}
+                    </div>
                     {venue && (
                       <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
                         <MapPin className="size-3 shrink-0" />
@@ -116,25 +135,42 @@ export default async function PassesPage() {
                       </p>
                     )}
                   </div>
+                </div>
 
-                  <div className="flex shrink-0 items-center">
-                    {used ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55 transition-colors">
-                        <CheckCircle2 className="size-3" />
-                        Usado
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300 transition-colors">
-                        <span className="size-1.5 rounded-full bg-emerald-400 np-dot-pulse-slow transform-gpu" />
-                        Activo
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              </li>
+                {/* Boletos del evento */}
+                <ul className="mt-3 space-y-2">
+                  {group.passes.map((pass, idx) => {
+                    const used = Boolean(pass.usedAt);
+                    return (
+                      <li key={pass.id}>
+                        <Link
+                          href={`${paths.pases}/${pass.id}`}
+                          className="flex items-center gap-3 rounded-[16px] border border-white/10 bg-white/[0.025] px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/[0.04] hover:border-white/15 active:scale-[0.98] transform-gpu"
+                        >
+                          <QrCode className="size-4 shrink-0 text-primary" />
+                          <span className="flex-1 truncate text-sm font-semibold">
+                            {multi ? `Boleto ${idx + 1}` : 'Tu boleto'}
+                          </span>
+                          {used ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55">
+                              <CheckCircle2 className="size-3" />
+                              Usado
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300">
+                              <span className="size-1.5 rounded-full bg-emerald-400 np-dot-pulse-slow transform-gpu" />
+                              Activo
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import * as React from 'react';
 import { toast } from 'sonner';
 import { Loader2, Banknote, Check, X, Clock } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
+import { ClientApiError } from '@/core/lib/api/client-client';
 import {
   useRpPhysicalRequests,
   useConfirmPhysicalRequest,
@@ -13,6 +14,16 @@ import {
 
 const money = (cents: number, currency: string) =>
   `$${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`;
+
+/** Extrae el mensaje del backend (p.ej. "saldo insuficiente") para el toast. */
+function confirmErrorMessage(e: unknown): string {
+  if (e instanceof ClientApiError && e.payload && typeof e.payload === 'object') {
+    const msg = (e.payload as { message?: unknown }).message;
+    if (typeof msg === 'string' && msg) return msg;
+    if (Array.isArray(msg) && msg.length) return String(msg[0]);
+  }
+  return 'No se pudo confirmar';
+}
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   PENDING: { label: 'Pendiente', cls: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
@@ -35,8 +46,7 @@ export function PhysicalRequestsSection() {
     setBusyId(r.id);
     confirm.mutate(r.id, {
       onSuccess: () => toast.success('Pago confirmado · pase emitido al cliente'),
-      onError: (e) =>
-        toast.error(e instanceof Error ? e.message : 'No se pudo confirmar'),
+      onError: (e) => toast.error(confirmErrorMessage(e)),
       onSettled: () => setBusyId(null),
     });
   };

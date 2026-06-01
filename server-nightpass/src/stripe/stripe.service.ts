@@ -139,6 +139,29 @@ export class StripeService {
     );
   }
 
+  /**
+   * PaymentIntent cobrado a la PLATAFORMA (NightPass), sin `transfer_data` ni
+   * `application_fee`. El dinero se queda completo en la cuenta de NightPass.
+   * Se usa para recargas del CashWallet del organizador (prepago de comisión de
+   * ventas en efectivo).
+   */
+  async createPlatformPaymentIntent(params: {
+    amountCents: number;
+    currency: string;
+    metadata: Record<string, string>;
+    idempotencyKey: string;
+  }): Promise<Stripe.PaymentIntent> {
+    return this.requireClient().paymentIntents.create(
+      {
+        amount: params.amountCents,
+        currency: params.currency.toLowerCase(),
+        metadata: params.metadata,
+        automatic_payment_methods: { enabled: true },
+      },
+      { idempotencyKey: params.idempotencyKey },
+    );
+  }
+
   async retrievePaymentIntent(
     paymentIntentId: string,
   ): Promise<Stripe.PaymentIntent> {

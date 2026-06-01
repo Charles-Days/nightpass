@@ -22,6 +22,7 @@ export interface Promoter {
   website?: string | null;
   status: PromoterStatus;
   platformFeePct?: number | null;
+  cashCommissionExempt?: boolean;
   createdAt: string;
   updatedAt: string;
   _count?: { members: number };
@@ -149,6 +150,7 @@ export interface Venue {
   featuredAt?: string | null;
   featuredReason?: string | null;
   platformFeePct?: number | null;
+  cashCommissionExempt?: boolean;
 }
 
 export interface PaginatedVenues {
@@ -425,6 +427,8 @@ export interface Pass {
   }>;
   /** Solo el comprador original puede transferir (no quien lo recibió). */
   canTransfer?: boolean;
+  /** Motivo por el que no se puede transferir (ej. último boleto del evento). */
+  transferBlockedReason?: string;
 }
 
 export type TransferStatus = 'PENDING' | 'CLAIMED' | 'CANCELLED' | 'EXPIRED';

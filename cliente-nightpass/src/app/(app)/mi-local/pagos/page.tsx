@@ -3,6 +3,7 @@ import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import type { User, Venue } from '@/core/types/api';
 import { StripeConnectCard } from '@/features/stripe';
+import { CashWalletCard } from '@/features/cash-wallet';
 
 export const metadata = { title: 'Pagos · Mi local' };
 
@@ -44,11 +45,35 @@ export default async function PagosPage() {
           No hay locales asociados a tu cuenta.
         </p>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {venues.map((v) => (
-            <StripeConnectCard key={v.id} venueId={v.id} venueName={v.name} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-4 md:grid-cols-2">
+            {venues.map((v) => (
+              <StripeConnectCard key={v.id} venueId={v.id} venueName={v.name} />
+            ))}
+          </div>
+
+          <section className="space-y-3">
+            <div>
+              <h2 className="font-display text-xl font-bold tracking-tight">
+                Ventas en efectivo
+              </h2>
+              <p className="mt-1 max-w-prose text-sm text-muted-foreground">
+                El efectivo no pasa por Stripe, así que la comisión de NightPass se
+                cobra de un saldo prepagado. Recárgalo aquí para que tus vendedores
+                puedan confirmar pases pagados en efectivo.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {venues.map((v) => (
+                <CashWalletCard
+                  key={v.id}
+                  owner={{ venueId: v.id }}
+                  title={`Saldo en efectivo · ${v.name}`}
+                />
+              ))}
+            </div>
+          </section>
+        </>
       )}
     </div>
   );

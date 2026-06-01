@@ -13,6 +13,7 @@ import { useSuspendVenue } from '../hooks/use-suspend-venue';
 import { useReactivateVenue } from '../hooks/use-reactivate-venue';
 import { useFeatureVenue } from '../hooks/use-feature-venue';
 import { useSetVenuePlatformFee } from '../hooks/use-set-platform-fee';
+import { useSetVenueCashCommission } from '../hooks/use-set-cash-commission';
 import { Input } from '@/core/components/ui/input';
 import { useRemoveOwner } from '../hooks/use-assign-owner';
 import { VenueEditForm } from './venue-edit-form';
@@ -74,6 +75,8 @@ export function VenueDetail({ venue, hideHeader = false }: { venue: Venue; hideH
   const reactivate = useReactivateVenue(venue.id);
   const feature = useFeatureVenue(venue.id);
   const setFee = useSetVenuePlatformFee(venue.id);
+  const setCashCommission = useSetVenueCashCommission(venue.id);
+  const cashExempt = venue.cashCommissionExempt !== false;
   const [feeInput, setFeeInput] = React.useState<string>(
     venue.platformFeePct == null ? '' : String(venue.platformFeePct),
   );
@@ -241,6 +244,50 @@ export function VenueDetail({ venue, hideHeader = false }: { venue: Venue; hideH
               {venue.platformFeePct == null
                 ? 'Comisión global del servidor'
                 : `${venue.platformFeePct}%`}
+            </span>
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Comisión en ventas en efectivo</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <p className="text-muted-foreground">
+            En las ventas en <strong>efectivo</strong> el dinero no pasa por Stripe, así que la
+            comisión se cobra del <strong>saldo prepagado</strong> del local. Si lo dejas{' '}
+            <strong>exento</strong>, el local vende en efectivo sin comisión y sin necesidad de saldo.
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant={cashExempt ? 'default' : 'outline'}
+              size="sm"
+              disabled={setCashCommission.isPending}
+              onClick={() => !cashExempt && setCashCommission.mutate(true)}
+            >
+              Exento (sin comisión)
+            </Button>
+            <Button
+              type="button"
+              variant={!cashExempt ? 'default' : 'outline'}
+              size="sm"
+              disabled={setCashCommission.isPending}
+              onClick={() => cashExempt && setCashCommission.mutate(false)}
+            >
+              Cobrar comisión
+            </Button>
+            {setCashCommission.isPending ? (
+              <Loader2 className="size-4 animate-spin text-muted-foreground" />
+            ) : null}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Estado:{' '}
+            <span className="font-semibold text-foreground">
+              {cashExempt
+                ? 'Exento — no se cobra comisión en efectivo'
+                : 'Se cobra comisión (requiere saldo prepagado)'}
             </span>
           </p>
         </CardContent>

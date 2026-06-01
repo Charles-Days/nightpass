@@ -265,6 +265,11 @@ model Venue {
   // null = usa la comisión global del servidor; un número (incl. 0) es explícito.
   platformFeePct Float?
 
+  // Si true (default), las ventas en EFECTIVO no cobran comisión a NightPass y
+  // no requieren saldo (wallet). Si false, cada pase de efectivo debita la
+  // comisión (mismo % que online) del CashWallet del organizador al confirmar.
+  cashCommissionExempt Boolean @default(true)
+
   // Loyalty: static QR for venue check-in (free, +10 NPP, 1/day/user).
   // Null = check-in disabled until owner rotates a QR.
   checkinQrSecret   String?
@@ -275,6 +280,7 @@ model Venue {
   photos        Photo[]
   events        Event[]
   stripeAccount StripeAccount?
+  cashWallet    CashWallet?
   loyaltyEvents LoyaltyEvent[]
   stories       Story[]
 
@@ -368,10 +374,14 @@ model Promoter {
   // null = usa la comisión global del servidor; un número (incl. 0) es explícito.
   platformFeePct Float?
 
+  // Ver Venue.cashCommissionExempt — mismo comportamiento para organizadores.
+  cashCommissionExempt Boolean @default(true)
+
   members       PromoterMember[]
   events        Event[]
   applications  PromoterApplication[] @relation("ApprovedPromoter")
   stripeAccount StripeAccount?
+  cashWallet    CashWallet?
   rpProfiles    RpProfile[]
 
   @@index([city])
@@ -891,6 +901,58 @@ model PhysicalPaymentRequest {
   @@index([userId, status])
   @@index([confirmedByRpId, status])
   @@map("physical_payment_requests")
+}
+
+// Saldo PREPAGADO del organizador (venue o promoter) para cubrir la comisión de
+// NightPass en VENTAS EN EFECTIVO. Como el dinero del efectivo nunca pasa por
+// Stripe, NightPass no puede retener su comisión ahí: el organizador la paga por
+// adelantado recargando este wallet (PaymentIntent directo a la plataforma, sin
+// Connect). Al confirmar un pase de efectivo, se debita `comisión% × precio` del
+// saldo. Sin saldo suficiente, el RP no puede confirmar. Cobramos ANTES de
+// emitir → cero riesgo de impago. Solo aplica si cashCommissionExempt = false.
+model CashWallet {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  venueId      String?  @unique @db.Uuid
+  promoterId   String?  @unique @db.Uuid
+  balanceCents Int      @default(0)
+  currency     String   @default("MXN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  venue        Venue?                  @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  promoter     Promoter?               @relation(fields: [promoterId], references: [id], onDelete: Cascade)
+  transactions CashWalletTransaction[]
+
+  @@map("cash_wallets")
+}
+
+enum CashWalletTxType {
+  TOPUP // recarga vía Stripe (crédito)
+  CASH_FEE_DEBIT // comisión cobrada al confirmar un pase de efectivo (débito)
+  ADJUSTMENT // ajuste manual por admin (+/-)
+  REVERSAL // reverso de un débito (p.ej. solicitud cancelada)
+}
+
+// Movimiento del CashWallet. `amountCents` es CON SIGNO: positivo = crédito,
+// negativo = débito. `balanceAfterCents` guarda el saldo resultante para
+// auditoría. Idempotencia de recargas vía `stripePaymentIntentId` único.
+model CashWalletTransaction {
+  id                    String           @id @default(uuid(7)) @db.Uuid
+  walletId              String           @db.Uuid
+  type                  CashWalletTxType
+  amountCents           Int
+  balanceAfterCents     Int
+  currency              String           @default("MXN")
+  note                  String?
+  physicalRequestId     String?          @db.Uuid
+  orderId               String?          @db.Uuid
+  stripePaymentIntentId String?          @unique
+  createdAt             DateTime         @default(now())
+
+  wallet CashWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, createdAt])
+  @@map("cash_wallet_transactions")
 }
 
 // Key-value de configuración global de la app. Hoy solo guarda el flag de

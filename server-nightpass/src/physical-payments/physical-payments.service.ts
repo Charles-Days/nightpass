@@ -17,6 +17,11 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailerService } from '../mailer/mailer.service';
+import { StripeService } from '../stripe/stripe.service';
+import {
+  CashWalletService,
+  OwnerRef,
+} from '../cash-wallet/cash-wallet.service';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { resolveTierPrice } from '../events/tier-pricing';
 import { issuePasses } from '../passes/issue-passes';
@@ -30,6 +35,8 @@ export class PhysicalPaymentsService {
     private readonly prisma: PrismaService,
     private readonly mailer: MailerService,
     private readonly config: ConfigService,
+    private readonly stripe: StripeService,
+    private readonly cashWallet: CashWalletService,
   ) {}
 
   private formatMoney(cents: number, currency: string): string {
@@ -251,7 +258,27 @@ export class PhysicalPaymentsService {
 
     const request = await this.prisma.physicalPaymentRequest.findUnique({
       where: { id: requestId },
-      include: { event: true, tier: true },
+      include: {
+        event: {
+          include: {
+            venue: {
+              select: {
+                id: true,
+                platformFeePct: true,
+                cashCommissionExempt: true,
+              },
+            },
+            promoter: {
+              select: {
+                id: true,
+                platformFeePct: true,
+                cashCommissionExempt: true,
+              },
+            },
+          },
+        },
+        tier: true,
+      },
     });
     if (!request) throw new NotFoundException('Solicitud no encontrada');
 
@@ -289,6 +316,24 @@ export class PhysicalPaymentsService {
       this.config.get<string>('PASS_HMAC_SECRET') ||
       'dev-hmac-secret-min32chars-replace-in-prod';
 
+    // Comisión de NightPass sobre la venta en efectivo. El dinero del efectivo no
+    // pasa por Stripe, así que la comisión se cobra del saldo PREPAGADO del
+    // organizador (CashWallet). Si el organizador está exento (cashCommissionExempt)
+    // o su fee es 0, no se cobra nada y no se requiere saldo.
+    const venue = request.event.venue;
+    const promoter = request.event.promoter;
+    const owner = venue ?? promoter;
+    let ownerRef: OwnerRef | null = null;
+    let feeCents = 0;
+    if (owner && !owner.cashCommissionExempt) {
+      const feePct =
+        owner.platformFeePct != null
+          ? owner.platformFeePct
+          : this.stripe.getPlatformFeePct();
+      feeCents = Math.floor((request.amountCents * feePct) / 100);
+      ownerRef = venue ? { venueId: venue.id } : { promoterId: promoter!.id };
+    }
+
     const result = await this.prisma.$transaction(async (tx) => {
       const order = await tx.order.create({
         data: {
@@ -299,11 +344,21 @@ export class PhysicalPaymentsService {
           paymentMethod: PaymentMethod.CASH,
           quantity: request.quantity,
           totalCents: request.amountCents,
-          applicationFeeCents: 0,
+          applicationFeeCents: feeCents,
           currency: request.currency,
           referredByRpId: rp.id,
         },
       });
+
+      // Debita la comisión del wallet (lanza si no hay saldo → rollback completo:
+      // ni orden ni pases se emiten hasta que el organizador recargue).
+      if (ownerRef && feeCents > 0) {
+        await this.cashWallet.debitCashFee(tx, ownerRef, feeCents, {
+          currency: request.currency,
+          physicalRequestId: request.id,
+          orderId: order.id,
+        });
+      }
 
       await issuePasses(tx, order, passSecret);
 

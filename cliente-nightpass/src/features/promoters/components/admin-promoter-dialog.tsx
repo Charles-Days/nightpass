@@ -26,6 +26,7 @@ import {
 import { useCreatePromoter } from '../hooks/use-create-promoter';
 import { useAdminUpdatePromoter } from '../hooks/use-admin-update-promoter';
 import { useSetPromoterPlatformFee } from '../hooks/use-set-promoter-platform-fee';
+import { useSetPromoterCashCommission } from '../hooks/use-set-promoter-cash-commission';
 
 // ── Create ───────────────────────────────────────────────────────────────────
 
@@ -215,6 +216,7 @@ function EditForm({
       </DialogFooter>
 
       <CommissionSection promoter={promoter} />
+      <CashCommissionSection promoter={promoter} />
     </form>
   );
 }
@@ -276,6 +278,59 @@ function CommissionSection({ promoter }: { promoter: Promoter }) {
           {promoter.platformFeePct == null
             ? 'Comisión global del servidor'
             : `${promoter.platformFeePct}%`}
+        </span>
+      </p>
+    </div>
+  );
+}
+
+// ── Comisión en ventas en efectivo ─────────────────────────────────────────────
+// Endpoint separado (POST /promoters/:id/cash-commission). Exento = no cobra
+// comisión en efectivo ni requiere saldo prepagado.
+
+function CashCommissionSection({ promoter }: { promoter: Promoter }) {
+  const setCash = useSetPromoterCashCommission(promoter.id);
+  const exempt = promoter.cashCommissionExempt !== false;
+
+  return (
+    <div className="mt-2 space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">
+      <div>
+        <p className="text-sm font-semibold">Comisión en ventas en efectivo</p>
+        <p className="mt-0.5 text-xs text-white/55">
+          En efectivo el dinero no pasa por Stripe; la comisión se cobra del{' '}
+          <strong>saldo prepagado</strong> del organizador. Si lo dejas{' '}
+          <strong>exento</strong>, vende en efectivo sin comisión y sin saldo.
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant={exempt ? 'secondary' : 'outline'}
+          size="sm"
+          disabled={setCash.isPending}
+          onClick={() => !exempt && setCash.mutate(true)}
+        >
+          Exento (sin comisión)
+        </Button>
+        <Button
+          type="button"
+          variant={!exempt ? 'secondary' : 'outline'}
+          size="sm"
+          disabled={setCash.isPending}
+          onClick={() => exempt && setCash.mutate(false)}
+        >
+          Cobrar comisión
+        </Button>
+        {setCash.isPending ? (
+          <Loader2 className="size-4 animate-spin text-white/55" />
+        ) : null}
+      </div>
+      <p className="text-xs text-white/55">
+        Estado:{' '}
+        <span className="font-semibold text-white">
+          {exempt
+            ? 'Exento — no se cobra comisión en efectivo'
+            : 'Se cobra comisión (requiere saldo prepagado)'}
         </span>
       </p>
     </div>

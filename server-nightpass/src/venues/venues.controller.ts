@@ -120,6 +120,17 @@ export class VenuesController {
     return this.service.setPlatformFee(id, pct);
   }
 
+  @Post(':id/cash-commission')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  setCashCommission(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { exempt: boolean },
+  ) {
+    return this.service.setCashCommissionExempt(id, body.exempt === true);
+  }
+
   @Post(':id/owners')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)

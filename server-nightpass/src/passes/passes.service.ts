@@ -353,6 +353,32 @@ export class PassesService {
       });
     }
 
+    // Regla: el comprador debe conservar al menos un boleto del evento. Si compró
+    // varios no puede transferirlos TODOS → así no perdemos al asistente (el que
+    // recibe ya no compra por su lado). `heldForEvent` incluye este pase (aún sin
+    // transferencia viva). Restamos los que ya tienen transferencia pendiente y
+    // este mismo; debe quedar ≥1.
+    const heldForEvent = await this.prisma.pass.count({
+      where: {
+        eventId: pass.eventId,
+        userId: user.id,
+        usedAt: null,
+        order: { status: OrderStatus.COMPLETED },
+      },
+    });
+    const pendingForEvent = await this.prisma.passTransfer.count({
+      where: {
+        status: TransferStatus.PENDING,
+        expiresAt: { gt: new Date(now) },
+        pass: { eventId: pass.eventId, userId: user.id },
+      },
+    });
+    if (heldForEvent - pendingForEvent - 1 < 1) {
+      throw new ConflictException(
+        'Debes conservar al menos un boleto de este evento. No puedes transferir todos los que compraste.',
+      );
+    }
+
     // Vive como máximo TRANSFER_TTL_DAYS, y nunca más allá del inicio del evento.
     const ttlCap = now + TRANSFER_TTL_DAYS * 24 * 60 * 60 * 1000;
     const expiresAt = new Date(
@@ -560,8 +586,38 @@ export class PassesService {
     }
     // Solo el comprador original (Order.userId) puede transferir. Quien lo
     // recibió por transferencia ve el pase pero no puede re-transferirlo.
-    const canTransfer = pass.order.userId === pass.userId;
-    return { ...pass, canTransfer };
+    const isOriginalBuyer = pass.order.userId === pass.userId;
+    let canTransfer = isOriginalBuyer && !pass.usedAt;
+    let transferBlockedReason: string | undefined;
+
+    // Si este pase ya tiene una transferencia pendiente, NO bloqueamos — el dueño
+    // necesita poder verla/cancelarla. Solo bloqueamos generar una NUEVA cuando
+    // este sería el último boleto del evento que conserva.
+    const thisHasPending = (pass.transfers?.length ?? 0) > 0;
+    if (canTransfer && !thisHasPending) {
+      const now = new Date();
+      const heldForEvent = await this.prisma.pass.count({
+        where: {
+          eventId: pass.eventId,
+          userId: user.id,
+          usedAt: null,
+          order: { status: OrderStatus.COMPLETED },
+        },
+      });
+      const pendingForEvent = await this.prisma.passTransfer.count({
+        where: {
+          status: TransferStatus.PENDING,
+          expiresAt: { gt: now },
+          pass: { eventId: pass.eventId, userId: user.id },
+        },
+      });
+      if (heldForEvent - pendingForEvent - 1 < 1) {
+        canTransfer = false;
+        transferBlockedReason =
+          'Conserva al menos un boleto de este evento — no puedes transferirlo.';
+      }
+    }
+    return { ...pass, canTransfer, transferBlockedReason };
   }
 
   // ── Escaneo (STAFF / ADMIN) ──────────────────────────────────────────────

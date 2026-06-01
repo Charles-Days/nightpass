@@ -1,4 +1,6 @@
 import {
+  forwardRef,
+  Inject,
   Injectable,
   Logger,
   ServiceUnavailableException,
@@ -8,6 +10,7 @@ import { OrderStatus, Prisma } from '@prisma/client';
 import type { Stripe } from 'stripe/cjs/stripe.core';
 import { PrismaService } from '../prisma/prisma.service';
 import { issuePasses } from '../passes/issue-passes';
+import { CashWalletService } from '../cash-wallet/cash-wallet.service';
 import { StripeService } from './stripe.service';
 
 @Injectable()
@@ -18,6 +21,8 @@ export class StripeWebhookService {
     private readonly prisma: PrismaService,
     private readonly stripe: StripeService,
     private readonly config: ConfigService,
+    @Inject(forwardRef(() => CashWalletService))
+    private readonly cashWallet: CashWalletService,
   ) {}
 
   /**
@@ -66,6 +71,13 @@ export class StripeWebhookService {
     eventId: string,
     pi: Stripe.PaymentIntent,
   ): Promise<void> {
+    // Recarga de saldo del CashWallet (prepago de comisión en efectivo). No hay
+    // Order asociada: el dinero se queda en la plataforma y acredita el wallet.
+    if (pi.metadata?.kind === 'cash_wallet_topup') {
+      await this.cashWallet.creditFromTopup(pi);
+      return;
+    }
+
     const order = await this.prisma.order.findUnique({
       where: { stripePaymentIntentId: pi.id },
     });

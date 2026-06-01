@@ -177,6 +177,12 @@ export default async function PassDetailPage({ params }: Props) {
         />
       )}
 
+      {!used && !pass.canTransfer && pass.transferBlockedReason && (
+        <p className="mt-5 rounded-[16px] border border-white/8 bg-white/[0.02] px-4 py-3 text-center text-[12px] text-muted-foreground">
+          {pass.transferBlockedReason}
+        </p>
+      )}
+
       <p className="mt-5 text-center text-[11px] text-muted-foreground">
         El QR es único y de un solo uso. No lo compartas con nadie.
       </p>

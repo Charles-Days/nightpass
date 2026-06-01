@@ -157,4 +157,14 @@ export class PromotersController {
         : Number(body.platformFeePct);
     return this.service.setPlatformFee(id, pct);
   }
+
+  @Post(':id/cash-commission')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  setCashCommission(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { exempt: boolean },
+  ) {
+    return this.service.setCashCommissionExempt(id, body.exempt === true);
+  }
 }
