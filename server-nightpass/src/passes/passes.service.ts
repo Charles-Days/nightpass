@@ -44,9 +44,22 @@ export class PassesService {
 
   // ── Listado de mis passes activos ────────────────────────────────────────
 
-  async listMine(userId: string) {
+  async listMine(
+    userId: string,
+    pagination: { page?: number; limit?: number } = {},
+  ) {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
+
+    // Paginación con cap duro de 100 items por página para no exponer
+    // findMany ilimitado.
+    const MAX_LIMIT = 100;
+    const page = Math.max(1, Math.floor(pagination.page ?? 1));
+    const limit = Math.min(
+      MAX_LIMIT,
+      Math.max(1, Math.floor(pagination.limit ?? 20)),
+    );
+    const skip = (page - 1) * limit;
 
     return this.prisma.pass.findMany({
       where: {
@@ -56,6 +69,8 @@ export class PassesService {
         event: { startsAt: { gte: startOfToday } },
       },
       orderBy: { event: { startsAt: 'asc' } },
+      skip,
+      take: limit,
       include: {
         event: {
           select: {

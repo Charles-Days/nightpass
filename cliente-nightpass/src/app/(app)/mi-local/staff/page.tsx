@@ -11,10 +11,10 @@ type VenueWithCount = Venue & {
 };
 
 export default async function MiLocalStaffPage() {
-  const user = await serverFetch<User>('/auth/me');
+  const user = await serverFetch<User>('/auth/me', { revalidate: 60 });
   if (user.role === 'VENUE_STAFF') redirect(paths.miLocalEventos);
 
-  const venues = await serverFetch<VenueWithCount[]>('/venues/my');
+  const venues = await serverFetch<VenueWithCount[]>('/venues/my', { revalidate: 300 });
   const venue = venues[0] as VenueWithCount | undefined;
 
   if (!venue) {

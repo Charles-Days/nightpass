@@ -177,35 +177,39 @@ export class PasesService {
       : [];
     const eventsById = new Map(eventsMeta.map((e) => [e.id, e]));
 
-    const redeemedByEvent = eventIds.length
-      ? await this.prisma.pass.groupBy({
-          by: ['eventId'],
-          where: {
-            eventId: { in: eventIds },
-            usedAt: { not: null },
-          },
-          _count: true,
-        })
-      : [];
+    // Tres groupBy independientes → en paralelo (antes secuenciales).
+    const [redeemedByEvent, passesSoldByEvent, pendingClaimsByEvent] =
+      await Promise.all([
+        eventIds.length
+          ? this.prisma.pass.groupBy({
+              by: ['eventId'],
+              where: {
+                eventId: { in: eventIds },
+                usedAt: { not: null },
+              },
+              _count: true,
+            })
+          : Promise.resolve([]),
+        eventIds.length
+          ? this.prisma.pass.groupBy({
+              by: ['eventId'],
+              where: { eventId: { in: eventIds }, order: { paymentMethod: PaymentMethod.STRIPE } },
+              _count: true,
+            })
+          : Promise.resolve([]),
+        eventIds.length
+          ? this.prisma.passClaim.groupBy({
+              by: ['eventId'],
+              where: { eventId: { in: eventIds }, status: { in: ['PENDING', 'CLAIMED'] } },
+              _sum: { amountCents: true },
+              _count: true,
+            })
+          : Promise.resolve([]),
+      ]);
+
     const redeemedById = new Map(
       redeemedByEvent.map((r) => [r.eventId, r._count]),
     );
-
-    const passesSoldByEvent = eventIds.length
-      ? await this.prisma.pass.groupBy({
-          by: ['eventId'],
-          where: { eventId: { in: eventIds }, order: { paymentMethod: PaymentMethod.STRIPE } },
-          _count: true,
-        })
-      : [];
-    const pendingClaimsByEvent = eventIds.length
-      ? await this.prisma.passClaim.groupBy({
-          by: ['eventId'],
-          where: { eventId: { in: eventIds }, status: { in: ['PENDING', 'CLAIMED'] } },
-          _sum: { amountCents: true },
-          _count: true,
-        })
-      : [];
     const soldById = new Map(passesSoldByEvent.map((r) => [r.eventId, r._count]));
     const soldAdminById = new Map(pendingClaimsByEvent.map((r) => [r.eventId, r._count]));
     const revenueAdminById = new Map(pendingClaimsByEvent.map((r) => [r.eventId, r._sum.amountCents ?? 0]));

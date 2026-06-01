@@ -8,7 +8,7 @@ export const metadata = { title: 'Historias · NightPass Admin' };
 export default async function MiOrganizadorHistoriasPage() {
   let me: PromoterMe;
   try {
-    me = await serverFetch<PromoterMe>('/promoters/me');
+    me = await serverFetch<PromoterMe>('/promoters/me', { revalidate: 300 });
   } catch (err) {
     if (err instanceof ServerApiError && err.status === 404) notFound();
     throw err;

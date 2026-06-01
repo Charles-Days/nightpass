@@ -15,14 +15,14 @@ export default async function MiLocalStoriesPage({
   const autoStart: 'record' | 'photo' | null =
     compose === 'record' ? 'record' : compose === 'photo' ? 'photo' : null;
   const returnTo = returnParam === 'app' || returnParam === 'profile' ? returnParam : null;
-  const user = await serverFetch<User>('/auth/me');
+  const user = await serverFetch<User>('/auth/me', { revalidate: 60 });
   if (user.role === 'ADMIN') {
     redirect(paths.adminStories);
   }
   if (!['VENUE_OWNER', 'VENUE_STAFF'].includes(user.role)) {
     redirect(paths.dashboard);
   }
-  const venues = await serverFetch<Venue[]>('/venues/my');
+  const venues = await serverFetch<Venue[]>('/venues/my', { revalidate: 300 });
   const venue = venues[0];
   if (!venue) {
     return (

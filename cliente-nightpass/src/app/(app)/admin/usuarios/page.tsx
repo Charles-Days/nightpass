@@ -30,7 +30,10 @@ export default async function UsersListPage({ searchParams }: PageProps) {
   if (page) qs.set('page', page);
   const queryString = qs.toString() ? `?${qs.toString()}` : '';
 
-  const data = await serverFetch<PaginatedUsers>(`/users${queryString}`);
+  // Read-only en el panel (sin baneo/rol/borrado), tolerante a staleness:
+  // cacheamos 60s para deduplicar navegaciones repetidas. La cache se keyea por
+  // token + query string, así que cada filtro/usuario tiene su propia entrada.
+  const data = await serverFetch<PaginatedUsers>(`/users${queryString}`, { revalidate: 60 });
 
   return (
     <div className="space-y-6">

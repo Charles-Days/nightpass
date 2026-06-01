@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 
 interface CounterProps {
   to: number;
@@ -11,7 +11,15 @@ interface CounterProps {
   duration?: number;
 }
 
-export function Counter({
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
+function CounterImpl({
   to,
   from = 0,
   prefix = '',
@@ -26,6 +34,12 @@ export function Counter({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+
+    // Sin animación si el usuario pide menos movimiento: salta al valor final.
+    if (prefersReducedMotion()) {
+      setVal(to);
+      return;
+    }
 
     const start = () => {
       if (startedRef.current) return;
@@ -66,3 +80,5 @@ export function Counter({
     </span>
   );
 }
+
+export const Counter = memo(CounterImpl);

@@ -12,7 +12,7 @@ export const metadata = { title: 'Staff del organizador' };
 export default async function PromoterStaffPage() {
   let me: PromoterMe;
   try {
-    me = await serverFetch<PromoterMe>('/promoters/me');
+    me = await serverFetch<PromoterMe>('/promoters/me', { revalidate: 300 });
   } catch (err) {
     if (err instanceof ServerApiError && err.status === 404) notFound();
     throw err;

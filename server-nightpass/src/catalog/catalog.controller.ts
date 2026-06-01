@@ -2,13 +2,14 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Param,
   ParseUUIDPipe,
   Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { SkipThrottle } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 import { CatalogService } from './catalog.service';
 import { ListCatalogVenuesQuery } from './dto/list-catalog-venues.query';
@@ -24,22 +25,30 @@ class CreateForumPostDto {
   body!: string;
 }
 
+// Endpoints públicos sin auth = mayor superficie de tráfico/abuso. Rate limit
+// propio (30/min por IP) más estricto que el global, y Cache-Control para que
+// CDN/navegador absorban los hits repetidos sin tocar Postgres.
+const PUBLIC_THROTTLE = { default: { ttl: 60_000, limit: 30 } };
+
 @Controller('catalog')
-@SkipThrottle()
+@Throttle(PUBLIC_THROTTLE)
 export class CatalogController {
   constructor(private readonly service: CatalogService) {}
 
   @Get('venues')
+  @Header('Cache-Control', 'public, max-age=30, s-maxage=120, stale-while-revalidate=60')
   listVenues(@Query() query: ListCatalogVenuesQuery) {
     return this.service.listVenues(query);
   }
 
   @Get('venues/:slug')
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=120')
   getVenue(@Param('slug') slug: string) {
     return this.service.getVenueBySlug(slug);
   }
 
   @Get('venues/:id/occupancy')
+  @Header('Cache-Control', 'public, max-age=15, s-maxage=30')
   getVenueOccupancy(
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: GetVenueOccupancyQuery,
@@ -48,31 +57,37 @@ export class CatalogController {
   }
 
   @Get('promoters/:slug')
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=120')
   getPromoter(@Param('slug') slug: string) {
     return this.service.getPromoterBySlug(slug);
   }
 
   @Get('events')
+  @Header('Cache-Control', 'public, max-age=30, s-maxage=120, stale-while-revalidate=60')
   listEvents(@Query() query: ListCatalogEventsQuery) {
     return this.service.listCatalogEvents(query);
   }
 
   @Get('events/:id')
+  @Header('Cache-Control', 'public, max-age=15, s-maxage=30')
   getEvent(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.getEventById(id);
   }
 
   @Get('tiers/:tierId')
+  @Header('Cache-Control', 'public, max-age=30, s-maxage=60')
   getTier(@Param('tierId', ParseUUIDPipe) tierId: string) {
     return this.service.getTierById(tierId);
   }
 
   @Get('stats')
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=60, stale-while-revalidate=120')
   getStats() {
     return this.service.getPublicStats();
   }
 
   @Get('sitemap')
+  @Header('Cache-Control', 'public, max-age=3600, s-maxage=3600')
   getSitemap() {
     return this.service.getSitemapFeed();
   }

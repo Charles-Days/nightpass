@@ -1,7 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma, EventStatus, Role, VenueStatus, PassClaimStatus } from '@prisma/client';
+import type Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
+import { REDIS_CLIENT } from '../redis/redis.module';
 import { LocationsService } from '../locations/locations.service';
 import { ListCatalogVenuesQuery } from './dto/list-catalog-venues.query';
 import { ListCatalogEventsQuery } from './dto/list-catalog-events.query';
@@ -43,13 +45,36 @@ const VENUE_PUBLIC_SELECT = {
 @Injectable()
 export class CatalogService {
   private readonly uploadsUrl: string;
+  private readonly logger = new Logger('Catalog');
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly locations: LocationsService,
     private readonly config: ConfigService,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {
     this.uploadsUrl = this.config.get<string>('LOCAL_UPLOADS_URL') || '';
+  }
+
+  /**
+   * Cache-aside sobre Redis para lecturas públicas calientes: descarga Postgres
+   * del tráfico repetitivo. Si Redis falla, degrada transparente a la DB. Las
+   * excepciones de `fn` (p.ej. NotFound) se propagan y NO se cachean.
+   */
+  private async cached<T>(key: string, ttlSec: number, fn: () => Promise<T>): Promise<T> {
+    try {
+      const hit = await this.redis.get(key);
+      if (hit) return JSON.parse(hit) as T;
+    } catch (err) {
+      this.logger.warn(`Redis GET ${key} falló, voy a DB: ${err instanceof Error ? err.message : err}`);
+    }
+    const fresh = await fn();
+    try {
+      await this.redis.set(key, JSON.stringify(fresh), 'EX', ttlSec);
+    } catch (err) {
+      this.logger.warn(`Redis SET ${key} falló: ${err instanceof Error ? err.message : err}`);
+    }
+    return fresh;
   }
 
   private _mapUrl(url: string | null | undefined): string | null {
@@ -150,6 +175,7 @@ export class CatalogService {
   }
 
   async getVenueBySlug(slug: string) {
+    return this.cached(`catalog:venue:${slug}`, 60, async () => {
     const venue = await this.prisma.venue.findUnique({
       where: { slug, status: 'ACTIVE' },
       select: {
@@ -181,15 +207,18 @@ export class CatalogService {
         },
         photos: {
           orderBy: { position: 'asc' },
+          take: 30,
           select: { id: true, url: true, position: true },
         },
       },
     });
     if (!venue) throw new NotFoundException('Local no encontrado');
     return this._mapVenue(venue);
+    });
   }
 
   async getPromoterBySlug(slug: string) {
+    return this.cached(`catalog:promoter:${slug}`, 60, async () => {
     const promoter = await this.prisma.promoter.findUnique({
       where: { slug, status: 'ACTIVE' },
       select: {
@@ -243,6 +272,7 @@ export class CatalogService {
     });
     if (!promoter) throw new NotFoundException('Organizador no encontrado');
     return promoter;
+    });
   }
 
   async listCatalogEvents(query: ListCatalogEventsQuery) {
@@ -402,6 +432,7 @@ export class CatalogService {
   }
 
   async getEventById(id: string) {
+    return this.cached(`catalog:event:${id}`, 30, async () => {
     const event = await this.prisma.event.findUnique({
       where: { id, status: EventStatus.PUBLISHED },
       include: {
@@ -432,10 +463,13 @@ export class CatalogService {
     if (!event) throw new NotFoundException('Evento no encontrado');
 
     // Aforo vendido (pases emitidos: Stripe + efectivo + vales pendientes).
-    const soldPasses = await this.prisma.pass.count({ where: { eventId: event.id } });
-    const pendingClaims = await this.prisma.passClaim.count({
-      where: { eventId: event.id, status: PassClaimStatus.PENDING },
-    });
+    // Los dos counts en paralelo — no encadenados — para no doblar latencia.
+    const [soldPasses, pendingClaims] = await Promise.all([
+      this.prisma.pass.count({ where: { eventId: event.id } }),
+      this.prisma.passClaim.count({
+        where: { eventId: event.id, status: PassClaimStatus.PENDING },
+      }),
+    ]);
     const sold = soldPasses + pendingClaims;
 
     // Expone el precio vigente y la próxima subida; oculta el calendario interno.
@@ -459,6 +493,7 @@ export class CatalogService {
       sold,
       capacity: event.capacity ?? null,
     };
+    });
   }
 
   async getTierById(tierId: string) {
@@ -589,6 +624,7 @@ export class CatalogService {
    * `select` mínimo (slug/id + updatedAt) para mantenerlo barato y cacheable.
    */
   async getSitemapFeed() {
+    return this.cached('catalog:sitemap', 3600, async () => {
     const now = new Date();
 
     const eventWhere: Prisma.EventWhereInput = {
@@ -600,25 +636,36 @@ export class CatalogService {
       ],
     };
 
+    // Cap defensivo: evita respuestas de MB y OOM si el catálogo crece o un bot
+    // SEO crawlea el feed. 10k por tipo cubre de sobra el corto/medio plazo.
+    const SITEMAP_CAP = 10_000;
     const [venues, events, promoters] = await this.prisma.$transaction([
       this.prisma.venue.findMany({
         where: { status: VenueStatus.ACTIVE },
         select: { slug: true, updatedAt: true },
+        orderBy: { updatedAt: 'desc' },
+        take: SITEMAP_CAP,
       }),
       this.prisma.event.findMany({
         where: eventWhere,
         select: { id: true, updatedAt: true },
+        orderBy: { startsAt: 'asc' },
+        take: SITEMAP_CAP,
       }),
       this.prisma.promoter.findMany({
         where: { status: 'ACTIVE' },
         select: { slug: true, updatedAt: true },
+        orderBy: { updatedAt: 'desc' },
+        take: SITEMAP_CAP,
       }),
     ]);
 
     return { venues, events, promoters };
+    });
   }
 
   async getPublicStats() {
+    return this.cached('catalog:stats', 60, async () => {
     const [customers, venues, events] = await this.prisma.$transaction([
       this.prisma.user.count({ where: { role: Role.CUSTOMER } }),
       this.prisma.venue.count({ where: { status: VenueStatus.ACTIVE } }),
@@ -627,6 +674,7 @@ export class CatalogService {
       }),
     ]);
     return { customers, venues, events };
+    });
   }
 
   /**

@@ -9,7 +9,7 @@ export const metadata = { title: 'Mis eventos' };
 export default async function MiPromotoraEventosPage() {
   let me: PromoterMe;
   try {
-    me = await serverFetch<PromoterMe>('/promoters/me');
+    me = await serverFetch<PromoterMe>('/promoters/me', { revalidate: 300 });
   } catch (err) {
     if (err instanceof ServerApiError && err.status === 404) redirect(paths.miOrganizador);
     throw err;

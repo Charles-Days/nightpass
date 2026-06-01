@@ -9,7 +9,7 @@ export const metadata = { title: 'Pagos · Mi local' };
 export default async function PagosPage() {
   let user: User;
   try {
-    user = await serverFetch<User>('/auth/me');
+    user = await serverFetch<User>('/auth/me', { revalidate: 60 });
   } catch (err) {
     if (err instanceof ServerApiError && (err.status === 401 || err.status === 403)) {
       redirect(paths.login);
@@ -21,7 +21,8 @@ export default async function PagosPage() {
     redirect(paths.dashboard);
   }
 
-  const venues = await serverFetch<Venue[]>('/venues/my');
+  // Solo id/nombre para las tarjetas; StripeConnectCard fetchea su estado en cliente.
+  const venues = await serverFetch<Venue[]>('/venues/my', { revalidate: 300 });
 
   return (
     <div className="space-y-6">

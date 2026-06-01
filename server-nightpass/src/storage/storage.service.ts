@@ -143,7 +143,9 @@ export class StorageService {
       return;
     }
 
-    await Promise.all(filtered.map(k => this.delete(k)));
+    // allSettled (no all): el cleanup es fire-and-forget; un fallo en un objeto
+    // no debe abortar el borrado del resto. delete() ya loggea y no relanza.
+    await Promise.allSettled(filtered.map(k => this.delete(k)));
   }
 
   /**

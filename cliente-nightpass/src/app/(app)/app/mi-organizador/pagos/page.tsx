@@ -10,7 +10,7 @@ export const metadata = { title: 'Pagos · Mi organizador' };
 export default async function PagosOrganizadorPage() {
   let user: User;
   try {
-    user = await serverFetch<User>('/auth/me');
+    user = await serverFetch<User>('/auth/me', { revalidate: 60 });
   } catch (err) {
     if (err instanceof ServerApiError && (err.status === 401 || err.status === 403)) {
       redirect(paths.login);

@@ -11,12 +11,12 @@ export default async function MiLocalPasesPage({
 }: {
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-  const user = await serverFetch<User>('/auth/me');
+  const user = await serverFetch<User>('/auth/me', { revalidate: 60 });
   if (user.role !== 'VENUE_OWNER' && user.role !== 'VENUE_STAFF' && user.role !== 'ADMIN') {
     redirect(paths.dashboard);
   }
 
-  const venues = await serverFetch<Venue[]>('/venues/my');
+  const venues = await serverFetch<Venue[]>('/venues/my', { revalidate: 300 });
   const venue = venues[0];
   if (!venue) {
     return (
@@ -39,7 +39,9 @@ export default async function MiLocalPasesPage({
   if (sp.from) qs.set('from', sp.from);
   if (sp.to) qs.set('to', sp.to);
   const path = `/pases/venues/${venue.id}/stats${qs.toString() ? `?${qs}` : ''}`;
-  const initialStats = await serverFetch<PassesStats>(path);
+  // Stats son analíticas tolerantes a staleness; PasesDashboard refetchea en
+  // cliente al cambiar el rango. Cacheamos 120s para deduplicar navegaciones.
+  const initialStats = await serverFetch<PassesStats>(path, { revalidate: 120 });
 
   return (
     <div className="space-y-6">

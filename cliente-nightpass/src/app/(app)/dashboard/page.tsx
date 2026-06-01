@@ -33,7 +33,7 @@ function defaultRange(): { from: string; to: string } {
 export default async function DashboardPage(props: {
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-  const user = await serverFetch<User>('/auth/me');
+  const user = await serverFetch<User>('/auth/me', { revalidate: 60 });
 
   if (user.role !== 'ADMIN') {
     return <WelcomeCard user={user} />;
@@ -48,14 +48,16 @@ export default async function DashboardPage(props: {
 
   let stats: AdminFinanceStats | null = null;
   try {
-    stats = await serverFetch<AdminFinanceStats>(`/admin/finance/stats?${query}`);
+    stats = await serverFetch<AdminFinanceStats>(`/admin/finance/stats?${query}`, {
+      revalidate: 120,
+    });
   } catch {
     stats = null;
   }
 
   let visitors: VisitorStats | null = null;
   try {
-    visitors = await serverFetch<VisitorStats>('/metrics/visitors');
+    visitors = await serverFetch<VisitorStats>('/metrics/visitors', { revalidate: 120 });
   } catch {
     visitors = null;
   }

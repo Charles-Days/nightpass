@@ -567,6 +567,7 @@ model Order {
 
   @@index([userId, createdAt])
   @@index([eventId, status])
+  @@index([eventId, paymentMethod, createdAt])
   @@map("orders")
 }
 
@@ -591,6 +592,7 @@ model Pass {
 
   @@index([userId])
   @@index([eventId, usedAt])
+  @@index([eventId, createdAt])
   @@map("passes")
 }
 
@@ -645,6 +647,7 @@ model LocationPing {
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([createdAt])
+  @@index([createdAt, latitude, longitude])
   @@map("location_pings")
 }
 

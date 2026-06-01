@@ -9,7 +9,9 @@ type VenueWithCount = Venue & {
 };
 
 export default async function MiLocalEventosPage() {
-  const venues = await serverFetch<VenueWithCount[]>('/venues/my');
+  // Solo se usa para resolver el venue.id que se pasa a <EventsPanel> (client,
+  // fetchea sus propios eventos). El vínculo usuario→local es muy estable.
+  const venues = await serverFetch<VenueWithCount[]>('/venues/my', { revalidate: 300 });
   const venue = venues[0] as VenueWithCount | undefined;
 
   if (!venue) {

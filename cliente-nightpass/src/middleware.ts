@@ -72,7 +72,7 @@ const matches = (pathname: string, prefixes: string[]) =>
 // Se consulta en cada request, así que cacheamos el resultado por instancia con
 // un TTL corto para no pegarle al backend en cada navegación.
 const MAINTENANCE_PATH = '/mantenimiento';
-const MAINT_TTL_MS = 10_000;
+const MAINT_TTL_MS = 120_000;
 let maintCache: { on: boolean; at: number } | null = null;
 
 async function isMaintenanceOn(): Promise<boolean> {
@@ -206,6 +206,7 @@ export async function middleware(req: NextRequest) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
+        signal: AbortSignal.timeout(2000),
       });
       if (upstream.ok) {
         const tokens = (await upstream.json()) as RefreshTokens;

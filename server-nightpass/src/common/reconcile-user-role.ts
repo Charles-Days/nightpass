@@ -1,4 +1,7 @@
+import { Logger } from '@nestjs/common';
 import { Prisma, Role, VenueStaffStatus } from '@prisma/client';
+
+const logger = new Logger('reconcileUserRole');
 
 const PANEL_ROLES: Role[] = [
   Role.VENUE_OWNER,
@@ -24,21 +27,33 @@ export async function reconcileUserRole(
   tx: Prisma.TransactionClient,
   userId: string,
 ): Promise<void> {
-  const [ownedVenues, activeStaff, promoterMemberships, rpProfiles] =
-    await Promise.all([
-      tx.venueOwner.count({ where: { userId } }),
-      tx.venueStaff.count({
-        where: { userId, status: { not: VenueStaffStatus.REVOKED } },
-      }),
-      tx.promoterMember.count({ where: { userId } }),
-      tx.rpProfile.count({ where: { userId } }),
-    ]);
+  try {
+    const [ownedVenues, activeStaff, promoterMemberships, rpProfiles] =
+      await Promise.all([
+        tx.venueOwner.count({ where: { userId } }),
+        tx.venueStaff.count({
+          where: { userId, status: { not: VenueStaffStatus.REVOKED } },
+        }),
+        tx.promoterMember.count({ where: { userId } }),
+        tx.rpProfile.count({ where: { userId } }),
+      ]);
 
-  const remaining = ownedVenues + activeStaff + promoterMemberships + rpProfiles;
-  if (remaining === 0) {
-    await tx.user.updateMany({
-      where: { id: userId, role: { in: PANEL_ROLES } },
-      data: { role: Role.CUSTOMER },
-    });
+    const remaining =
+      ownedVenues + activeStaff + promoterMemberships + rpProfiles;
+    if (remaining === 0) {
+      await tx.user.updateMany({
+        where: { id: userId, role: { in: PANEL_ROLES } },
+        data: { role: Role.CUSTOMER },
+      });
+    }
+  } catch (err) {
+    // Cleanup best-effort: degradar el rol es secundario a la operación que nos
+    // llama (remover la membresía, que ya ocurrió en la misma tx). Un fallo aquí
+    // deja a lo sumo un rol de panel huérfano, recuperable, y no debe abortar el
+    // flujo principal. Por eso solo logueamos y NO relanzamos.
+    logger.error(
+      `No se pudo reconciliar el rol del usuario ${userId} (degradar a CUSTOMER): ${(err as Error).message}`,
+      (err as Error).stack,
+    );
   }
 }

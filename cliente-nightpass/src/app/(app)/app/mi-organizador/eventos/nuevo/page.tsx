@@ -11,7 +11,7 @@ export const metadata = { title: 'Nuevo evento' };
 export default async function NuevoEventoPage() {
   let me: PromoterMe;
   try {
-    me = await serverFetch<PromoterMe>('/promoters/me');
+    me = await serverFetch<PromoterMe>('/promoters/me', { revalidate: 300 });
   } catch (err) {
     if (err instanceof ServerApiError && err.status === 404) notFound();
     throw err;

@@ -6,7 +6,7 @@ import type { User } from '@/core/types/api';
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   let user: User;
   try {
-    user = await serverFetch<User>('/auth/me');
+    user = await serverFetch<User>('/auth/me', { revalidate: 60 });
   } catch (error) {
     if (error instanceof ServerApiError && (error.status === 401 || error.status === 403)) {
       redirect(paths.login);

@@ -9,7 +9,8 @@ import { VenueEditForm } from '@/features/venues';
 export const metadata = { title: 'Editar local' };
 
 export default async function MiLocalEditarPage() {
-  const venues = await serverFetch<Venue[]>('/venues/my');
+  // Solo resuelve el venue.id (vínculo usuario→local, muy estable).
+  const venues = await serverFetch<Venue[]>('/venues/my', { revalidate: 300 });
   const venue = venues[0];
 
   // Rol VENUE_OWNER sin local (huérfano) → al panel del local, que muestra

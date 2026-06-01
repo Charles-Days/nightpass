@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { memo, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 
 interface RevealProps {
   children: ReactNode;
@@ -9,14 +9,24 @@ interface RevealProps {
   threshold?: number;
 }
 
-export function Reveal({ children, delay = 0, className = '', threshold = 0.15 }: RevealProps) {
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
+function RevealImpl({ children, delay = 0, className = '', threshold = 0.15 }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (typeof IntersectionObserver === 'undefined') {
+    // Accesibilidad + perf: si el usuario pide menos movimiento, mostrar el
+    // estado final directo sin observer ni transición.
+    if (prefersReducedMotion() || typeof IntersectionObserver === 'undefined') {
       setVisible(true);
       return;
     }
@@ -45,3 +55,5 @@ export function Reveal({ children, delay = 0, className = '', threshold = 0.15 }
     </div>
   );
 }
+
+export const Reveal = memo(RevealImpl);

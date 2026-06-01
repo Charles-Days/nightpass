@@ -46,30 +46,41 @@ export class AdminPassesService {
       throw new NotFoundException('Tier no encontrado para este evento');
     }
 
-    // 1. Validar aforo por Tier
-    if (tier.capacity != null) {
-      const soldTier = await this.prisma.pass.count({
-        where: { eventId: dto.eventId, order: { tierId: dto.tierId } },
-      });
-      const pendingClaimsTier = await this.prisma.passClaim.count({
-        where: { tierId: dto.tierId, status: PassClaimStatus.PENDING },
-      });
-      if (soldTier + pendingClaimsTier >= tier.capacity) {
-        throw new ConflictException('Tier agotado');
-      }
+    // 1 + 2. Validar aforo por Tier y por Evento. Los counts son reads
+    // independientes entre sí → se resuelven en paralelo (antes encadenados).
+    const [soldTier, pendingClaimsTier, soldEvent, pendingClaimsEvent] =
+      await Promise.all([
+        tier.capacity != null
+          ? this.prisma.pass.count({
+              where: { eventId: dto.eventId, order: { tierId: dto.tierId } },
+            })
+          : Promise.resolve(0),
+        tier.capacity != null
+          ? this.prisma.passClaim.count({
+              where: { tierId: dto.tierId, status: PassClaimStatus.PENDING },
+            })
+          : Promise.resolve(0),
+        event.capacity != null
+          ? this.prisma.pass.count({
+              where: { eventId: dto.eventId },
+            })
+          : Promise.resolve(0),
+        event.capacity != null
+          ? this.prisma.passClaim.count({
+              where: { eventId: dto.eventId, status: PassClaimStatus.PENDING },
+            })
+          : Promise.resolve(0),
+      ]);
+
+    if (tier.capacity != null && soldTier + pendingClaimsTier >= tier.capacity) {
+      throw new ConflictException('Tier agotado');
     }
 
-    // 2. Validar aforo por Evento
-    if (event.capacity != null) {
-      const soldEvent = await this.prisma.pass.count({
-        where: { eventId: dto.eventId },
-      });
-      const pendingClaimsEvent = await this.prisma.passClaim.count({
-        where: { eventId: dto.eventId, status: PassClaimStatus.PENDING },
-      });
-      if (soldEvent + pendingClaimsEvent >= event.capacity) {
-        throw new ConflictException('Evento agotado');
-      }
+    if (
+      event.capacity != null &&
+      soldEvent + pendingClaimsEvent >= event.capacity
+    ) {
+      throw new ConflictException('Evento agotado');
     }
 
     // 3. Resolver código de RP si se proporciona

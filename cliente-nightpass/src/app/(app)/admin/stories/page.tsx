@@ -7,10 +7,13 @@ import { AdminStoriesClient } from './admin-stories-client';
 export const metadata = { title: 'Historias · NightPass Admin' };
 
 export default async function AdminStoriesPage() {
-  const user = await serverFetch<User>('/auth/me');
+  const user = await serverFetch<User>('/auth/me', { revalidate: 60 });
   if (user.role !== 'ADMIN') redirect(paths.dashboard);
 
-  const data = await serverFetch<PaginatedVenues>('/venues?status=ACTIVE&limit=50');
+  // Selector de locales activos (no se muta desde aquí) — cacheable.
+  const data = await serverFetch<PaginatedVenues>('/venues?status=ACTIVE&limit=50', {
+    revalidate: 120,
+  });
 
   return (
     <div className="space-y-6">

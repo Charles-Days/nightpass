@@ -38,7 +38,7 @@ export default async function MiPromotoraPage() {
   // todavía no expone el endpoint.
   let me: PromoterMe;
   try {
-    me = await serverFetch<PromoterMe>('/promoters/me');
+    me = await serverFetch<PromoterMe>('/promoters/me', { revalidate: 300 });
   } catch (err) {
     if (err instanceof ServerApiError && err.status === 404) {
       return (
@@ -74,10 +74,14 @@ export default async function MiPromotoraPage() {
   const [statsRes, eventsRes, stripeRes] = await Promise.allSettled([
     serverFetch<PassesStats>(
       `/promoters/me/stats?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`,
+      { revalidate: 120 },
     ),
     serverFetch<PaginatedEvents>(
       `/events?status=PUBLISHED&fromDate=${encodeURIComponent(nowIso)}&limit=100`,
+      { revalidate: 120 },
     ),
+    // Stripe status NO se cachea: el usuario vuelve del onboarding de Stripe
+    // esperando ver "Activo" al instante. Mantener no-store.
     serverFetch<StripePromoterStatus>('/stripe/connect/status-promoter'),
   ]);
 

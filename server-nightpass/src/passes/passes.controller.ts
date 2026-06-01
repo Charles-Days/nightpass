@@ -6,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
@@ -19,6 +20,7 @@ import {
 import { PassesService } from './passes.service';
 import { ClaimPassDto } from './dto/claim-pass.dto';
 import { ScanPassDto } from './dto/scan-pass.dto';
+import { ListMineQueryDto } from './dto/list-mine-query.dto';
 
 // Sin guard a nivel clase: la vista previa de transferencia (`GET
 // transfers/:token`) es PÚBLICA para que el destinatario vea el pase ANTES de
@@ -29,8 +31,11 @@ export class PassesController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  listMine(@CurrentUser() user: AuthUser) {
-    return this.service.listMine(user.id);
+  listMine(@CurrentUser() user: AuthUser, @Query() query: ListMineQueryDto) {
+    return this.service.listMine(user.id, {
+      page: query.page,
+      limit: query.limit,
+    });
   }
 
   @Post('scan')

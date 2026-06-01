@@ -4,6 +4,14 @@ import { ACCESS_COOKIE } from '@/core/config/cookies';
 
 export interface FetchOptions extends Omit<RequestInit, 'body'> {
   body?: unknown;
+  /**
+   * Si se pasa, usa la Data Cache de Next con `next: { revalidate }` (ISR) en vez
+   * de `cache: 'no-store'`. Así varios renders comparten el mismo resultado y se
+   * baja la carga al backend. Solo para datos tolerantes a staleness — NO usar en
+   * datos que deban ser frescos al instante tras una mutación. El header
+   * `Authorization: Bearer` se sigue enviando igual. Por defecto: `no-store`.
+   */
+  revalidate?: number;
 }
 
 export class ServerApiError extends Error {
@@ -35,9 +43,11 @@ export async function serverFetch<T>(path: string, options: FetchOptions = {}): 
   const cookieStore = await cookies();
   const token = cookieStore.get(ACCESS_COOKIE)?.value;
 
+  const { revalidate, ...rest } = options;
+
   const url = `${serverEnv.API_URL}/api/v1${path}`;
-  const headers = new Headers(options.headers);
-  if (!headers.has('Content-Type') && options.body !== undefined) {
+  const headers = new Headers(rest.headers);
+  if (!headers.has('Content-Type') && rest.body !== undefined) {
     headers.set('Content-Type', 'application/json');
   }
   if (token) {
@@ -47,13 +57,20 @@ export async function serverFetch<T>(path: string, options: FetchOptions = {}): 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
 
+  // Por defecto `no-store` (backward-compat). Si el caller pasa `revalidate`,
+  // usamos la Data Cache de Next (ISR) — sin tocar el header Authorization.
+  const cacheOpts =
+    revalidate !== undefined
+      ? { next: { revalidate } }
+      : { cache: 'no-store' as const };
+
   let res: Response;
   try {
     res = await fetch(url, {
-      ...options,
+      ...rest,
       headers,
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-      cache: 'no-store',
+      body: rest.body !== undefined ? JSON.stringify(rest.body) : undefined,
+      ...cacheOpts,
       signal: controller.signal,
     });
   } catch (err) {

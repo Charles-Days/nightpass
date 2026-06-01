@@ -1,4 +1,5 @@
 import {
+  ArrayMaxSize,
   IsArray,
   IsEnum,
   IsInt,
@@ -40,6 +41,7 @@ export class CreateVenueDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(5000)
   description?: string;
 
   @IsOptional()
@@ -52,6 +54,7 @@ export class CreateVenueDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(10)
   currency?: string;
 
   @IsOptional()
@@ -74,7 +77,9 @@ export class CreateVenueDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(20)
   @IsString({ each: true })
+  @MaxLength(80, { each: true })
   categories?: string[];
 
   @IsOptional()
@@ -88,7 +93,9 @@ export class CreateVenueDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(20)
   @IsString({ each: true })
+  @MaxLength(80, { each: true })
   musicTypes?: string[];
 
   @IsOptional()
@@ -97,6 +104,7 @@ export class CreateVenueDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   dressCode?: string;
 
   @IsOptional()
@@ -113,6 +121,8 @@ export class CreateVenueDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(30)
   @IsString({ each: true })
+  @MaxLength(1000, { each: true })
   images?: string[];
 }

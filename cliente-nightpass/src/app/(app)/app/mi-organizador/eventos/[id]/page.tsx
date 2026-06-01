@@ -19,7 +19,10 @@ export default async function EventoDetallePage({ params }: PageProps) {
   let event: Event;
   try {
     [me, event] = await Promise.all([
-      serverFetch<PromoterMe>('/promoters/me'),
+      // Identidad/nombre del organizador: estable, cacheable.
+      serverFetch<PromoterMe>('/promoters/me', { revalidate: 300 }),
+      // El evento se edita en esta misma vista (PromoterEventEdit hace
+      // router.refresh tras guardar) → debe ser fresco. Mantener no-store.
       serverFetch<Event>(`/events/${id}`),
     ]);
   } catch (err) {

@@ -7,7 +7,7 @@ import { Reveal } from '@/core/components/reveal';
 import { publicFetch } from '@/core/lib/api/server-client';
 import { absoluteUrl } from '@/core/config/env';
 import { JsonLd, organizationLd, websiteLd } from '@/core/seo/json-ld';
-import { DemoDialog } from './_components/demo-dialog';
+import { DemoDialogLazy } from './_components/demo-dialog-lazy';
 import { PhoneMockup } from './_components/phone-mockup';
 
 const title = 'NightPass';
@@ -176,7 +176,7 @@ function Hero({ stats }: { stats: PublicStats }) {
                 <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
               </Link>
             </Button>
-            <DemoDialog />
+            <DemoDialogLazy />
           </div>
           <div className="np-rise" style={{ animationDelay: '560ms' }}>
             <SocialProof stats={stats} />

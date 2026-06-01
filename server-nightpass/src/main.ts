@@ -10,6 +10,7 @@ import helmet from '@fastify/helmet';
 import fastifyStatic from '@fastify/static';
 import fastifyMultipart from '@fastify/multipart';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 /**
  * Interpreta TRUST_PROXY a lo que espera Fastify (ver env.schema.ts).
@@ -31,6 +32,12 @@ async function bootstrap() {
     new FastifyAdapter({
       logger: true,
       trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
+      // Anti-DoS: corta payloads gigantes (OOM), requests colgadas (agotan FDs)
+      // y sockets zombie. 12MB cubre subida local de imágenes (modo fallback);
+      // en prod las imágenes van directo a R2 vía presigned y no tocan la API.
+      bodyLimit: 12 * 1024 * 1024,
+      requestTimeout: 30_000,
+      keepAliveTimeout: 65_000,
     }),
     // rawBody: true → Nest expone req.rawBody (Buffer) en cualquier controlador
     // que use @RawBodyRequest. Necesario para verificar firmas de Stripe webhooks.
@@ -82,7 +89,9 @@ async function bootstrap() {
     }
   });
 
-  await app.register(fastifyMultipart);
+  await app.register(fastifyMultipart, {
+    limits: { fileSize: 10 * 1024 * 1024, files: 6 },
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -92,6 +101,11 @@ async function bootstrap() {
     }),
   );
 
+  app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Cierre ordenado: drena requests en vuelo y cierra Prisma/Redis en deploy/restart.
+  app.enableShutdownHooks();
+
   app.setGlobalPrefix('api/v1');
 
   const port = config.get<number>('PORT') ?? 7101;
@@ -99,5 +113,19 @@ async function bootstrap() {
   await app.listen(port, '0.0.0.0');
   Logger.log(`NightPass API listening on http://localhost:${port}/api/v1`, 'Bootstrap');
 }
+
+// Una promesa rechazada o excepción sin capturar no debe matar el proceso en
+// silencio: log con contexto. uncaughtException sí termina (estado corrupto),
+// pero ordenadamente y con rastro.
+process.on('unhandledRejection', (reason) => {
+  Logger.error(
+    `unhandledRejection: ${reason instanceof Error ? reason.stack : String(reason)}`,
+    'Process',
+  );
+});
+process.on('uncaughtException', (err) => {
+  Logger.error(`uncaughtException: ${err.stack ?? err.message}`, 'Process');
+  process.exit(1);
+});
 
 bootstrap();
