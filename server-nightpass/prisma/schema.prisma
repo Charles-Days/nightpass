@@ -802,6 +802,10 @@ model RpProfile {
   rpCode      String   @unique
   displayName String
   isActive    Boolean  @default(true)
+  // Zona del RP — para enrutar solicitudes de pago en efectivo a quien cubre la
+  // ciudad/estado del cliente. Reparto equitativo entre los que coinciden.
+  state       String?
+  city        String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -812,6 +816,7 @@ model RpProfile {
   issuedClaims    PassClaim[] @relation("RpIssuedClaims")
   eventAssignments EventRp[]
   confirmedPhysicalRequests PhysicalPaymentRequest[] @relation("RpConfirmedRequests")
+  assignedPhysicalRequests  PhysicalPaymentRequest[] @relation("RpAssignedRequests")
 
   @@index([rpCode])
   @@index([promoterId])
@@ -884,6 +889,9 @@ model PhysicalPaymentRequest {
   status          PhysicalPaymentRequestStatus @default(PENDING)
   contactPhone    String?
   note            String?
+  // RP al que se ENRUTÓ la solicitud (reparto equitativo por ciudad/estado).
+  // Solo este RP recibe el correo y puede confirmarla.
+  assignedRpId    String?                      @db.Uuid
   confirmedByRpId String?                      @db.Uuid
   confirmedAt     DateTime?
   orderId         String?                      @unique @db.Uuid
@@ -894,12 +902,14 @@ model PhysicalPaymentRequest {
   user          User       @relation("UserPhysicalRequests", fields: [userId], references: [id], onDelete: Cascade)
   event         Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
   tier          EventTier  @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  assignedRp    RpProfile? @relation("RpAssignedRequests", fields: [assignedRpId], references: [id], onDelete: SetNull)
   confirmedByRp RpProfile? @relation("RpConfirmedRequests", fields: [confirmedByRpId], references: [id], onDelete: SetNull)
   order         Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([eventId, status])
   @@index([userId, status])
   @@index([confirmedByRpId, status])
+  @@index([assignedRpId, status])
   @@map("physical_payment_requests")
 }
 

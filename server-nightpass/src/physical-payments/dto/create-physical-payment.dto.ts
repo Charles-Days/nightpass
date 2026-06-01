@@ -25,6 +25,18 @@ export class CreatePhysicalPaymentDto {
   @MaxLength(40)
   contactPhone?: string;
 
+  // Ubicación del cliente — se pide la primera vez (si no la tenemos del ranking)
+  // y se reutiliza. Sirve para enrutar la solicitud al RP de su zona.
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  city?: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(280)

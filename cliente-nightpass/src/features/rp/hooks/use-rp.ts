@@ -10,6 +10,8 @@ export interface RpProfile {
   displayName: string;
   isActive: boolean;
   promoterId: string | null;
+  state?: string | null;
+  city?: string | null;
   createdAt: string;
   updatedAt: string;
   user: {
@@ -151,10 +153,32 @@ export function useIssueRpPass() {
 export function useCreateRp(basePath: string = '/api/rp') {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { email: string; displayName: string; password?: string; promoterId?: string; eventId?: string }) =>
+    mutationFn: (data: { email: string; displayName: string; state?: string; city?: string; password?: string; promoterId?: string; eventId?: string }) =>
       clientFetch<RpProfile>(basePath, {
         method: 'POST',
         body: data,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rps'] });
+    },
+  });
+}
+
+export function useUpdateRpZone(basePath: string = '/api/rp') {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      state,
+      city,
+    }: {
+      id: string;
+      state?: string;
+      city?: string;
+    }) =>
+      clientFetch<RpProfile>(`${basePath}/${id}/zone`, {
+        method: 'PATCH',
+        body: { state, city },
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rps'] });

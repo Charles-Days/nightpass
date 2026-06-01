@@ -38,6 +38,8 @@ class PhysicalPaymentsApi {
     String tierId, {
     int quantity = 1,
     String? contactPhone,
+    String? state,
+    String? city,
     String? note,
   }) async {
     final resp = await _client.dio.post(
@@ -47,6 +49,8 @@ class PhysicalPaymentsApi {
         'quantity': quantity,
         if (contactPhone != null && contactPhone.trim().isNotEmpty)
           'contactPhone': contactPhone.trim(),
+        if (state != null && state.trim().isNotEmpty) 'state': state.trim(),
+        if (city != null && city.trim().isNotEmpty) 'city': city.trim(),
         if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
       },
     );

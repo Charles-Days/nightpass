@@ -179,6 +179,12 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
   const [phone, setPhone] = useState('');
   const [hasSavedPhone, setHasSavedPhone] = useState(false);
 
+  // Ubicación del cliente — para enrutar la solicitud al RP de su zona. Se pide
+  // la primera vez (si no la tenemos) y se reutiliza.
+  const [stateName, setStateName] = useState('');
+  const [city, setCity] = useState('');
+  const [hasSavedLocation, setHasSavedLocation] = useState(false);
+
   const initRef = useRef(false);
 
   const createOrder = useCallback(async (customCode?: string, currentQty = quantity) => {
@@ -271,6 +277,8 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
           tierId,
           quantity: currentQty,
           ...(phone.trim() ? { contactPhone: phone.trim() } : {}),
+          ...(stateName.trim() ? { state: stateName.trim() } : {}),
+          ...(city.trim() ? { city: city.trim() } : {}),
         },
       });
       setPhase('cash_done');
@@ -280,7 +288,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
       setErrorMessage(info.message);
       toast.error(info.message);
     }
-  }, [tierId, quantity, searchParams, phone]);
+  }, [tierId, quantity, searchParams, phone, stateName, city]);
 
   // Carga el teléfono guardado del usuario (solo si el evento acepta efectivo).
   useEffect(() => {
@@ -288,14 +296,21 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
     let cancelled = false;
     void (async () => {
       try {
-        const me = await clientFetch<{ phone?: string | null }>('/api/auth/me');
+        const me = await clientFetch<{
+          phone?: string | null;
+          state?: string | null;
+          city?: string | null;
+        }>('/api/auth/me');
         if (cancelled) return;
         if (me.phone) {
           setPhone(me.phone);
           setHasSavedPhone(true);
         }
+        if (me.state) setStateName(me.state);
+        if (me.city) setCity(me.city);
+        if (me.state && me.city) setHasSavedLocation(true);
       } catch {
-        // sin teléfono guardado → se lo pediremos
+        // sin datos guardados → se los pediremos
       }
     })();
     return () => {
@@ -563,6 +578,39 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                     />
                   </div>
                 )}
+                {method === 'cash' && !hasSavedLocation && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1.5">
+                      <label htmlFor="cash-state" className="block text-[11px] font-medium text-muted-foreground">
+                        Estado
+                      </label>
+                      <input
+                        id="cash-state"
+                        placeholder="Ej. Jalisco"
+                        value={stateName}
+                        onChange={(e) => setStateName(e.target.value)}
+                        className="h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white placeholder-white/30 focus:border-primary/50 focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label htmlFor="cash-city" className="block text-[11px] font-medium text-muted-foreground">
+                        Ciudad
+                      </label>
+                      <input
+                        id="cash-city"
+                        placeholder="Ej. Guadalajara"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        className="h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white placeholder-white/30 focus:border-primary/50 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+                {method === 'cash' && (
+                  <p className="text-center text-[10px] text-muted-foreground">
+                    Te asignamos un vendedor de tu zona.
+                  </p>
+                )}
               </div>
             )}
             <p className="text-sm text-neutral-300 font-medium text-center">¿Cuántas entradas deseas comprar?</p>
@@ -596,7 +644,12 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
             </p>
             <Button
               type="button"
-              disabled={method === 'cash' && phone.trim().length < 8}
+              disabled={
+                method === 'cash' &&
+                (phone.trim().length < 8 ||
+                  stateName.trim() === '' ||
+                  city.trim() === '')
+              }
               onClick={() => (method === 'cash' ? void requestCash() : void createOrder())}
               className="w-full mt-2 h-11 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 font-semibold text-white shadow-[0_4px_18px_-4px_rgba(124,58,237,0.5)] transition-transform hover:brightness-110 active:scale-95 transform-gpu disabled:opacity-50 disabled:active:scale-100"
             >

@@ -35,6 +35,8 @@ export function CreateRpDialog({
   const { mutate: createRp, isPending } = useCreateRp(basePath);
   const [email, setEmail] = React.useState('');
   const [displayName, setDisplayName] = React.useState('');
+  const [state, setState] = React.useState('');
+  const [city, setCity] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [promoterId, setPromoterId] = React.useState('');
   const [promoters, setPromoters] = React.useState<Array<{ id: string; name: string }>>([]);
@@ -49,6 +51,8 @@ export function CreateRpDialog({
     if (open) {
       setEmail('');
       setDisplayName('');
+      setState('');
+      setCity('');
       setPassword('');
       setPromoterId('');
       setEventId('');
@@ -89,6 +93,8 @@ export function CreateRpDialog({
     const data: any = {
       email,
       displayName,
+      state: state.trim() || undefined,
+      city: city.trim() || undefined,
       password: password || undefined,
       promoterId: promoterId || undefined,
       eventId: eventId || undefined,
@@ -138,6 +144,37 @@ export function CreateRpDialog({
               required
             />
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="state" className="text-white/70 text-xs">
+                Estado
+              </Label>
+              <Input
+                id="state"
+                placeholder="Ej. Jalisco"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="city" className="text-white/70 text-xs">
+                Ciudad
+              </Label>
+              <Input
+                id="city"
+                placeholder="Ej. Guadalajara"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
+              />
+            </div>
+          </div>
+          <p className="-mt-2 text-[11px] text-white/40">
+            La zona del RP enruta las solicitudes de pago en efectivo de clientes
+            de esa ciudad/estado.
+          </p>
 
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-white/70 text-xs">

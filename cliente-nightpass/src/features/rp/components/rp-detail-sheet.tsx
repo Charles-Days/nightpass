@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useRpStats, useDeleteCommissionRule } from '../hooks/use-rp';
 import { CommissionRuleForm } from './commission-rule-form';
+import { RpZoneEditor } from './rp-zone-editor';
 import { toast } from 'sonner';
 import { Button } from '@/core/components/ui/button';
 import {
@@ -128,6 +129,9 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
                 </div>
               </div>
             </div>
+
+            {/* Zona (enrutamiento de pago en efectivo) */}
+            {rpId && <RpZoneEditor rpId={rpId} basePath={basePath} />}
 
             {/* Commission Rules */}
             <div className="space-y-3">

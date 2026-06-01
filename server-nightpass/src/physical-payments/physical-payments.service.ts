@@ -91,11 +91,12 @@ export class PhysicalPaymentsService {
     ).currentCents;
     const amountCents = singlePriceCents * quantity;
 
-    // Teléfono/WhatsApp de contacto. Se pide solo la primera vez (si el usuario
-    // no tiene uno guardado) y se persiste para reutilizarlo después.
+    // Teléfono + ubicación del cliente. Se piden solo la primera vez (si no los
+    // tenemos guardados) y se persisten para reutilizarlos. La ubicación
+    // (estado/ciudad) sirve para enrutar la solicitud al RP de su zona.
     const userRow = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { phone: true },
+      select: { phone: true, state: true, city: true },
     });
     const savedPhone = userRow?.phone?.trim() || null;
     const incomingPhone = dto.contactPhone?.trim() || null;
@@ -103,6 +104,18 @@ export class PhysicalPaymentsService {
     if (!effectivePhone) {
       throw new BadRequestException(
         'Necesitamos tu WhatsApp para que el vendedor te contacte',
+      );
+    }
+
+    const savedState = userRow?.state?.trim() || null;
+    const savedCity = userRow?.city?.trim() || null;
+    const incomingState = dto.state?.trim() || null;
+    const incomingCity = dto.city?.trim() || null;
+    const effectiveState = savedState || incomingState;
+    const effectiveCity = savedCity || incomingCity;
+    if (!effectiveState || !effectiveCity) {
+      throw new BadRequestException(
+        'Necesitamos tu estado y ciudad para asignarte un vendedor de tu zona',
       );
     }
 
@@ -154,6 +167,16 @@ export class PhysicalPaymentsService {
       }
     }
 
+    // Enrutamiento: entre los RPs asignados al evento, prioriza los que cubren la
+    // ciudad/estado del cliente; si ninguno coincide, usa todos los asignados.
+    // De ese grupo se elige UN solo RP — el que menos solicitudes PENDING tenga
+    // (reparto equitativo). Solo ese RP recibe el correo y puede confirmar.
+    const assignedRp = await this.pickAssignedRp(
+      assignedRps,
+      effectiveState,
+      effectiveCity,
+    );
+
     const request = await this.prisma.physicalPaymentRequest.create({
       data: {
         userId,
@@ -164,31 +187,35 @@ export class PhysicalPaymentsService {
         currency: tier.currency,
         contactPhone: effectivePhone,
         note: dto.note?.trim() || null,
+        assignedRpId: assignedRp?.rpProfile.id ?? null,
         expiresAt: event.startsAt,
       },
       include: { user: { select: { name: true, email: true } } },
     });
 
-    // Primera vez: guarda el teléfono en el perfil para no volver a pedirlo.
-    if (!savedPhone && incomingPhone) {
+    // Primera vez: guarda teléfono + ubicación en el perfil para no volver a pedirlos.
+    const userPatch: { phone?: string; state?: string; city?: string } = {};
+    if (!savedPhone && incomingPhone) userPatch.phone = incomingPhone;
+    if (!savedState && incomingState) userPatch.state = incomingState;
+    if (!savedCity && incomingCity) userPatch.city = incomingCity;
+    if (Object.keys(userPatch).length > 0) {
       this.prisma.user
-        .update({ where: { id: userId }, data: { phone: incomingPhone } })
+        .update({ where: { id: userId }, data: userPatch })
         .catch((err) =>
           this.logger.warn(
-            `No se pudo guardar el teléfono del user ${userId}: ${err instanceof Error ? err.message : err}`,
+            `No se pudo guardar contacto/ubicación del user ${userId}: ${err instanceof Error ? err.message : err}`,
           ),
         );
     }
 
-    // Notifica a cada RP asignado (best-effort, no bloquea la respuesta).
+    // Notifica SOLO al RP asignado (best-effort, no bloquea la respuesta).
     const customerName = request.user.name || request.user.email;
     const amountFormatted = this.formatMoney(amountCents, tier.currency);
-    for (const assignment of assignedRps) {
-      const rpUser = assignment.rpProfile.user;
-      if (!rpUser?.email) continue;
+    const rpUser = assignedRp?.rpProfile.user;
+    if (rpUser?.email) {
       this.mailer
         .sendPhysicalPaymentRequestToRp(rpUser.email, {
-          rpName: assignment.rpProfile.displayName,
+          rpName: assignedRp!.rpProfile.displayName,
           eventTitle: event.title,
           tierName: tier.name,
           quantity,
@@ -206,7 +233,7 @@ export class PhysicalPaymentsService {
     }
 
     this.logger.log(
-      `Solicitud de pago en efectivo ${request.id} creada por ${userId} (${assignedRps.length} RP notificados)`,
+      `Solicitud de pago en efectivo ${request.id} creada por ${userId} → RP asignado ${assignedRp?.rpProfile.id ?? 'ninguno'} (${effectiveCity}, ${effectiveState})`,
     );
 
     return this.toSummary(request, { event, tier });
@@ -226,11 +253,14 @@ export class PhysicalPaymentsService {
       select: { eventId: true },
     });
     const eventIds = assignments.map((a) => a.eventId);
-    if (eventIds.length === 0) return { items: [] };
 
     const items = await this.prisma.physicalPaymentRequest.findMany({
       where: {
-        eventId: { in: eventIds },
+        // Asignadas a este RP, más las antiguas (sin enrutar) de sus eventos.
+        OR: [
+          { assignedRpId: rp.id },
+          { assignedRpId: null, eventId: { in: eventIds } },
+        ],
         ...(status ? { status } : {}),
       },
       orderBy: { createdAt: 'desc' },
@@ -282,13 +312,25 @@ export class PhysicalPaymentsService {
     });
     if (!request) throw new NotFoundException('Solicitud no encontrada');
 
-    // Autorización: el RP debe estar asignado al evento.
-    const assignment = await this.prisma.eventRp.findUnique({
-      where: { eventId_rpProfileId: { eventId: request.eventId, rpProfileId: rp.id } },
-      select: { eventId: true },
-    });
-    if (!assignment) {
-      throw new ForbiddenException('No tienes este evento asignado');
+    // Autorización: si la solicitud se enrutó a un RP concreto, solo ese RP puede
+    // confirmarla. Las solicitudes antiguas (sin assignedRpId) caen al chequeo de
+    // asignación al evento.
+    if (request.assignedRpId) {
+      if (request.assignedRpId !== rp.id) {
+        throw new ForbiddenException(
+          'Esta solicitud está asignada a otro vendedor',
+        );
+      }
+    } else {
+      const assignment = await this.prisma.eventRp.findUnique({
+        where: {
+          eventId_rpProfileId: { eventId: request.eventId, rpProfileId: rp.id },
+        },
+        select: { eventId: true },
+      });
+      if (!assignment) {
+        throw new ForbiddenException('No tienes este evento asignado');
+      }
     }
 
     if (request.status !== PhysicalPaymentRequestStatus.PENDING) {
@@ -511,6 +553,62 @@ export class PhysicalPaymentsService {
         throw new ConflictException('Cupo del evento insuficiente');
       }
     }
+  }
+
+  /**
+   * Elige UN RP del grupo asignado al evento para atender la solicitud:
+   *   1. Filtra los que coinciden con estado+ciudad del cliente.
+   *   2. Si ninguno coincide, usa todo el grupo asignado.
+   *   3. Del subconjunto, elige el de menor carga (solicitudes PENDING) → reparto
+   *      equitativo. Desempata por el orden del grupo (estable).
+   */
+  private async pickAssignedRp(
+    assignedRps: Array<{
+      rpProfile: {
+        id: string;
+        state: string | null;
+        city: string | null;
+        displayName: string;
+        user: { email: string; name: string | null } | null;
+      };
+    }>,
+    state: string,
+    city: string,
+  ) {
+    if (assignedRps.length === 0) return null;
+    const norm = (s?: string | null) => (s ?? '').trim().toLowerCase();
+    const ns = norm(state);
+    const nc = norm(city);
+
+    const geo = assignedRps.filter(
+      (a) => norm(a.rpProfile.state) === ns && norm(a.rpProfile.city) === nc,
+    );
+    const pool = geo.length > 0 ? geo : assignedRps;
+
+    const ids = pool.map((a) => a.rpProfile.id);
+    const loads = await this.prisma.physicalPaymentRequest.groupBy({
+      by: ['assignedRpId'],
+      where: {
+        assignedRpId: { in: ids },
+        status: PhysicalPaymentRequestStatus.PENDING,
+      },
+      _count: { _all: true },
+    });
+    const loadMap = new Map<string, number>();
+    for (const l of loads) {
+      if (l.assignedRpId) loadMap.set(l.assignedRpId, l._count._all);
+    }
+
+    let best = pool[0];
+    let bestLoad = loadMap.get(best.rpProfile.id) ?? 0;
+    for (const a of pool) {
+      const load = loadMap.get(a.rpProfile.id) ?? 0;
+      if (load < bestLoad) {
+        best = a;
+        bestLoad = load;
+      }
+    }
+    return best;
   }
 
   private toSummary(

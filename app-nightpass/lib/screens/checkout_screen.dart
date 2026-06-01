@@ -54,10 +54,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   String? _clientSecret;
   String? _errorMessage;
   final TextEditingController _contact = TextEditingController();
+  final TextEditingController _state = TextEditingController();
+  final TextEditingController _city = TextEditingController();
 
   @override
   void dispose() {
     _contact.dispose();
+    _state.dispose();
+    _city.dispose();
     super.dispose();
   }
 
@@ -96,7 +100,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     });
     try {
       final api = ref.read(physicalPaymentsApiProvider);
-      await api.createRequest(widget.tierId, contactPhone: _contact.text);
+      await api.createRequest(
+        widget.tierId,
+        contactPhone: _contact.text,
+        state: _state.text,
+        city: _city.text,
+      );
       if (!mounted) return;
       setState(() => _phase = _CheckoutPhase.cashDone);
     } catch (e) {
@@ -326,7 +335,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   _MethodChooser(onOnline: _chooseOnline, onCash: _chooseCash),
                 if (_phase == _CheckoutPhase.cashForm ||
                     _phase == _CheckoutPhase.cashSubmitting)
-                  _CashForm(controller: _contact),
+                  _CashForm(controller: _contact, stateCtrl: _state, cityCtrl: _city),
                 if (_phase == _CheckoutPhase.cashDone) const _CashDone(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
@@ -574,7 +583,30 @@ class _MethodCard extends StatelessWidget {
 /// Formulario mínimo para solicitar pago en efectivo: contacto opcional.
 class _CashForm extends StatelessWidget {
   final TextEditingController controller;
-  const _CashForm({required this.controller});
+  final TextEditingController stateCtrl;
+  final TextEditingController cityCtrl;
+  const _CashForm({
+    required this.controller,
+    required this.stateCtrl,
+    required this.cityCtrl,
+  });
+
+  InputDecoration _dec(String hint) => InputDecoration(
+        hintText: hint,
+        hintStyle: NPTextStyles.body(13, color: NPColors.textFaint),
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.04),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: NPColors.hairline),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: NPColors.hero),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -590,7 +622,7 @@ class _CashForm extends StatelessWidget {
                 style: NPTextStyles.heading(15, w: FontWeight.w600)),
             const SizedBox(height: 6),
             Text(
-              'Dejanos un teléfono o WhatsApp (opcional) para que el vendedor te contacte y coordine el cobro.',
+              'Déjanos tu WhatsApp y tu zona (estado y ciudad) para asignarte un vendedor de tu área que coordine el cobro.',
               style: NPTextStyles.body(12, color: NPColors.textDim, height: 1.5),
             ),
             const SizedBox(height: 14),
@@ -598,22 +630,27 @@ class _CashForm extends StatelessWidget {
               controller: controller,
               keyboardType: TextInputType.phone,
               style: NPTextStyles.body(14, color: NPColors.text),
-              decoration: InputDecoration(
-                hintText: 'Teléfono / WhatsApp (opcional)',
-                hintStyle: NPTextStyles.body(13, color: NPColors.textFaint),
-                filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.04),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: NPColors.hairline),
+              decoration: _dec('Teléfono / WhatsApp'),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: stateCtrl,
+                    style: NPTextStyles.body(14, color: NPColors.text),
+                    decoration: _dec('Estado'),
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: NPColors.hero),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: cityCtrl,
+                    style: NPTextStyles.body(14, color: NPColors.text),
+                    decoration: _dec('Ciudad'),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),

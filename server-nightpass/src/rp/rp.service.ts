@@ -118,6 +118,8 @@ export class RpService {
           displayName,
           rpCode,
           promoterId: dto.promoterId || null,
+          state: dto.state?.trim() || null,
+          city: dto.city?.trim() || null,
           isActive: true,
         },
         include: {
@@ -352,6 +354,21 @@ export class RpService {
 
     if (!rp) throw new NotFoundException('Perfil de RP no encontrado para este usuario');
     return rp;
+  }
+
+  async updateZone(id: string, dto: { state?: string; city?: string }) {
+    const rp = await this.prisma.rpProfile.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!rp) throw new NotFoundException('Perfil de RP no encontrado');
+    return this.prisma.rpProfile.update({
+      where: { id },
+      data: {
+        state: dto.state?.trim() || null,
+        city: dto.city?.trim() || null,
+      },
+    });
   }
 
   async toggleActive(id: string) {

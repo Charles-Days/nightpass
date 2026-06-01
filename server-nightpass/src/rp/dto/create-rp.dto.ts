@@ -12,6 +12,17 @@ export class CreateRpDto {
   @MaxLength(100)
   displayName!: string;
 
+  // Zona del RP — para enrutar solicitudes de pago en efectivo de su ciudad/estado.
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  city?: string;
+
   @IsOptional()
   @IsString()
   @MinLength(6)

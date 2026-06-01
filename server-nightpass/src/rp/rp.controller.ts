@@ -19,6 +19,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthUser, CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreateRpDto } from './dto/create-rp.dto';
+import { UpdateRpZoneDto } from './dto/update-rp-zone.dto';
 import { ListRpQuery } from './dto/list-rp.query';
 import { SetCommissionRuleDto } from './dto/set-commission-rule.dto';
 import { RpService } from './rp.service';
@@ -160,6 +161,24 @@ export class RpController {
   @HttpCode(HttpStatus.OK)
   toggleActive(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.toggleActive(id);
+  }
+
+  @Patch(':id/zone')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.RP)
+  @HttpCode(HttpStatus.OK)
+  async updateZone(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateRpZoneDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    if (user.role === Role.RP) {
+      const own = await this.service.getByUserId(user.id);
+      if (own.id !== id) {
+        throw new ForbiddenException('No puedes editar este perfil');
+      }
+    }
+    return this.service.updateZone(id, dto);
   }
 
   @Get(':id/stats')
