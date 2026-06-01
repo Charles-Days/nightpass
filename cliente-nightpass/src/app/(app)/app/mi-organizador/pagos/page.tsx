@@ -26,13 +26,14 @@ export default async function PagosOrganizadorPage() {
   }
 
   // El saldo en efectivo es por organizador; lo cargamos solo para el dueño.
+  // /promoters/me responde { promoter, membershipRole } — no el promoter directo.
   let promoterId: string | null = null;
   if (user.role === 'PROMOTER') {
     try {
-      const promoter = await serverFetch<Promoter>('/promoters/me', {
+      const res = await serverFetch<{ promoter: Promoter }>('/promoters/me', {
         revalidate: 60,
       });
-      promoterId = promoter?.id ?? null;
+      promoterId = res?.promoter?.id ?? null;
     } catch {
       promoterId = null;
     }
