@@ -66,6 +66,7 @@ export interface User {
   locationOnboardedAt?: string | null;
   state?: string | null;
   city?: string | null;
+  phone?: string | null;
   rankingOptIn?: boolean | null;
 }
 

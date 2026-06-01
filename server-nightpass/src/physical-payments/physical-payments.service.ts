@@ -84,6 +84,21 @@ export class PhysicalPaymentsService {
     ).currentCents;
     const amountCents = singlePriceCents * quantity;
 
+    // Teléfono/WhatsApp de contacto. Se pide solo la primera vez (si el usuario
+    // no tiene uno guardado) y se persiste para reutilizarlo después.
+    const userRow = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { phone: true },
+    });
+    const savedPhone = userRow?.phone?.trim() || null;
+    const incomingPhone = dto.contactPhone?.trim() || null;
+    const effectivePhone = savedPhone || incomingPhone;
+    if (!effectivePhone) {
+      throw new BadRequestException(
+        'Necesitamos tu WhatsApp para que el vendedor te contacte',
+      );
+    }
+
     // Aforo: rechaza de entrada si ya no hay cupo (chequeo blando; el firme va al
     // confirmar). Cuenta pases emitidos + vales pendientes, igual que el resto.
     await this.assertCapacity(event.id, tier.id, tier.capacity, event.capacity, quantity);
@@ -106,12 +121,23 @@ export class PhysicalPaymentsService {
         quantity,
         amountCents,
         currency: tier.currency,
-        contactPhone: dto.contactPhone?.trim() || null,
+        contactPhone: effectivePhone,
         note: dto.note?.trim() || null,
         expiresAt: event.startsAt,
       },
       include: { user: { select: { name: true, email: true } } },
     });
+
+    // Primera vez: guarda el teléfono en el perfil para no volver a pedirlo.
+    if (!savedPhone && incomingPhone) {
+      this.prisma.user
+        .update({ where: { id: userId }, data: { phone: incomingPhone } })
+        .catch((err) =>
+          this.logger.warn(
+            `No se pudo guardar el teléfono del user ${userId}: ${err instanceof Error ? err.message : err}`,
+          ),
+        );
+    }
 
     // Notifica a cada RP asignado (best-effort, no bloquea la respuesta).
     const customerName = request.user.name || request.user.email;

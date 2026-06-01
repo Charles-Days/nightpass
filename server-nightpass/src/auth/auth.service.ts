@@ -39,6 +39,7 @@ export interface PublicUser {
   locationOnboardedAt: Date | null;
   state: string | null;
   city: string | null;
+  phone: string | null;
   rankingOptIn: boolean | null;
   createdAt: Date;
 }
@@ -284,6 +285,7 @@ export class AuthService {
         locationOnboardedAt: true,
         state: true,
         city: true,
+        phone: true,
         rankingOptIn: true,
         createdAt: true,
       },
@@ -621,6 +623,7 @@ export class AuthService {
     locationOnboardedAt?: Date | null;
     state?: string | null;
     city?: string | null;
+    phone?: string | null;
     rankingOptIn?: boolean | null;
     createdAt: Date;
   }): PublicUser {
@@ -633,6 +636,7 @@ export class AuthService {
       locationOnboardedAt: user.locationOnboardedAt ?? null,
       state: user.state ?? null,
       city: user.city ?? null,
+      phone: user.phone ?? null,
       rankingOptIn: user.rankingOptIn ?? null,
       createdAt: user.createdAt,
     };

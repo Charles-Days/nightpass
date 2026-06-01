@@ -174,6 +174,10 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
   const [manualRpCode, setManualRpCode] = useState('');
   const [appliedCode, setAppliedCode] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  // Teléfono/WhatsApp para pago en efectivo. Si el usuario ya tiene uno
+  // guardado lo reusamos; si no, se lo pedimos esta primera vez.
+  const [phone, setPhone] = useState('');
+  const [hasSavedPhone, setHasSavedPhone] = useState(false);
 
   const initRef = useRef(false);
 
@@ -263,7 +267,11 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
       if (urlRef) saveRpRef(urlRef);
       await clientFetch('/api/physical-payments', {
         method: 'POST',
-        body: { tierId, quantity: currentQty },
+        body: {
+          tierId,
+          quantity: currentQty,
+          ...(phone.trim() ? { contactPhone: phone.trim() } : {}),
+        },
       });
       setPhase('cash_done');
     } catch (error) {
@@ -272,7 +280,28 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
       setErrorMessage(info.message);
       toast.error(info.message);
     }
-  }, [tierId, quantity, searchParams]);
+  }, [tierId, quantity, searchParams, phone]);
+
+  // Carga el teléfono guardado del usuario (solo si el evento acepta efectivo).
+  useEffect(() => {
+    if (!allowCash) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const me = await clientFetch<{ phone?: string | null }>('/api/auth/me');
+        if (cancelled) return;
+        if (me.phone) {
+          setPhone(me.phone);
+          setHasSavedPhone(true);
+        }
+      } catch {
+        // sin teléfono guardado → se lo pediremos
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [allowCash]);
 
   useEffect(() => {
     if (initRef.current) return;
@@ -513,6 +542,27 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                     Boleto digital, pago físico. Un vendedor (RP) te contactará para cobrarte; tu pase se emite cuando confirme.
                   </p>
                 )}
+                {method === 'cash' && hasSavedPhone && (
+                  <p className="text-center text-[11px] text-emerald-400/90">
+                    Te contactaremos por WhatsApp al <strong>{phone}</strong>
+                  </p>
+                )}
+                {method === 'cash' && !hasSavedPhone && (
+                  <div className="space-y-1.5">
+                    <label htmlFor="cash-phone" className="block text-[11px] font-medium text-muted-foreground">
+                      Tu WhatsApp (para que el vendedor te contacte)
+                    </label>
+                    <input
+                      id="cash-phone"
+                      type="tel"
+                      inputMode="tel"
+                      placeholder="Ej. 55 1234 5678"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white placeholder-white/30 focus:border-primary/50 focus:outline-none"
+                    />
+                  </div>
+                )}
               </div>
             )}
             <p className="text-sm text-neutral-300 font-medium text-center">¿Cuántas entradas deseas comprar?</p>
@@ -546,8 +596,9 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
             </p>
             <Button
               type="button"
+              disabled={method === 'cash' && phone.trim().length < 8}
               onClick={() => (method === 'cash' ? void requestCash() : void createOrder())}
-              className="w-full mt-2 h-11 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 font-semibold text-white shadow-[0_4px_18px_-4px_rgba(124,58,237,0.5)] transition-transform hover:brightness-110 active:scale-95 transform-gpu"
+              className="w-full mt-2 h-11 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 font-semibold text-white shadow-[0_4px_18px_-4px_rgba(124,58,237,0.5)] transition-transform hover:brightness-110 active:scale-95 transform-gpu disabled:opacity-50 disabled:active:scale-100"
             >
               {method === 'cash'
                 ? 'Solicitar pago en efectivo'
