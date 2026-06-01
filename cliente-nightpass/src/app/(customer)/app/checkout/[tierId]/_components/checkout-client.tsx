@@ -745,7 +745,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
             <p className="text-sm text-red-300">{errorMessage ?? 'Algo salió mal.'}</p>
             <Button
               type="button"
-              onClick={() => void createOrder()}
+              onClick={() => (method === 'cash' ? void requestCash() : void createOrder())}
               className="bg-gradient-to-r from-[#9333ea] to-[#a855f7] text-white shadow-[0_4px_24px_rgba(168,85,247,0.35)] transition hover:brightness-110 active:scale-95 transform-gpu"
             >
               Reintentar

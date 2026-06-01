@@ -103,15 +103,49 @@ export class PhysicalPaymentsService {
     // confirmar). Cuenta pases emitidos + vales pendientes, igual que el resto.
     await this.assertCapacity(event.id, tier.id, tier.capacity, event.capacity, quantity);
 
-    // Colapsa solicitudes PENDING previas del mismo user+evento para no acumular.
-    await this.prisma.physicalPaymentRequest.updateMany({
+    // Una solicitud en curso por evento. No se permite pedir de nuevo mientras
+    // exista una sin resolver:
+    //   - PENDING: el RP aún no cobra/emite.
+    //   - CONFIRMED cuyos pases nadie ha canjeado (ningún Pass usado).
+    // En cuanto canjea (usa) al menos un pase del lote confirmado, puede volver
+    // a pedir más (p.ej. pidió 4, usa 1 → ya puede solicitar otra vez).
+    const pendingCount = await this.prisma.physicalPaymentRequest.count({
       where: {
         userId,
         eventId: event.id,
         status: PhysicalPaymentRequestStatus.PENDING,
       },
-      data: { status: PhysicalPaymentRequestStatus.CANCELLED },
     });
+    if (pendingCount > 0) {
+      throw new ConflictException(
+        'Ya tienes una solicitud de pago en efectivo pendiente para este evento. Espera a que el vendedor la confirme.',
+      );
+    }
+
+    const confirmed = await this.prisma.physicalPaymentRequest.findMany({
+      where: {
+        userId,
+        eventId: event.id,
+        status: PhysicalPaymentRequestStatus.CONFIRMED,
+        orderId: { not: null },
+      },
+      select: { orderId: true },
+    });
+    if (confirmed.length > 0) {
+      const orderIds = confirmed.map((c) => c.orderId as string);
+      const redeemed = await this.prisma.pass.findMany({
+        where: { orderId: { in: orderIds }, usedAt: { not: null } },
+        select: { orderId: true },
+        distinct: ['orderId'],
+      });
+      const redeemedSet = new Set(redeemed.map((p) => p.orderId));
+      const hasUnredeemed = orderIds.some((id) => !redeemedSet.has(id));
+      if (hasUnredeemed) {
+        throw new ConflictException(
+          'Tienes pases de efectivo pendientes de usar. Canjea al menos uno (entra al evento) antes de pedir más.',
+        );
+      }
+    }
 
     const request = await this.prisma.physicalPaymentRequest.create({
       data: {
