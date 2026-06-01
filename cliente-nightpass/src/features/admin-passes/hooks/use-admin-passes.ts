@@ -37,6 +37,7 @@ export interface GeneratePassInput {
   eventId: string;
   tierId: string;
   rpCode?: string;
+  comp?: boolean;
 }
 
 export function useAdminGeneratePass() {

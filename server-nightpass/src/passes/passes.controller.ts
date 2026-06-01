@@ -83,6 +83,12 @@ export class PassesController {
     return this.service.getTransferByToken(token);
   }
 
+  // PÚBLICO — vista previa de un vale por link, antes de iniciar sesión.
+  @Get('claims/:token')
+  getClaim(@Param('token') token: string) {
+    return this.service.getClaimByToken(token);
+  }
+
   // El destinatario acepta la transferencia → el pase pasa a su nombre.
   @Post('transfers/:token/accept')
   @UseGuards(JwtAuthGuard, RolesGuard)

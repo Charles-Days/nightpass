@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class AdminGeneratePassDto {
   @IsUUID()
@@ -10,4 +10,8 @@ export class AdminGeneratePassDto {
   @IsOptional()
   @IsString()
   rpCode?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  comp?: boolean;
 }

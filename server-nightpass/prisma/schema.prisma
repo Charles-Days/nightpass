@@ -54,6 +54,7 @@ enum OrderStatus {
 enum PaymentMethod {
   STRIPE
   CASH
+  COMP
 }
 
 enum PassClaimStatus {

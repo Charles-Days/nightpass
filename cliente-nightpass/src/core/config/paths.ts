@@ -52,6 +52,7 @@ export const paths = {
   pases: '/app/pases',
   escanearPase: '/app/escanear',
   recibirPase: '/app/recibir-pase',
+  reclamarVale: '/app/reclamar-vale',
   compras: '/app/compras',
   perfil: '/app/perfil',
   recompensas: '/app/recompensas',

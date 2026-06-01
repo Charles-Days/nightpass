@@ -183,7 +183,10 @@ export class PassesService {
           eventId: claim.eventId,
           tierId: claim.tierId,
           status: OrderStatus.COMPLETED,
-          paymentMethod: PaymentMethod.CASH,
+          paymentMethod:
+            claim.amountCents === 0
+              ? PaymentMethod.COMP
+              : PaymentMethod.CASH,
           totalCents: claim.amountCents,
           applicationFeeCents: 0,
           currency: claim.currency,
@@ -223,6 +226,66 @@ export class PassesService {
 
     this.logger.log(`Vale ${claim.id} reclamado por ${user.id} → pass ${passId}`);
     return { passId, alreadyClaimed: false };
+  }
+
+  /**
+   * Vista previa de un vale por token (lo abre el destinatario del link antes
+   * de reclamarlo). No muta nada — solo dice si está vigente, si es cortesía
+   * gratis y qué evento es. Pública: puede no haber sesión todavía.
+   */
+  async getClaimByToken(token: string, user?: AuthUser) {
+    const claim = await this.prisma.passClaim.findUnique({
+      where: { token: token.trim() },
+      include: {
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startsAt: true,
+            endsAt: true,
+            coverImageUrl: true,
+            externalVenueName: true,
+            externalVenueCity: true,
+            venue: { select: { name: true, city: true, address: true } },
+          },
+        },
+        tier: { select: { id: true, name: true } },
+      },
+    });
+    if (!claim) throw new NotFoundException('Vale no válido');
+
+    const expired =
+      claim.status === PassClaimStatus.PENDING &&
+      claim.expiresAt.getTime() <= Date.now();
+
+    let alreadyHasPass = false;
+    if (user) {
+      const existing = await this.prisma.pass.findFirst({
+        where: { eventId: claim.eventId, userId: user.id },
+        select: { id: true },
+      });
+      alreadyHasPass = Boolean(existing);
+    }
+
+    return {
+      status: claim.status,
+      expired,
+      isFree: claim.amountCents === 0,
+      amountCents: claim.amountCents,
+      currency: claim.currency,
+      alreadyHasPass,
+      expiresAt: claim.expiresAt,
+      event: {
+        id: claim.event.id,
+        title: claim.event.title,
+        startsAt: claim.event.startsAt,
+        coverImageUrl: claim.event.coverImageUrl,
+        externalVenueName: claim.event.externalVenueName,
+        externalVenueCity: claim.event.externalVenueCity,
+        venue: claim.event.venue,
+      },
+      tier: claim.tier,
+    };
   }
 
   // ── Transferencia de un pase ya pagado ───────────────────────────────────

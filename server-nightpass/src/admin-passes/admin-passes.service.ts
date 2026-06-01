@@ -83,9 +83,12 @@ export class AdminPassesService {
       throw new ConflictException('Evento agotado');
     }
 
-    // 3. Resolver código de RP si se proporciona
+    const isComp = dto.comp === true;
+
+    // 3. Resolver código de RP si se proporciona. Las cortesías no atribuyen
+    //    venta a ningún RP (sin comisión) → se ignora cualquier rpCode.
     let rpProfileId: string | null = null;
-    if (dto.rpCode) {
+    if (!isComp && dto.rpCode) {
       const rp = await this.prisma.rpProfile.findUnique({
         where: { rpCode: dto.rpCode, isActive: true },
         select: { id: true },
@@ -96,9 +99,11 @@ export class AdminPassesService {
       rpProfileId = rp.id;
     }
 
-    // 4. Calcular precio según el tier
-    const amountCents = resolveTierPrice(tier.priceCents, tier.prices, event.startsAt)
-      .currentCents;
+    // 4. Calcular precio. Una cortesía es gratis ($0); si no, según el tier.
+    const amountCents = isComp
+      ? 0
+      : resolveTierPrice(tier.priceCents, tier.prices, event.startsAt)
+          .currentCents;
 
     // 5. Crear el PassClaim
     // El vale vive hasta que termine el evento.
@@ -118,7 +123,9 @@ export class AdminPassesService {
       },
     });
 
-    this.logger.log(`Vale ${claim.id} generado por Admin ${adminUserId} (Atribuido a RP: ${dto.rpCode || 'ninguno'})`);
+    this.logger.log(
+      `Vale ${claim.id} generado por Admin ${adminUserId} (${isComp ? 'CORTESÍA gratis' : `Atribuido a RP: ${dto.rpCode || 'ninguno'}`})`,
+    );
 
     return {
       id: claim.id,
@@ -126,6 +133,8 @@ export class AdminPassesService {
       status: claim.status,
       amountCents: claim.amountCents,
       currency: claim.currency,
+      comp: isComp,
+      isFree: claim.amountCents === 0,
       expiresAt: claim.expiresAt,
       event: { id: event.id, title: event.title, startsAt: event.startsAt },
       tier: { id: tier.id, name: tier.name },

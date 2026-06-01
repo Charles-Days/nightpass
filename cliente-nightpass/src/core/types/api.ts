@@ -456,6 +456,31 @@ export interface PassTransferAccepted {
   alreadyYours: boolean;
 }
 
+export interface PassClaimPreview {
+  status: 'PENDING' | 'CLAIMED' | 'EXPIRED' | 'CANCELLED';
+  expired: boolean;
+  isFree: boolean;
+  amountCents: number;
+  currency: string;
+  alreadyHasPass: boolean;
+  expiresAt: string;
+  event: {
+    id: string;
+    title: string;
+    startsAt: string;
+    coverImageUrl?: string | null;
+    externalVenueName?: string | null;
+    externalVenueCity?: string | null;
+    venue: { name: string; city: string; address: string } | null;
+  };
+  tier: { id: string; name: string };
+}
+
+export interface PassClaimAccepted {
+  passId: string;
+  alreadyClaimed: boolean;
+}
+
 export interface CatalogVenueSummary {
   id: string;
   slug: string;
