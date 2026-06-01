@@ -21,7 +21,7 @@ export interface Promoter {
   instagram?: string | null;
   website?: string | null;
   status: PromoterStatus;
-  platformFeePct?: number;
+  platformFeePct?: number | null;
   createdAt: string;
   updatedAt: string;
   _count?: { members: number };
@@ -148,7 +148,7 @@ export interface Venue {
   isFeatured?: boolean;
   featuredAt?: string | null;
   featuredReason?: string | null;
-  platformFeePct?: number;
+  platformFeePct?: number | null;
 }
 
 export interface PaginatedVenues {

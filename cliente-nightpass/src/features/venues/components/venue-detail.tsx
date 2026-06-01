@@ -75,8 +75,13 @@ export function VenueDetail({ venue, hideHeader = false }: { venue: Venue; hideH
   const feature = useFeatureVenue(venue.id);
   const setFee = useSetVenuePlatformFee(venue.id);
   const [feeInput, setFeeInput] = React.useState<string>(
-    String(venue.platformFeePct ?? 0),
+    venue.platformFeePct == null ? '' : String(venue.platformFeePct),
   );
+  // Vacío = comisión global (null); número (incl. 0) = explícito.
+  const feeTrimmed = feeInput.trim();
+  const feeValue = feeTrimmed === '' ? null : Number(feeTrimmed);
+  const feeInvalid =
+    feeValue !== null && (isNaN(feeValue) || feeValue < 0 || feeValue > 100);
   const [featureDialogOpen, setFeatureDialogOpen] = React.useState(false);
   const isMutating = suspend.isPending || reactivate.isPending;
 
@@ -202,6 +207,7 @@ export function VenueDetail({ venue, hideHeader = false }: { venue: Venue; hideH
         <CardContent className="space-y-3 text-sm">
           <p className="text-muted-foreground">
             % que NightPass retiene sobre cada entrada vendida. Se descuenta antes del payout al local.
+            Déjalo <strong>vacío</strong> para usar la comisión global; <strong>0</strong> = sin comisión.
           </p>
           <div className="flex items-end gap-3">
             <div className="flex-1">
@@ -213,19 +219,15 @@ export function VenueDetail({ venue, hideHeader = false }: { venue: Venue; hideH
                 step="0.1"
                 min="0"
                 max="100"
+                placeholder="Vacío = global"
                 value={feeInput}
                 onChange={(e) => setFeeInput(e.target.value)}
               />
             </div>
             <Button
               type="button"
-              disabled={
-                setFee.isPending ||
-                isNaN(Number(feeInput)) ||
-                Number(feeInput) < 0 ||
-                Number(feeInput) > 100
-              }
-              onClick={() => setFee.mutate(Number(feeInput))}
+              disabled={setFee.isPending || feeInvalid}
+              onClick={() => setFee.mutate(feeValue)}
             >
               {setFee.isPending ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -234,7 +236,12 @@ export function VenueDetail({ venue, hideHeader = false }: { venue: Venue; hideH
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Actual: <span className="font-semibold text-foreground">{venue.platformFeePct ?? 0}%</span>
+            Actual:{' '}
+            <span className="font-semibold text-foreground">
+              {venue.platformFeePct == null
+                ? 'Comisión global del servidor'
+                : `${venue.platformFeePct}%`}
+            </span>
           </p>
         </CardContent>
       </Card>

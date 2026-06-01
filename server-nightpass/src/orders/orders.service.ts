@@ -213,10 +213,15 @@ export class OrdersService {
     // Fee del dueño del evento si lo tiene configurado (>0); si no, cae al fee
     // global del servidor. Mismo orden de prioridad que resolveStripeAccount: el
     // payout va al venue si existe, si no al promoter — la comisión sigue al mismo
-    // dueño. (platformFeePct default es 0, así que 0 = "sin configurar" → global.)
-    const ownerFeePct =
-      event.venue?.platformFeePct || event.promoter?.platformFeePct || 0;
-    const feePct = ownerFeePct > 0 ? ownerFeePct : this.stripe.getPlatformFeePct();
+    // dueño. platformFeePct: null = sin configurar → usa la comisión global;
+    // un número (incluido 0) es explícito (0 = NightPass no cobra comisión).
+    const ownerFeePct = event.venue
+      ? event.venue.platformFeePct
+      : event.promoter
+        ? event.promoter.platformFeePct
+        : null;
+    const feePct =
+      ownerFeePct != null ? ownerFeePct : this.stripe.getPlatformFeePct();
     const applicationFeeCents = Math.floor((priceCents * feePct) / 100);
 
     let referredByRpId: string | undefined = undefined;

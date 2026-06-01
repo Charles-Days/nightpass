@@ -350,8 +350,10 @@ export class VenuesService {
     return updated;
   }
 
-  async setPlatformFee(id: string, pct: number) {
-    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+  async setPlatformFee(id: string, pct: number | null) {
+    // null = sin comisión propia → usa la global del servidor.
+    // Un número (incluido 0) es explícito; 0 = NightPass no cobra comisión.
+    if (pct !== null && (!Number.isFinite(pct) || pct < 0 || pct > 100)) {
       throw new BadRequestException('platformFeePct debe estar entre 0 y 100');
     }
     const venue = await this.prisma.venue.findUnique({

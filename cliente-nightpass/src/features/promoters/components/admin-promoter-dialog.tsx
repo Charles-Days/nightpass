@@ -225,10 +225,15 @@ function EditForm({
 
 function CommissionSection({ promoter }: { promoter: Promoter }) {
   const setFee = useSetPromoterPlatformFee(promoter.id);
-  const [feeInput, setFeeInput] = React.useState(String(promoter.platformFeePct ?? 0));
+  const [feeInput, setFeeInput] = React.useState(
+    promoter.platformFeePct == null ? '' : String(promoter.platformFeePct),
+  );
 
-  const value = Number(feeInput);
-  const invalid = isNaN(value) || value < 0 || value > 100;
+  const trimmed = feeInput.trim();
+  // Vacío = usa la comisión global del servidor (null). Un número (incl. 0) es
+  // explícito; 0 = NightPass no cobra comisión a este organizador.
+  const value = trimmed === '' ? null : Number(trimmed);
+  const invalid = value !== null && (isNaN(value) || value < 0 || value > 100);
 
   return (
     <div className="mt-2 space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">
@@ -236,7 +241,8 @@ function CommissionSection({ promoter }: { promoter: Promoter }) {
         <p className="text-sm font-semibold">Comisión NightPass</p>
         <p className="mt-0.5 text-xs text-white/55">
           % que NightPass retiene sobre cada entrada vendida de este organizador.
-          Se descuenta antes del payout. 0 = usa la comisión global del servidor.
+          Se descuenta antes del payout. Déjalo <strong>vacío</strong> para usar la
+          comisión global del servidor; <strong>0</strong> = NightPass no cobra comisión.
         </p>
       </div>
       <div className="flex items-end gap-3">
@@ -249,6 +255,7 @@ function CommissionSection({ promoter }: { promoter: Promoter }) {
             step="0.1"
             min="0"
             max="100"
+            placeholder="Vacío = global"
             value={feeInput}
             onChange={(e) => setFeeInput(e.target.value)}
           />
@@ -264,7 +271,12 @@ function CommissionSection({ promoter }: { promoter: Promoter }) {
         </Button>
       </div>
       <p className="text-xs text-white/55">
-        Actual: <span className="font-semibold text-white">{promoter.platformFeePct ?? 0}%</span>
+        Actual:{' '}
+        <span className="font-semibold text-white">
+          {promoter.platformFeePct == null
+            ? 'Comisión global del servidor'
+            : `${promoter.platformFeePct}%`}
+        </span>
       </p>
     </div>
   );

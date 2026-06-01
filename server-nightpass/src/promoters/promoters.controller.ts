@@ -149,8 +149,12 @@ export class PromotersController {
   @HttpCode(HttpStatus.OK)
   setPlatformFee(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: { platformFeePct: number },
+    @Body() body: { platformFeePct: number | null },
   ) {
-    return this.service.setPlatformFee(id, Number(body.platformFeePct));
+    const pct =
+      body.platformFeePct === null || body.platformFeePct === undefined
+        ? null
+        : Number(body.platformFeePct);
+    return this.service.setPlatformFee(id, pct);
   }
 }

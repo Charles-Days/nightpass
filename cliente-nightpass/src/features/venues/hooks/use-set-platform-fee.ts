@@ -10,7 +10,7 @@ export function useSetVenuePlatformFee(id: string) {
   const qc = useQueryClient();
   const router = useRouter();
   return useMutation({
-    mutationFn: (platformFeePct: number) =>
+    mutationFn: (platformFeePct: number | null) =>
       clientFetch<Venue>(`/api/venues/${id}/platform-fee`, {
         method: 'POST',
         body: { platformFeePct },
