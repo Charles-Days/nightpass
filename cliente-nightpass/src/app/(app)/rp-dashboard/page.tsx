@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useRpMeStats } from '@/features/rp/hooks/use-rp';
+import { PhysicalRequestsSection } from '@/features/rp/components/physical-requests-section';
 
 import { toast } from 'sonner';
 import { Button } from '@/core/components/ui/button';
@@ -344,6 +345,9 @@ export default function RpDashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Solicitudes de pago en efectivo */}
+      <PhysicalRequestsSection />
 
       {/* Sales log breakdown */}
       <div className="space-y-3">

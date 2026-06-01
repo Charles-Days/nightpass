@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Calendar, Tag } from 'lucide-react';
+import { Calendar, Tag, Banknote } from 'lucide-react';
 import { toast } from 'sonner';
 import { clientFetch, ClientApiError } from '@/core/lib/api/client-client';
 import { CollapsibleCard } from '@/core/components/ui/collapsible-card';
@@ -9,6 +9,7 @@ import type { Event } from '@/core/types/api';
 import { EventForm } from './event-form';
 import { EventFormPromoter, toPromoterEventDefaults } from './event-form-promoter';
 import { TiersSection } from './tiers-section';
+import { CashPaymentSection } from './cash-payment-section';
 
 function venueDefaults(event: Event) {
   return {
@@ -97,6 +98,13 @@ export function AdminEventEdit({ event, onDone }: { event: Event; onDone: () => 
         defaultOpen
       >
         <TiersSection eventId={event.id} />
+      </CollapsibleCard>
+
+      <CollapsibleCard
+        icon={<Banknote className="size-4 text-primary" />}
+        title="Pago en efectivo (RP)"
+      >
+        <CashPaymentSection eventId={event.id} />
       </CollapsibleCard>
     </div>
   );

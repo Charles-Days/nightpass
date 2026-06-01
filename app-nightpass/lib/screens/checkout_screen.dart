@@ -6,6 +6,7 @@ import '../models/event.dart';
 import '../models/order.dart';
 import '../state/orders_providers.dart';
 import '../theme/np_theme.dart';
+import 'package:dio/dio.dart';
 import '../widgets/np_backdrop.dart';
 import '../widgets/np_button.dart';
 import '../widgets/np_glass.dart';
@@ -34,18 +35,77 @@ class CheckoutScreen extends ConsumerStatefulWidget {
   ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
-enum _CheckoutPhase { initializing, ready, paying, awaitingPass, done, error }
+enum _CheckoutPhase {
+  initializing,
+  choosingMethod,
+  ready,
+  paying,
+  awaitingPass,
+  done,
+  cashForm,
+  cashSubmitting,
+  cashDone,
+  error,
+}
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   _CheckoutPhase _phase = _CheckoutPhase.initializing;
   String? _orderId;
   String? _clientSecret;
   String? _errorMessage;
+  final TextEditingController _contact = TextEditingController();
+
+  @override
+  void dispose() {
+    _contact.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initOrder());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Si el evento acepta pago en efectivo, primero el usuario elige método.
+      if (widget.extra?.event?.allowCashPayment == true) {
+        setState(() => _phase = _CheckoutPhase.choosingMethod);
+      } else {
+        _initOrder();
+      }
+    });
+  }
+
+  void _chooseOnline() {
+    setState(() {
+      _phase = _CheckoutPhase.initializing;
+      _errorMessage = null;
+    });
+    _initOrder();
+  }
+
+  void _chooseCash() {
+    setState(() {
+      _phase = _CheckoutPhase.cashForm;
+      _errorMessage = null;
+    });
+  }
+
+  Future<void> _submitCashRequest() async {
+    setState(() {
+      _phase = _CheckoutPhase.cashSubmitting;
+      _errorMessage = null;
+    });
+    try {
+      final api = ref.read(physicalPaymentsApiProvider);
+      await api.createRequest(widget.tierId, contactPhone: _contact.text);
+      if (!mounted) return;
+      setState(() => _phase = _CheckoutPhase.cashDone);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _phase = _CheckoutPhase.cashForm;
+        _errorMessage = _formatError(e);
+      });
+    }
   }
 
   Future<void> _initOrder() async {
@@ -155,6 +215,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   String _formatError(Object e) {
+    if (e is DioException) {
+      final data = e.response?.data;
+      if (data is Map && data['message'] != null) {
+        return data['message'].toString();
+      }
+    }
     final s = e.toString();
     if (s.length > 200) return '${s.substring(0, 200)}…';
     return s;
@@ -256,6 +322,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                     ),
                   ),
+                if (_phase == _CheckoutPhase.choosingMethod)
+                  _MethodChooser(onOnline: _chooseOnline, onCash: _chooseCash),
+                if (_phase == _CheckoutPhase.cashForm ||
+                    _phase == _CheckoutPhase.cashSubmitting)
+                  _CashForm(controller: _contact),
+                if (_phase == _CheckoutPhase.cashDone) const _CashDone(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
                   child: Text(
@@ -284,11 +356,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   stops: const [0, 0.3],
                 ),
               ),
-              child: NPPrimary(
-                full: true,
-                onPressed: _phase == _CheckoutPhase.ready ? _pay : null,
-                child: _ctaContent(priceCents, currency),
-              ),
+              child: _bottomCta(priceCents, currency),
             ),
           ),
         ],
@@ -296,10 +364,48 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
+  /// CTA inferior según la fase. Para elección de método no se muestra (los
+  /// botones viven en la tarjeta del chooser).
+  Widget _bottomCta(int? priceCents, String currency) {
+    switch (_phase) {
+      case _CheckoutPhase.choosingMethod:
+        return const SizedBox.shrink();
+      case _CheckoutPhase.cashForm:
+        return NPPrimary(
+          full: true,
+          onPressed: _submitCashRequest,
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.payments_outlined, size: 16, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Solicitar pago en efectivo'),
+            ],
+          ),
+        );
+      case _CheckoutPhase.cashSubmitting:
+        return const NPPrimary(
+          full: true,
+          onPressed: null,
+          child: _Loading(text: 'Enviando solicitud…'),
+        );
+      case _CheckoutPhase.cashDone:
+        return NPPrimary(
+          full: true,
+          onPressed: () => context.go('/home'),
+          child: const Text('Entendido'),
+        );
+      default:
+        return NPPrimary(
+          full: true,
+          onPressed: _phase == _CheckoutPhase.ready ? _pay : null,
+          child: _ctaContent(priceCents, currency),
+        );
+    }
+  }
+
   Widget _ctaContent(int? priceCents, String currency) {
     switch (_phase) {
-      case _CheckoutPhase.initializing:
-        return const _Loading(text: 'Preparando pago…');
       case _CheckoutPhase.paying:
         return const _Loading(text: 'Procesando…');
       case _CheckoutPhase.awaitingPass:
@@ -318,6 +424,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 : 'Pagar'),
           ],
         );
+      default:
+        return const _Loading(text: 'Preparando pago…');
     }
   }
 
@@ -325,6 +433,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     switch (_phase) {
       case _CheckoutPhase.initializing:
         return 'Conectando con Stripe…';
+      case _CheckoutPhase.choosingMethod:
+        return 'Elige cómo quieres pagar tu boleto.';
       case _CheckoutPhase.ready:
         return 'Al confirmar aceptas los términos del local y la política de NightPass.';
       case _CheckoutPhase.paying:
@@ -333,6 +443,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         return 'Pago confirmado. Generando tu pase con QR…';
       case _CheckoutPhase.done:
         return 'Redirigiendo a tu pase…';
+      case _CheckoutPhase.cashForm:
+        return 'El boleto es digital; el cobro lo hace en persona un vendedor (RP). Tu pase se emite cuando confirme el pago.';
+      case _CheckoutPhase.cashSubmitting:
+        return 'Enviando tu solicitud…';
+      case _CheckoutPhase.cashDone:
+        return 'Listo. Un vendedor te contactará para cobrarte en efectivo.';
       case _CheckoutPhase.error:
         return 'Si el cobro pasó, tu pase aparecerá en la pestaña Pases.';
     }
@@ -370,6 +486,177 @@ class _Loading extends StatelessWidget {
         const SizedBox(width: 10),
         Text(text),
       ],
+    );
+  }
+}
+
+/// Elección de método de pago: en línea (Stripe) o en efectivo (vía RP).
+class _MethodChooser extends StatelessWidget {
+  final VoidCallback onOnline;
+  final VoidCallback onCash;
+  const _MethodChooser({required this.onOnline, required this.onCash});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      child: Column(
+        children: [
+          _MethodCard(
+            icon: Icons.credit_card_rounded,
+            title: 'Pagar en línea',
+            subtitle: 'Tarjeta · tu pase se emite al instante',
+            onTap: onOnline,
+          ),
+          const SizedBox(height: 12),
+          _MethodCard(
+            icon: Icons.payments_outlined,
+            title: 'Pagar en efectivo',
+            subtitle: 'Un vendedor (RP) te cobra en persona',
+            onTap: onCash,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MethodCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  const _MethodCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: NPGlass(
+        radius: 18,
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: NPColors.hero.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: NPColors.hero, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: NPTextStyles.heading(15, w: FontWeight.w600)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: NPTextStyles.body(12, color: NPColors.textDim)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: NPColors.textFaint),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Formulario mínimo para solicitar pago en efectivo: contacto opcional.
+class _CashForm extends StatelessWidget {
+  final TextEditingController controller;
+  const _CashForm({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      child: NPGlass(
+        radius: 18,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Pago en efectivo',
+                style: NPTextStyles.heading(15, w: FontWeight.w600)),
+            const SizedBox(height: 6),
+            Text(
+              'Dejanos un teléfono o WhatsApp (opcional) para que el vendedor te contacte y coordine el cobro.',
+              style: NPTextStyles.body(12, color: NPColors.textDim, height: 1.5),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.phone,
+              style: NPTextStyles.body(14, color: NPColors.text),
+              decoration: InputDecoration(
+                hintText: 'Teléfono / WhatsApp (opcional)',
+                hintStyle: NPTextStyles.body(13, color: NPColors.textFaint),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.04),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: NPColors.hairline),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: NPColors.hero),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Confirmación tras solicitar pago en efectivo.
+class _CashDone extends StatelessWidget {
+  const _CashDone();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      child: NPGlass(
+        radius: 18,
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.14),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_rounded,
+                  color: Colors.greenAccent, size: 30),
+            ),
+            const SizedBox(height: 14),
+            Text('Solicitud enviada',
+                style: NPTextStyles.heading(17, w: FontWeight.w600)),
+            const SizedBox(height: 6),
+            Text(
+              'Un vendedor (RP) recibió tu solicitud y te contactará para cobrarte en efectivo. Tu pase aparecerá en la pestaña Pases en cuanto confirme el pago.',
+              textAlign: TextAlign.center,
+              style: NPTextStyles.body(13, color: NPColors.textDim, height: 1.5),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

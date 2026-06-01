@@ -192,6 +192,7 @@ export class CatalogService {
             endsAt: true,
             coverImageUrl: true,
             capacity: true,
+            allowCashPayment: true,
             tiers: {
               orderBy: { position: 'asc' },
               select: {
@@ -245,6 +246,7 @@ export class CatalogService {
             endsAt: true,
             coverImageUrl: true,
             capacity: true,
+            allowCashPayment: true,
             externalVenueName: true,
             externalVenueCity: true,
             venue: {
@@ -519,6 +521,7 @@ export class CatalogService {
             endsAt: true,
             coverImageUrl: true,
             status: true,
+            allowCashPayment: true,
             externalVenueName: true,
             externalVenueCity: true,
             venue: {
@@ -590,6 +593,7 @@ export class CatalogService {
         startsAt: tier.event.startsAt,
         endsAt: tier.event.endsAt,
         coverImageUrl: tier.event.coverImageUrl,
+        allowCashPayment: tier.event.allowCashPayment,
         venue: venue
           ? {
               id: venue.id,

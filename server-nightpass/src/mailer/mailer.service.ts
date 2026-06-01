@@ -27,6 +27,7 @@ import {
   venueReactivated,
   staffRevoked,
 } from './templates/venue-lifecycle-emails';
+import { physicalPaymentRequestToRp } from './templates/physical-payment-emails';
 
 @Injectable()
 export class MailerService {
@@ -302,6 +303,26 @@ export class MailerService {
              <p>Inicia sesión aquí: <a href="${loginUrl}">${loginUrl}</a></p>`,
       text: `Hola ${rpName},\n\nTe hemos creado una cuenta de Relaciones Públicas (RP) en NightPass.\n\n${temporaryPassword ? `Tus credenciales temporales:\nEmail: ${to}\nContraseña: ${temporaryPassword}` : 'Puedes ingresar usando tu contraseña existente.'}\n\nInicia sesión aquí: ${loginUrl}\n\n— Equipo NightPass`,
     });
+  }
+
+  /** Aviso a un RP asignado: un cliente solicitó pagar en efectivo. */
+  async sendPhysicalPaymentRequestToRp(
+    to: string,
+    input: {
+      rpName: string;
+      eventTitle: string;
+      tierName: string;
+      quantity: number;
+      amountFormatted: string;
+      customerName: string;
+      customerEmail: string;
+      customerContact?: string;
+      note?: string;
+    },
+  ): Promise<void> {
+    const panelUrl = `${this.adminWebUrl.replace(/\/$/, '')}/rp-dashboard`;
+    const tpl = physicalPaymentRequestToRp({ ...input, panelUrl });
+    await this.send(to, tpl);
   }
 
   private async send(

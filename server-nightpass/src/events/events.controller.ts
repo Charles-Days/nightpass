@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -23,6 +24,7 @@ import { UpdateEventDto } from './dto/update-event.dto';
 import { ListEventsQuery } from './dto/list-events.query';
 import { CreateTierDto } from './dto/create-tier.dto';
 import { UpdateTierDto } from './dto/update-tier.dto';
+import { SetCashRpsDto } from './dto/set-cash-rps.dto';
 
 @Controller('events')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -82,6 +84,24 @@ export class EventsController {
   @HttpCode(HttpStatus.OK)
   unfeature(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.setFeatured(id, false);
+  }
+
+  @Get(':id/cash-rps')
+  listCashRps(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.service.listCashRps(id, user);
+  }
+
+  @Put(':id/cash-rps')
+  @HttpCode(HttpStatus.OK)
+  setCashRps(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetCashRpsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.service.setCashRps(id, dto.rpProfileIds, user);
   }
 
   @Post(':id/tiers')

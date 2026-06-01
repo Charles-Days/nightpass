@@ -147,6 +147,7 @@ export class EventsService {
       flyerImageUrl: dto.flyerImageUrl ?? null,
       status: dto.status ?? 'DRAFT',
       capacity: dto.capacity ?? null,
+      allowCashPayment: dto.allowCashPayment ?? false,
       externalVenueName: externalAllowed ? dto.externalVenueName ?? null : null,
       externalVenueAddress: externalAllowed ? dto.externalVenueAddress ?? null : null,
       externalVenueCity: externalAllowed ? dto.externalVenueCity ?? null : null,
@@ -315,6 +316,7 @@ export class EventsService {
     if (dto.flyerImageUrl !== undefined) data.flyerImageUrl = dto.flyerImageUrl;
     if (dto.status !== undefined) data.status = dto.status;
     if (dto.capacity !== undefined) data.capacity = dto.capacity;
+    if (dto.allowCashPayment !== undefined) data.allowCashPayment = dto.allowCashPayment;
     if (dto.whatsappGroups !== undefined) {
       data.whatsappGroups = dto.whatsappGroups as unknown as Prisma.InputJsonValue;
     }
@@ -582,5 +584,95 @@ export class EventsService {
 
     await this.prisma.eventTier.delete({ where: { id: tierId } });
     return { ok: true };
+  }
+
+  // ─── RPs asignados para cobro en efectivo ──────────────────────────────────
+
+  /** RPs que pueden cobrar en efectivo este evento (y reciben el correo). */
+  async listCashRps(eventId: string, user: AuthUser) {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: { venueId: true, promoterId: true, allowCashPayment: true },
+    });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+
+    await this.ensureEventOwner(
+      { venueId: event.venueId, promoterId: event.promoterId },
+      user.id,
+      user.role,
+    );
+
+    const assignments = await this.prisma.eventRp.findMany({
+      where: { eventId },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        rpProfile: {
+          select: {
+            id: true,
+            displayName: true,
+            rpCode: true,
+            isActive: true,
+            user: { select: { email: true } },
+          },
+        },
+      },
+    });
+
+    return {
+      allowCashPayment: event.allowCashPayment,
+      items: assignments.map((a) => ({
+        rpProfileId: a.rpProfile.id,
+        displayName: a.rpProfile.displayName,
+        rpCode: a.rpProfile.rpCode,
+        isActive: a.rpProfile.isActive,
+        email: a.rpProfile.user.email,
+      })),
+    };
+  }
+
+  /** Reemplaza el set completo de RPs asignados al evento para cobro físico. */
+  async setCashRps(eventId: string, rpProfileIds: string[], user: AuthUser) {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: { venueId: true, promoterId: true },
+    });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+
+    await this.ensureEventOwner(
+      { venueId: event.venueId, promoterId: event.promoterId },
+      user.id,
+      user.role,
+    );
+
+    const uniqueIds = Array.from(new Set(rpProfileIds));
+    if (uniqueIds.length > 0) {
+      const found = await this.prisma.rpProfile.count({
+        where: { id: { in: uniqueIds } },
+      });
+      if (found !== uniqueIds.length) {
+        throw new BadRequestException('Uno o más RPs no existen');
+      }
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.eventRp.deleteMany({
+        where: {
+          eventId,
+          ...(uniqueIds.length > 0
+            ? { rpProfileId: { notIn: uniqueIds } }
+            : {}),
+        },
+      }),
+      ...(uniqueIds.length > 0
+        ? [
+            this.prisma.eventRp.createMany({
+              data: uniqueIds.map((rpProfileId) => ({ eventId, rpProfileId })),
+              skipDuplicates: true,
+            }),
+          ]
+        : []),
+    ]);
+
+    return this.listCashRps(eventId, user);
   }
 }

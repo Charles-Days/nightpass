@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsDate,
   IsEnum,
   IsInt,
@@ -26,6 +27,7 @@ export class UpdateEventDto {
   @IsOptional() @IsString() @MaxLength(500) flyerImageUrl?: string;
   @IsOptional() @IsEnum(EventStatus) status?: EventStatus;
   @IsOptional() @IsInt() @Min(1) capacity?: number;
+  @IsOptional() @IsBoolean() allowCashPayment?: boolean;
 
   @IsOptional() @IsString() @MaxLength(120) externalVenueName?: string;
   @IsOptional() @IsString() @MaxLength(200) externalVenueAddress?: string;

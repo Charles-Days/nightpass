@@ -31,6 +31,7 @@ import { StoriesModule } from './stories/stories.module';
 import { RpModule } from './rp/rp.module';
 import { AdminFinanceModule } from './admin-finance/admin-finance.module';
 import { AdminPassesModule } from './admin-passes/admin-passes.module';
+import { PhysicalPaymentsModule } from './physical-payments/physical-payments.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { validateEnv } from './config/env.schema';
@@ -79,6 +80,7 @@ import { validateEnv } from './config/env.schema';
     RpModule,
     AdminFinanceModule,
     AdminPassesModule,
+    PhysicalPaymentsModule,
     MaintenanceModule,
     MetricsModule,
   ],

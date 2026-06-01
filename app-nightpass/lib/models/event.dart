@@ -38,6 +38,7 @@ class Event {
   final String? coverImageUrl;
   final String status;
   final int? capacity;
+  final bool allowCashPayment;
   final List<EventTier> tiers;
   final String? venueName;
   final String? venueSlug;
@@ -55,6 +56,7 @@ class Event {
     this.coverImageUrl,
     required this.status,
     this.capacity,
+    this.allowCashPayment = false,
     this.tiers = const [],
     this.venueName,
     this.venueSlug,
@@ -75,6 +77,7 @@ class Event {
       coverImageUrl: json['coverImageUrl'] as String?,
       status: json['status'] as String? ?? 'PUBLISHED',
       capacity: json['capacity'] as int?,
+      allowCashPayment: json['allowCashPayment'] as bool? ?? false,
       tiers: (json['tiers'] as List<dynamic>?)
               ?.map((e) => EventTier.fromJson(e as Map<String, dynamic>))
               .toList() ??

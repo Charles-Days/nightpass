@@ -202,6 +202,68 @@ export function useSetCommissionRule(basePath: string = '/api/rp') {
   });
 }
 
+// ── Solicitudes de pago en efectivo (PhysicalPaymentRequest) ───────────────
+
+export type PhysicalRequestStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'CANCELLED'
+  | 'EXPIRED';
+
+export interface PhysicalPaymentRequest {
+  id: string;
+  status: PhysicalRequestStatus;
+  quantity: number;
+  amountCents: number;
+  currency: string;
+  contactPhone: string | null;
+  note: string | null;
+  expiresAt: string;
+  confirmedAt: string | null;
+  createdAt: string;
+  orderId: string | null;
+  event: { id: string; title: string; startsAt: string };
+  tier: { id: string; name: string };
+  customer: { name: string | null; email: string } | null;
+  confirmedByRp: { displayName: string; rpCode: string } | null;
+}
+
+export function useRpPhysicalRequests(status?: PhysicalRequestStatus) {
+  const qs = status ? `?status=${status}` : '';
+  return useQuery({
+    queryKey: ['physical-requests', 'rp', status ?? 'all'],
+    queryFn: () =>
+      clientFetch<{ items: PhysicalPaymentRequest[] }>(`/api/physical-payments/rp${qs}`),
+  });
+}
+
+export function useConfirmPhysicalRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      clientFetch<PhysicalPaymentRequest>(`/api/physical-payments/${id}/confirm`, {
+        method: 'POST',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['physical-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['rp-me'] });
+    },
+  });
+}
+
+export function useCancelPhysicalRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      clientFetch<{ ok: boolean }>(`/api/physical-payments/${id}/cancel`, {
+        method: 'POST',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['physical-requests'] });
+    },
+  });
+}
+
 export function useDeleteCommissionRule() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsDate,
   IsEnum,
   IsInt,
@@ -48,6 +49,9 @@ export class CreateEventDto {
 
   @IsOptional() @IsInt() @Min(1)
   capacity?: number;
+
+  @IsOptional() @IsBoolean()
+  allowCashPayment?: boolean;
 
   @IsOptional() @IsString() @MaxLength(120)
   externalVenueName?: string;

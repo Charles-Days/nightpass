@@ -64,6 +64,18 @@ enum PassClaimStatus {
   CANCELLED
 }
 
+// Estado de una solicitud de pago en EFECTIVO iniciada por el cliente desde la
+// app. PENDING = esperando que un RP asignado al evento cobre y confirme.
+// CONFIRMED = el RP cobró → se emitió el/los Pass directo a la cuenta del
+// cliente. CANCELLED = cancelada por el cliente o el RP. EXPIRED = venció sin
+// confirmarse (pasó el inicio del evento).
+enum PhysicalPaymentRequestStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
 enum TransferStatus {
   PENDING
   CLAIMED
@@ -143,6 +155,7 @@ model User {
   adminGeneratedClaims PassClaim[]           @relation("AdminGeneratedClaims")
   transfersSent        PassTransfer[]        @relation("TransfersSent")
   transfersReceived    PassTransfer[]        @relation("TransfersReceived")
+  physicalPaymentRequests PhysicalPaymentRequest[] @relation("UserPhysicalRequests")
 
   @@map("users")
 }
@@ -432,6 +445,9 @@ model Event {
   flyerImageUrl String?
   status        EventStatus @default(DRAFT)
   capacity      Int?
+  // Habilita el flujo de PAGO EN EFECTIVO (boleto digital, pago físico vía RP).
+  // Si es false, la app no ofrece la opción y el backend rechaza solicitudes.
+  allowCashPayment Boolean   @default(false)
   isFeatured     Boolean     @default(false)
   featuredAt     DateTime?
   featuredReason String?
@@ -459,6 +475,8 @@ model Event {
   rpCommissionRules RpCommissionRule[]
   forumPosts    EventForumPost[]
   passClaims    PassClaim[]
+  cashRps          EventRp[]
+  physicalRequests PhysicalPaymentRequest[]
 
   @@unique([venueId, slug])
   @@unique([promoterId, slug])
@@ -502,6 +520,7 @@ model EventTier {
   orders Order[]
   prices EventTierPrice[]
   passClaims PassClaim[]
+  physicalRequests PhysicalPaymentRequest[]
 
   @@index([eventId])
   @@map("event_tiers")
@@ -563,6 +582,7 @@ model Order {
   tier  EventTier @relation(fields: [tierId], references: [id])
   passes Pass[]
   passClaim PassClaim?
+  physicalRequest PhysicalPaymentRequest?
   referredByRpId  String?  @db.Uuid
   referredByRp    RpProfile? @relation("RpReferredOrders", fields: [referredByRpId], references: [id], onDelete: SetNull)
 
@@ -775,6 +795,8 @@ model RpProfile {
   orders    Order[]          @relation("RpReferredOrders")
   commissionRules RpCommissionRule[]
   issuedClaims    PassClaim[] @relation("RpIssuedClaims")
+  eventAssignments EventRp[]
+  confirmedPhysicalRequests PhysicalPaymentRequest[] @relation("RpConfirmedRequests")
 
   @@index([rpCode])
   @@index([promoterId])
@@ -810,6 +832,60 @@ model PassClaim {
   @@index([issuedByRpId, status])
   @@index([eventId, status])
   @@map("pass_claims")
+}
+
+// Asignación explícita de un RP a un evento PARA COBRO EN EFECTIVO. Es la lista
+// de RPs que reciben el correo cuando un cliente pide pagar en físico ese
+// evento, y los únicos autorizados a confirmar esas solicitudes. Independiente
+// de RpCommissionRule (comisión) y de la pertenencia a un promoter.
+model EventRp {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  eventId     String   @db.Uuid
+  rpProfileId String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  event     Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  rpProfile RpProfile @relation(fields: [rpProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, rpProfileId])
+  @@index([rpProfileId])
+  @@map("event_rps")
+}
+
+// Solicitud de PAGO EN EFECTIVO: el boleto es digital pero el cobro es físico.
+// El cliente la crea desde la app (elige tier + cantidad); se notifica por
+// correo a los RPs asignados al evento (EventRp). Cuando un RP cobra en persona,
+// confirma la solicitud en el panel → se emiten los Pass directo a la cuenta del
+// cliente (Order CASH COMPLETED + issuePasses), atribuidos al RP que confirmó.
+// El monto se congela al precio vigente al momento de la solicitud.
+model PhysicalPaymentRequest {
+  id              String                       @id @default(uuid(7)) @db.Uuid
+  userId          String                       @db.Uuid
+  eventId         String                       @db.Uuid
+  tierId          String                       @db.Uuid
+  quantity        Int                          @default(1)
+  amountCents     Int
+  currency        String                       @default("MXN")
+  status          PhysicalPaymentRequestStatus @default(PENDING)
+  contactPhone    String?
+  note            String?
+  confirmedByRpId String?                      @db.Uuid
+  confirmedAt     DateTime?
+  orderId         String?                      @unique @db.Uuid
+  expiresAt       DateTime
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+
+  user          User       @relation("UserPhysicalRequests", fields: [userId], references: [id], onDelete: Cascade)
+  event         Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tier          EventTier  @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  confirmedByRp RpProfile? @relation("RpConfirmedRequests", fields: [confirmedByRpId], references: [id], onDelete: SetNull)
+  order         Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([eventId, status])
+  @@index([userId, status])
+  @@index([confirmedByRpId, status])
+  @@map("physical_payment_requests")
 }
 
 // Key-value de configuración global de la app. Hoy solo guarda el flag de
