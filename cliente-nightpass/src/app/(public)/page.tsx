@@ -244,13 +244,20 @@ function SocialProof({ stats }: { stats: PublicStats }) {
 // ────────────────────────────────────────────────
 
 function VenuesStrip() {
-  const venues = ['Sala Apolo', 'Razzmatazz', 'Moog', 'Macarena', 'Goya Social', 'Mondo'];
+  const venues = [
+    'Pases digitales',
+    'Sin filas',
+    'Cover anticipado',
+    'Eventos en vivo',
+    'Recompensas',
+    'Con tu crew',
+  ];
   return (
     <section className="mx-auto w-full max-w-7xl px-6 sm:px-14">
       <Reveal>
         <div className="flex flex-wrap items-center gap-x-10 gap-y-4 rounded-3xl border border-white/10 bg-white/[0.025] px-9 py-7 backdrop-blur-sm">
           <span className="text-[11px] font-semibold uppercase tracking-[0.18em] whitespace-nowrap text-muted-foreground">
-            Ya disponible en
+            Todo en un solo lugar
           </span>
           <div className="flex flex-1 flex-wrap items-center justify-around gap-x-10 gap-y-3">
             {venues.map((v) => (
@@ -350,9 +357,9 @@ function StepCard({
 
 function CapacityDemo() {
   const items = [
-    { n: 'Sala Apolo', p: 92 },
-    { n: 'Razzmatazz', p: 78 },
-    { n: 'Moog', p: 45 },
+    { n: 'Antro del centro', p: 92 },
+    { n: 'Fiesta del sábado', p: 78 },
+    { n: 'Rooftop de la zona', p: 45 },
   ];
   return (
     <div className="space-y-3">

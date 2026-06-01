@@ -387,9 +387,9 @@ function DemoPhone({ screen }: { screen: StepId }) {
 
 function DiscoverScreen() {
   const venues = [
-    { n: 'Razzmatazz', t: 'House · 2.4 km', p: 80 },
-    { n: 'Macarena Club', t: 'Latino · 0.8 km', p: 35 },
-    { n: 'Moog', t: 'Electro · 1.1 km', p: 92 },
+    { n: 'La Terraza', t: 'House · 2.4 km', p: 80 },
+    { n: 'Club Neón', t: 'Latino · 0.8 km', p: 35 },
+    { n: 'Sala Vértigo', t: 'Electro · 1.1 km', p: 92 },
   ];
   const accent = (p: number) =>
     p > 85 ? 'text-fuchsia-400' : p > 60 ? 'text-amber-400' : 'text-emerald-300';
@@ -419,7 +419,7 @@ function DiscoverScreen() {
           </span>
         </div>
         <div className="absolute right-3 bottom-2.5 left-3 text-white">
-          <div className="font-display text-base font-bold">Sala Apolo</div>
+          <div className="font-display text-base font-bold">Club Aurora</div>
           <div className="text-[11px] opacity-80">Techno · 1.2 km · Cover desde €12</div>
         </div>
       </div>
@@ -483,7 +483,7 @@ function VenueScreen() {
         </div>
       </div>
       <div className="mt-3">
-        <div className="font-display text-xl font-bold text-white">Sala Apolo</div>
+        <div className="font-display text-xl font-bold text-white">Club Aurora</div>
         <div className="mt-0.5 text-[11px] text-white/55">
           Techno · Industrial · 1.2 km · Cuernavaca
         </div>
@@ -552,7 +552,7 @@ function PayScreen() {
           style={{ background: 'linear-gradient(135deg, hsl(290 50% 25%), hsl(260 55% 15%))' }}
         />
         <div className="flex-1">
-          <div className="text-[13px] font-semibold text-white">Sala Apolo</div>
+          <div className="text-[13px] font-semibold text-white">Club Aurora</div>
           <div className="mt-0.5 text-[10px] text-white/55">1 entrada · Techno · 23:47</div>
         </div>
       </div>
@@ -602,7 +602,7 @@ function QrScreen() {
         <div className="text-[11px] font-medium tracking-[0.1em] text-primary uppercase">
           Tu pase
         </div>
-        <div className="mt-1 font-display text-xl font-bold text-white">Sala Apolo</div>
+        <div className="mt-1 font-display text-xl font-bold text-white">Club Aurora</div>
         <div className="mt-0.5 text-[11px] text-white/55">23:47 · NP-2A4F</div>
       </div>
 
@@ -655,7 +655,7 @@ function InScreen() {
             style={{ background: 'linear-gradient(135deg, hsl(290 50% 25%), hsl(260 55% 15%))' }}
           />
           <div className="flex-1 text-left">
-            <div className="text-[12px] font-semibold text-white">Sala Apolo</div>
+            <div className="text-[12px] font-semibold text-white">Club Aurora</div>
             <div className="mt-0.5 text-[10px] text-white/55">Techno · Cover €12 · 1 entrada</div>
           </div>
           <Check className="size-4 text-emerald-300" />

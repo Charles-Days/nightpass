@@ -5,9 +5,9 @@ interface PhoneMockupProps {
 }
 
 const VENUES = [
-  { n: 'Razzmatazz', t: 'House · 2.4 km', p: 80 },
-  { n: 'Macarena Club', t: 'Latino · 0.8 km', p: 35 },
-  { n: 'Moog', t: 'Electro · 1.1 km', p: 92 },
+  { n: 'La Terraza', t: 'House · 2.4 km', p: 80 },
+  { n: 'Club Neón', t: 'Latino · 0.8 km', p: 35 },
+  { n: 'Sala Vértigo', t: 'Electro · 1.1 km', p: 92 },
 ];
 
 function venueAccent(p: number) {
@@ -77,7 +77,7 @@ export function PhoneMockup({ tilt = -6, scale = 1, className = '' }: PhoneMocku
               </span>
             </div>
             <div className="absolute bottom-2.5 left-3 right-3 text-white">
-              <div className="font-display text-base font-bold">Sala Apolo</div>
+              <div className="font-display text-base font-bold">Club Aurora</div>
               <div className="text-[11px] opacity-80">Techno · 1.2 km · Cover desde €12</div>
             </div>
           </div>
