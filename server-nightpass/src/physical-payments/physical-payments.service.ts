@@ -123,12 +123,10 @@ export class PhysicalPaymentsService {
     // confirmar). Cuenta pases emitidos + vales pendientes, igual que el resto.
     await this.assertCapacity(event.id, tier.id, tier.capacity, event.capacity, quantity);
 
-    // Una solicitud en curso por evento. No se permite pedir de nuevo mientras
-    // exista una sin resolver:
-    //   - PENDING: el RP aún no cobra/emite.
-    //   - CONFIRMED cuyos pases nadie ha canjeado (ningún Pass usado).
-    // En cuanto canjea (usa) al menos un pase del lote confirmado, puede volver
-    // a pedir más (p.ej. pidió 4, usa 1 → ya puede solicitar otra vez).
+    // Solo UNA solicitud PENDIENTE (sin confirmar) a la vez por evento. Una vez
+    // que el RP confirma el cobro (queda pagada), el cliente ya puede pedir otra
+    // — no se exige que entre/canjee primero (eso solo pasaría el día del evento
+    // y lo dejaría bloqueado hasta entonces).
     const pendingCount = await this.prisma.physicalPaymentRequest.count({
       where: {
         userId,
@@ -142,29 +140,25 @@ export class PhysicalPaymentsService {
       );
     }
 
-    const confirmed = await this.prisma.physicalPaymentRequest.findMany({
-      where: {
-        userId,
-        eventId: event.id,
-        status: PhysicalPaymentRequestStatus.CONFIRMED,
-        orderId: { not: null },
-      },
-      select: { orderId: true },
-    });
-    if (confirmed.length > 0) {
-      const orderIds = confirmed.map((c) => c.orderId as string);
-      const redeemed = await this.prisma.pass.findMany({
-        where: { orderId: { in: orderIds }, usedAt: { not: null } },
-        select: { orderId: true },
-        distinct: ['orderId'],
-      });
-      const redeemedSet = new Set(redeemed.map((p) => p.orderId));
-      const hasUnredeemed = orderIds.some((id) => !redeemedSet.has(id));
-      if (hasUnredeemed) {
-        throw new ConflictException(
-          'Tienes pases de efectivo pendientes de usar. Canjea al menos uno (entra al evento) antes de pedir más.',
-        );
-      }
+    // Tope de 6 pases por cuenta por evento (igual que online). Cuenta los pases
+    // ya emitidos (efectivo confirmado + online) más lo que tiene en solicitudes
+    // PENDING de este evento.
+    const [issuedCount, pendingMine] = await Promise.all([
+      this.prisma.pass.count({ where: { eventId: event.id, userId } }),
+      this.prisma.physicalPaymentRequest.aggregate({
+        _sum: { quantity: true },
+        where: {
+          userId,
+          eventId: event.id,
+          status: PhysicalPaymentRequestStatus.PENDING,
+        },
+      }),
+    ]);
+    const demand = issuedCount + (pendingMine._sum.quantity ?? 0);
+    if (demand + quantity > 6) {
+      throw new ConflictException(
+        `Límite de 6 pases por cuenta por evento. Ya tienes ${demand}.`,
+      );
     }
 
     // Enrutamiento: entre los RPs asignados al evento, prioriza los que cubren la
