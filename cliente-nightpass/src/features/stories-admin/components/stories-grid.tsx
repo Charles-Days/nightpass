@@ -3,13 +3,14 @@
 import * as React from 'react';
 import type { Story } from '@/core/types/api';
 import { StoryCard } from './story-card';
+import type { CreateStoryTarget } from '../hooks/use-create-story';
 
 interface StoriesGridProps {
   stories: Story[];
-  venueId: string;
+  target: CreateStoryTarget;
 }
 
-export function StoriesGrid({ stories, venueId }: StoriesGridProps) {
+export function StoriesGrid({ stories, target }: StoriesGridProps) {
   if (stories.length === 0) {
     return (
       <div className="rounded-[22px] border border-dashed border-white/10 bg-white/[0.015] p-10 text-center">
@@ -26,7 +27,7 @@ export function StoriesGrid({ stories, venueId }: StoriesGridProps) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       {stories.map((story) => (
-        <StoryCard key={story.id} story={story} venueId={venueId} />
+        <StoryCard key={story.id} story={story} target={target} />
       ))}
     </div>
   );

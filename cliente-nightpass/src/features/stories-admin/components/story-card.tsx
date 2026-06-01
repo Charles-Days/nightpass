@@ -6,16 +6,17 @@ import type { Story } from '@/core/types/api';
 import { ConfirmDialog } from '@/core/components/ui/confirm-dialog';
 import { CountdownPill } from './countdown-pill';
 import { useDeleteStory } from '../hooks/use-delete-story';
+import type { CreateStoryTarget } from '../hooks/use-create-story';
 
 interface StoryCardProps {
   story: Story;
-  venueId: string;
+  target: CreateStoryTarget;
 }
 
-export function StoryCard({ story, venueId }: StoryCardProps) {
+export function StoryCard({ story, target }: StoryCardProps) {
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const videoRef = React.useRef<HTMLVideoElement>(null);
-  const deleteStory = useDeleteStory(venueId);
+  const deleteStory = useDeleteStory(target.venueId ?? {});
 
   const isVideo = story.mediaType === 'VIDEO';
 

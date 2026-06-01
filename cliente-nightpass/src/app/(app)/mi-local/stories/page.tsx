@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { serverFetch } from '@/core/lib/api/server-client';
 import type { Story, User, Venue } from '@/core/types/api';
 import { paths } from '@/core/config/paths';
-import { OwnerStoriesManager } from '@/features/stories-admin';
+import { StoriesManager } from '@/features/stories-admin';
 
 export const metadata = { title: 'Historias · NightPass Admin' };
 
@@ -52,9 +52,9 @@ export default async function MiLocalStoriesPage({
           Comparte momentos del local. Las historias se borran solas a las 24h.
         </p>
       </header>
-      <OwnerStoriesManager
-        venueId={venue.id}
-        venueName={venue.name}
+      <StoriesManager
+        target={{ venueId: venue.id }}
+        title={venue.name}
         initialStories={initialStories}
         autoStart={autoStart}
         returnTo={returnTo}

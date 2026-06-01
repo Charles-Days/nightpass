@@ -1,11 +1,13 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { Camera, FileVideo, Loader2, Radio, Sparkles, UploadCloud, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/core/components/ui/button';
 import { Textarea } from '@/core/components/ui/textarea';
-import { useCreateStory } from '../hooks/use-create-story';
+import { paths } from '@/core/config/paths';
+import { useCreateStory, type CreateStoryTarget } from '../hooks/use-create-story';
 import {
   ACCEPT_ATTR,
   MAX_VIDEO_DURATION_MS,
@@ -17,8 +19,12 @@ import { StoryRecorder } from './story-recorder';
 type UploaderMode = 'pick' | 'record';
 
 interface StoryUploaderProps {
-  venueId: string;
-  venueName: string;
+  target: CreateStoryTarget;
+  title: string;
+  /** Deep-link desde la app móvil: arranca grabando o abre selector de archivo. */
+  autoStart?: 'record' | 'photo' | null;
+  /** Tras publicar/cancelar, rebota al cliente de donde vino. */
+  returnTo?: 'app' | 'profile' | null;
 }
 
 function formatBytes(bytes: number): string {
@@ -27,17 +33,21 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function StoryUploader({ venueId, venueName }: StoryUploaderProps) {
+export function StoryUploader({ target, title, autoStart = null, returnTo = null }: StoryUploaderProps) {
+  const router = useRouter();
   const [media, setMedia] = React.useState<ValidatedMedia | null>(null);
   const [caption, setCaption] = React.useState('');
   const [dragOver, setDragOver] = React.useState(false);
   const [validating, setValidating] = React.useState(false);
-  const [mode, setMode] = React.useState<UploaderMode>('pick');
+  const [mode, setMode] = React.useState<UploaderMode>(autoStart === 'record' ? 'record' : 'pick');
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const autoStartedRef = React.useRef(false);
 
-  const create = useCreateStory(venueId, {
+  const create = useCreateStory(target, {
     onSuccess: () => {
       reset();
+      if (returnTo === 'app') router.push(paths.appHome);
+      else if (returnTo === 'profile') router.push(paths.perfil);
     },
   });
 
@@ -52,6 +62,14 @@ export function StoryUploader({ venueId, venueName }: StoryUploaderProps) {
     setMode('pick');
     if (inputRef.current) inputRef.current.value = '';
   }, []);
+
+  // Deep-link ?compose=photo → abre el selector de archivo al montar.
+  React.useEffect(() => {
+    if (autoStartedRef.current || autoStart !== 'photo') return;
+    autoStartedRef.current = true;
+    const t = setTimeout(() => inputRef.current?.click(), 50);
+    return () => clearTimeout(t);
+  }, [autoStart]);
 
   const handleRecorded = React.useCallback(
     (file: File, durationMs: number) => {
@@ -137,7 +155,7 @@ export function StoryUploader({ venueId, venueName }: StoryUploaderProps) {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-            {venueName}
+            {title}
           </p>
           <h2 className="font-display text-lg font-semibold tracking-tight">
             Publicar historia

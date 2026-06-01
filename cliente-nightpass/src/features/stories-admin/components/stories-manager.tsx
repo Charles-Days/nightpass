@@ -1,24 +1,41 @@
 'use client';
 
 import * as React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { clientFetch } from '@/core/lib/api/client-client';
 import type { Story } from '@/core/types/api';
 import { useMyStories } from '../hooks/use-my-stories';
+import type { CreateStoryTarget } from '../hooks/use-create-story';
 import { StoriesGrid } from './stories-grid';
 import { StoryUploader } from './story-uploader';
 
 interface StoriesManagerProps {
-  venueId: string;
-  venueName: string;
-  initialStories: Story[];
+  target: CreateStoryTarget;
+  title: string;
+  initialStories?: Story[];
+  autoStart?: 'record' | 'photo' | null;
+  returnTo?: 'app' | 'profile' | null;
 }
 
-export function StoriesManager({ venueId, venueName, initialStories }: StoriesManagerProps) {
-  const { data } = useMyStories(venueId, initialStories);
-  const stories = data ?? [];
+export function StoriesManager({
+  target,
+  title,
+  initialStories = [],
+  autoStart = null,
+  returnTo = null,
+}: StoriesManagerProps) {
+  const venueStories = useMyStories(target.venueId ?? '', initialStories);
+  const eventStories = useQuery<Story[]>({
+    queryKey: ['stories-mine-event', target.eventId],
+    queryFn: () => clientFetch<Story[]>(`/api/stories/mine-by-event/${target.eventId}`),
+    enabled: !!target.eventId,
+  });
+
+  const stories = (target.venueId ? venueStories.data : eventStories.data) ?? [];
 
   return (
     <div className="space-y-6">
-      <StoryUploader venueId={venueId} venueName={venueName} />
+      <StoryUploader target={target} title={title} autoStart={autoStart} returnTo={returnTo} />
 
       <section className="space-y-3">
         <div className="flex items-end justify-between gap-2">
@@ -33,7 +50,7 @@ export function StoriesManager({ venueId, venueName, initialStories }: StoriesMa
             </p>
           </div>
         </div>
-        <StoriesGrid stories={stories} venueId={venueId} />
+        <StoriesGrid stories={stories} target={target} />
       </section>
     </div>
   );
