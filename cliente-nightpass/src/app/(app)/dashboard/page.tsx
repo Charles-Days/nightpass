@@ -133,7 +133,9 @@ function VisitorsCard({ visitors }: { visitors: VisitorStats }) {
   const max = Math.max(1, ...visitors.last7.map((d) => d.count));
   const fmt = new Intl.NumberFormat('es-MX');
   const dayLabel = (iso: string) =>
-    new Intl.DateTimeFormat('es-MX', { weekday: 'short' }).format(new Date(`${iso}T12:00:00Z`));
+    new Intl.DateTimeFormat('es-MX', { weekday: 'short', timeZone: 'America/Mexico_City' }).format(
+      new Date(`${iso}T12:00:00Z`),
+    );
 
   return (
     <Card className="rounded-[22px] border border-white/10 bg-white/[0.025]">

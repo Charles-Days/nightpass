@@ -95,7 +95,7 @@ export class AdminFinanceService {
       this.prisma.$queryRaw<
         Array<{ day: Date; sales: number; gross: number; platformFee: number }>
       >`
-        SELECT DATE(o."createdAt") as day,
+        SELECT DATE(o."createdAt" AT TIME ZONE 'America/Mexico_City') as day,
                COUNT(*)::int as sales,
                COALESCE(SUM(o."totalCents"), 0)::int as gross,
                COALESCE(SUM(o."applicationFeeCents"), 0)::int as "platformFee"
@@ -104,7 +104,7 @@ export class AdminFinanceService {
           AND o."paymentMethod" = 'STRIPE'
           AND o."createdAt" >= ${from}
           AND o."createdAt" <= ${to}
-        GROUP BY DATE(o."createdAt")
+        GROUP BY DATE(o."createdAt" AT TIME ZONE 'America/Mexico_City')
         ORDER BY day ASC
       `,
       this.prisma.$queryRaw<

@@ -22,9 +22,20 @@ export interface VisitorStats {
 export class MetricsService {
   constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
 
-  /** YYYY-MM-DD en UTC. */
+  // Bucketing por día en hora de México, NO UTC. En el VPS (UTC) un visitante
+  // de domingo 19:00 MX caía en el bucket del lunes (lunes 01:00 UTC). México
+  // no usa DST desde 2022 (UTC-6 fijo), así que restar 24h y formatear en esta
+  // tz da días locales consecutivos correctos.
+  private static readonly DAY_FMT = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Mexico_City',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+
+  /** YYYY-MM-DD en hora de México. */
   private dayString(date = new Date()): string {
-    return date.toISOString().slice(0, 10);
+    return MetricsService.DAY_FMT.format(date);
   }
 
   async recordVisit(visitorId: string): Promise<void> {
@@ -39,12 +50,10 @@ export class MetricsService {
   }
 
   async getStats(): Promise<VisitorStats> {
-    const today = new Date();
+    const now = Date.now();
     const days: string[] = [];
     for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setUTCDate(today.getUTCDate() - i);
-      days.push(this.dayString(d));
+      days.push(this.dayString(new Date(now - i * 86_400_000)));
     }
 
     const pipeline = this.redis.multi();
