@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type Redis from 'ioredis';
+import { Role } from '@prisma/client';
 import { REDIS_CLIENT } from '../redis/redis.module';
+import { PrismaService } from '../prisma/prisma.service';
 
 const ALL_KEY = 'visits:uniq:all';
 const dayKey = (d: string) => `visits:uniq:${d}`;
@@ -24,6 +26,9 @@ export interface VisitorStats {
     allTime: number;
     last7: DailyCount[];
   };
+  // Cuentas de cliente reales en la BD (histórico, incluye las creadas antes
+  // de existir el tracking de conversión).
+  totalAccounts: number;
 }
 
 /**
@@ -34,7 +39,10 @@ export interface VisitorStats {
  */
 @Injectable()
 export class MetricsService {
-  constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
+  constructor(
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly prisma: PrismaService,
+  ) {}
 
   // Bucketing por día en hora de México, NO UTC. En el VPS (UTC) un visitante
   // de domingo 19:00 MX caía en el bucket del lunes (lunes 01:00 UTC). México
@@ -91,7 +99,10 @@ export class MetricsService {
     pipeline.pfcount(ALL_KEY);
     days.forEach((d) => pipeline.pfcount(convDayKey(d)));
     pipeline.pfcount(CONV_ALL_KEY);
-    const res = await pipeline.exec();
+    const [res, totalAccounts] = await Promise.all([
+      pipeline.exec(),
+      this.prisma.user.count({ where: { role: Role.CUSTOMER } }),
+    ]);
 
     const counts = (res ?? []).map(([, v]) => Number(v) || 0);
     // Layout: [7 visit days][visit all][7 conv days][conv all]
@@ -112,6 +123,7 @@ export class MetricsService {
         allTime: convAll,
         last7: toSeries(convDays),
       },
+      totalAccounts,
     };
   }
 }

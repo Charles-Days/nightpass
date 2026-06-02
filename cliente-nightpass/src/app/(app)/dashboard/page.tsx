@@ -167,6 +167,17 @@ function VisitorsCard({ visitors }: { visitors: VisitorStats }) {
               {fmt.format(visitors.allTime)}
             </p>
           </div>
+          {typeof visitors.totalAccounts === 'number' && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Cuentas totales
+              </p>
+              <p className="font-display text-3xl font-bold tabular-nums text-emerald-400">
+                {fmt.format(visitors.totalAccounts)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">clientes en la BD</p>
+            </div>
+          )}
 
           <div className="ml-auto flex items-end gap-2">
             {visitors.last7.map((d) => (

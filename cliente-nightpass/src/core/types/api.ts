@@ -837,6 +837,7 @@ export interface VisitorStats {
     allTime: number;
     last7: { date: string; count: number }[];
   };
+  totalAccounts?: number;
 }
 
 export interface AdminFinanceStats {
