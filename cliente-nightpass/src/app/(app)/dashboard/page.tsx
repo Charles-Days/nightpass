@@ -142,10 +142,11 @@ function VisitorsCard({ visitors }: { visitors: VisitorStats }) {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Users className="size-4 text-primary" />
-          Visitantes únicos
+          Visitantes y conversión
         </CardTitle>
         <CardDescription>
-          No cuenta recargas — dedup por visitante (cookie / IP). Aproximado.
+          Visitantes únicos del sitio y cuántos crearon cuenta. Dedup por
+          visitante (cookie / IP), aproximado.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -184,6 +185,61 @@ function VisitorsCard({ visitors }: { visitors: VisitorStats }) {
             ))}
           </div>
         </div>
+
+        {visitors.conversions && (
+          <div className="mt-5 grid grid-cols-2 gap-4 border-t border-white/8 pt-4 sm:grid-cols-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Crearon cuenta
+              </p>
+              <p className="font-display text-2xl font-bold tabular-nums text-emerald-400">
+                {fmt.format(visitors.conversions.allTime)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {fmt.format(visitors.conversions.today)} hoy
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Sin cuenta
+              </p>
+              <p className="font-display text-2xl font-bold tabular-nums text-white/70">
+                {fmt.format(Math.max(0, visitors.allTime - visitors.conversions.allTime))}
+              </p>
+              <p className="text-[10px] text-muted-foreground">visitaron, no se registraron</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Tasa de conversión
+              </p>
+              <p className="font-display text-2xl font-bold tabular-nums text-primary">
+                {visitors.allTime > 0
+                  ? `${((visitors.conversions.allTime / visitors.allTime) * 100).toFixed(1)}%`
+                  : '—'}
+              </p>
+              <p className="text-[10px] text-muted-foreground">cuentas / visitantes</p>
+            </div>
+            <div className="ml-auto flex items-end gap-2">
+              {visitors.conversions.last7.map((d) => {
+                const cmax = Math.max(1, ...visitors.conversions!.last7.map((x) => x.count));
+                return (
+                  <div key={d.date} className="flex flex-col items-center gap-1.5">
+                    <span className="text-[10px] tabular-nums text-white/60">{d.count}</span>
+                    <div className="flex h-10 w-4 items-end rounded-md bg-white/[0.04]">
+                      <div
+                        className="w-full rounded-md bg-gradient-to-t from-emerald-600 to-emerald-400"
+                        style={{ height: `${Math.round((d.count / cmax) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-[9px] uppercase tracking-wide text-muted-foreground">
+                      {dayLabel(d.date)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

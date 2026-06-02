@@ -4,12 +4,26 @@ import { REDIS_CLIENT } from '../redis/redis.module';
 
 const ALL_KEY = 'visits:uniq:all';
 const dayKey = (d: string) => `visits:uniq:${d}`;
+// Visitantes que además crearon cuenta (conversión del funnel web).
+const CONV_ALL_KEY = 'convert:uniq:all';
+const convDayKey = (d: string) => `convert:uniq:${d}`;
 const DAILY_TTL_SECONDS = 60 * 60 * 24 * 90; // retener 90 días de claves diarias
+
+export interface DailyCount {
+  date: string;
+  count: number;
+}
 
 export interface VisitorStats {
   today: number;
   allTime: number;
-  last7: { date: string; count: number }[];
+  last7: DailyCount[];
+  // Conversión: visitantes únicos que crearon cuenta.
+  conversions: {
+    today: number;
+    allTime: number;
+    last7: DailyCount[];
+  };
 }
 
 /**
@@ -49,6 +63,22 @@ export class MetricsService {
       .exec();
   }
 
+  /**
+   * Marca que un visitante creó cuenta (conversión). Se llama al hacer signup
+   * web con el mismo visitorId (cookie np_vid). HyperLogLog dedup → un visitante
+   * solo cuenta una vez aunque cree varias cuentas/recargue.
+   */
+  async recordConversion(visitorId: string): Promise<void> {
+    if (!visitorId) return;
+    const key = convDayKey(this.dayString());
+    await this.redis
+      .multi()
+      .pfadd(key, visitorId)
+      .expire(key, DAILY_TTL_SECONDS)
+      .pfadd(CONV_ALL_KEY, visitorId)
+      .exec();
+  }
+
   async getStats(): Promise<VisitorStats> {
     const now = Date.now();
     const days: string[] = [];
@@ -59,14 +89,29 @@ export class MetricsService {
     const pipeline = this.redis.multi();
     days.forEach((d) => pipeline.pfcount(dayKey(d)));
     pipeline.pfcount(ALL_KEY);
+    days.forEach((d) => pipeline.pfcount(convDayKey(d)));
+    pipeline.pfcount(CONV_ALL_KEY);
     const res = await pipeline.exec();
 
     const counts = (res ?? []).map(([, v]) => Number(v) || 0);
+    // Layout: [7 visit days][visit all][7 conv days][conv all]
+    const visitDays = counts.slice(0, days.length);
     const allTime = counts[days.length] ?? 0;
-    const last7 = days
-      .map((date, i) => ({ date, count: counts[i] ?? 0 }))
-      .reverse(); // cronológico ascendente para graficar
+    const convDays = counts.slice(days.length + 1, days.length + 1 + days.length);
+    const convAll = counts[days.length * 2 + 1] ?? 0;
 
-    return { today: counts[0] ?? 0, allTime, last7 };
+    const toSeries = (arr: number[]) =>
+      days.map((date, i) => ({ date, count: arr[i] ?? 0 })).reverse();
+
+    return {
+      today: visitDays[0] ?? 0,
+      allTime,
+      last7: toSeries(visitDays),
+      conversions: {
+        today: convDays[0] ?? 0,
+        allTime: convAll,
+        last7: toSeries(convDays),
+      },
+    };
   }
 }

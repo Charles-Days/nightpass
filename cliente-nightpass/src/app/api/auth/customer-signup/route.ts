@@ -25,6 +25,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(data ?? { message: 'Error desconocido' }, { status: upstream.status });
   }
 
+  // Conversión: este visitante (cookie np_vid) creó cuenta. Beacon best-effort
+  // al backend para medir la tasa visita→cuenta del funnel web.
+  const visitorId = req.cookies.get('np_vid')?.value;
+  if (visitorId) {
+    await fetch(`${serverEnv.API_URL}/api/v1/metrics/conversion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitorId }),
+    }).catch(() => undefined);
+  }
+
   const res = NextResponse.json({ user: data.user });
   res.cookies.set(ACCESS_COOKIE, data.accessToken, accessCookieOptions);
   res.cookies.set(REFRESH_COOKIE, data.refreshToken, refreshCookieOptions);

@@ -28,6 +28,15 @@ export class MetricsController {
     await this.service.recordVisit(dto.visitorId);
   }
 
+  // Público: se llama tras un signup web exitoso con el mismo visitorId para
+  // medir conversión visita→cuenta. Dedup por HyperLogLog.
+  @Post('conversion')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  async conversion(@Body() dto: RecordVisitDto): Promise<void> {
+    await this.service.recordConversion(dto.visitorId);
+  }
+
   // Solo ADMIN: visitantes únicos de hoy, all-time y últimos 7 días.
   @Get('visitors')
   @UseGuards(JwtAuthGuard, RolesGuard)
