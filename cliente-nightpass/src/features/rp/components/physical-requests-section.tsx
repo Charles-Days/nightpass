@@ -2,8 +2,9 @@
 
 import * as React from 'react';
 import { toast } from 'sonner';
-import { Loader2, Banknote, Check, X, Clock } from 'lucide-react';
+import { Loader2, Banknote, Check, X, Clock, Search } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
+import { Input } from '@/core/components/ui/input';
 import { ClientApiError } from '@/core/lib/api/client-client';
 import {
   useRpPhysicalRequests,
@@ -60,9 +61,27 @@ export function PhysicalRequestsSection() {
     });
   };
 
-  const items = data?.items ?? [];
+  const [query, setQuery] = React.useState('');
+
+  const allItems = data?.items ?? [];
+  const q = query.trim().toLowerCase();
+  const items = q
+    ? allItems.filter((r) => {
+        const haystack = [
+          r.customer?.name,
+          r.customer?.email,
+          r.contactPhone,
+          r.event.title,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(q);
+      })
+    : allItems;
   const pending = items.filter((r) => r.status === 'PENDING');
   const rest = items.filter((r) => r.status !== 'PENDING');
+  const pendingTotal = allItems.filter((r) => r.status === 'PENDING').length;
 
   return (
     <div className="space-y-4">
@@ -71,12 +90,24 @@ export function PhysicalRequestsSection() {
         <h3 className="font-display text-lg font-bold tracking-tight">
           Solicitudes de pago en efectivo
         </h3>
-        {pending.length > 0 && (
+        {pendingTotal > 0 && (
           <span className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-2 py-0.5 text-[11px] font-semibold text-yellow-400">
-            {pending.length} pendiente{pending.length === 1 ? '' : 's'}
+            {pendingTotal} pendiente{pendingTotal === 1 ? '' : 's'}
           </span>
         )}
       </div>
+
+      {allItems.length > 0 && (
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nombre, email, teléfono o evento…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-10 rounded-xl border-white/10 bg-white/[0.03] pl-9 text-sm text-white"
+          />
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
@@ -84,7 +115,9 @@ export function PhysicalRequestsSection() {
         </div>
       ) : items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.01] p-10 text-center text-sm text-muted-foreground">
-          Sin solicitudes de pago en efectivo por ahora.
+          {q
+            ? `Sin resultados para “${query.trim()}”.`
+            : 'Sin solicitudes de pago en efectivo por ahora.'}
         </div>
       ) : (
         <div className="space-y-3">
