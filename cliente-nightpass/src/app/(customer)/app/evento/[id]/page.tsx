@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Calendar, Clock, Lock, MapPin, MessageCircle, Navigation, TrendingUp, Users } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Lock, MapPin, Navigation, TrendingUp, Users } from 'lucide-react';
 import { ServerApiError, publicFetch, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import { absoluteUrl } from '@/core/config/env';
@@ -18,6 +18,7 @@ import { EventForumSection } from '@/app/(customer)/_components/event-forum-sect
 import { EventAforo } from '@/app/(customer)/_components/event-aforo';
 import { EventHeroFx } from '@/app/(customer)/_components/event-hero-fx';
 import { EventCountdown } from '@/app/(customer)/_components/event-countdown';
+import { WhatsappIcon } from '@/core/components/icons/whatsapp-icon';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -324,7 +325,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
           style={{ animationDelay: '340ms' }}
         >
           <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-            <MessageCircle className="size-4" />
+            <WhatsappIcon className="size-4" />
             Grupos de WhatsApp
           </p>
           <p className="mt-1.5 text-sm text-muted-foreground">
@@ -341,7 +342,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
               >
                 <span className="flex items-center gap-3">
                   <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-emerald-400/15">
-                    <MessageCircle className="size-4 text-emerald-300" />
+                    <WhatsappIcon className="size-5" />
                   </span>
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-foreground">
