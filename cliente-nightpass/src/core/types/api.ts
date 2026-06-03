@@ -254,6 +254,13 @@ export interface VenueStaffMember {
 
 export type EventStatus = 'DRAFT' | 'PUBLISHED' | 'CANCELED';
 
+/**
+ * Modo de comisión en efectivo por-tier.
+ *  - ADD:      la comisión NightPass se SUMA al precio (el cliente paga más).
+ *  - SUBTRACT: la comisión se DESCUENTA (el cliente paga menos; comportamiento actual).
+ */
+export type CashFeeMode = 'ADD' | 'SUBTRACT';
+
 /** Una subida de precio programada (sube `priceCents` al acercarse el evento). */
 export interface TierPricePhase {
   priceCents: number;
@@ -271,6 +278,13 @@ export interface EventTier {
   minLoyaltyTier?: LoyaltyTier | null;
   /** Calendario de subidas (solo en lecturas del panel/owner). */
   prices?: TierPricePhase[];
+  // ── Override de efectivo por-tier (todos nullable, null = heredar del owner) ──
+  /** null => SUBTRACT (comportamiento actual). */
+  cashFeeMode?: CashFeeMode | null;
+  /** null => usar platformFeePct del owner (o global). */
+  cashFeePctOverride?: number | null;
+  /** null => usar cashCommissionExempt del owner. */
+  cashExemptOverride?: boolean | null;
   /** Próxima subida programada (solo en catálogo público). */
   nextPrice?: { priceCents: number; startsAt: string } | null;
   createdAt: string;
@@ -298,8 +312,8 @@ export interface Event {
   createdAt: string;
   updatedAt: string;
   tiers?: EventTier[];
-  venue?: { id: string; slug: string; name: string; city: string; platformFeePct?: number } | null;
-  promoter?: { id: string; slug: string; name: string; city: string; platformFeePct?: number } | null;
+  venue?: { id: string; slug: string; name: string; city: string; platformFeePct?: number; cashCommissionExempt?: boolean } | null;
+  promoter?: { id: string; slug: string; name: string; city: string; platformFeePct?: number; cashCommissionExempt?: boolean } | null;
   isFeatured?: boolean;
   featuredAt?: string | null;
   featuredReason?: string | null;

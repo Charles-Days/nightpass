@@ -5,18 +5,26 @@
 // organizador lo fija para recibir su neto en ventas con tarjeta.
 //
 // En efectivo NO hay Stripe, así que ese costo no debe cobrarse al cliente. La
-// comisión de NightPass se cobra aparte del CashWallet del organizador (o no se
-// cobra si está exento). Por eso:
+// comisión de NightPass se cobra aparte del CashWallet del organizador (riel de
+// cobro que NO cambia con esta feature). El toggle ADD/SUBTRACT solo decide qué
+// PRECIO entrega el cliente en efectivo, no cómo NightPass cobra su comisión.
 //
-//   precio_efectivo = bruto − stripe − (exento ? comisiónNP : 0)
+//   base   = bruto − stripe          // efectivo no paga Stripe
+//   npComm = exento ? 0 : round(bruto * feePct / 100)
 //
-// - No exento: el cliente paga bruto−stripe (incluye la parte de NP); el
-//   organizador la reenvía a NP vía wallet y termina con su neto.
-// - Exento: el cliente paga el neto puro (bruto−stripe−NP); NP no cobra nada.
+//   SUBTRACT (default, comportamiento histórico): cashPrice = base
+//     → el cliente paga base; la org absorbe la comisión NP vía wallet.
+//   ADD: cashPrice = base + npComm
+//     → el cliente paga base + comisión; la org la recupera del cliente.
+//
+//   (si exento => npComm = 0 => ambos modos dan base)
 //
 // Debe mantenerse idéntico al cálculo del cliente (cliente-nightpass fees.ts).
 export const CASH_STRIPE_FEE_PCT = 3.6;
 export const CASH_STRIPE_FIXED_CENTS = 300; // $3 MXN
+
+/** Modo de aplicación de la comisión NP sobre el precio en efectivo. */
+export type CashFeeMode = 'ADD' | 'SUBTRACT';
 
 /** Comisión de Stripe que trae embebida un bruto unitario. */
 export function stripeFeeForGross(grossUnitCents: number): number {
@@ -36,13 +44,16 @@ export function npFeeForGross(grossUnitCents: number, feePct: number): number {
  * @param grossUnitCents precio bruto unitario (lo que se paga online)
  * @param feePct comisión NP del organizador (o global)
  * @param exempt si el organizador está exento de comisión en efectivo
+ * @param mode  'SUBTRACT' (default) = cliente paga base; 'ADD' = cliente paga base + comisión NP
  */
 export function computeCashUnitPrice(
   grossUnitCents: number,
   feePct: number,
   exempt: boolean,
+  mode: CashFeeMode = 'SUBTRACT',
 ): number {
-  const stripe = stripeFeeForGross(grossUnitCents);
-  const np = exempt ? npFeeForGross(grossUnitCents, feePct) : 0;
-  return Math.max(0, grossUnitCents - stripe - np);
+  const base = grossUnitCents - stripeFeeForGross(grossUnitCents);
+  const npComm = exempt ? 0 : npFeeForGross(grossUnitCents, feePct);
+  const price = mode === 'ADD' ? base + npComm : base;
+  return Math.max(0, price);
 }

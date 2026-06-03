@@ -509,6 +509,10 @@ export class CatalogService {
         currency: true,
         capacity: true,
         minLoyaltyTier: true,
+        // Overrides por-tier para el precio en efectivo (null = heredar del owner).
+        cashFeeMode: true,
+        cashFeePctOverride: true,
+        cashExemptOverride: true,
         prices: {
           orderBy: { daysBeforeEvent: 'desc' },
           select: { priceCents: true, daysBeforeEvent: true },
@@ -581,16 +585,20 @@ export class CatalogService {
       tier.event.startsAt,
     );
 
-    // Precio en efectivo (bruto − Stripe [− NP si exento]). Solo si el evento
-    // acepta efectivo; si no, null. Mismo cálculo que el cobro real.
+    // Precio en efectivo (bruto − Stripe [− NP según modo/exención]). Solo si el
+    // evento acepta efectivo; si no, null. Mismo cálculo que el cobro real:
+    // resolución POR-TIER (overrides del tier) con fallback al owner.
     const owner = venue ?? promoter;
-    const cashFeePct =
+    const ownerFeePct =
       owner?.platformFeePct != null
         ? owner.platformFeePct
         : Number(this.config.get<string>('STRIPE_PLATFORM_FEE_PCT')) || 8;
-    const cashExempt = owner?.cashCommissionExempt ?? true;
+    const cashFeePct = tier.cashFeePctOverride ?? ownerFeePct;
+    const cashExempt =
+      tier.cashExemptOverride ?? owner?.cashCommissionExempt ?? true;
+    const cashMode = tier.cashFeeMode ?? 'SUBTRACT';
     const cashPriceCents = tier.event.allowCashPayment
-      ? computeCashUnitPrice(resolved.currentCents, cashFeePct, cashExempt)
+      ? computeCashUnitPrice(resolved.currentCents, cashFeePct, cashExempt, cashMode)
       : null;
 
     const result = {

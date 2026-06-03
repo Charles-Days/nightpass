@@ -13,13 +13,22 @@ import {
 } from '@/core/components/ui/dialog';
 import { Input } from '@/core/components/ui/input';
 import { Field } from '@/core/components/ui/field';
-import type { LoyaltyTier, TierPricePhase } from '@/core/types/api';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/core/components/ui/tabs';
+import type { CashFeeMode, LoyaltyTier, TierPricePhase } from '@/core/types/api';
 import { TIER_STYLES } from '@/features/loyalty';
 import { useEventDetail } from '../hooks/use-event-detail';
 import { useCreateTier } from '../hooks/use-create-tier';
 import { useUpdateTier } from '../hooks/use-update-tier';
 import { useDeleteTier } from '../hooks/use-delete-tier';
-import { computeTierBreakdown, computeGrossForNet, formatCents, STRIPE_FEE_PCT, STRIPE_FIXED_CENTS } from '@/core/lib/utils/fees';
+import {
+  computeTierBreakdown,
+  computeGrossForNet,
+  computeCashUnitPrice,
+  stripeFeeForGross,
+  formatCents,
+  STRIPE_FEE_PCT,
+  STRIPE_FIXED_CENTS,
+} from '@/core/lib/utils/fees';
 
 const LOYALTY_TIER_OPTIONS: { value: '' | LoyaltyTier; label: string }[] = [
   { value: '', label: 'Abierto a todos' },
@@ -159,18 +168,213 @@ function parsePhases(phases: PhaseDraft[]): TierPricePhase[] {
   return out;
 }
 
+// ── Config de pago en efectivo (físico), reusada en crear y editar ───────────
+
+interface CashDraft {
+  /** Cobrar comisión en efectivo. Si false => exento (cashExemptOverride=true). */
+  charge: boolean;
+  /** % de comisión (string editable). Vacío => heredar el % del owner. */
+  pct: string;
+  /** Modo: SUMA al precio (cliente paga más) o DESCUENTA (paga menos). */
+  mode: CashFeeMode;
+}
+
+/** Valor por defecto de la config de efectivo (hereda: cobra comisión, modo descontar). */
+function defaultCashDraft(ownerFeePct: number): CashDraft {
+  return {
+    charge: true,
+    pct: ownerFeePct > 0 ? String(ownerFeePct) : '',
+    mode: 'SUBTRACT',
+  };
+}
+
+/**
+ * Traduce el borrador de efectivo a los 3 campos override del payload.
+ * Mantiene null = heredar:
+ *  - charge=true + pct == ownerFeePct  => no override de %/exento (hereda)
+ *  - charge=false                      => cashExemptOverride=true
+ *  - mode=SUBTRACT                     => cashFeeMode=null (comportamiento actual)
+ */
+function cashDraftToPayload(d: CashDraft, ownerFeePct: number) {
+  const pctNum = d.pct.trim() === '' ? null : parseFloat(d.pct);
+  const cashExemptOverride = d.charge ? null : true;
+  // Solo mandamos override de % si el usuario puso un valor distinto al del owner.
+  let cashFeePctOverride: number | null = null;
+  if (d.charge && pctNum != null && !Number.isNaN(pctNum) && pctNum !== ownerFeePct) {
+    cashFeePctOverride = pctNum;
+  }
+  const cashFeeMode: CashFeeMode | null = d.mode === 'ADD' ? 'ADD' : null;
+  return { cashFeeMode, cashFeePctOverride, cashExemptOverride };
+}
+
+/** % efectivo a usar para el preview/cálculo (override > owner). */
+function effectiveCashPct(d: CashDraft, ownerFeePct: number): number {
+  const pctNum = parseFloat(d.pct);
+  if (d.pct.trim() !== '' && !Number.isNaN(pctNum)) return Math.max(0, pctNum);
+  return Math.max(0, ownerFeePct);
+}
+
+function CashConfigEditor({
+  cash,
+  onChange,
+  ownerFeePct,
+  grossUnitCents,
+}: {
+  cash: CashDraft;
+  onChange: (next: CashDraft) => void;
+  ownerFeePct: number;
+  grossUnitCents: number;
+}) {
+  const exempt = !cash.charge;
+  const feePctEff = effectiveCashPct(cash, ownerFeePct);
+  const base = grossUnitCents > 0 ? Math.max(0, grossUnitCents - stripeFeeForGross(grossUnitCents)) : 0;
+  const cashPrice = computeCashUnitPrice(grossUnitCents, feePctEff, exempt, cash.mode);
+  const npComm = exempt ? 0 : Math.round((grossUnitCents * feePctEff) / 100);
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[11px] text-muted-foreground">
+        El boleto sigue siendo digital; el dinero se entrega en efectivo en la
+        puerta. Aquí defines el precio en efectivo y cómo se aplica la comisión
+        de NightPass (el cobro real de la comisión usa el monedero prepagado).
+      </p>
+
+      {/* Toggle: cobrar comisión en efectivo */}
+      <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2.5">
+        <span className="min-w-0">
+          <span className="block text-sm font-medium">Cobrar comisión en efectivo</span>
+          <span className="block text-[11px] text-muted-foreground">
+            {cash.charge
+              ? 'Activo: se aplica la comisión NightPass a las ventas en efectivo.'
+              : 'Exento: este boleto no paga comisión NightPass en efectivo.'}
+          </span>
+        </span>
+        <input
+          type="checkbox"
+          className="size-5 shrink-0 accent-[#a855f7]"
+          checked={cash.charge}
+          onChange={(e) => onChange({ ...cash, charge: e.target.checked })}
+        />
+      </label>
+
+      {/* % de comisión */}
+      <Field
+        label={`% comisión efectivo${ownerFeePct > 0 ? ` (default ${ownerFeePct}%)` : ''}`}
+        htmlFor="cash-fee-pct"
+        error={undefined}
+      >
+        <Input
+          id="cash-fee-pct"
+          type="number"
+          step="0.1"
+          min="0"
+          max="100"
+          placeholder={ownerFeePct > 0 ? String(ownerFeePct) : '0'}
+          disabled={!cash.charge}
+          value={cash.pct}
+          onChange={(e) => onChange({ ...cash, pct: e.target.value })}
+        />
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Vacío = heredar el % del organizador. Override solo para este boleto.
+        </p>
+      </Field>
+
+      {/* Modo: sumar / descontar */}
+      <div>
+        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-primary/70">
+          Modo de comisión
+        </p>
+        <div className="flex gap-1.5">
+          <button
+            type="button"
+            onClick={() => onChange({ ...cash, mode: 'SUBTRACT' })}
+            className={`flex-1 rounded-md border px-2 py-2 text-[11px] font-semibold transition ${
+              cash.mode === 'SUBTRACT'
+                ? 'border-primary/50 bg-primary/15 text-primary'
+                : 'border-white/10 text-muted-foreground hover:bg-white/5'
+            }`}
+          >
+            Descontar
+            <span className="mt-0.5 block text-[9px] font-normal opacity-80">
+              cliente paga menos
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange({ ...cash, mode: 'ADD' })}
+            className={`flex-1 rounded-md border px-2 py-2 text-[11px] font-semibold transition ${
+              cash.mode === 'ADD'
+                ? 'border-primary/50 bg-primary/15 text-primary'
+                : 'border-white/10 text-muted-foreground hover:bg-white/5'
+            }`}
+          >
+            Sumar
+            <span className="mt-0.5 block text-[9px] font-normal opacity-80">
+              cliente paga más
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Preview del precio en efectivo */}
+      {grossUnitCents > 0 ? (
+        <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs">
+          <p className="mb-2 font-semibold uppercase tracking-wider text-primary/70">
+            Precio en efectivo · qué entrega el cliente
+          </p>
+          <dl className="space-y-1">
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-muted-foreground">Base (precio − Stripe)</dt>
+              <dd className="tabular-nums">{formatCents(base)}</dd>
+            </div>
+            {cash.mode === 'ADD' && !exempt ? (
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">
+                  + NightPass ({feePctEff}%)
+                </dt>
+                <dd className="tabular-nums text-emerald-300/90">
+                  + {formatCents(npComm)}
+                </dd>
+              </div>
+            ) : null}
+            <div className="mt-1 flex items-center justify-between gap-3 border-t border-white/8 pt-1.5">
+              <dt className="font-semibold text-foreground">Paga en efectivo</dt>
+              <dd className="font-display text-base font-bold tabular-nums text-emerald-300">
+                {formatCents(cashPrice)}
+              </dd>
+            </div>
+            <p className="pt-1 text-[10px] text-muted-foreground/80">
+              {exempt
+                ? 'Exento: sin comisión NightPass.'
+                : cash.mode === 'ADD'
+                  ? 'La comisión se suma al precio; la organización la recupera del cliente.'
+                  : 'La comisión la absorbe la organización vía monedero; el cliente paga la base.'}
+            </p>
+          </dl>
+        </div>
+      ) : (
+        <p className="rounded-lg border border-dashed border-white/15 bg-white/[0.015] p-2.5 text-center text-[11px] text-muted-foreground">
+          Define el precio en la pestaña “En línea” para ver el precio en efectivo.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ── Diálogo de edición de precios de un tier existente ───────────────────────
 
 function EditTierPricesDialog({
   eventId,
   tier,
   eventStartsAt,
+  ownerFeePct,
   open,
   onOpenChange,
 }: {
   eventId: string;
   tier: TierRowProps['tier'];
   eventStartsAt: string | undefined;
+  ownerFeePct: number;
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
@@ -182,6 +386,7 @@ function EditTierPricesDialog({
       days: String(p.daysBeforeEvent),
     })),
   );
+  const [cash, setCash] = React.useState<CashDraft>(() => tierToCashDraft(tier, ownerFeePct));
   const [error, setError] = React.useState<string | null>(null);
 
   // Re-sembrar al abrir con otro tier.
@@ -194,15 +399,19 @@ function EditTierPricesDialog({
           days: String(p.daysBeforeEvent),
         })),
       );
+      setCash(tierToCashDraft(tier, ownerFeePct));
       setError(null);
     }
     // Solo re-sembrar al abrir (o al abrir otro tier), no en refetches de fondo.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, tier.id]);
 
+  // Precio bruto unitario para el preview de efectivo: precio base editado.
+  const baseFloat = parseFloat(basePrice);
+  const grossUnitCents = !Number.isNaN(baseFloat) && baseFloat > 0 ? Math.round(baseFloat * 100) : 0;
+
   const save = async () => {
     setError(null);
-    const baseFloat = parseFloat(basePrice);
     if (Number.isNaN(baseFloat) || baseFloat < 0) {
       setError('Precio base inválido.');
       return;
@@ -214,10 +423,15 @@ function EditTierPricesDialog({
       setError((e as Error).message);
       return;
     }
+    const cashPayload = cashDraftToPayload(cash, ownerFeePct);
     try {
       await updateTier.mutateAsync({
         tierId: tier.id,
-        input: { priceCents: Math.round(baseFloat * 100), prices: parsed },
+        input: {
+          priceCents: Math.round(baseFloat * 100),
+          prices: parsed,
+          ...cashPayload,
+        },
       });
       onOpenChange(false);
     } catch {
@@ -231,35 +445,53 @@ function EditTierPricesDialog({
         <DialogHeader>
           <DialogTitle>Precios de “{tier.name}”</DialogTitle>
           <DialogDescription>
-            El precio base es el early-bird. Agrega subidas que se activan X días
-            antes del evento. El precio se cobra según la fecha de compra.
+            Configura el precio en línea (Stripe) y el precio físico (efectivo)
+            de este boleto.
           </DialogDescription>
         </DialogHeader>
 
+        <Tabs defaultValue="online">
+          <TabsList className="w-full">
+            <TabsTrigger value="online">En línea</TabsTrigger>
+            <TabsTrigger value="cash">Físico</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="online" className="space-y-4">
+            <Field label="Precio base / early-bird (MXN)" htmlFor="edit-base-price" error={undefined}>
+              <Input
+                id="edit-base-price"
+                type="number"
+                step="0.01"
+                min="0"
+                value={basePrice}
+                onChange={(e) => setBasePrice(e.target.value)}
+              />
+            </Field>
+
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary/70">
+                Subidas programadas
+              </p>
+              <PhaseListEditor
+                phases={phases}
+                onChange={setPhases}
+                eventStartsAt={eventStartsAt}
+                currency={tier.currency}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="cash" className="space-y-4">
+            <CashConfigEditor
+              cash={cash}
+              onChange={setCash}
+              ownerFeePct={ownerFeePct}
+              grossUnitCents={grossUnitCents}
+            />
+          </TabsContent>
+        </Tabs>
+
         <div className="space-y-4">
-          <Field label="Precio base / early-bird (MXN)" htmlFor="edit-base-price" error={undefined}>
-            <Input
-              id="edit-base-price"
-              type="number"
-              step="0.01"
-              min="0"
-              value={basePrice}
-              onChange={(e) => setBasePrice(e.target.value)}
-            />
-          </Field>
-
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary/70">
-              Subidas programadas
-            </p>
-            <PhaseListEditor
-              phases={phases}
-              onChange={setPhases}
-              eventStartsAt={eventStartsAt}
-              currency={tier.currency}
-            />
-          </div>
-
           {error ? <p className="text-xs text-amber-300">{error}</p> : null}
 
           <div className="flex justify-end gap-2">
@@ -268,7 +500,7 @@ function EditTierPricesDialog({
             </Button>
             <Button type="button" size="sm" disabled={updateTier.isPending} onClick={save}>
               {updateTier.isPending ? <Loader2 className="size-3.5 animate-spin" /> : null}
-              Guardar precios
+              Guardar
             </Button>
           </div>
         </div>
@@ -277,11 +509,26 @@ function EditTierPricesDialog({
   );
 }
 
+/** Reconstruye el borrador de efectivo desde los overrides persistidos del tier. */
+function tierToCashDraft(tier: TierRowProps['tier'], ownerFeePct: number): CashDraft {
+  const charge = tier.cashExemptOverride === true ? false : true;
+  const pctOverride = tier.cashFeePctOverride;
+  const pct =
+    pctOverride != null
+      ? String(pctOverride)
+      : ownerFeePct > 0
+        ? String(ownerFeePct)
+        : '';
+  const mode: CashFeeMode = tier.cashFeeMode === 'ADD' ? 'ADD' : 'SUBTRACT';
+  return { charge, pct, mode };
+}
+
 // ── Fila de tier ─────────────────────────────────────────────────────────────
 
 interface TierRowProps {
   eventId: string;
   eventStartsAt: string | undefined;
+  ownerFeePct: number;
   tier: {
     id: string;
     name: string;
@@ -290,10 +537,13 @@ interface TierRowProps {
     capacity: number | null;
     minLoyaltyTier?: LoyaltyTier | null;
     prices?: TierPricePhase[];
+    cashFeeMode?: CashFeeMode | null;
+    cashFeePctOverride?: number | null;
+    cashExemptOverride?: boolean | null;
   };
 }
 
-function TierRow({ eventId, eventStartsAt, tier }: TierRowProps) {
+function TierRow({ eventId, eventStartsAt, ownerFeePct, tier }: TierRowProps) {
   const deleteTier = useDeleteTier(eventId);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
@@ -372,6 +622,7 @@ function TierRow({ eventId, eventStartsAt, tier }: TierRowProps) {
         eventId={eventId}
         tier={tier}
         eventStartsAt={eventStartsAt}
+        ownerFeePct={ownerFeePct}
         open={editOpen}
         onOpenChange={setEditOpen}
       />
@@ -417,6 +668,14 @@ export function TiersSection({ eventId }: Props) {
     detail.data?.venue?.platformFeePct ??
     detail.data?.promoter?.platformFeePct ??
     0;
+  // Config de efectivo del nuevo tier (default = hereda owner, modo descontar).
+  const [cash, setCash] = React.useState<CashDraft>(() => defaultCashDraft(platformFeePct ?? 0));
+  // Re-sembrar el % default cuando llega el feePct del owner (carga async del detalle).
+  React.useEffect(() => {
+    setCash((prev) =>
+      prev.pct === '' && platformFeePct > 0 ? { ...prev, pct: String(platformFeePct) } : prev,
+    );
+  }, [platformFeePct]);
   // Precio bruto (lo que paga el cliente) según el modo elegido.
   const priceFloat = parseFloat(priceMxn);
   const netFloat = parseFloat(netMxn);
@@ -438,6 +697,7 @@ export function TiersSection({ eventId }: Props) {
     setCapacity('');
     setMinLoyaltyTier('');
     setPhases([]);
+    setCash(defaultCashDraft(platformFeePct ?? 0));
     setError(null);
   };
 
@@ -491,6 +751,8 @@ export function TiersSection({ eventId }: Props) {
       return;
     }
 
+    const cashPayload = cashDraftToPayload(cash, platformFeePct ?? 0);
+
     try {
       await createTier.mutateAsync({
         name: trimmedName,
@@ -500,6 +762,7 @@ export function TiersSection({ eventId }: Props) {
         position: tiers.length,
         minLoyaltyTier: minLoyaltyTier === '' ? null : minLoyaltyTier,
         prices: parsedPhases.length ? parsedPhases : undefined,
+        ...cashPayload,
       });
       reset();
     } catch {
@@ -529,7 +792,13 @@ export function TiersSection({ eventId }: Props) {
       ) : (
         <div className="space-y-2">
           {tiers.map((t) => (
-            <TierRow key={t.id} eventId={eventId} eventStartsAt={eventStartsAt} tier={t} />
+            <TierRow
+              key={t.id}
+              eventId={eventId}
+              eventStartsAt={eventStartsAt}
+              ownerFeePct={platformFeePct ?? 0}
+              tier={t}
+            />
           ))}
         </div>
       )}
@@ -549,6 +818,13 @@ export function TiersSection({ eventId }: Props) {
           Agregar tier nuevo
         </p>
 
+        <Tabs defaultValue="online">
+          <TabsList className="w-full">
+            <TabsTrigger value="online">En línea</TabsTrigger>
+            <TabsTrigger value="cash">Físico</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="online" className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-3">
           <Field label="Nombre" htmlFor="tier-name" error={undefined}>
             <Input
@@ -714,6 +990,17 @@ export function TiersSection({ eventId }: Props) {
             </dl>
           </div>
         ) : null}
+          </TabsContent>
+
+          <TabsContent value="cash" className="space-y-3">
+            <CashConfigEditor
+              cash={cash}
+              onChange={setCash}
+              ownerFeePct={platformFeePct ?? 0}
+              grossUnitCents={previewCents}
+            />
+          </TabsContent>
+        </Tabs>
 
         {error ? (
           <p className="text-xs text-amber-300">{error}</p>

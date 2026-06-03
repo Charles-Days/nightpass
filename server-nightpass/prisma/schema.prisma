@@ -64,6 +64,17 @@ enum PassClaimStatus {
   CANCELLED
 }
 
+// Cómo se aplica la comisión NightPass al PRECIO en efectivo de un tier.
+// SUBTRACT = el cliente paga el precio base (efectivo no paga Stripe) y la
+// organización absorbe la comisión vía el wallet prepagado (comportamiento
+// actual). ADD = el cliente paga base + comisión (la org la recupera del
+// cliente). En ambos casos el cobro real de la comisión sigue ocurriendo en el
+// wallet; este modo solo cambia el monto que el cliente entrega en efectivo.
+enum CashFeeMode {
+  ADD
+  SUBTRACT
+}
+
 // Estado de una solicitud de pago en EFECTIVO iniciada por el cliente desde la
 // app. PENDING = esperando que un RP asignado al evento cobre y confirme.
 // CONFIRMED = el RP cobró → se emitió el/los Pass directo a la cuenta del
@@ -132,32 +143,32 @@ model User {
 
   oauthAccounts OAuthAccount[]
 
-  refreshTokens        RefreshToken[]
-  passwordResetTokens  PasswordResetToken[]
-  emailChangeTokens    EmailChangeToken[]
-  ownedVenues          VenueOwner[]
-  applications         VenueApplication[]    @relation("ApplicantApps")
-  reviewedApps         VenueApplication[]    @relation("ReviewerApps")
-  staffMemberships     VenueStaff[]          @relation("staffMemberships")
-  sentInvites          VenueStaff[]          @relation("sentInvites")
-  promoterMemberships  PromoterMember[]
-  promoterApplications PromoterApplication[] @relation("PromoterApplicantApps")
-  reviewedPromoterApps PromoterApplication[] @relation("PromoterReviewerApps")
-  orders               Order[]
-  passes               Pass[]
-  passesScanned        Pass[]                @relation("PassesScanned")
-  locationPings        LocationPing[]
-  loyaltyEvents        LoyaltyEvent[]
-  streak               UserStreak?
-  loyaltyTotal         UserLoyaltyTotal?
-  createdStories       Story[]               @relation("StoryAuthor")
-  forumPosts           EventForumPost[]
-  pushSubscriptions    PushSubscription[]
-  rpProfile            RpProfile?
-  claimedPasses        PassClaim[]           @relation("UserClaimedPasses")
-  adminGeneratedClaims PassClaim[]           @relation("AdminGeneratedClaims")
-  transfersSent        PassTransfer[]        @relation("TransfersSent")
-  transfersReceived    PassTransfer[]        @relation("TransfersReceived")
+  refreshTokens           RefreshToken[]
+  passwordResetTokens     PasswordResetToken[]
+  emailChangeTokens       EmailChangeToken[]
+  ownedVenues             VenueOwner[]
+  applications            VenueApplication[]       @relation("ApplicantApps")
+  reviewedApps            VenueApplication[]       @relation("ReviewerApps")
+  staffMemberships        VenueStaff[]             @relation("staffMemberships")
+  sentInvites             VenueStaff[]             @relation("sentInvites")
+  promoterMemberships     PromoterMember[]
+  promoterApplications    PromoterApplication[]    @relation("PromoterApplicantApps")
+  reviewedPromoterApps    PromoterApplication[]    @relation("PromoterReviewerApps")
+  orders                  Order[]
+  passes                  Pass[]
+  passesScanned           Pass[]                   @relation("PassesScanned")
+  locationPings           LocationPing[]
+  loyaltyEvents           LoyaltyEvent[]
+  streak                  UserStreak?
+  loyaltyTotal            UserLoyaltyTotal?
+  createdStories          Story[]                  @relation("StoryAuthor")
+  forumPosts              EventForumPost[]
+  pushSubscriptions       PushSubscription[]
+  rpProfile               RpProfile?
+  claimedPasses           PassClaim[]              @relation("UserClaimedPasses")
+  adminGeneratedClaims    PassClaim[]              @relation("AdminGeneratedClaims")
+  transfersSent           PassTransfer[]           @relation("TransfersSent")
+  transfersReceived       PassTransfer[]           @relation("TransfersReceived")
   physicalPaymentRequests PhysicalPaymentRequest[] @relation("UserPhysicalRequests")
 
   @@map("users")
@@ -448,26 +459,26 @@ model Photo {
 }
 
 model Event {
-  id            String      @id @default(uuid(7)) @db.Uuid
-  venueId       String?     @db.Uuid
-  promoterId    String?     @db.Uuid
-  slug          String
-  title         String
-  description   String?
-  startsAt      DateTime
-  endsAt        DateTime
-  coverImageUrl String?
-  flyerImageUrl String?
-  status        EventStatus @default(DRAFT)
-  capacity      Int?
+  id               String      @id @default(uuid(7)) @db.Uuid
+  venueId          String?     @db.Uuid
+  promoterId       String?     @db.Uuid
+  slug             String
+  title            String
+  description      String?
+  startsAt         DateTime
+  endsAt           DateTime
+  coverImageUrl    String?
+  flyerImageUrl    String?
+  status           EventStatus @default(DRAFT)
+  capacity         Int?
   // Habilita el flujo de PAGO EN EFECTIVO (boleto digital, pago físico vía RP).
   // Si es false, la app no ofrece la opción y el backend rechaza solicitudes.
-  allowCashPayment Boolean   @default(false)
-  isFeatured     Boolean     @default(false)
-  featuredAt     DateTime?
-  featuredReason String?
-  createdAt      DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  allowCashPayment Boolean     @default(false)
+  isFeatured       Boolean     @default(false)
+  featuredAt       DateTime?
+  featuredReason   String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   externalVenueName    String?
   externalVenueAddress String?
@@ -479,19 +490,19 @@ model Event {
   // los ve en la info del evento. Lo gestiona el organizador/dueño.
   whatsappGroups Json?
 
-  venue         Venue?         @relation(fields: [venueId], references: [id])
-  promoter      Promoter?      @relation(fields: [promoterId], references: [id])
-  tiers         EventTier[]
-  photos        Photo[]
-  orders        Order[]
-  passes        Pass[]
-  loyaltyEvents LoyaltyEvent[]
-  stories       Story[]
+  venue             Venue?                   @relation(fields: [venueId], references: [id])
+  promoter          Promoter?                @relation(fields: [promoterId], references: [id])
+  tiers             EventTier[]
+  photos            Photo[]
+  orders            Order[]
+  passes            Pass[]
+  loyaltyEvents     LoyaltyEvent[]
+  stories           Story[]
   rpCommissionRules RpCommissionRule[]
-  forumPosts    EventForumPost[]
-  passClaims    PassClaim[]
-  cashRps          EventRp[]
-  physicalRequests PhysicalPaymentRequest[]
+  forumPosts        EventForumPost[]
+  passClaims        PassClaim[]
+  cashRps           EventRp[]
+  physicalRequests  PhysicalPaymentRequest[]
 
   @@unique([venueId, slug])
   @@unique([promoterId, slug])
@@ -519,22 +530,27 @@ model EventForumPost {
 }
 
 model EventTier {
-  id             String       @id @default(uuid(7)) @db.Uuid
-  eventId        String       @db.Uuid
-  name           String
-  priceCents     Int
-  currency       String       @default("MXN")
-  capacity       Int?
-  position       Int          @default(0)
+  id                 String       @id @default(uuid(7)) @db.Uuid
+  eventId            String       @db.Uuid
+  name               String
+  priceCents         Int
+  currency           String       @default("MXN")
+  capacity           Int?
+  position           Int          @default(0)
   // Loyalty gating: minimum LoyaltyTier required to purchase. Null = open to all.
-  minLoyaltyTier LoyaltyTier?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  minLoyaltyTier     LoyaltyTier?
+  // Config de efectivo por-tier (override de los valores del owner). Todos
+  // nullable: null = heredar.
+  cashFeeMode        CashFeeMode? // null => SUBTRACT (comportamiento actual)
+  cashFeePctOverride Float? // null => usar platformFeePct del owner (o global)
+  cashExemptOverride Boolean? // null => usar cashCommissionExempt del owner
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
-  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  orders Order[]
-  prices EventTierPrice[]
-  passClaims PassClaim[]
+  event            Event                    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  orders           Order[]
+  prices           EventTierPrice[]
+  passClaims       PassClaim[]
   physicalRequests PhysicalPaymentRequest[]
 
   @@index([eventId])
@@ -577,29 +593,29 @@ model StripeAccount {
 }
 
 model Order {
-  id                     String      @id @default(uuid(7)) @db.Uuid
-  userId                 String      @db.Uuid
-  eventId                String      @db.Uuid
-  tierId                 String      @db.Uuid
-  status                 OrderStatus @default(PENDING)
+  id                     String        @id @default(uuid(7)) @db.Uuid
+  userId                 String        @db.Uuid
+  eventId                String        @db.Uuid
+  tierId                 String        @db.Uuid
+  status                 OrderStatus   @default(PENDING)
   paymentMethod          PaymentMethod @default(STRIPE)
-  quantity               Int         @default(1)
+  quantity               Int           @default(1)
   totalCents             Int
   applicationFeeCents    Int
-  currency               String      @default("MXN")
-  stripePaymentIntentId  String?     @unique
+  currency               String        @default("MXN")
+  stripePaymentIntentId  String?       @unique
   stripeEventLastApplied String?
-  createdAt              DateTime    @default(now())
-  updatedAt              DateTime    @updatedAt
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 
-  user  User      @relation(fields: [userId], references: [id])
-  event Event     @relation(fields: [eventId], references: [id])
-  tier  EventTier @relation(fields: [tierId], references: [id])
-  passes Pass[]
-  passClaim PassClaim?
+  user            User                    @relation(fields: [userId], references: [id])
+  event           Event                   @relation(fields: [eventId], references: [id])
+  tier            EventTier               @relation(fields: [tierId], references: [id])
+  passes          Pass[]
+  passClaim       PassClaim?
   physicalRequest PhysicalPaymentRequest?
-  referredByRpId  String?  @db.Uuid
-  referredByRp    RpProfile? @relation("RpReferredOrders", fields: [referredByRpId], references: [id], onDelete: SetNull)
+  referredByRpId  String?                 @db.Uuid
+  referredByRp    RpProfile?              @relation("RpReferredOrders", fields: [referredByRpId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
   @@index([eventId, status])
@@ -643,15 +659,15 @@ model Pass {
 // del evento (o +7d, lo que ocurra antes). Mientras está PENDING el pase queda
 // bloqueado para escaneo (ver PassesService.scan) para evitar doble entrada.
 model PassTransfer {
-  id              String         @id @default(uuid(7)) @db.Uuid
-  passId          String         @db.Uuid
-  token           String         @unique
-  fromUserId      String         @db.Uuid
-  toUserId        String?        @db.Uuid
-  status          TransferStatus @default(PENDING)
-  expiresAt       DateTime
-  claimedAt       DateTime?
-  createdAt       DateTime       @default(now())
+  id         String         @id @default(uuid(7)) @db.Uuid
+  passId     String         @db.Uuid
+  token      String         @unique
+  fromUserId String         @db.Uuid
+  toUserId   String?        @db.Uuid
+  status     TransferStatus @default(PENDING)
+  expiresAt  DateTime
+  claimedAt  DateTime?
+  createdAt  DateTime       @default(now())
 
   pass     Pass  @relation(fields: [passId], references: [id], onDelete: Cascade)
   fromUser User  @relation("TransfersSent", fields: [fromUserId], references: [id])
@@ -809,12 +825,12 @@ model RpProfile {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  promoter  Promoter?        @relation(fields: [promoterId], references: [id], onDelete: SetNull)
-  orders    Order[]          @relation("RpReferredOrders")
-  commissionRules RpCommissionRule[]
-  issuedClaims    PassClaim[] @relation("RpIssuedClaims")
-  eventAssignments EventRp[]
+  user                      User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promoter                  Promoter?                @relation(fields: [promoterId], references: [id], onDelete: SetNull)
+  orders                    Order[]                  @relation("RpReferredOrders")
+  commissionRules           RpCommissionRule[]
+  issuedClaims              PassClaim[]              @relation("RpIssuedClaims")
+  eventAssignments          EventRp[]
   confirmedPhysicalRequests PhysicalPaymentRequest[] @relation("RpConfirmedRequests")
   assignedPhysicalRequests  PhysicalPaymentRequest[] @relation("RpAssignedRequests")
 
@@ -827,27 +843,27 @@ model RpProfile {
 // token que viaja dentro de un QR. El cliente lo escanea en su app → se crea la
 // Order (CASH, COMPLETED) + el Pass real a su nombre y el claim queda CLAIMED.
 model PassClaim {
-  id              String          @id @default(uuid(7)) @db.Uuid
-  token           String          @unique
-  eventId         String          @db.Uuid
-  tierId          String          @db.Uuid
-  issuedByRpId    String?         @db.Uuid
-  generatedByAdminId String?      @db.Uuid
-  amountCents     Int
-  currency        String          @default("MXN")
-  status          PassClaimStatus @default(PENDING)
-  claimedByUserId String?         @db.Uuid
-  claimedAt       DateTime?
-  orderId         String?         @unique @db.Uuid
-  expiresAt       DateTime
-  createdAt       DateTime        @default(now())
+  id                 String          @id @default(uuid(7)) @db.Uuid
+  token              String          @unique
+  eventId            String          @db.Uuid
+  tierId             String          @db.Uuid
+  issuedByRpId       String?         @db.Uuid
+  generatedByAdminId String?         @db.Uuid
+  amountCents        Int
+  currency           String          @default("MXN")
+  status             PassClaimStatus @default(PENDING)
+  claimedByUserId    String?         @db.Uuid
+  claimedAt          DateTime?
+  orderId            String?         @unique @db.Uuid
+  expiresAt          DateTime
+  createdAt          DateTime        @default(now())
 
-  event      Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  tier       EventTier  @relation(fields: [tierId], references: [id], onDelete: Cascade)
-  issuedByRp RpProfile? @relation("RpIssuedClaims", fields: [issuedByRpId], references: [id], onDelete: SetNull)
-  claimedBy  User?      @relation("UserClaimedPasses", fields: [claimedByUserId], references: [id], onDelete: SetNull)
-  generatedByAdmin User?   @relation("AdminGeneratedClaims", fields: [generatedByAdminId], references: [id], onDelete: SetNull)
-  order      Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  event            Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tier             EventTier  @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  issuedByRp       RpProfile? @relation("RpIssuedClaims", fields: [issuedByRpId], references: [id], onDelete: SetNull)
+  claimedBy        User?      @relation("UserClaimedPasses", fields: [claimedByUserId], references: [id], onDelete: SetNull)
+  generatedByAdmin User?      @relation("AdminGeneratedClaims", fields: [generatedByAdminId], references: [id], onDelete: SetNull)
+  order            Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([issuedByRpId, status])
   @@index([eventId, status])
@@ -980,17 +996,17 @@ model AppSetting {
 }
 
 model RpCommissionRule {
-  id            String              @id @default(uuid(7)) @db.Uuid
-  rpProfileId   String              @db.Uuid
-  eventId       String?             @db.Uuid
-  type          RpCommissionType    @default(PER_N_TICKETS)
-  nTickets      Int?
-  rewardCents   Int?
-  currency      String              @default("MXN")
-  percentage    Float?
-  isActive      Boolean             @default(true)
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  id          String           @id @default(uuid(7)) @db.Uuid
+  rpProfileId String           @db.Uuid
+  eventId     String?          @db.Uuid
+  type        RpCommissionType @default(PER_N_TICKETS)
+  nTickets    Int?
+  rewardCents Int?
+  currency    String           @default("MXN")
+  percentage  Float?
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   rpProfile RpProfile @relation(fields: [rpProfileId], references: [id], onDelete: Cascade)
   event     Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)

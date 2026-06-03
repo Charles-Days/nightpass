@@ -52,6 +52,43 @@ export function computeGrossForNet(
   return Math.ceil((netCentsTarget + STRIPE_FIXED_CENTS) / k);
 }
 
+/**
+ * Modo de comisión en efectivo por-tier.
+ *  - ADD:      la comisión NightPass se SUMA al precio (cliente paga más).
+ *  - SUBTRACT: la comisión se DESCUENTA (cliente paga menos; comportamiento actual).
+ */
+export type CashFeeMode = 'ADD' | 'SUBTRACT';
+
+/** Solo la comisión Stripe (sin fijo NightPass) para un bruto dado. */
+export function stripeFeeForGross(grossCents: number): number {
+  if (!Number.isFinite(grossCents) || grossCents <= 0) return 0;
+  return Math.round((grossCents * STRIPE_FEE_PCT) / 100) + STRIPE_FIXED_CENTS;
+}
+
+/**
+ * Precio efectivo unitario que paga el cliente en la puerta.
+ *
+ * Semántica (sobre el bruto unitario "gross" = precio online vigente del tier):
+ *   base   = gross − stripeFeeForGross(gross)   // efectivo no paga Stripe
+ *   npComm = exempt ? 0 : round(gross * feePct / 100)
+ *   SUBTRACT => cashPrice = base                 // org absorbe comisión vía wallet
+ *   ADD      => cashPrice = base + npComm         // org la recupera del cliente
+ *
+ * El toggle ADD/SUBTRACT solo cambia el PRECIO que entrega el cliente, no cómo
+ * NightPass cobra la comisión (eso sigue siendo el wallet prepagado en backend).
+ */
+export function computeCashUnitPrice(
+  grossUnitCents: number,
+  feePct: number,
+  exempt: boolean,
+  mode: CashFeeMode = 'SUBTRACT',
+): number {
+  if (!Number.isFinite(grossUnitCents) || grossUnitCents <= 0) return 0;
+  const base = Math.max(0, grossUnitCents - stripeFeeForGross(grossUnitCents));
+  const npComm = exempt ? 0 : Math.round((grossUnitCents * Math.max(0, feePct)) / 100);
+  return mode === 'ADD' ? base + npComm : base;
+}
+
 export function formatCents(cents: number, currency = 'MXN'): string {
   const sym = currency.toLowerCase() === 'mxn' ? '$' : currency.toLowerCase() === 'eur' ? '€' : '$';
   return `${sym}${(cents / 100).toFixed(2)} ${currency}`;

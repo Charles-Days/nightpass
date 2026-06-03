@@ -106,13 +106,26 @@ export class PhysicalPaymentsService {
 
     // Precio en EFECTIVO: bruto − Stripe (− NP si el organizador está exento).
     // El bruto se congela aquí para la base de la comisión NP al confirmar.
+    //
+    // Resolución POR-TIER: cada tier puede sobreescribir el % de comisión, la
+    // exención y el modo (sumar/restar la comisión al precio). Si el tier no
+    // sobreescribe (null) hereda del owner; el modo por defecto es SUBTRACT
+    // (comportamiento histórico: el cliente paga menos y la org absorbe la
+    // comisión vía wallet).
     const owner = event.venue ?? event.promoter ?? null;
-    const feePct =
+    const ownerFeePct =
       owner?.platformFeePct != null
         ? owner.platformFeePct
         : this.stripe.getPlatformFeePct();
-    const exempt = owner?.cashCommissionExempt ?? true;
-    const cashUnitCents = computeCashUnitPrice(singleGrossCents, feePct, exempt);
+    const feePctEff = tier.cashFeePctOverride ?? ownerFeePct;
+    const exemptEff = tier.cashExemptOverride ?? owner?.cashCommissionExempt ?? true;
+    const modeEff = tier.cashFeeMode ?? 'SUBTRACT';
+    const cashUnitCents = computeCashUnitPrice(
+      singleGrossCents,
+      feePctEff,
+      exemptEff,
+      modeEff,
+    );
 
     const amountCents = cashUnitCents * quantity;
     const grossCents = singleGrossCents * quantity;
@@ -381,23 +394,32 @@ export class PhysicalPaymentsService {
 
     // Comisión de NightPass sobre la venta en efectivo. El dinero del efectivo no
     // pasa por Stripe, así que la comisión se cobra del saldo PREPAGADO del
-    // organizador (CashWallet). Si el organizador está exento (cashCommissionExempt)
-    // o su fee es 0, no se cobra nada y no se requiere saldo.
+    // organizador (CashWallet). Si el organizador está exento o el fee es 0, no
+    // se cobra nada y no se requiere saldo.
+    //
+    // Resolución POR-TIER: el % y la exención se toman del tier si los
+    // sobreescribe (cashFeePctOverride / cashExemptOverride); si no, heredan del
+    // owner. El modo ADD/SUBTRACT solo cambia el PRECIO que el cliente entrega en
+    // efectivo (ya congelado en amountCents), NO cómo cobra NP: la comisión NP se
+    // debita igual del wallet sobre el BRUTO original congelado.
     const venue = request.event.venue;
     const promoter = request.event.promoter;
     const owner = venue ?? promoter;
+    const tier = request.tier;
     let ownerRef: OwnerRef | null = null;
     let feeCents = 0;
-    if (owner && !owner.cashCommissionExempt) {
-      const feePct =
-        owner.platformFeePct != null
-          ? owner.platformFeePct
-          : this.stripe.getPlatformFeePct();
+    const ownerFeePct =
+      owner?.platformFeePct != null
+        ? owner.platformFeePct
+        : this.stripe.getPlatformFeePct();
+    const feePctEff = tier.cashFeePctOverride ?? ownerFeePct;
+    const exemptEff = tier.cashExemptOverride ?? owner?.cashCommissionExempt ?? true;
+    if (owner && !exemptEff) {
       // La comisión NP se calcula sobre el BRUTO original (congelado al pedir),
       // no sobre el precio en efectivo ya descontado. Legacy sin grossCents cae
       // al amount.
       const npBase = request.grossCents ?? request.amountCents;
-      feeCents = Math.floor((npBase * feePct) / 100);
+      feeCents = Math.floor((npBase * feePctEff) / 100);
       ownerRef = venue ? { venueId: venue.id } : { promoterId: promoter!.id };
     }
 

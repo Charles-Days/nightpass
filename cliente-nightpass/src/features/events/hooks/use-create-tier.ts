@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { clientFetch, ClientApiError } from '@/core/lib/api/client-client';
-import type { EventTier, LoyaltyTier, TierPricePhase } from '@/core/types/api';
+import type { CashFeeMode, EventTier, LoyaltyTier, TierPricePhase } from '@/core/types/api';
 
 export interface CreateTierInput {
   name: string;
@@ -13,6 +13,10 @@ export interface CreateTierInput {
   position?: number;
   minLoyaltyTier?: LoyaltyTier | null;
   prices?: TierPricePhase[];
+  // ── Override de efectivo por-tier (null = heredar del owner) ──
+  cashFeeMode?: CashFeeMode | null;
+  cashFeePctOverride?: number | null;
+  cashExemptOverride?: boolean | null;
 }
 
 export function useCreateTier(eventId: string) {
