@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   OrderStatus,
@@ -372,6 +372,196 @@ export class AdminFinanceService {
         stripeFixedCents: STRIPE_FIXED_CENTS,
         platformFeePctDefault,
       },
+    };
+  }
+
+  // ─── Detalle de un evento (drilldown del dashboard) ────────────────────────
+
+  /**
+   * Toda la info posible de un evento para el modal del admin: organizador,
+   * desglose tarjeta/efectivo, por tier, por RP, serie diaria y órdenes
+   * recientes. Sin rango — siempre histórico completo del evento.
+   */
+  async getEventDetail(eventId: string) {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      include: {
+        tiers: { orderBy: { priceCents: 'asc' } },
+        venue: { select: { name: true, city: true } },
+        promoter: { select: { name: true } },
+      },
+    });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+
+    const [completedOrders, claims] = await Promise.all([
+      this.prisma.order.findMany({
+        where: { eventId, status: OrderStatus.COMPLETED },
+        select: {
+          id: true,
+          createdAt: true,
+          totalCents: true,
+          applicationFeeCents: true,
+          paymentMethod: true,
+          tier: { select: { id: true, name: true } },
+          user: { select: { name: true, email: true } },
+          passes: { select: { usedAt: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.passClaim.findMany({
+        where: { eventId, status: { in: ['PENDING', 'CLAIMED'] } },
+        select: {
+          tierId: true,
+          amountCents: true,
+          status: true,
+          createdAt: true,
+          issuedByRp: {
+            select: { id: true, rpCode: true, displayName: true },
+          },
+        },
+      }),
+    ]);
+
+    const isCard = (m: PaymentMethod) => m === PaymentMethod.STRIPE;
+    const cardOrders = completedOrders.filter((o) => isCard(o.paymentMethod));
+    const cashOrders = completedOrders.filter((o) => !isCard(o.paymentMethod));
+
+    // ── Resumen ──────────────────────────────────────────────────────────────
+    const soldCard = cardOrders.reduce((acc, o) => acc + o.passes.length, 0);
+    const soldCash = claims.length; // PENDING + CLAIMED = vendidos en efectivo
+    const revenueCardCents = cardOrders.reduce((acc, o) => acc + o.totalCents, 0);
+    const revenueCashCents = claims.reduce((acc, c) => acc + c.amountCents, 0);
+    const feesCents = cardOrders.reduce((acc, o) => acc + o.applicationFeeCents, 0);
+    const countUsed = (orders: typeof cardOrders) =>
+      orders.reduce((acc, o) => acc + o.passes.filter((p) => p.usedAt != null).length, 0);
+    const redeemedCard = countUsed(cardOrders);
+    const redeemedCash = countUsed(cashOrders);
+    const cashClaimed = claims.filter((c) => c.status === 'CLAIMED').length;
+    const cashPending = claims.filter((c) => c.status === 'PENDING').length;
+
+    const soldTotal = soldCard + soldCash;
+    const redeemedTotal = redeemedCard + redeemedCash;
+
+    // ── Por tier ─────────────────────────────────────────────────────────────
+    const cardByTier = new Map<string, number>();
+    for (const o of cardOrders) {
+      if (o.tier) cardByTier.set(o.tier.id, (cardByTier.get(o.tier.id) ?? 0) + o.passes.length);
+    }
+    const cashByTier = new Map<string, number>();
+    const cashRevByTier = new Map<string, number>();
+    for (const c of claims) {
+      cashByTier.set(c.tierId, (cashByTier.get(c.tierId) ?? 0) + 1);
+      cashRevByTier.set(c.tierId, (cashRevByTier.get(c.tierId) ?? 0) + c.amountCents);
+    }
+    const cardRevByTier = new Map<string, number>();
+    for (const o of cardOrders) {
+      if (o.tier) cardRevByTier.set(o.tier.id, (cardRevByTier.get(o.tier.id) ?? 0) + o.totalCents);
+    }
+    const byTier = event.tiers.map((t) => {
+      const card = cardByTier.get(t.id) ?? 0;
+      const cash = cashByTier.get(t.id) ?? 0;
+      return {
+        tierId: t.id,
+        name: t.name,
+        priceCents: t.priceCents,
+        capacity: t.capacity,
+        soldCard: card,
+        soldCash: cash,
+        soldTotal: card + cash,
+        revenueCents: (cardRevByTier.get(t.id) ?? 0) + (cashRevByTier.get(t.id) ?? 0),
+      };
+    });
+
+    // ── Por método de pago (donut) ───────────────────────────────────────────
+    const byMethod = [
+      { method: 'Tarjeta', count: soldCard, revenueCents: revenueCardCents },
+      { method: 'Efectivo', count: soldCash, revenueCents: revenueCashCents },
+    ];
+
+    // ── Por RP (quién vendió en efectivo) ────────────────────────────────────
+    const rpAgg = new Map<
+      string,
+      { rpId: string; name: string; rpCode: string; count: number; revenueCents: number }
+    >();
+    for (const c of claims) {
+      if (!c.issuedByRp) continue;
+      const key = c.issuedByRp.id;
+      const prev =
+        rpAgg.get(key) ?? {
+          rpId: key,
+          name: c.issuedByRp.displayName ?? 'RP',
+          rpCode: c.issuedByRp.rpCode,
+          count: 0,
+          revenueCents: 0,
+        };
+      prev.count += 1;
+      prev.revenueCents += c.amountCents;
+      rpAgg.set(key, prev);
+    }
+    const byRp = Array.from(rpAgg.values()).sort((a, b) => b.count - a.count);
+
+    // ── Serie diaria (tarjeta vs efectivo) ───────────────────────────────────
+    const dayMap = new Map<string, { card: number; cash: number; revenueCents: number }>();
+    const bump = (date: Date, kind: 'card' | 'cash', cents: number) => {
+      const day = date.toISOString().slice(0, 10);
+      const prev = dayMap.get(day) ?? { card: 0, cash: 0, revenueCents: 0 };
+      prev[kind] += 1;
+      prev.revenueCents += cents;
+      dayMap.set(day, prev);
+    };
+    for (const o of cardOrders) bump(o.createdAt, 'card', o.totalCents);
+    for (const c of claims) bump(c.createdAt, 'cash', c.amountCents);
+    const daily = Array.from(dayMap.entries())
+      .map(([day, v]) => ({ day, ...v }))
+      .sort((a, b) => a.day.localeCompare(b.day));
+
+    // ── Órdenes recientes (tarjeta + efectivo) ───────────────────────────────
+    const recentOrders = completedOrders.slice(0, 40).map((o) => ({
+      id: o.id,
+      createdAt: o.createdAt.toISOString(),
+      method: isCard(o.paymentMethod) ? 'Tarjeta' : 'Efectivo',
+      totalCents: o.totalCents,
+      tierName: o.tier?.name ?? '—',
+      userName: o.user?.name ?? null,
+      userEmail: o.user?.email ?? '—',
+      redeemed: o.passes.some((p) => p.usedAt != null),
+    }));
+
+    return {
+      event: {
+        id: event.id,
+        title: event.title,
+        startsAt: event.startsAt.toISOString(),
+        endsAt: event.endsAt ? event.endsAt.toISOString() : null,
+        status: event.status,
+        capacity: event.capacity,
+        coverImageUrl: event.coverImageUrl ?? null,
+        organizerName: event.venue?.name ?? event.promoter?.name ?? '—',
+        organizerType: event.venue ? 'venue' : event.promoter ? 'promoter' : null,
+        city: event.venue?.city ?? null,
+      },
+      summary: {
+        soldTotal,
+        soldCard,
+        soldCash,
+        revenueTotalCents: revenueCardCents + revenueCashCents,
+        revenueCardCents,
+        revenueCashCents,
+        feesCents,
+        redeemedTotal,
+        redeemedCard,
+        redeemedCash,
+        redeemRate: soldTotal > 0 ? redeemedTotal / soldTotal : 0,
+        cashClaimed,
+        cashPending,
+        ordersCount: completedOrders.length,
+        fillRate: event.capacity ? soldTotal / event.capacity : null,
+      },
+      byTier,
+      byMethod,
+      byRp,
+      daily,
+      recentOrders,
     };
   }
 

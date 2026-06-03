@@ -787,6 +787,71 @@ export interface AdminFinanceEventRow {
   ordersCount: number;
 }
 
+// ─── Admin event detail (drilldown modal) ──────────────────────────────────
+
+export interface AdminEventDetail {
+  event: {
+    id: string;
+    title: string;
+    startsAt: string;
+    endsAt: string | null;
+    status: string;
+    capacity: number | null;
+    coverImageUrl: string | null;
+    organizerName: string;
+    organizerType: 'venue' | 'promoter' | null;
+    city: string | null;
+  };
+  summary: {
+    soldTotal: number;
+    soldCard: number;
+    soldCash: number;
+    revenueTotalCents: number;
+    revenueCardCents: number;
+    revenueCashCents: number;
+    feesCents: number;
+    redeemedTotal: number;
+    redeemedCard: number;
+    redeemedCash: number;
+    /** 0..1 */
+    redeemRate: number;
+    cashClaimed: number;
+    cashPending: number;
+    ordersCount: number;
+    /** 0..1 or null si no hay capacidad */
+    fillRate: number | null;
+  };
+  byTier: Array<{
+    tierId: string;
+    name: string;
+    priceCents: number;
+    capacity: number | null;
+    soldCard: number;
+    soldCash: number;
+    soldTotal: number;
+    revenueCents: number;
+  }>;
+  byMethod: Array<{ method: string; count: number; revenueCents: number }>;
+  byRp: Array<{
+    rpId: string;
+    name: string;
+    rpCode: string;
+    count: number;
+    revenueCents: number;
+  }>;
+  daily: Array<{ day: string; card: number; cash: number; revenueCents: number }>;
+  recentOrders: Array<{
+    id: string;
+    createdAt: string;
+    method: string;
+    totalCents: number;
+    tierName: string;
+    userName: string | null;
+    userEmail: string;
+    redeemed: boolean;
+  }>;
+}
+
 export interface AdminFinanceVenueRow {
   venueId: string;
   name: string;

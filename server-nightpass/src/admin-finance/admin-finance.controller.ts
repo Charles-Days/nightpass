@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -15,5 +15,11 @@ export class AdminFinanceController {
   @Roles(Role.ADMIN)
   getStats(@Query() query: FinanceQueryDto) {
     return this.service.getStats(query);
+  }
+
+  @Get('events/:eventId')
+  @Roles(Role.ADMIN)
+  getEventDetail(@Param('eventId', ParseUUIDPipe) eventId: string) {
+    return this.service.getEventDetail(eventId);
   }
 }

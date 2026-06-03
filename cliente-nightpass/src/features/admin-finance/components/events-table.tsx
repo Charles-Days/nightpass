@@ -1,6 +1,10 @@
-import { CalendarOff } from 'lucide-react';
+'use client';
+
+import { useState } from 'react';
+import { CalendarOff, ChevronRight } from 'lucide-react';
 import type { AdminFinanceEventRow } from '@/core/types/api';
 import { money, intCount } from '../lib/format';
+import { EventDetailDialog } from './event-detail-dialog';
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
@@ -39,8 +43,11 @@ function FillBar({ vendidos, vendidosAdmin, capacity }: { vendidos: number; vend
 }
 
 export function EventsTable({ rows }: { rows: AdminFinanceEventRow[] }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+
   return (
     <section className="space-y-3">
+      <EventDetailDialog eventId={openId} onClose={() => setOpenId(null)} />
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg font-bold tracking-tight">Ventas por evento</h2>
         <span className="text-xs text-muted-foreground">{intCount(rows.length)} eventos</span>
@@ -65,21 +72,26 @@ export function EventsTable({ rows }: { rows: AdminFinanceEventRow[] }) {
                   <th className="px-5 py-3.5 text-right font-semibold">Bruto</th>
                   <th className="px-5 py-3.5 text-right font-semibold">Comisión NP</th>
                   <th className="px-5 py-3.5 text-right font-semibold">Órdenes</th>
+                  <th className="px-5 py-3.5" aria-label="Detalle" />
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.eventId} className="border-b border-white/5 last:border-0 hover:bg-white/[0.05]">
+                  <tr
+                    key={row.eventId}
+                    onClick={() => setOpenId(row.eventId)}
+                    className="group cursor-pointer border-b border-white/5 last:border-0 hover:bg-white/[0.05]"
+                  >
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-white">{row.title}</p>
                       <p className="text-[11px] text-muted-foreground">{formatDate(row.startsAt)}</p>
                     </td>
                     <td className="px-5 py-3.5 text-muted-foreground">{row.venueName ?? '—'}</td>
                     <td className="px-5 py-3.5 text-right font-medium text-white">
-                      <div>{intCount(row.vendidos)}</div>
+                      <div>{intCount(row.vendidos + (row.vendidosAdmin ?? 0))}</div>
                       {row.vendidosAdmin ? (
-                        <div className="text-[11px] text-purple-400 font-medium">
-                          Admin: {row.vendidosAdmin}
+                        <div className="text-[11px] font-medium text-emerald-400">
+                          {row.vendidos} app · {row.vendidosAdmin} efvo
                         </div>
                       ) : null}
                     </td>
@@ -90,15 +102,18 @@ export function EventsTable({ rows }: { rows: AdminFinanceEventRow[] }) {
                       <FillBar vendidos={row.vendidos} vendidosAdmin={row.vendidosAdmin} capacity={row.capacity} />
                     </td>
                     <td className="px-5 py-3.5 text-right font-mono font-medium text-white">
-                      <div>{money(row.grossCents)}</div>
+                      <div>{money(row.grossCents + (row.ingresosAdmin ?? 0))}</div>
                       {row.ingresosAdmin ? (
-                        <div className="text-[11px] text-purple-400 font-medium">
-                          Admin: {money(row.ingresosAdmin)}
+                        <div className="text-[11px] font-medium text-emerald-400">
+                          efvo {money(row.ingresosAdmin)}
                         </div>
                       ) : null}
                     </td>
                     <td className="px-5 py-3.5 text-right font-mono text-[#10b981]">{money(row.platformFeeCents)}</td>
                     <td className="px-5 py-3.5 text-right text-muted-foreground">{intCount(row.ordersCount)}</td>
+                    <td className="px-3 py-3.5 text-right">
+                      <ChevronRight className="ml-auto size-4 text-muted-foreground/40 transition group-hover:text-primary" />
+                    </td>
                   </tr>
                 ))}
               </tbody>
