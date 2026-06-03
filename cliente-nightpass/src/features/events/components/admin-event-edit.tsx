@@ -34,18 +34,12 @@ export function AdminEventEdit({ event, onDone }: { event: Event; onDone: () => 
   const isPromoter = !!event.promoterId;
 
   // PATCH genérico para el form de promoter (que delega el submit al padre).
+  // venueId/promoterId no van en UpdateEventDto → se quitan. Los campos de venue
+  // EXTERNO sí se envían: el backend los persiste para eventos del organizador
+  // (ubicación externa editable).
   const patch = useMutation({
     mutationFn: (input: Record<string, unknown>) => {
-      const {
-        venueId: _v,
-        promoterId: _p,
-        externalVenueName: _n,
-        externalVenueAddress: _a,
-        externalVenueCity: _c,
-        externalVenueLat: _lat,
-        externalVenueLng: _lng,
-        ...rest
-      } = input;
+      const { venueId: _v, promoterId: _p, ...rest } = input;
       return clientFetch<Event>(`/api/events/${event.id}`, { method: 'PATCH', body: rest });
     },
     onSuccess: () => {
