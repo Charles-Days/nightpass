@@ -1,4 +1,4 @@
-import { Banknote, PiggyBank, CreditCard, Ticket, ScanLine } from 'lucide-react';
+import { Banknote, PiggyBank, CreditCard, Ticket, ScanLine, Coins } from 'lucide-react';
 import type { AdminFinanceTotals } from '@/core/types/api';
 import { money, intCount, pct } from '../lib/format';
 
@@ -40,14 +40,32 @@ function KpiCard({ label, value, hint, icon, accent, valueClassName }: KpiCardPr
 }
 
 export function KpiCards({ totals }: { totals: AdminFinanceTotals }) {
+  const soldAdmin = totals.passesSoldAdmin ?? 0;
+  const revenueAdmin = totals.revenueAdmin ?? 0;
+  const redeemedAdmin = totals.passesRedeemedAdmin ?? 0;
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <KpiCard
-        label="Ingreso bruto"
+        label="Ingreso App (Stripe)"
         value={money(totals.grossCents)}
         hint={`${intCount(totals.ordersCount)} órdenes · ticket prom. ${money(totals.avgTicketCents)}`}
         icon={<Banknote className="size-4" />}
         accent="purple"
+      />
+      <KpiCard
+        label="Ingreso efectivo"
+        value={money(revenueAdmin)}
+        hint={`${intCount(soldAdmin)} pases vendidos en efectivo (RP)`}
+        icon={<Coins className="size-4" />}
+        accent="emerald"
+        valueClassName="text-[#10b981]"
+      />
+      <KpiCard
+        label="Pases vendidos"
+        value={intCount(totals.passesSold + soldAdmin)}
+        hint={`App ${intCount(totals.passesSold)} · Efectivo ${intCount(soldAdmin)}`}
+        icon={<Ticket className="size-4" />}
+        accent="pink"
       />
       <KpiCard
         label="Comisión NightPass"
@@ -65,17 +83,10 @@ export function KpiCards({ totals }: { totals: AdminFinanceTotals }) {
         accent="sky"
       />
       <KpiCard
-        label="Pases vendidos"
-        value={intCount(totals.passesSold + (totals.passesSoldAdmin ?? 0))}
-        hint={`App ${intCount(totals.passesSold)} · Efectivo ${intCount(totals.passesSoldAdmin ?? 0)}`}
-        icon={<Ticket className="size-4" />}
-        accent="pink"
-      />
-      <KpiCard
         label="Tasa de canje"
         value={pct(totals.redeemRate)}
-        hint={`${intCount(totals.passesRedeemed + (totals.passesRedeemedAdmin ?? 0))} de ${intCount(
-          totals.passesSold + (totals.passesSoldAdmin ?? 0),
+        hint={`${intCount(totals.passesRedeemed + redeemedAdmin)} de ${intCount(
+          totals.passesSold + soldAdmin,
         )} canjeados`}
         icon={<ScanLine className="size-4" />}
         accent="amber"
