@@ -76,18 +76,12 @@ export function PromoterEventEdit({
     return <p className="text-sm text-muted-foreground">Evento no encontrado.</p>;
   }
 
-  // Strip location fields out of the patch — backend enforces immutability.
+  // venueId/promoterId no van en UpdateEventDto (no se puede cambiar de venue del
+  // catálogo en edición) → se quitan. Los campos de venue EXTERNO sí se permiten:
+  // el backend los persiste para eventos del organizador (fecha, hora y ubicación
+  // externa son editables).
   const handleSubmit = async (payload: Record<string, unknown>) => {
-    const {
-      venueId: _v,
-      promoterId: _p,
-      externalVenueName: _n,
-      externalVenueAddress: _a,
-      externalVenueCity: _c,
-      externalVenueLat: _lat,
-      externalVenueLng: _lng,
-      ...rest
-    } = payload;
+    const { venueId: _v, promoterId: _p, ...rest } = payload;
     await update.mutateAsync(rest);
   };
 

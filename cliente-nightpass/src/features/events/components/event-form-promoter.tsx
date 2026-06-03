@@ -316,11 +316,10 @@ export function EventFormPromoter({
 
   return (
     <form onSubmit={submit} className="space-y-6">
-      {/* Location switch */}
-      <fieldset
-        className="space-y-4 rounded-[18px] border border-white/10 bg-white/[0.02] p-4"
-        disabled={locationLocked}
-      >
+      {/* Location switch. En edición, el TIPO (venue del catálogo vs externo) y la
+          selección de venue quedan bloqueados (el UpdateEventDto no acepta cambiar
+          venueId), pero los campos de un venue EXTERNO sí se pueden editar. */}
+      <fieldset className="space-y-4 rounded-[18px] border border-white/10 bg-white/[0.02] p-4">
         <legend className="px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/70">
           ¿Dónde se realiza?
         </legend>
