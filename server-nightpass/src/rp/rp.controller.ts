@@ -22,6 +22,7 @@ import { CreateRpDto } from './dto/create-rp.dto';
 import { UpdateRpZoneDto } from './dto/update-rp-zone.dto';
 import { ListRpQuery } from './dto/list-rp.query';
 import { SetCommissionRuleDto } from './dto/set-commission-rule.dto';
+import { IssuePassDto } from './dto/issue-pass.dto';
 import { RpService } from './rp.service';
 
 @Controller('rp')
@@ -66,6 +67,24 @@ export class RpController {
   ) {
     const rp = await this.service.getByUserId(user.id);
     return this.service.getStats(rp.id, from, to);
+  }
+
+  // ── Vales en efectivo emitidos por el RP ───────────────────────────────────
+  // Rutas estáticas ('passes/...') priorizadas sobre el param `:id` de abajo.
+
+  @Post('passes/issue')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.RP)
+  @HttpCode(HttpStatus.CREATED)
+  issuePass(@CurrentUser() user: AuthUser, @Body() dto: IssuePassDto) {
+    return this.service.issuePass(user.id, dto);
+  }
+
+  @Get('passes/issued')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.RP)
+  listIssuedPasses(@CurrentUser() user: AuthUser) {
+    return this.service.listIssuedPasses(user.id);
   }
 
   // ── RPs gestionados por el organizador (scoped a su propio promoter) ───────

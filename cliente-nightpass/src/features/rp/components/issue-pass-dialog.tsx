@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { ArrowLeft, CheckCircle2, Clock, Loader2, QrCode, Ticket } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock, Link as LinkIcon, Loader2, QrCode, Ticket } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,7 @@ import {
 } from '@/core/components/ui/dialog';
 import { Button } from '@/core/components/ui/button';
 import { ClientApiError } from '@/core/lib/api/client-client';
+import { paths } from '@/core/config/paths';
 import { useEventTiers, useIssueRpPass, type IssuedPass } from '../hooks/use-rp';
 
 const money = (cents: number) => `$${(cents / 100).toFixed(2)} MXN`;
@@ -75,8 +76,9 @@ export function IssuePassDialog({ events }: Props) {
         <DialogHeader>
           <DialogTitle>Emitir pase (efectivo)</DialogTitle>
           <DialogDescription>
-            Genera un QR. El cliente lo escanea en su app NightPass y el pase se le asigna al
-            instante; la venta cuenta para tu comisión.
+            Genera un QR (o link). El cliente lo escanea con cualquier cámara, se
+            registra y el boleto se le guarda al instante; la venta cuenta para tu
+            comisión.
           </DialogDescription>
         </DialogHeader>
 
@@ -159,10 +161,14 @@ function SuccessView({ issued, onAnother }: { issued: IssuedPass; onAnother: () 
     hour: '2-digit',
     minute: '2-digit',
   });
+  // El QR codifica una URL pública: cualquier cámara la abre → la persona se
+  // registra (o entra) y el boleto se le guarda. No es el token crudo.
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const claimUrl = `${origin}${paths.reclamarVale}/${issued.token}`;
   return (
     <div className="space-y-4 text-center">
       <div className="mx-auto w-full max-w-[240px] rounded-[20px] bg-white p-4 shadow-[0_20px_60px_-10px_rgba(168,85,247,0.4)]">
-        <QRCodeSVG value={issued.token} level="H" marginSize={2} fgColor="#0A0A0F" bgColor="#FFFFFF" className="size-full" />
+        <QRCodeSVG value={claimUrl} level="H" marginSize={2} fgColor="#0A0A0F" bgColor="#FFFFFF" className="size-full" />
       </div>
       <div>
         <p className="font-display text-lg font-bold text-white">{issued.tier.name}</p>
@@ -174,11 +180,38 @@ function SuccessView({ issued, onAnother }: { issued: IssuedPass; onAnother: () 
         <Clock className="size-3.5" /> Válido hasta {expires}
       </p>
       <p className="flex items-center justify-center gap-1.5 text-xs text-emerald-300">
-        <CheckCircle2 className="size-3.5" /> El cliente lo escanea desde “Mis pases → Escanear”.
+        <CheckCircle2 className="size-3.5" /> Cualquier cámara lo escanea → se registra y el boleto se guarda.
       </p>
+      <CopyLinkButton url={claimUrl} />
       <Button onClick={onAnother} variant="outline" className="w-full rounded-full">
         Emitir otro
       </Button>
     </div>
+  );
+}
+
+/** Copia el link del vale (útil para enviarlo por WhatsApp en vez del QR). */
+function CopyLinkButton({ url }: { url: string }) {
+  const [copied, setCopied] = React.useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* sin clipboard: no-op */
+    }
+  };
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      onClick={copy}
+      className="w-full rounded-full text-xs"
+    >
+      <LinkIcon className="mr-1.5 size-3.5" />
+      {copied ? 'Link copiado' : 'Copiar link del vale'}
+    </Button>
   );
 }
