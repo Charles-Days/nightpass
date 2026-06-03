@@ -18,6 +18,7 @@ import { clientFetch, ClientApiError } from '@/core/lib/api/client-client';
 import { paths } from '@/core/config/paths';
 import type { CatalogTierDetail, Order, OrderCreationResponse } from '@/core/types/api';
 import { saveRpRef, readRpRef, clearRpRef } from '@/features/rp-referral/rp-referral';
+import { MEXICO_GEO } from '@/core/data/mexico-geo';
 
 type Phase =
   | 'select_quantity'
@@ -184,6 +185,10 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
   const [stateName, setStateName] = useState('');
   const [city, setCity] = useState('');
   const [hasSavedLocation, setHasSavedLocation] = useState(false);
+  const cashCities = useMemo(
+    () => MEXICO_GEO.find((e) => e.estado === stateName)?.ciudades ?? [],
+    [stateName],
+  );
 
   const initRef = useRef(false);
 
@@ -584,25 +589,41 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                       <label htmlFor="cash-state" className="block text-[11px] font-medium text-muted-foreground">
                         Estado
                       </label>
-                      <input
+                      <select
                         id="cash-state"
-                        placeholder="Ej. Jalisco"
                         value={stateName}
-                        onChange={(e) => setStateName(e.target.value)}
-                        className="h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white placeholder-white/30 focus:border-primary/50 focus:outline-none"
-                      />
+                        onChange={(e) => {
+                          setStateName(e.target.value);
+                          setCity('');
+                        }}
+                        className="h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white focus:border-primary/50 focus:outline-none"
+                      >
+                        <option value="">Estado…</option>
+                        {MEXICO_GEO.map((e) => (
+                          <option key={e.estado} value={e.estado} className="bg-[#0c0c12]">
+                            {e.estado}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="space-y-1.5">
                       <label htmlFor="cash-city" className="block text-[11px] font-medium text-muted-foreground">
                         Ciudad
                       </label>
-                      <input
+                      <select
                         id="cash-city"
-                        placeholder="Ej. Guadalajara"
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
-                        className="h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white placeholder-white/30 focus:border-primary/50 focus:outline-none"
-                      />
+                        disabled={!stateName}
+                        className="h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white focus:border-primary/50 focus:outline-none disabled:opacity-50"
+                      >
+                        <option value="">Ciudad…</option>
+                        {cashCities.map((c) => (
+                          <option key={c} value={c} className="bg-[#0c0c12]">
+                            {c}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 )}

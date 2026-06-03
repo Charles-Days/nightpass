@@ -14,6 +14,7 @@ import {
 import { Input } from '@/core/components/ui/input';
 import { Label } from '@/core/components/ui/label';
 import { Loader2 } from 'lucide-react';
+import { MEXICO_GEO } from '@/core/data/mexico-geo';
 
 interface CreateRpDialogProps {
   open: boolean;
@@ -46,6 +47,11 @@ export function CreateRpDialog({
   const [nTickets, setNTickets] = React.useState('10');
   const [reward, setReward] = React.useState('150');
   const [percentage, setPercentage] = React.useState('5');
+
+  const rpCities = React.useMemo(
+    () => MEXICO_GEO.find((e) => e.estado === state)?.ciudades ?? [],
+    [state],
+  );
 
   React.useEffect(() => {
     if (open) {
@@ -150,25 +156,41 @@ export function CreateRpDialog({
               <Label htmlFor="state" className="text-white/70 text-xs">
                 Estado
               </Label>
-              <Input
+              <select
                 id="state"
-                placeholder="Ej. Jalisco"
                 value={state}
-                onChange={(e) => setState(e.target.value)}
-                className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
-              />
+                onChange={(e) => {
+                  setState(e.target.value);
+                  setCity('');
+                }}
+                className="h-10 w-full rounded-xl border border-white/10 bg-[#0f0f17] px-3 text-sm text-white focus:border-primary/50 focus:outline-none"
+              >
+                <option value="">Estado…</option>
+                {MEXICO_GEO.map((e) => (
+                  <option key={e.estado} value={e.estado}>
+                    {e.estado}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="city" className="text-white/70 text-xs">
                 Ciudad
               </Label>
-              <Input
+              <select
                 id="city"
-                placeholder="Ej. Guadalajara"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
-              />
+                disabled={!state}
+                className="h-10 w-full rounded-xl border border-white/10 bg-[#0f0f17] px-3 text-sm text-white focus:border-primary/50 focus:outline-none disabled:opacity-50"
+              >
+                <option value="">Ciudad…</option>
+                {rpCities.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <p className="-mt-2 text-[11px] text-white/40">

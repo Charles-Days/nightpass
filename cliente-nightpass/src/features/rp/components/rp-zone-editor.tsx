@@ -5,10 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2, MapPin } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
-import { Input } from '@/core/components/ui/input';
 import { Label } from '@/core/components/ui/label';
 import { clientFetch } from '@/core/lib/api/client-client';
+import { MEXICO_GEO } from '@/core/data/mexico-geo';
 import { useUpdateRpZone, type RpProfile } from '../hooks/use-rp';
+
+const SELECT_CLASS =
+  'h-10 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-white focus:border-primary/50 focus:outline-none';
 
 /**
  * Edita la zona (estado/ciudad) del RP. La zona enruta las solicitudes de pago
@@ -30,6 +33,11 @@ export function RpZoneEditor({
   const [state, setState] = React.useState('');
   const [city, setCity] = React.useState('');
   const [ready, setReady] = React.useState(false);
+
+  const cities = React.useMemo(
+    () => MEXICO_GEO.find((e) => e.estado === state)?.ciudades ?? [],
+    [state],
+  );
 
   React.useEffect(() => {
     if (data && !ready) {
@@ -69,25 +77,41 @@ export function RpZoneEditor({
             <Label htmlFor="rp-state" className="text-white/70 text-xs">
               Estado
             </Label>
-            <Input
+            <select
               id="rp-state"
-              placeholder="Ej. Jalisco"
               value={state}
-              onChange={(e) => setState(e.target.value)}
-              className="h-10 rounded-xl border-white/10 bg-white/[0.03] text-sm text-white"
-            />
+              onChange={(e) => {
+                setState(e.target.value);
+                setCity('');
+              }}
+              className={SELECT_CLASS}
+            >
+              <option value="">Estado…</option>
+              {MEXICO_GEO.map((e) => (
+                <option key={e.estado} value={e.estado} className="bg-[#0c0c12]">
+                  {e.estado}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="flex-1 space-y-1.5">
             <Label htmlFor="rp-city" className="text-white/70 text-xs">
               Ciudad
             </Label>
-            <Input
+            <select
               id="rp-city"
-              placeholder="Ej. Guadalajara"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              className="h-10 rounded-xl border-white/10 bg-white/[0.03] text-sm text-white"
-            />
+              disabled={!state}
+              className={SELECT_CLASS}
+            >
+              <option value="">Ciudad…</option>
+              {cities.map((c) => (
+                <option key={c} value={c} className="bg-[#0c0c12]">
+                  {c}
+                </option>
+              ))}
+            </select>
           </div>
           <Button
             type="button"
