@@ -382,6 +382,8 @@ export interface CatalogTierDetail {
   id: string;
   name: string;
   priceCents: number;
+  /** Precio en efectivo (bruto − Stripe [− NP si exento]). null si no aplica. */
+  cashPriceCents?: number | null;
   currency: string;
   capacity: number | null;
   nextPrice?: { priceCents: number; startsAt: string } | null;

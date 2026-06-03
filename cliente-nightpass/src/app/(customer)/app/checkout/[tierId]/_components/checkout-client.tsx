@@ -416,6 +416,16 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
     };
   }, [order, initialTier, quantity]);
 
+  // Precio en EFECTIVO: bruto − Stripe (− NP si exento). Lo calcula el backend y
+  // viaja en cashPriceCents. Si el método es efectivo, el total mostrado y el
+  // cobro usan este precio (más bajo que online).
+  const cashSingle = initialTier?.cashPriceCents ?? null;
+  const cashTotalCents =
+    cashSingle != null ? cashSingle * summary.quantity : null;
+  const showCashPrice = method === 'cash' && cashTotalCents != null;
+  const displayTotalCents = showCashPrice ? cashTotalCents! : summary.totalCents;
+  const cashSavingsCents = summary.totalCents - (cashTotalCents ?? summary.totalCents);
+
   const backToEvent = initialTier
     ? `${paths.evento}/${initialTier.event.id}`
     : paths.appHome;
@@ -463,7 +473,12 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
             {summary.tierName} <span className="text-xs text-muted-foreground/60">(x{summary.quantity})</span>
           </span>
           <span className="font-display text-sm font-medium tabular-nums">
-            {formatMoney(summary.totalCents, summary.currency)}
+            {showCashPrice && cashSavingsCents > 0 && (
+              <span className="mr-2 text-xs font-normal text-muted-foreground/60 line-through">
+                {formatMoney(summary.totalCents, summary.currency)}
+              </span>
+            )}
+            {formatMoney(displayTotalCents, summary.currency)}
           </span>
         </div>
 
@@ -472,9 +487,14 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
         <div className="flex items-center justify-between">
           <span className="font-display text-sm font-semibold">Total</span>
           <span className="font-display text-2xl font-bold tabular-nums text-primary">
-            {formatMoney(summary.totalCents, summary.currency)}
+            {formatMoney(displayTotalCents, summary.currency)}
           </span>
         </div>
+        {showCashPrice && cashSavingsCents > 0 && (
+          <p className="mt-1.5 text-right text-[11px] text-emerald-400/90">
+            Precio en efectivo — sin comisión de Stripe
+          </p>
+        )}
 
         {/* Código de RP */}
         <div className="mt-4 border-t border-white/5 pt-4">
@@ -675,7 +695,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
               className="w-full mt-2 h-11 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 font-semibold text-white shadow-[0_4px_18px_-4px_rgba(124,58,237,0.5)] transition-transform hover:brightness-110 active:scale-95 transform-gpu disabled:opacity-50 disabled:active:scale-100"
             >
               {method === 'cash'
-                ? 'Solicitar pago en efectivo'
+                ? `Solicitar pago en efectivo (${formatMoney(displayTotalCents, summary.currency)})`
                 : `Continuar al pago (${formatMoney(summary.totalCents, summary.currency)})`}
             </Button>
           </div>

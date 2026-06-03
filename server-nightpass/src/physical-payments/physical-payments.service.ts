@@ -24,6 +24,7 @@ import {
 } from '../cash-wallet/cash-wallet.service';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { resolveTierPrice } from '../events/tier-pricing';
+import { computeCashUnitPrice } from '../common/cash-pricing';
 import { issuePasses } from '../passes/issue-passes';
 import { CreatePhysicalPaymentDto } from './dto/create-physical-payment.dto';
 
@@ -53,7 +54,19 @@ export class PhysicalPaymentsService {
 
     const tier = await this.prisma.eventTier.findUnique({
       where: { id: dto.tierId },
-      include: { prices: true, event: true },
+      include: {
+        prices: true,
+        event: {
+          include: {
+            venue: {
+              select: { platformFeePct: true, cashCommissionExempt: true },
+            },
+            promoter: {
+              select: { platformFeePct: true, cashCommissionExempt: true },
+            },
+          },
+        },
+      },
     });
     if (!tier) throw new NotFoundException('Tier no encontrado');
 
@@ -84,12 +97,25 @@ export class PhysicalPaymentsService {
       );
     }
 
-    const singlePriceCents = resolveTierPrice(
+    // Bruto unitario vigente (lo que se cobraría online).
+    const singleGrossCents = resolveTierPrice(
       tier.priceCents,
       tier.prices,
       event.startsAt,
     ).currentCents;
-    const amountCents = singlePriceCents * quantity;
+
+    // Precio en EFECTIVO: bruto − Stripe (− NP si el organizador está exento).
+    // El bruto se congela aquí para la base de la comisión NP al confirmar.
+    const owner = event.venue ?? event.promoter ?? null;
+    const feePct =
+      owner?.platformFeePct != null
+        ? owner.platformFeePct
+        : this.stripe.getPlatformFeePct();
+    const exempt = owner?.cashCommissionExempt ?? true;
+    const cashUnitCents = computeCashUnitPrice(singleGrossCents, feePct, exempt);
+
+    const amountCents = cashUnitCents * quantity;
+    const grossCents = singleGrossCents * quantity;
 
     // Teléfono + ubicación del cliente. Se piden solo la primera vez (si no los
     // tenemos guardados) y se persisten para reutilizarlos. La ubicación
@@ -178,6 +204,7 @@ export class PhysicalPaymentsService {
         tierId: tier.id,
         quantity,
         amountCents,
+        grossCents,
         currency: tier.currency,
         contactPhone: effectivePhone,
         note: dto.note?.trim() || null,
@@ -366,7 +393,11 @@ export class PhysicalPaymentsService {
         owner.platformFeePct != null
           ? owner.platformFeePct
           : this.stripe.getPlatformFeePct();
-      feeCents = Math.floor((request.amountCents * feePct) / 100);
+      // La comisión NP se calcula sobre el BRUTO original (congelado al pedir),
+      // no sobre el precio en efectivo ya descontado. Legacy sin grossCents cae
+      // al amount.
+      const npBase = request.grossCents ?? request.amountCents;
+      feeCents = Math.floor((npBase * feePct) / 100);
       ownerRef = venue ? { venueId: venue.id } : { promoterId: promoter!.id };
     }
 

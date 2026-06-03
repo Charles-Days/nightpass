@@ -884,7 +884,10 @@ model PhysicalPaymentRequest {
   eventId         String                       @db.Uuid
   tierId          String                       @db.Uuid
   quantity        Int                          @default(1)
+  // amountCents = lo que paga el cliente en efectivo (bruto − Stripe [− NP si
+  // exento]). grossCents = bruto original (online), base para la comisión NP.
   amountCents     Int
+  grossCents      Int?
   currency        String                       @default("MXN")
   status          PhysicalPaymentRequestStatus @default(PENDING)
   contactPhone    String?

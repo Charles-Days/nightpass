@@ -8,6 +8,7 @@ import { LocationsService } from '../locations/locations.service';
 import { ListCatalogVenuesQuery } from './dto/list-catalog-venues.query';
 import { ListCatalogEventsQuery } from './dto/list-catalog-events.query';
 import { resolveTierPrice } from '../events/tier-pricing';
+import { computeCashUnitPrice } from '../common/cash-pricing';
 
 export type OccupancyBucket = 'low' | 'medium' | 'high';
 
@@ -531,6 +532,8 @@ export class CatalogService {
                 name: true,
                 city: true,
                 status: true,
+                platformFeePct: true,
+                cashCommissionExempt: true,
                 stripeAccount: { select: { chargesEnabled: true } },
               },
             },
@@ -540,6 +543,8 @@ export class CatalogService {
                 slug: true,
                 name: true,
                 status: true,
+                platformFeePct: true,
+                cashCommissionExempt: true,
                 stripeAccount: { select: { chargesEnabled: true } },
               },
             },
@@ -576,10 +581,23 @@ export class CatalogService {
       tier.event.startsAt,
     );
 
+    // Precio en efectivo (bruto − Stripe [− NP si exento]). Solo si el evento
+    // acepta efectivo; si no, null. Mismo cálculo que el cobro real.
+    const owner = venue ?? promoter;
+    const cashFeePct =
+      owner?.platformFeePct != null
+        ? owner.platformFeePct
+        : Number(this.config.get<string>('STRIPE_PLATFORM_FEE_PCT')) || 8;
+    const cashExempt = owner?.cashCommissionExempt ?? true;
+    const cashPriceCents = tier.event.allowCashPayment
+      ? computeCashUnitPrice(resolved.currentCents, cashFeePct, cashExempt)
+      : null;
+
     const result = {
       id: tier.id,
       name: tier.name,
       priceCents: resolved.currentCents,
+      cashPriceCents,
       currency: tier.currency,
       capacity: tier.capacity,
       minLoyaltyTier: tier.minLoyaltyTier,
