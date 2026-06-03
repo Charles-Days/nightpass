@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useRpMeStats } from '@/features/rp/hooks/use-rp';
 import { PhysicalRequestsSection } from '@/features/rp/components/physical-requests-section';
 import { IssuePassDialog } from '@/features/rp/components/issue-pass-dialog';
+import { IssuedPassesSection } from '@/features/rp/components/issued-passes-section';
 
 import { toast } from 'sonner';
 import { Button } from '@/core/components/ui/button';
@@ -349,6 +350,9 @@ export default function RpDashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Vales emitidos por el RP (QR/link) */}
+      <IssuedPassesSection />
 
       {/* Solicitudes de pago en efectivo */}
       <PhysicalRequestsSection />

@@ -19,7 +19,9 @@ import { randomBytes } from 'crypto';
 
 // Vigencia del vale emitido por el RP. Pasado esto, el QR ya no se puede
 // reclamar (status pasa a EXPIRED de forma perezosa al intentar reclamar).
-const CLAIM_TTL_HOURS = 24;
+// Ventana corta para reclamar un vale: si nadie lo reclama, expira solo (un cron
+// lo marca EXPIRED y libera el aforo). Evita vales emitidos varados en PENDING.
+const CLAIM_TTL_MINUTES = 10;
 
 const ARGON2_OPTS = {
   type: argon2.argon2id,
@@ -677,8 +679,8 @@ export class RpService {
       .currentCents;
 
     const token = `npc_${randomBytes(24).toString('hex')}`;
-    // El vale no vive más allá del inicio del evento.
-    const ttl = new Date(Date.now() + CLAIM_TTL_HOURS * 60 * 60 * 1000);
+    // Vale efímero: TTL corto (10 min), nunca más allá del inicio del evento.
+    const ttl = new Date(Date.now() + CLAIM_TTL_MINUTES * 60 * 1000);
     const expiresAt = ttl < event.startsAt ? ttl : event.startsAt;
 
     const claim = await this.prisma.passClaim.create({
@@ -733,5 +735,29 @@ export class RpService {
         ? { name: c.claimedBy.name, email: c.claimedBy.email }
         : null,
     }));
+  }
+
+  /** Cancela un vale PENDING emitido por este RP. Libera el aforo al instante. */
+  async cancelIssuedPass(userId: string, claimId: string) {
+    const rp = await this.getByUserId(userId);
+    const claim = await this.prisma.passClaim.findUnique({
+      where: { id: claimId },
+      select: { id: true, issuedByRpId: true, status: true },
+    });
+    if (!claim || claim.issuedByRpId !== rp.id) {
+      throw new NotFoundException('Vale no encontrado');
+    }
+    if (claim.status !== PassClaimStatus.PENDING) {
+      throw new ConflictException('Solo se pueden cancelar vales pendientes');
+    }
+    // updateMany con guard de status evita carreras con un reclamo simultáneo.
+    const res = await this.prisma.passClaim.updateMany({
+      where: { id: claimId, status: PassClaimStatus.PENDING },
+      data: { status: PassClaimStatus.CANCELLED },
+    });
+    if (res.count === 0) {
+      throw new ConflictException('El vale ya fue reclamado o cancelado');
+    }
+    return { id: claimId, status: PassClaimStatus.CANCELLED };
   }
 }

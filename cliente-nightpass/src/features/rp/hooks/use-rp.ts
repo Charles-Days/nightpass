@@ -150,6 +150,36 @@ export function useIssueRpPass() {
   });
 }
 
+// Vale emitido con su estado y reclamante (para la lista del panel del RP).
+export interface IssuedPassDetail extends IssuedPass {
+  claimedAt: string | null;
+  createdAt: string;
+  claimedBy: { name: string | null; email: string } | null;
+}
+
+// Lista de los últimos vales emitidos por el RP.
+export function useListIssuedRpPasses() {
+  return useQuery({
+    queryKey: ['rp-me', 'issued'],
+    queryFn: () => clientFetch<IssuedPassDetail[]>('/api/rp/passes/issued'),
+    refetchInterval: 30_000,
+  });
+}
+
+// El RP cancela un vale PENDING que emitió (libera el aforo).
+export function useCancelIssuedRpPass() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (claimId: string) =>
+      clientFetch<{ id: string; status: string }>(`/api/rp/passes/${claimId}/cancel`, {
+        method: 'POST',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rp-me', 'issued'] });
+    },
+  });
+}
+
 export function useCreateRp(basePath: string = '/api/rp') {
   const queryClient = useQueryClient();
   return useMutation({

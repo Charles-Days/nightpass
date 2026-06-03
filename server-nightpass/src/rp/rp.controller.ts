@@ -87,6 +87,17 @@ export class RpController {
     return this.service.listIssuedPasses(user.id);
   }
 
+  @Post('passes/:claimId/cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.RP)
+  @HttpCode(HttpStatus.OK)
+  cancelIssuedPass(
+    @CurrentUser() user: AuthUser,
+    @Param('claimId', ParseUUIDPipe) claimId: string,
+  ) {
+    return this.service.cancelIssuedPass(user.id, claimId);
+  }
+
   // ── RPs gestionados por el organizador (scoped a su propio promoter) ───────
   // Estas rutas son estáticas en su primer segmento ('promoter'), por lo que el
   // router de Fastify las prioriza sobre el param `:id` de abajo.

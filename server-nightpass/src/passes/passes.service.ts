@@ -8,6 +8,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   LocationPingSource,
   OrderStatus,
@@ -41,6 +42,21 @@ export class PassesService {
     private readonly locations: LocationsService,
     private readonly loyalty: LoyaltyService,
   ) {}
+
+  // ── Barrido de vales vencidos ────────────────────────────────────────────
+  // Cada minuto marca EXPIRED los vales PENDING cuyo `expiresAt` ya pasó. Así
+  // los vales emitidos y no reclamados (TTL 10 min) dejan de comer aforo y no
+  // quedan varados en PENDING. La expiración perezosa al reclamar sigue activa.
+  @Cron(CronExpression.EVERY_MINUTE)
+  async expireStaleClaims() {
+    const res = await this.prisma.passClaim.updateMany({
+      where: { status: PassClaimStatus.PENDING, expiresAt: { lte: new Date() } },
+      data: { status: PassClaimStatus.EXPIRED },
+    });
+    if (res.count > 0) {
+      this.logger.log(`Vales vencidos marcados EXPIRED: ${res.count}`);
+    }
+  }
 
   // ── Listado de mis passes activos ────────────────────────────────────────
 
