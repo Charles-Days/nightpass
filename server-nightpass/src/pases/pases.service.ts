@@ -155,17 +155,23 @@ export class PasesService {
         `,
       ]);
 
-    const adminClaims = await this.prisma.passClaim.aggregate({
-      where: {
-        event: { venueId },
-        status: { in: ['PENDING', 'CLAIMED'] },
-        createdAt: { gte: from, lte: to },
-      },
-      _sum: { amountCents: true },
-      _count: true,
-    });
-    const passesSoldAdmin = adminClaims._count;
-    const revenueAdmin = adminClaims._sum.amountCents ?? 0;
+    // Efectivo: solo CLAIMED es venta/ingreso real; PENDING = pendiente de cobro.
+    const [claimedAgg, pendingAgg] = await this.prisma.$transaction([
+      this.prisma.passClaim.aggregate({
+        where: { event: { venueId }, status: 'CLAIMED', createdAt: { gte: from, lte: to } },
+        _sum: { amountCents: true },
+        _count: true,
+      }),
+      this.prisma.passClaim.aggregate({
+        where: { event: { venueId }, status: 'PENDING', createdAt: { gte: from, lte: to } },
+        _sum: { amountCents: true },
+        _count: true,
+      }),
+    ]);
+    const passesSoldAdmin = claimedAgg._count;
+    const revenueAdmin = claimedAgg._sum.amountCents ?? 0;
+    const passesPendingAdmin = pendingAgg._count;
+    const revenuePendingAdmin = pendingAgg._sum.amountCents ?? 0;
     const passesSold = rawPassesSold;
 
     // Pases en efectivo canjeados (reclamados y luego escaneados en puerta).
@@ -182,7 +188,7 @@ export class PasesService {
     // capturar eventos vendidos SOLO en efectivo (antes desaparecían porque la
     // lista de eventos se armaba únicamente de las órdenes Stripe).
     const cashByEvent = await this.prisma.passClaim.groupBy({
-      by: ['eventId'],
+      by: ['eventId', 'status'],
       where: {
         event: { venueId },
         status: { in: ['PENDING', 'CLAIMED'] },
@@ -232,8 +238,20 @@ export class PasesService {
       redeemedByEvent.map((r) => [r.eventId, r._count]),
     );
     const soldById = new Map(passesSoldByEvent.map((r) => [r.eventId, r._count]));
-    const soldAdminById = new Map(cashByEvent.map((r) => [r.eventId, r._count]));
-    const revenueAdminById = new Map(cashByEvent.map((r) => [r.eventId, r._sum.amountCents ?? 0]));
+    // CLAIMED = vendido; PENDING = pendiente de cobro (por evento).
+    const soldAdminById = new Map<string, number>();
+    const revenueAdminById = new Map<string, number>();
+    const pendingAdminById = new Map<string, number>();
+    const revenuePendingAdminById = new Map<string, number>();
+    for (const r of cashByEvent) {
+      if (r.status === 'CLAIMED') {
+        soldAdminById.set(r.eventId, r._count);
+        revenueAdminById.set(r.eventId, r._sum.amountCents ?? 0);
+      } else {
+        pendingAdminById.set(r.eventId, r._count);
+        revenuePendingAdminById.set(r.eventId, r._sum.amountCents ?? 0);
+      }
+    }
     const stripeById = new Map(byEventRaw.map((r) => [r.eventId, r]));
 
     const byEvent = eventIds.map((eventId) => {
@@ -247,6 +265,8 @@ export class PasesService {
         vendidos: soldById.get(eventId) ?? 0,
         vendidosAdmin: soldAdminById.get(eventId) ?? 0,
         ingresosAdmin: revenueAdminById.get(eventId) ?? 0,
+        pendientesAdmin: pendingAdminById.get(eventId) ?? 0,
+        ingresosPendientes: revenuePendingAdminById.get(eventId) ?? 0,
         canjeados: redeemedById.get(eventId) ?? 0,
         ingresos: stripe?._sum?.totalCents ?? 0,
         fees: stripe?._sum?.applicationFeeCents ?? 0,
@@ -323,6 +343,8 @@ export class PasesService {
       range: { from: from.toISOString(), to: to.toISOString() },
       passesSoldAdmin,
       revenueAdmin,
+      passesPendingAdmin,
+      revenuePendingAdmin,
     };
   }
 
@@ -385,17 +407,23 @@ export class PasesService {
         `,
       ]);
 
-    const adminClaims = await this.prisma.passClaim.aggregate({
-      where: {
-        event: { promoterId },
-        status: { in: ['PENDING', 'CLAIMED'] },
-        createdAt: { gte: from, lte: to },
-      },
-      _sum: { amountCents: true },
-      _count: true,
-    });
-    const passesSoldAdmin = adminClaims._count;
-    const revenueAdmin = adminClaims._sum.amountCents ?? 0;
+    // Efectivo: solo CLAIMED es venta/ingreso real; PENDING = pendiente de cobro.
+    const [claimedAgg, pendingAgg] = await this.prisma.$transaction([
+      this.prisma.passClaim.aggregate({
+        where: { event: { promoterId }, status: 'CLAIMED', createdAt: { gte: from, lte: to } },
+        _sum: { amountCents: true },
+        _count: true,
+      }),
+      this.prisma.passClaim.aggregate({
+        where: { event: { promoterId }, status: 'PENDING', createdAt: { gte: from, lte: to } },
+        _sum: { amountCents: true },
+        _count: true,
+      }),
+    ]);
+    const passesSoldAdmin = claimedAgg._count;
+    const revenueAdmin = claimedAgg._sum.amountCents ?? 0;
+    const passesPendingAdmin = pendingAgg._count;
+    const revenuePendingAdmin = pendingAgg._sum.amountCents ?? 0;
     const passesSold = rawPassesSold;
 
     // Pases en efectivo canjeados (reclamados y luego escaneados en puerta).
@@ -411,7 +439,7 @@ export class PasesService {
     // Vales en efectivo por evento — sin filtrar por eventIds, para capturar
     // eventos vendidos SOLO en efectivo (antes desaparecían de la tabla).
     const cashByEvent = await this.prisma.passClaim.groupBy({
-      by: ['eventId'],
+      by: ['eventId', 'status'],
       where: {
         event: { promoterId },
         status: { in: ['PENDING', 'CLAIMED'] },
@@ -456,8 +484,20 @@ export class PasesService {
       redeemedByEvent.map((r) => [r.eventId, r._count]),
     );
     const soldById = new Map(passesSoldByEvent.map((r) => [r.eventId, r._count]));
-    const soldAdminById = new Map(cashByEvent.map((r) => [r.eventId, r._count]));
-    const revenueAdminById = new Map(cashByEvent.map((r) => [r.eventId, r._sum.amountCents ?? 0]));
+    // CLAIMED = vendido; PENDING = pendiente de cobro (por evento).
+    const soldAdminById = new Map<string, number>();
+    const revenueAdminById = new Map<string, number>();
+    const pendingAdminById = new Map<string, number>();
+    const revenuePendingAdminById = new Map<string, number>();
+    for (const r of cashByEvent) {
+      if (r.status === 'CLAIMED') {
+        soldAdminById.set(r.eventId, r._count);
+        revenueAdminById.set(r.eventId, r._sum.amountCents ?? 0);
+      } else {
+        pendingAdminById.set(r.eventId, r._count);
+        revenuePendingAdminById.set(r.eventId, r._sum.amountCents ?? 0);
+      }
+    }
     const stripeById = new Map(byEventRaw.map((r) => [r.eventId, r]));
 
     const byEvent = eventIds.map((eventId) => {
@@ -471,6 +511,8 @@ export class PasesService {
         vendidos: soldById.get(eventId) ?? 0,
         vendidosAdmin: soldAdminById.get(eventId) ?? 0,
         ingresosAdmin: revenueAdminById.get(eventId) ?? 0,
+        pendientesAdmin: pendingAdminById.get(eventId) ?? 0,
+        ingresosPendientes: revenuePendingAdminById.get(eventId) ?? 0,
         canjeados: redeemedById.get(eventId) ?? 0,
         ingresos: stripe?._sum?.totalCents ?? 0,
         fees: stripe?._sum?.applicationFeeCents ?? 0,
@@ -547,6 +589,8 @@ export class PasesService {
       range: { from: from.toISOString(), to: to.toISOString() },
       passesSoldAdmin,
       revenueAdmin,
+      passesPendingAdmin,
+      revenuePendingAdmin,
     };
   }
 

@@ -159,16 +159,24 @@ export class AdminFinanceService {
       `,
     ]);
 
-    const adminClaims = await this.prisma.passClaim.aggregate({
-      where: {
-        status: { in: ['PENDING', 'CLAIMED'] },
-        createdAt: { gte: from, lte: to },
-      },
-      _sum: { amountCents: true },
-      _count: true,
-    });
-    const passesSoldAdmin = adminClaims._count;
-    const revenueAdmin = adminClaims._sum.amountCents ?? 0;
+    // Efectivo: solo los CLAIMED son venta/ingreso real. Los PENDING (vale
+    // emitido y no reclamado) NO cuentan como vendidos — son "pendiente de cobro".
+    const [claimedAgg, pendingAgg] = await Promise.all([
+      this.prisma.passClaim.aggregate({
+        where: { status: 'CLAIMED', createdAt: { gte: from, lte: to } },
+        _sum: { amountCents: true },
+        _count: true,
+      }),
+      this.prisma.passClaim.aggregate({
+        where: { status: 'PENDING', createdAt: { gte: from, lte: to } },
+        _sum: { amountCents: true },
+        _count: true,
+      }),
+    ]);
+    const passesSoldAdmin = claimedAgg._count;
+    const revenueAdmin = claimedAgg._sum.amountCents ?? 0;
+    const passesPendingAdmin = pendingAgg._count;
+    const revenuePendingAdmin = pendingAgg._sum.amountCents ?? 0;
     const passesSold = rawPassesSold;
 
     // Pases en efectivo canjeados (reclamados y luego escaneados en puerta).
@@ -204,8 +212,11 @@ export class AdminFinanceService {
     // Vales en efectivo por evento — sin filtrar por eventIds, para capturar
     // eventos vendidos SOLO en efectivo (antes desaparecían de la tabla porque
     // la lista se armaba únicamente de las órdenes Stripe).
+    // Agrupa por evento Y estado: solo CLAIMED es venta real; PENDING es
+    // "pendiente de cobro". Mantiene ambos para que el evento aparezca aunque
+    // solo tenga vales pendientes.
     const cashByEvent = await this.prisma.passClaim.groupBy({
-      by: ['eventId'],
+      by: ['eventId', 'status'],
       where: {
         status: { in: ['PENDING', 'CLAIMED'] },
         createdAt: { gte: from, lte: to },
@@ -242,8 +253,20 @@ export class AdminFinanceService {
         })
       : [];
     const soldById = new Map(passesSoldByEvent.map((r) => [r.eventId, r._count]));
-    const soldAdminById = new Map(cashByEvent.map((r) => [r.eventId, r._count]));
-    const revenueAdminById = new Map(cashByEvent.map((r) => [r.eventId, r._sum.amountCents ?? 0]));
+    // CLAIMED = vendido en efectivo; PENDING = pendiente de cobro. Por evento.
+    const soldAdminById = new Map<string, number>();
+    const revenueAdminById = new Map<string, number>();
+    const pendingAdminById = new Map<string, number>();
+    const revenuePendingAdminById = new Map<string, number>();
+    for (const r of cashByEvent) {
+      if (r.status === 'CLAIMED') {
+        soldAdminById.set(r.eventId, r._count);
+        revenueAdminById.set(r.eventId, r._sum.amountCents ?? 0);
+      } else {
+        pendingAdminById.set(r.eventId, r._count);
+        revenuePendingAdminById.set(r.eventId, r._sum.amountCents ?? 0);
+      }
+    }
     const stripeById = new Map(byEventRaw.map((r) => [r.eventId, r]));
 
     const redeemedByEvent = eventIds.length
@@ -272,6 +295,8 @@ export class AdminFinanceService {
           vendidos: soldById.get(eventId) ?? 0,
           vendidosAdmin: soldAdminById.get(eventId) ?? 0,
           ingresosAdmin: revenueAdminById.get(eventId) ?? 0,
+          pendientesAdmin: pendingAdminById.get(eventId) ?? 0,
+          ingresosPendientes: revenuePendingAdminById.get(eventId) ?? 0,
           canjeados: redeemedById.get(eventId) ?? 0,
           grossCents: stripe?._sum?.totalCents ?? 0,
           platformFeeCents: stripe?._sum?.applicationFeeCents ?? 0,
@@ -347,6 +372,8 @@ export class AdminFinanceService {
         avgTicketCents,
         passesSoldAdmin,
         revenueAdmin,
+        passesPendingAdmin,
+        revenuePendingAdmin,
       },
       byEvent,
       topVenues,
@@ -427,17 +454,22 @@ export class AdminFinanceService {
     const cashOrders = completedOrders.filter((o) => !isCard(o.paymentMethod));
 
     // ── Resumen ──────────────────────────────────────────────────────────────
+    // Efectivo: solo CLAIMED es venta/ingreso real; PENDING = pendiente de cobro.
+    const claimedClaims = claims.filter((c) => c.status === 'CLAIMED');
+    const pendingClaims = claims.filter((c) => c.status === 'PENDING');
     const soldCard = cardOrders.reduce((acc, o) => acc + o.passes.length, 0);
-    const soldCash = claims.length; // PENDING + CLAIMED = vendidos en efectivo
+    const soldCash = claimedClaims.length;
     const revenueCardCents = cardOrders.reduce((acc, o) => acc + o.totalCents, 0);
-    const revenueCashCents = claims.reduce((acc, c) => acc + c.amountCents, 0);
+    const revenueCashCents = claimedClaims.reduce((acc, c) => acc + c.amountCents, 0);
+    const pendingCash = pendingClaims.length;
+    const pendingCashCents = pendingClaims.reduce((acc, c) => acc + c.amountCents, 0);
     const feesCents = cardOrders.reduce((acc, o) => acc + o.applicationFeeCents, 0);
     const countUsed = (orders: typeof cardOrders) =>
       orders.reduce((acc, o) => acc + o.passes.filter((p) => p.usedAt != null).length, 0);
     const redeemedCard = countUsed(cardOrders);
     const redeemedCash = countUsed(cashOrders);
-    const cashClaimed = claims.filter((c) => c.status === 'CLAIMED').length;
-    const cashPending = claims.filter((c) => c.status === 'PENDING').length;
+    const cashClaimed = claimedClaims.length;
+    const cashPending = pendingClaims.length;
 
     const soldTotal = soldCard + soldCash;
     const redeemedTotal = redeemedCard + redeemedCash;
@@ -447,9 +479,10 @@ export class AdminFinanceService {
     for (const o of cardOrders) {
       if (o.tier) cardByTier.set(o.tier.id, (cardByTier.get(o.tier.id) ?? 0) + o.passes.length);
     }
+    // Por tier solo cuenta efectivo CLAIMED (vendido real).
     const cashByTier = new Map<string, number>();
     const cashRevByTier = new Map<string, number>();
-    for (const c of claims) {
+    for (const c of claimedClaims) {
       cashByTier.set(c.tierId, (cashByTier.get(c.tierId) ?? 0) + 1);
       cashRevByTier.set(c.tierId, (cashRevByTier.get(c.tierId) ?? 0) + c.amountCents);
     }
@@ -478,10 +511,20 @@ export class AdminFinanceService {
       { method: 'Efectivo', count: soldCash, revenueCents: revenueCashCents },
     ];
 
-    // ── Por RP (quién vendió en efectivo) ────────────────────────────────────
+    // ── Por RP (vales en efectivo) ───────────────────────────────────────────
+    // `count`/`revenueCents` = EMITIDOS (PENDING + CLAIMED). `claimedCount`/
+    // `claimedRevenueCents` = los que un cliente ya RECLAMÓ (venta real).
     const rpAgg = new Map<
       string,
-      { rpId: string; name: string; rpCode: string; count: number; revenueCents: number }
+      {
+        rpId: string;
+        name: string;
+        rpCode: string;
+        count: number;
+        revenueCents: number;
+        claimedCount: number;
+        claimedRevenueCents: number;
+      }
     >();
     for (const c of claims) {
       if (!c.issuedByRp) continue;
@@ -493,9 +536,15 @@ export class AdminFinanceService {
           rpCode: c.issuedByRp.rpCode,
           count: 0,
           revenueCents: 0,
+          claimedCount: 0,
+          claimedRevenueCents: 0,
         };
       prev.count += 1;
       prev.revenueCents += c.amountCents;
+      if (c.status === 'CLAIMED') {
+        prev.claimedCount += 1;
+        prev.claimedRevenueCents += c.amountCents;
+      }
       rpAgg.set(key, prev);
     }
     const byRp = Array.from(rpAgg.values()).sort((a, b) => b.count - a.count);
@@ -554,6 +603,8 @@ export class AdminFinanceService {
         redeemRate: soldTotal > 0 ? redeemedTotal / soldTotal : 0,
         cashClaimed,
         cashPending,
+        pendingCash,
+        pendingCashCents,
         ordersCount: completedOrders.length,
         fillRate: event.capacity ? soldTotal / event.capacity : null,
       },

@@ -42,6 +42,8 @@ function KpiCard({ label, value, hint, icon, accent, valueClassName }: KpiCardPr
 export function KpiCards({ totals }: { totals: AdminFinanceTotals }) {
   const soldAdmin = totals.passesSoldAdmin ?? 0;
   const revenueAdmin = totals.revenueAdmin ?? 0;
+  const pendingAdmin = totals.passesPendingAdmin ?? 0;
+  const revenuePendingAdmin = totals.revenuePendingAdmin ?? 0;
   const redeemedAdmin = totals.passesRedeemedAdmin ?? 0;
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -55,7 +57,11 @@ export function KpiCards({ totals }: { totals: AdminFinanceTotals }) {
       <KpiCard
         label="Ingreso efectivo"
         value={money(revenueAdmin)}
-        hint={`${intCount(soldAdmin)} pases vendidos en efectivo (RP)`}
+        hint={
+          pendingAdmin > 0
+            ? `${intCount(soldAdmin)} cobrados · ${intCount(pendingAdmin)} pend. (${money(revenuePendingAdmin)})`
+            : `${intCount(soldAdmin)} pases cobrados en efectivo (RP)`
+        }
         icon={<Coins className="size-4" />}
         accent="emerald"
         valueClassName="text-[#10b981]"
@@ -63,7 +69,11 @@ export function KpiCards({ totals }: { totals: AdminFinanceTotals }) {
       <KpiCard
         label="Pases vendidos"
         value={intCount(totals.passesSold + soldAdmin)}
-        hint={`App ${intCount(totals.passesSold)} · Efectivo ${intCount(soldAdmin)}`}
+        hint={
+          pendingAdmin > 0
+            ? `App ${intCount(totals.passesSold)} · Efectivo ${intCount(soldAdmin)} · ${intCount(pendingAdmin)} pend. canje`
+            : `App ${intCount(totals.passesSold)} · Efectivo ${intCount(soldAdmin)}`
+        }
         icon={<Ticket className="size-4" />}
         accent="pink"
       />

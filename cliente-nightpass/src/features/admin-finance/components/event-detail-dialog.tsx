@@ -224,7 +224,11 @@ export function EventDetailDialog({
                   <Stat
                     label="Pases vendidos"
                     value={data.summary.soldTotal}
-                    hint={`Tarjeta ${data.summary.soldCard} · Efectivo ${data.summary.soldCash}`}
+                    hint={
+                      data.summary.pendingCash > 0
+                        ? `Tarjeta ${data.summary.soldCard} · Efectivo ${data.summary.soldCash} · ${data.summary.pendingCash} pend. canje`
+                        : `Tarjeta ${data.summary.soldCard} · Efectivo ${data.summary.soldCash}`
+                    }
                     icon={Ticket}
                   />
                   <Stat
@@ -268,7 +272,7 @@ export function EventDetailDialog({
                     <SectionTitle>Efectivo (RP)</SectionTitle>
                     <div className="flex items-center justify-between text-sm">
                       <span className="inline-flex items-center gap-2 text-muted-foreground">
-                        <Coins className="size-3.5 text-[#10b981]" /> Ingreso efectivo
+                        <Coins className="size-3.5 text-[#10b981]" /> Cobrado (reclamado)
                       </span>
                       <span className="font-semibold text-[#10b981]">
                         {money(data.summary.revenueCashCents)}
@@ -279,8 +283,10 @@ export function EventDetailDialog({
                       <span>{data.summary.cashClaimed}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Pendientes de reclamar</span>
-                      <span>{data.summary.cashPending}</span>
+                      <span className="text-amber-300/80">Pendiente de cobro</span>
+                      <span className="text-amber-300/90">
+                        {data.summary.pendingCash} · {money(data.summary.pendingCashCents)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="inline-flex items-center gap-2 text-muted-foreground">
@@ -348,30 +354,46 @@ export function EventDetailDialog({
                 {/* RPs */}
                 {data.byRp.length > 0 ? (
                   <section>
-                    <SectionTitle>Vendido en efectivo por RP</SectionTitle>
+                    <SectionTitle>Vales en efectivo por RP</SectionTitle>
+                    <p className="mb-3 text-[11px] text-muted-foreground">
+                      <span className="text-foreground/80">Emitido</span> = el RP generó el
+                      vale (QR/link). <span className="text-emerald-300/90">Reclamado</span> = un
+                      cliente lo abrió y guardó su boleto (venta real). Lo emitido aún sin reclamar
+                      no es venta todavía.
+                    </p>
                     <div className="space-y-2">
-                      {data.byRp.map((rp, i) => (
-                        <div
-                          key={rp.rpId}
-                          className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.025] px-4 py-2.5"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="flex size-6 items-center justify-center rounded-full bg-amber-500/15 text-[11px] font-bold text-amber-300">
-                              {i + 1}
-                            </span>
-                            <div>
-                              <p className="text-sm font-medium">{rp.name}</p>
-                              <p className="text-[11px] text-muted-foreground">{rp.rpCode}</p>
+                      {data.byRp.map((rp, i) => {
+                        const pendientes = Math.max(0, rp.count - rp.claimedCount);
+                        return (
+                          <div
+                            key={rp.rpId}
+                            className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.025] px-4 py-2.5"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="flex size-6 items-center justify-center rounded-full bg-amber-500/15 text-[11px] font-bold text-amber-300">
+                                {i + 1}
+                              </span>
+                              <div>
+                                <p className="text-sm font-medium">{rp.name}</p>
+                                <p className="text-[11px] text-muted-foreground">{rp.rpCode}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-semibold">
+                                <span className="text-foreground">{rp.count} emitidos</span>
+                                <span className="text-muted-foreground"> · </span>
+                                <span className="text-[#10b981]">{rp.claimedCount} reclamados</span>
+                              </p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {money(rp.claimedRevenueCents)} real
+                                {pendientes > 0
+                                  ? ` · ${money(rp.revenueCents - rp.claimedRevenueCents)} pendiente`
+                                  : ''}
+                              </p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm font-semibold text-[#10b981]">
-                              {money(rp.revenueCents)}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground">{rp.count} vales</p>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </section>
                 ) : null}

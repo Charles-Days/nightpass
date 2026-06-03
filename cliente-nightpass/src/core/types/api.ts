@@ -714,6 +714,8 @@ export interface PassesStatsEventRow {
   vendidos: number;
   vendidosAdmin?: number;
   ingresosAdmin?: number;
+  pendientesAdmin?: number;
+  ingresosPendientes?: number;
   canjeados: number;
   ingresos: number;
 }
@@ -724,6 +726,8 @@ export interface PassesStats {
   passesSold: number;
   passesSoldAdmin?: number;
   revenueAdmin?: number;
+  passesPendingAdmin?: number;
+  revenuePendingAdmin?: number;
   passesRedeemed: number;
   passesRedeemedAdmin?: number;
   passesPending: number;
@@ -778,6 +782,8 @@ export interface AdminFinanceTotals {
   passesSold: number;
   passesSoldAdmin?: number;
   revenueAdmin?: number;
+  passesPendingAdmin?: number;
+  revenuePendingAdmin?: number;
   passesRedeemed: number;
   passesRedeemedAdmin?: number;
   /** 0..1 */
@@ -797,6 +803,8 @@ export interface AdminFinanceEventRow {
   vendidos: number;
   vendidosAdmin?: number;
   ingresosAdmin?: number;
+  pendientesAdmin?: number;
+  ingresosPendientes?: number;
   canjeados: number;
   grossCents: number;
   platformFeeCents: number;
@@ -833,6 +841,8 @@ export interface AdminEventDetail {
     redeemRate: number;
     cashClaimed: number;
     cashPending: number;
+    pendingCash: number;
+    pendingCashCents: number;
     ordersCount: number;
     /** 0..1 or null si no hay capacidad */
     fillRate: number | null;
@@ -852,8 +862,12 @@ export interface AdminEventDetail {
     rpId: string;
     name: string;
     rpCode: string;
+    /** Emitidos (PENDING + CLAIMED). */
     count: number;
     revenueCents: number;
+    /** Reclamados (venta real). */
+    claimedCount: number;
+    claimedRevenueCents: number;
   }>;
   daily: Array<{ day: string; card: number; cash: number; revenueCents: number }>;
   recentOrders: Array<{

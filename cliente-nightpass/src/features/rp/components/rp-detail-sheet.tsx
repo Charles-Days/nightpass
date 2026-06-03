@@ -118,6 +118,9 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
                   <span className="font-display text-2xl font-bold text-white block mt-1">
                     {stats.totalSales}
                   </span>
+                  <span className="text-[11px] text-muted-foreground block mt-0.5">
+                    Vales reclamados (venta real). Los emitidos sin reclamar no cuentan aún.
+                  </span>
                 </div>
                 <div className="rounded-xl bg-white/[0.02] border border-white/5 p-4">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide block">
