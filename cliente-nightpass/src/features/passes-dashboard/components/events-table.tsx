@@ -63,12 +63,24 @@ export function EventsTable({
               <td className="px-4 py-3 text-muted-foreground">
                 {row.capacity != null ? row.capacity : '—'}
               </td>
-              <td className="px-4 py-3 text-muted-foreground">{row.vendidos}</td>
               <td className="px-4 py-3 text-muted-foreground">
-                {row.canjeados} / {row.vendidos}
+                {row.vendidos + (row.vendidosAdmin ?? 0)}
+                {row.vendidosAdmin ? (
+                  <span className="ml-1 text-xs text-emerald-300/80">
+                    ({row.vendidos} app · {row.vendidosAdmin} efvo)
+                  </span>
+                ) : null}
               </td>
               <td className="px-4 py-3 text-muted-foreground">
-                {mxnFormatter.format(row.ingresos / 100)}
+                {row.canjeados} / {row.vendidos + (row.vendidosAdmin ?? 0)}
+              </td>
+              <td className="px-4 py-3 text-muted-foreground">
+                {mxnFormatter.format((row.ingresos + (row.ingresosAdmin ?? 0)) / 100)}
+                {row.ingresosAdmin ? (
+                  <span className="ml-1 text-xs text-emerald-300/80">
+                    (efvo {mxnFormatter.format(row.ingresosAdmin / 100)})
+                  </span>
+                ) : null}
               </td>
               <td className="px-4 py-3 text-right">
                 <ChevronRight className="ml-auto size-4 text-muted-foreground/60" />

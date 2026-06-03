@@ -171,6 +171,15 @@ export class AdminFinanceService {
     const revenueAdmin = adminClaims._sum.amountCents ?? 0;
     const passesSold = rawPassesSold;
 
+    // Pases en efectivo canjeados (reclamados y luego escaneados en puerta).
+    const passesRedeemedAdmin = await this.prisma.pass.count({
+      where: {
+        order: { paymentMethod: { in: [PaymentMethod.CASH, PaymentMethod.COMP] } },
+        usedAt: { not: null },
+        createdAt: { gte: from, lte: to },
+      },
+    });
+
     // ─── Totals ──────────────────────────────────────────────────────────────
     const grossCents = completedAgg._sum.totalCents ?? 0;
     const platformFeeCents = completedAgg._sum.applicationFeeCents ?? 0;
@@ -184,12 +193,32 @@ export class AdminFinanceService {
     );
     const refundedCount = refundedAgg._count;
     const refundedAmountCents = refundedAgg._sum.totalCents ?? 0;
-    const redeemRate = passesSold > 0 ? passesRedeemed / passesSold : 0;
+    // Tasa de canje combinada (App + Efectivo).
+    const totalSoldAll = passesSold + passesSoldAdmin;
+    const redeemRate =
+      totalSoldAll > 0 ? (passesRedeemed + passesRedeemedAdmin) / totalSoldAll : 0;
     const avgTicketCents =
       ordersCount > 0 ? Math.round(grossCents / ordersCount) : 0;
 
     // ─── byEvent ─────────────────────────────────────────────────────────────
-    const eventIds = byEventRaw.map((row) => row.eventId);
+    // Vales en efectivo por evento — sin filtrar por eventIds, para capturar
+    // eventos vendidos SOLO en efectivo (antes desaparecían de la tabla porque
+    // la lista se armaba únicamente de las órdenes Stripe).
+    const cashByEvent = await this.prisma.passClaim.groupBy({
+      by: ['eventId'],
+      where: {
+        status: { in: ['PENDING', 'CLAIMED'] },
+        createdAt: { gte: from, lte: to },
+      },
+      _sum: { amountCents: true },
+      _count: true,
+    });
+    const eventIds = Array.from(
+      new Set([
+        ...byEventRaw.map((row) => row.eventId),
+        ...cashByEvent.map((row) => row.eventId),
+      ]),
+    );
     const eventsMeta = eventIds.length
       ? await this.prisma.event.findMany({
           where: { id: { in: eventIds } },
@@ -212,17 +241,10 @@ export class AdminFinanceService {
           _count: true,
         })
       : [];
-    const pendingClaimsByEvent = eventIds.length
-      ? await this.prisma.passClaim.groupBy({
-          by: ['eventId'],
-          where: { eventId: { in: eventIds }, status: { in: ['PENDING', 'CLAIMED'] } },
-          _sum: { amountCents: true },
-          _count: true,
-        })
-      : [];
     const soldById = new Map(passesSoldByEvent.map((r) => [r.eventId, r._count]));
-    const soldAdminById = new Map(pendingClaimsByEvent.map((r) => [r.eventId, r._count]));
-    const revenueAdminById = new Map(pendingClaimsByEvent.map((r) => [r.eventId, r._sum.amountCents ?? 0]));
+    const soldAdminById = new Map(cashByEvent.map((r) => [r.eventId, r._count]));
+    const revenueAdminById = new Map(cashByEvent.map((r) => [r.eventId, r._sum.amountCents ?? 0]));
+    const stripeById = new Map(byEventRaw.map((r) => [r.eventId, r]));
 
     const redeemedByEvent = eventIds.length
       ? await this.prisma.pass.groupBy({
@@ -235,27 +257,28 @@ export class AdminFinanceService {
       redeemedByEvent.map((r) => [r.eventId, r._count]),
     );
 
-    const byEvent = byEventRaw
-      .map((row) => {
-        const meta = eventsById.get(row.eventId);
+    const byEvent = eventIds
+      .map((eventId) => {
+        const meta = eventsById.get(eventId);
+        const stripe = stripeById.get(eventId);
         const venueName =
           meta?.venue?.name ?? meta?.promoter?.name ?? null;
         return {
-          eventId: row.eventId,
+          eventId,
           title: meta?.title ?? '',
           startsAt: meta?.startsAt ? meta.startsAt.toISOString() : null,
           venueName,
           capacity: meta?.capacity ?? null,
-          vendidos: soldById.get(row.eventId) ?? 0,
-          vendidosAdmin: soldAdminById.get(row.eventId) ?? 0,
-          ingresosAdmin: revenueAdminById.get(row.eventId) ?? 0,
-          canjeados: redeemedById.get(row.eventId) ?? 0,
-          grossCents: row._sum?.totalCents ?? 0,
-          platformFeeCents: row._sum?.applicationFeeCents ?? 0,
-          ordersCount: row._count,
+          vendidos: soldById.get(eventId) ?? 0,
+          vendidosAdmin: soldAdminById.get(eventId) ?? 0,
+          ingresosAdmin: revenueAdminById.get(eventId) ?? 0,
+          canjeados: redeemedById.get(eventId) ?? 0,
+          grossCents: stripe?._sum?.totalCents ?? 0,
+          platformFeeCents: stripe?._sum?.applicationFeeCents ?? 0,
+          ordersCount: stripe?._count ?? 0,
         };
       })
-      .sort((a, b) => b.grossCents - a.grossCents);
+      .sort((a, b) => b.grossCents + b.ingresosAdmin - (a.grossCents + a.ingresosAdmin));
 
     // ─── topVenues / topPromoters ──────────────────────────────────────────────
     const topVenues = topVenuesRaw.map((row) => ({
@@ -316,6 +339,7 @@ export class AdminFinanceService {
         ordersCount,
         passesSold,
         passesRedeemed,
+        passesRedeemedAdmin,
         redeemRate,
         refundedCount,
         refundedAmountCents,

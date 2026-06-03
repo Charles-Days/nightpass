@@ -709,6 +709,7 @@ export interface PassesStats {
   passesSoldAdmin?: number;
   revenueAdmin?: number;
   passesRedeemed: number;
+  passesRedeemedAdmin?: number;
   passesPending: number;
   redeemRate: number;
   upcomingEvent: {
@@ -762,6 +763,7 @@ export interface AdminFinanceTotals {
   passesSoldAdmin?: number;
   revenueAdmin?: number;
   passesRedeemed: number;
+  passesRedeemedAdmin?: number;
   /** 0..1 */
   redeemRate: number;
   refundedCount: number;

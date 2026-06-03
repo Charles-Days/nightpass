@@ -66,15 +66,17 @@ export function KpiCards({ totals }: { totals: AdminFinanceTotals }) {
       />
       <KpiCard
         label="Pases vendidos"
-        value={intCount(totals.passesSold)}
-        hint={`${intCount(totals.ordersCount)} órdenes completadas`}
+        value={intCount(totals.passesSold + (totals.passesSoldAdmin ?? 0))}
+        hint={`App ${intCount(totals.passesSold)} · Efectivo ${intCount(totals.passesSoldAdmin ?? 0)}`}
         icon={<Ticket className="size-4" />}
         accent="pink"
       />
       <KpiCard
         label="Tasa de canje"
         value={pct(totals.redeemRate)}
-        hint={`${intCount(totals.passesRedeemed)} de ${intCount(totals.passesSold)} canjeados`}
+        hint={`${intCount(totals.passesRedeemed + (totals.passesRedeemedAdmin ?? 0))} de ${intCount(
+          totals.passesSold + (totals.passesSoldAdmin ?? 0),
+        )} canjeados`}
         icon={<ScanLine className="size-4" />}
         accent="amber"
       />
