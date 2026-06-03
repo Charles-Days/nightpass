@@ -544,6 +544,7 @@ model EventTier {
   cashFeeMode        CashFeeMode? // null => SUBTRACT (comportamiento actual)
   cashFeePctOverride Float? // null => usar platformFeePct del owner (o global)
   cashExemptOverride Boolean? // null => usar cashCommissionExempt del owner
+  cashPriceCents     Int? // precio en efectivo propio; null => derivar del online (bruto - Stripe)
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 

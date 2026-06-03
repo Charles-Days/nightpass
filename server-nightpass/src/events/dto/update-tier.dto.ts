@@ -47,6 +47,13 @@ export class UpdateTierDto {
   @IsOptional()
   @IsBoolean()
   cashExemptOverride?: boolean | null;
+  // Precio en efectivo propio (centavos). undefined = no tocar; null = limpiar
+  // (volver a derivar del online).
+  @ValidateIf((_, value) => value !== null)
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  cashPriceCents?: number | null;
   // Reemplaza por completo el calendario de subidas (replace-all). `undefined`
   // = no tocar; `[]` = borrar todas las fases.
   @IsOptional()

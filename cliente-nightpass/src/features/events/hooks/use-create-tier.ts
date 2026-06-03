@@ -17,6 +17,7 @@ export interface CreateTierInput {
   cashFeeMode?: CashFeeMode | null;
   cashFeePctOverride?: number | null;
   cashExemptOverride?: boolean | null;
+  cashPriceCents?: number | null;
 }
 
 export function useCreateTier(eventId: string) {

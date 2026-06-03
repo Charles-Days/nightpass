@@ -35,6 +35,8 @@ export class CreateTierDto {
   @IsOptional() @IsNumber() @Min(0) @Max(100) cashFeePctOverride?: number;
   // Exención de comisión override. null/omitir => cashCommissionExempt del owner.
   @IsOptional() @IsBoolean() cashExemptOverride?: boolean;
+  // Precio en efectivo propio (centavos). Omitir => derivar del online (bruto − Stripe).
+  @IsOptional() @IsInt() @Min(0) cashPriceCents?: number;
   // Subidas de precio programadas. `priceCents` es el early-bird base.
   @IsOptional()
   @IsArray()

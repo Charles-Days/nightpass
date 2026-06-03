@@ -177,6 +177,8 @@ interface CashDraft {
   pct: string;
   /** Modo: SUMA al precio (cliente paga más) o DESCUENTA (paga menos). */
   mode: CashFeeMode;
+  /** Precio en efectivo propio (string MXN). Vacío => derivar del online (bruto − Stripe). */
+  price: string;
 }
 
 /** Valor por defecto de la config de efectivo (hereda: cobra comisión, modo descontar). */
@@ -185,7 +187,15 @@ function defaultCashDraft(ownerFeePct: number): CashDraft {
     charge: true,
     pct: ownerFeePct > 0 ? String(ownerFeePct) : '',
     mode: 'SUBTRACT',
+    price: '',
   };
+}
+
+/** Precio en efectivo propio (centavos) del borrador, o null si está vacío. */
+function cashPriceCentsFromDraft(d: CashDraft): number | null {
+  const n = parseFloat(d.price);
+  if (d.price.trim() === '' || Number.isNaN(n) || n < 0) return null;
+  return Math.round(n * 100);
 }
 
 /**
@@ -204,7 +214,8 @@ function cashDraftToPayload(d: CashDraft, ownerFeePct: number) {
     cashFeePctOverride = pctNum;
   }
   const cashFeeMode: CashFeeMode | null = d.mode === 'ADD' ? 'ADD' : null;
-  return { cashFeeMode, cashFeePctOverride, cashExemptOverride };
+  const cashPriceCents = cashPriceCentsFromDraft(d);
+  return { cashFeeMode, cashFeePctOverride, cashExemptOverride, cashPriceCents };
 }
 
 /** % efectivo a usar para el preview/cálculo (override > owner). */
@@ -227,17 +238,47 @@ function CashConfigEditor({
 }) {
   const exempt = !cash.charge;
   const feePctEff = effectiveCashPct(cash, ownerFeePct);
-  const base = grossUnitCents > 0 ? Math.max(0, grossUnitCents - stripeFeeForGross(grossUnitCents)) : 0;
-  const cashPrice = computeCashUnitPrice(grossUnitCents, feePctEff, exempt, cash.mode);
-  const npComm = exempt ? 0 : Math.round((grossUnitCents * feePctEff) / 100);
+  const overrideCents = cashPriceCentsFromDraft(cash);
+  const hasOwnPrice = overrideCents != null;
+  // Base = precio propio si se fijó, o (bruto − Stripe) si se deriva del online.
+  const base = hasOwnPrice
+    ? overrideCents
+    : grossUnitCents > 0
+      ? Math.max(0, grossUnitCents - stripeFeeForGross(grossUnitCents))
+      : 0;
+  const cashPrice = computeCashUnitPrice(grossUnitCents, feePctEff, exempt, cash.mode, overrideCents);
+  const commBase = hasOwnPrice ? overrideCents : grossUnitCents;
+  const npComm = exempt ? 0 : Math.round((commBase * feePctEff) / 100);
+  const canPreview = hasOwnPrice || grossUnitCents > 0;
 
   return (
     <div className="space-y-3">
       <p className="text-[11px] text-muted-foreground">
         El boleto sigue siendo digital; el dinero se entrega en efectivo en la
-        puerta. Aquí defines el precio en efectivo y cómo se aplica la comisión
-        de NightPass (el cobro real de la comisión usa el monedero prepagado).
+        puerta. Define el precio en efectivo y cómo se aplica la comisión de
+        NightPass (el cobro real de la comisión usa el monedero prepagado).
       </p>
+
+      {/* Precio en efectivo propio */}
+      <Field label="Precio en efectivo (MXN)" htmlFor="cash-price" error={undefined}>
+        <Input
+          id="cash-price"
+          type="number"
+          step="0.01"
+          min="0"
+          placeholder={
+            grossUnitCents > 0
+              ? `Auto: ${formatCents(Math.max(0, grossUnitCents - stripeFeeForGross(grossUnitCents)))}`
+              : 'Ej. 250'
+          }
+          value={cash.price}
+          onChange={(e) => onChange({ ...cash, price: e.target.value })}
+        />
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Lo que el cliente entrega en efectivo. Vacío = derivar del precio en
+          línea menos Stripe.
+        </p>
+      </Field>
 
       {/* Toggle: cobrar comisión en efectivo */}
       <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2.5">
@@ -317,14 +358,16 @@ function CashConfigEditor({
       </div>
 
       {/* Preview del precio en efectivo */}
-      {grossUnitCents > 0 ? (
+      {canPreview ? (
         <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs">
           <p className="mb-2 font-semibold uppercase tracking-wider text-primary/70">
             Precio en efectivo · qué entrega el cliente
           </p>
           <dl className="space-y-1">
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted-foreground">Base (precio − Stripe)</dt>
+              <dt className="text-muted-foreground">
+                {hasOwnPrice ? 'Precio en efectivo' : 'Base (precio − Stripe)'}
+              </dt>
               <dd className="tabular-nums">{formatCents(base)}</dd>
             </div>
             {cash.mode === 'ADD' && !exempt ? (
@@ -343,9 +386,17 @@ function CashConfigEditor({
                 {formatCents(cashPrice)}
               </dd>
             </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-muted-foreground">
+                Recibes{!exempt ? ` (− comisión ${feePctEff}%)` : ''}
+              </dt>
+              <dd className="tabular-nums">
+                {formatCents(cash.mode === 'ADD' ? base : Math.max(0, base - npComm))}
+              </dd>
+            </div>
             <p className="pt-1 text-[10px] text-muted-foreground/80">
               {exempt
-                ? 'Exento: sin comisión NightPass.'
+                ? 'Exento: sin comisión NightPass; recibes el precio completo.'
                 : cash.mode === 'ADD'
                   ? 'La comisión se suma al precio; la organización la recupera del cliente.'
                   : 'La comisión la absorbe la organización vía monedero; el cliente paga la base.'}
@@ -354,7 +405,8 @@ function CashConfigEditor({
         </div>
       ) : (
         <p className="rounded-lg border border-dashed border-white/15 bg-white/[0.015] p-2.5 text-center text-[11px] text-muted-foreground">
-          Define el precio en la pestaña “En línea” para ver el precio en efectivo.
+          Pon un precio en efectivo arriba, o define el precio en la pestaña “En
+          línea” para derivarlo.
         </p>
       )}
     </div>
@@ -520,7 +572,9 @@ function tierToCashDraft(tier: TierRowProps['tier'], ownerFeePct: number): CashD
         ? String(ownerFeePct)
         : '';
   const mode: CashFeeMode = tier.cashFeeMode === 'ADD' ? 'ADD' : 'SUBTRACT';
-  return { charge, pct, mode };
+  const price =
+    tier.cashPriceCents != null ? (tier.cashPriceCents / 100).toFixed(2) : '';
+  return { charge, pct, mode, price };
 }
 
 // ── Fila de tier ─────────────────────────────────────────────────────────────
@@ -540,6 +594,7 @@ interface TierRowProps {
     cashFeeMode?: CashFeeMode | null;
     cashFeePctOverride?: number | null;
     cashExemptOverride?: boolean | null;
+    cashPriceCents?: number | null;
   };
 }
 

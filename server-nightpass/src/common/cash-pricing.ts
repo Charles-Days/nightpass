@@ -45,15 +45,26 @@ export function npFeeForGross(grossUnitCents: number, feePct: number): number {
  * @param feePct comisión NP del organizador (o global)
  * @param exempt si el organizador está exento de comisión en efectivo
  * @param mode  'SUBTRACT' (default) = cliente paga base; 'ADD' = cliente paga base + comisión NP
+ * @param cashBaseOverrideCents precio en efectivo propio del tier. Si se da (>0),
+ *   ese ES la base (y la base de comisión) en vez de derivar `bruto − Stripe`.
+ *   Permite que el organizador fije el monto exacto a recibir en efectivo.
  */
 export function computeCashUnitPrice(
   grossUnitCents: number,
   feePct: number,
   exempt: boolean,
   mode: CashFeeMode = 'SUBTRACT',
+  cashBaseOverrideCents?: number | null,
 ): number {
-  const base = grossUnitCents - stripeFeeForGross(grossUnitCents);
-  const npComm = exempt ? 0 : npFeeForGross(grossUnitCents, feePct);
+  const hasOverride =
+    cashBaseOverrideCents != null && cashBaseOverrideCents > 0;
+  const base = hasOverride
+    ? cashBaseOverrideCents
+    : grossUnitCents - stripeFeeForGross(grossUnitCents);
+  // La comisión se calcula sobre la base efectiva: el precio propio si existe,
+  // o el bruto online si se deriva (mantiene "mismo % que online" en ese caso).
+  const commBase = hasOverride ? cashBaseOverrideCents : grossUnitCents;
+  const npComm = exempt ? 0 : npFeeForGross(commBase, feePct);
   const price = mode === 'ADD' ? base + npComm : base;
   return Math.max(0, price);
 }

@@ -487,6 +487,7 @@ export class EventsService {
         cashFeeMode: dto.cashFeeMode ?? null,
         cashFeePctOverride: dto.cashFeePctOverride ?? null,
         cashExemptOverride: dto.cashExemptOverride ?? null,
+        cashPriceCents: dto.cashPriceCents ?? null,
         prices: dto.prices?.length
           ? {
               create: dto.prices.map((p, i) => ({
@@ -547,6 +548,7 @@ export class EventsService {
       data.cashFeePctOverride = dto.cashFeePctOverride;
     if (dto.cashExemptOverride !== undefined)
       data.cashExemptOverride = dto.cashExemptOverride;
+    if (dto.cashPriceCents !== undefined) data.cashPriceCents = dto.cashPriceCents;
 
     // Reemplazo total del calendario de subidas si viene `prices`.
     if (dto.prices !== undefined) {

@@ -285,6 +285,8 @@ export interface EventTier {
   cashFeePctOverride?: number | null;
   /** null => usar cashCommissionExempt del owner. */
   cashExemptOverride?: boolean | null;
+  /** Precio en efectivo propio (centavos); null => derivar del online. */
+  cashPriceCents?: number | null;
   /** Próxima subida programada (solo en catálogo público). */
   nextPrice?: { priceCents: number; startsAt: string } | null;
   createdAt: string;

@@ -18,6 +18,7 @@ export interface UpdateTierInput {
   cashFeeMode?: CashFeeMode | null;
   cashFeePctOverride?: number | null;
   cashExemptOverride?: boolean | null;
+  cashPriceCents?: number | null;
 }
 
 export function useUpdateTier(eventId: string) {

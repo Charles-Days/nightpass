@@ -125,10 +125,14 @@ export class PhysicalPaymentsService {
       feePctEff,
       exemptEff,
       modeEff,
+      tier.cashPriceCents,
     );
 
     const amountCents = cashUnitCents * quantity;
-    const grossCents = singleGrossCents * quantity;
+    // Base de la comisión NP al confirmar: el precio en efectivo propio si el
+    // tier lo fija, o el bruto online si se deriva.
+    const commBaseUnit = tier.cashPriceCents ?? singleGrossCents;
+    const grossCents = commBaseUnit * quantity;
 
     // Teléfono + ubicación del cliente. Se piden solo la primera vez (si no los
     // tenemos guardados) y se persisten para reutilizarlos. La ubicación

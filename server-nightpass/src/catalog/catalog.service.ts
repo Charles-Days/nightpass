@@ -513,6 +513,7 @@ export class CatalogService {
         cashFeeMode: true,
         cashFeePctOverride: true,
         cashExemptOverride: true,
+        cashPriceCents: true,
         prices: {
           orderBy: { daysBeforeEvent: 'desc' },
           select: { priceCents: true, daysBeforeEvent: true },
@@ -598,7 +599,13 @@ export class CatalogService {
       tier.cashExemptOverride ?? owner?.cashCommissionExempt ?? true;
     const cashMode = tier.cashFeeMode ?? 'SUBTRACT';
     const cashPriceCents = tier.event.allowCashPayment
-      ? computeCashUnitPrice(resolved.currentCents, cashFeePct, cashExempt, cashMode)
+      ? computeCashUnitPrice(
+          resolved.currentCents,
+          cashFeePct,
+          cashExempt,
+          cashMode,
+          tier.cashPriceCents,
+        )
       : null;
 
     const result = {

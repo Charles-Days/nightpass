@@ -82,10 +82,15 @@ export function computeCashUnitPrice(
   feePct: number,
   exempt: boolean,
   mode: CashFeeMode = 'SUBTRACT',
+  cashBaseOverrideCents?: number | null,
 ): number {
-  if (!Number.isFinite(grossUnitCents) || grossUnitCents <= 0) return 0;
-  const base = Math.max(0, grossUnitCents - stripeFeeForGross(grossUnitCents));
-  const npComm = exempt ? 0 : Math.round((grossUnitCents * Math.max(0, feePct)) / 100);
+  const hasOverride = cashBaseOverrideCents != null && cashBaseOverrideCents > 0;
+  if (!hasOverride && (!Number.isFinite(grossUnitCents) || grossUnitCents <= 0)) return 0;
+  const base = hasOverride
+    ? cashBaseOverrideCents
+    : Math.max(0, grossUnitCents - stripeFeeForGross(grossUnitCents));
+  const commBase = hasOverride ? cashBaseOverrideCents : grossUnitCents;
+  const npComm = exempt ? 0 : Math.round((commBase * Math.max(0, feePct)) / 100);
   return mode === 'ADD' ? base + npComm : base;
 }
 
