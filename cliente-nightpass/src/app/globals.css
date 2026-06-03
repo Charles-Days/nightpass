@@ -833,6 +833,73 @@
   animation: np-live-ping 1.8s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
 }
 
+/* ── Login — cursor spotlight ─────────────────────────────────────────────
+   Radial purple glow that tracks the pointer over the form panel.
+   --mx / --my are set in JS (0..1 of the panel box); the layer eases toward
+   them via a CSS transition for a soft trailing feel. */
+.np-spotlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 40%),
+    rgba(168, 85, 247, 0.16),
+    rgba(168, 85, 247, 0.06) 38%,
+    transparent 62%
+  );
+  transition: opacity 600ms ease;
+  will-change: background;
+}
+.np-spotlight[data-active='true'] {
+  opacity: 1;
+}
+
+/* ── Login — animated sheen on the "sin filas" serif ──────────────────────
+   A bright band sweeps across the gradient text, like neon catching light. */
+@keyframes np-text-sheen {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+.np-text-sheen {
+  background: linear-gradient(
+    100deg,
+    #d8b4fe 0%,
+    #f5d0fe 28%,
+    #ffffff 45%,
+    #f5d0fe 62%,
+    #d8b4fe 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: np-text-sheen 5.5s linear infinite;
+  will-change: background-position;
+}
+
+/* ── Login — input focus glow ─────────────────────────────────────────────
+   Soft purple halo + lift when a field is focused. */
+.np-field-glow:focus-visible {
+  box-shadow:
+    0 0 0 3px rgba(168, 85, 247, 0.18),
+    0 8px 28px -10px rgba(168, 85, 247, 0.55);
+  border-color: rgba(168, 85, 247, 0.65);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .np-spotlight {
+    display: none !important;
+  }
+  .np-text-sheen {
+    animation: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .np-rise,
   .np-zoom-in,

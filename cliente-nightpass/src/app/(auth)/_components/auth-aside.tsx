@@ -1,3 +1,4 @@
+import * as React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
 import { paths } from '@/core/config/paths';
@@ -13,6 +14,7 @@ export function AuthAside() {
       }}
     >
       <AsideBokeh />
+      <AsideEmbers />
 
       <div className="np-rise relative z-10 flex items-center justify-between">
         <Link href={paths.home} className="font-display text-xl font-bold tracking-tight">
@@ -39,7 +41,7 @@ export function AuthAside() {
           style={{ animationDelay: '240ms' }}
         >
           La noche,{' '}
-          <span className="font-serif text-purple-200 italic">sin filas</span> ni fricción.
+          <span className="np-text-sheen font-serif italic">sin filas</span> ni fricción.
         </h2>
         <p
           className="np-rise mt-5 max-w-md text-base leading-relaxed text-muted-foreground"
@@ -50,7 +52,7 @@ export function AuthAside() {
 
         <ul className="mt-10 space-y-3 text-sm">
           <FeatureRow icon={Sparkles} title="Aprueba locales en un click" delay={520} />
-          <FeatureRow icon={MapPin} title="Aforo y ventas en vivo" delay={620} />
+          <FeatureRow icon={MapPin} title="Aforo y ventas en vivo" delay={620} live />
           <FeatureRow icon={ShieldCheck} title="QR cifrado punto a punto" delay={720} />
         </ul>
       </div>
@@ -69,10 +71,12 @@ function FeatureRow({
   icon: Icon,
   title,
   delay = 0,
+  live = false,
 }: {
   icon: LucideIcon;
   title: string;
   delay?: number;
+  live?: boolean;
 }) {
   return (
     <li className="np-rise flex items-center gap-3" style={{ animationDelay: `${delay}ms` }}>
@@ -80,7 +84,47 @@ function FeatureRow({
         <Icon className="size-4" />
       </span>
       <span>{title}</span>
+      {live ? (
+        <span className="relative ml-1 flex size-1.5 text-emerald-400">
+          <span className="np-live-ping absolute inset-0 rounded-full" />
+          <span className="relative size-1.5 rounded-full bg-emerald-400" />
+        </span>
+      ) : null}
     </li>
+  );
+}
+
+/* Chispas que suben lento detrás del contenido — posiciones fijas (SSR-safe). */
+const EMBERS = [
+  { left: '12%', size: 5, dur: '7s', delay: '0s', drift: '14px', peak: 0.55 },
+  { left: '28%', size: 3, dur: '9s', delay: '1.6s', drift: '-10px', peak: 0.45 },
+  { left: '46%', size: 6, dur: '6.4s', delay: '3.1s', drift: '20px', peak: 0.6 },
+  { left: '63%', size: 4, dur: '8.2s', delay: '0.8s', drift: '-16px', peak: 0.5 },
+  { left: '78%', size: 3, dur: '7.6s', delay: '2.4s', drift: '12px', peak: 0.4 },
+  { left: '90%', size: 5, dur: '6.8s', delay: '4s', drift: '-8px', peak: 0.5 },
+];
+
+function AsideEmbers() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      {EMBERS.map((e, i) => (
+        <span
+          key={i}
+          className="np-ember"
+          style={
+            {
+              left: e.left,
+              width: e.size,
+              height: e.size,
+              '--np-ember-dur': e.dur,
+              '--np-ember-delay': e.delay,
+              '--np-ember-drift': e.drift,
+              '--np-ember-peak': e.peak,
+            } as React.CSSProperties
+          }
+        />
+      ))}
+    </div>
   );
 }
 
@@ -88,7 +132,7 @@ function AsideBokeh() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
       <div
-        className="absolute rounded-full"
+        className="np-bokeh-a absolute rounded-full"
         style={{
           top: '-10%',
           left: '-15%',
@@ -100,7 +144,7 @@ function AsideBokeh() {
         }}
       />
       <div
-        className="absolute rounded-full"
+        className="np-bokeh-b absolute rounded-full"
         style={{
           bottom: '-15%',
           right: '-20%',
@@ -112,7 +156,7 @@ function AsideBokeh() {
         }}
       />
       <div
-        className="absolute rounded-full"
+        className="np-bokeh-c absolute rounded-full"
         style={{
           top: '40%',
           left: '50%',

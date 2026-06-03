@@ -36,7 +36,7 @@ export function LoginForm() {
             type="email"
             autoComplete="email"
             placeholder="tu@email.com"
-            className="h-11 pl-9"
+            className="np-field-glow h-11 pl-9 transition-shadow"
             {...register('email')}
           />
         </div>
@@ -50,7 +50,7 @@ export function LoginForm() {
             type="password"
             autoComplete="current-password"
             placeholder="••••••••"
-            className="h-11 pl-9"
+            className="np-field-glow h-11 pl-9 transition-shadow"
             {...register('password')}
           />
         </div>
@@ -67,7 +67,7 @@ export function LoginForm() {
       <Button
         type="submit"
         size="lg"
-        className="w-full rounded-full shadow-[0_10px_30px_-8px_rgba(168,85,247,0.65)]"
+        className="np-shimmer w-full rounded-full shadow-[0_10px_30px_-8px_rgba(168,85,247,0.65)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-10px_rgba(168,85,247,0.85)] active:translate-y-0 active:scale-[0.99]"
         disabled={isPending}
       >
         {isPending ? (

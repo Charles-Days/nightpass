@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { LavaBackground } from './_components/lava-background';
 import { AuthAside } from './_components/auth-aside';
+import { CursorSpotlight } from './_components/cursor-spotlight';
 import { clientEnv } from '@/core/config/env';
 import { paths } from '@/core/config/paths';
 
@@ -8,10 +9,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="relative grid min-h-screen lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       <AuthAside />
-      <main className="relative flex min-h-screen items-center justify-center px-6 py-10 sm:px-10">
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-6 py-10 sm:px-10">
         <div className="lg:hidden">
           <LavaBackground />
         </div>
+        <CursorSpotlight />
         <div className="relative w-full max-w-sm">
           <Link
             href={paths.home}
