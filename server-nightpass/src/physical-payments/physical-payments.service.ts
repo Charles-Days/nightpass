@@ -13,8 +13,10 @@ import {
   PassClaimStatus,
   PaymentMethod,
   PhysicalPaymentRequestStatus,
+  Prisma,
   Role,
 } from '@prisma/client';
+import { runSerializable } from '../common/serializable-tx';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailerService } from '../mailer/mailer.service';
 import { StripeService } from '../stripe/stripe.service';
@@ -165,7 +167,7 @@ export class PhysicalPaymentsService {
 
     // Aforo: rechaza de entrada si ya no hay cupo (chequeo blando; el firme va al
     // confirmar). Cuenta pases emitidos + vales pendientes, igual que el resto.
-    await this.assertCapacity(event.id, tier.id, tier.capacity, event.capacity, quantity);
+    await this.assertCapacity(this.prisma, event.id, tier.id, tier.capacity, event.capacity, quantity);
 
     // Solo UNA solicitud PENDIENTE (sin confirmar) a la vez por evento. Una vez
     // que el RP confirma el cobro (queda pagada), el cliente ya puede pedir otra
@@ -384,15 +386,6 @@ export class PhysicalPaymentsService {
       throw new ConflictException('El evento ya comenzó — solicitud vencida');
     }
 
-    // Aforo firme antes de emitir.
-    await this.assertCapacity(
-      request.eventId,
-      request.tierId,
-      request.tier.capacity,
-      request.event.capacity,
-      request.quantity,
-    );
-
     const passSecret = requirePassSecret(this.config);
 
     // Comisión de NightPass sobre la venta en efectivo. El dinero del efectivo no
@@ -426,7 +419,36 @@ export class PhysicalPaymentsService {
       ownerRef = venue ? { venueId: venue.id } : { promoterId: promoter!.id };
     }
 
-    const result = await this.prisma.$transaction(async (tx) => {
+    // Toda la confirmación corre en una transacción Serializable con reintento:
+    //  1) Marca la solicitud PENDING→CONFIRMED de forma condicional (updateMany
+    //     con guard de status) — si otra confirmación concurrente ya la tomó,
+    //     count=0 → abortamos sin emitir (evita doble emisión de la MISMA
+    //     solicitud).
+    //  2) El aforo se verifica DENTRO de la tx, así dos solicitudes DISTINTAS
+    //     sobre el mismo cupo entran en conflicto de serialización y una se
+    //     reintenta sobre el estado ya emitido (evita sobreventa).
+    const result = await runSerializable(this.prisma, async (tx) => {
+      const claimed = await tx.physicalPaymentRequest.updateMany({
+        where: { id: request.id, status: PhysicalPaymentRequestStatus.PENDING },
+        data: {
+          status: PhysicalPaymentRequestStatus.CONFIRMED,
+          confirmedByRpId: rp.id,
+          confirmedAt: new Date(),
+        },
+      });
+      if (claimed.count === 0) {
+        throw new ConflictException('La solicitud ya no está pendiente');
+      }
+
+      await this.assertCapacity(
+        tx,
+        request.eventId,
+        request.tierId,
+        request.tier.capacity,
+        request.event.capacity,
+        request.quantity,
+      );
+
       const order = await tx.order.create({
         data: {
           userId: request.userId,
@@ -456,12 +478,7 @@ export class PhysicalPaymentsService {
 
       const updated = await tx.physicalPaymentRequest.update({
         where: { id: request.id },
-        data: {
-          status: PhysicalPaymentRequestStatus.CONFIRMED,
-          confirmedByRpId: rp.id,
-          confirmedAt: new Date(),
-          orderId: order.id,
-        },
+        data: { orderId: order.id },
         include: {
           user: { select: { name: true, email: true } },
           event: { select: { id: true, title: true, startsAt: true } },
@@ -559,7 +576,15 @@ export class PhysicalPaymentsService {
    * tier o del evento. Cuenta pases emitidos + vales (PassClaim) pendientes +
    * solicitudes de efectivo PENDING ya existentes — misma base que el resto.
    */
+  /**
+   * Verifica aforo de tier y evento. Acepta el cliente Prisma (`db`) para poder
+   * correr DENTRO de una transacción Serializable: cuando se ejecuta en la misma
+   * tx que la emisión de pases, los conteos leídos entran en el conjunto de
+   * lectura que Postgres usa para detectar conflictos de serialización → cierra
+   * la carrera de sobreventa entre confirmaciones concurrentes.
+   */
   private async assertCapacity(
+    db: Prisma.TransactionClient,
     eventId: string,
     tierId: string,
     tierCapacity: number | null,
@@ -568,13 +593,13 @@ export class PhysicalPaymentsService {
   ): Promise<void> {
     if (tierCapacity != null) {
       const [soldTier, pendingClaimsTier, pendingReqTier] = await Promise.all([
-        this.prisma.pass.count({
+        db.pass.count({
           where: { eventId, order: { tierId } },
         }),
-        this.prisma.passClaim.count({
+        db.passClaim.count({
           where: { tierId, status: PassClaimStatus.PENDING },
         }),
-        this.prisma.physicalPaymentRequest.aggregate({
+        db.physicalPaymentRequest.aggregate({
           _sum: { quantity: true },
           where: { tierId, status: PhysicalPaymentRequestStatus.PENDING },
         }),
@@ -588,11 +613,11 @@ export class PhysicalPaymentsService {
 
     if (eventCapacity != null) {
       const [soldEvent, pendingClaimsEvent, pendingReqEvent] = await Promise.all([
-        this.prisma.pass.count({ where: { eventId } }),
-        this.prisma.passClaim.count({
+        db.pass.count({ where: { eventId } }),
+        db.passClaim.count({
           where: { eventId, status: PassClaimStatus.PENDING },
         }),
-        this.prisma.physicalPaymentRequest.aggregate({
+        db.physicalPaymentRequest.aggregate({
           _sum: { quantity: true },
           where: { eventId, status: PhysicalPaymentRequestStatus.PENDING },
         }),
