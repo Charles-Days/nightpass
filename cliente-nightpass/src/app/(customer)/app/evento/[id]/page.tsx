@@ -193,6 +193,25 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
                 ? `${event.externalVenueName}${event.externalVenueCity ? ` · ${event.externalVenueCity}` : ''}`
                 : event.promoter?.name ?? ''}
           </p>
+          {event.whatsappGroups && event.whatsappGroups.length > 0 && (
+            <div className="np-rise mt-3 flex flex-wrap gap-2" style={{ animationDelay: '300ms' }}>
+              {event.whatsappGroups.map((group, i) => (
+                <a
+                  key={`hdr-${group.url}-${i}`}
+                  href={group.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/[0.1] px-3 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-400/20 active:scale-95"
+                >
+                  <WhatsappIcon className="size-3.5 shrink-0" />
+                  {event.whatsappGroups!.length === 1
+                    ? 'Unirse al grupo de WhatsApp'
+                    : group.label?.trim() || `Grupo ${i + 1}`}
+                </a>
+              ))}
+            </div>
+          )}
+
           {event.promoter && event.venue && (
             <Link
               href={`${paths.promotora}/${event.promoter.slug}`}
