@@ -17,7 +17,7 @@ export function RedeemedDonut({ stats }: { stats: PassesStats }) {
   const hasData = stats.passesSold > 0;
 
   return (
-    <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-5">
+    <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-5">
       <div className="mb-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
           Canje

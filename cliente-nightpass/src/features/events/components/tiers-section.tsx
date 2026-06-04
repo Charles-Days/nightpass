@@ -281,7 +281,7 @@ function CashConfigEditor({
       </Field>
 
       {/* Toggle: cobrar comisión en efectivo */}
-      <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2.5">
+      <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-white/14 bg-white/[0.035] px-3 py-2.5">
         <span className="min-w-0">
           <span className="block text-sm font-medium">Cobrar comisión en efectivo</span>
           <span className="block text-[11px] text-muted-foreground">
@@ -332,7 +332,7 @@ function CashConfigEditor({
             className={`flex-1 rounded-md border px-2 py-2 text-[11px] font-semibold transition ${
               cash.mode === 'SUBTRACT'
                 ? 'border-primary/50 bg-primary/15 text-primary'
-                : 'border-white/10 text-muted-foreground hover:bg-white/5'
+                : 'border-white/14 text-muted-foreground hover:bg-white/5'
             }`}
           >
             Descontar
@@ -346,7 +346,7 @@ function CashConfigEditor({
             className={`flex-1 rounded-md border px-2 py-2 text-[11px] font-semibold transition ${
               cash.mode === 'ADD'
                 ? 'border-primary/50 bg-primary/15 text-primary'
-                : 'border-white/10 text-muted-foreground hover:bg-white/5'
+                : 'border-white/14 text-muted-foreground hover:bg-white/5'
             }`}
           >
             Sumar
@@ -359,7 +359,7 @@ function CashConfigEditor({
 
       {/* Preview del precio en efectivo */}
       {canPreview ? (
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs">
+        <div className="rounded-lg border border-white/14 bg-white/[0.05] p-3 text-xs">
           <p className="mb-2 font-semibold uppercase tracking-wider text-primary/70">
             Precio en efectivo · qué entrega el cliente
           </p>
@@ -380,7 +380,7 @@ function CashConfigEditor({
                 </dd>
               </div>
             ) : null}
-            <div className="mt-1 flex items-center justify-between gap-3 border-t border-white/8 pt-1.5">
+            <div className="mt-1 flex items-center justify-between gap-3 border-t border-white/12 pt-1.5">
               <dt className="font-semibold text-foreground">Paga en efectivo</dt>
               <dd className="font-display text-base font-bold tabular-nums text-emerald-300">
                 {formatCents(cashPrice)}
@@ -404,7 +404,7 @@ function CashConfigEditor({
           </dl>
         </div>
       ) : (
-        <p className="rounded-lg border border-dashed border-white/15 bg-white/[0.015] p-2.5 text-center text-[11px] text-muted-foreground">
+        <p className="rounded-lg border border-dashed border-white/18 bg-white/[0.025] p-2.5 text-center text-[11px] text-muted-foreground">
           Pon un precio en efectivo arriba, o define el precio en la pestaña “En
           línea” para derivarlo.
         </p>
@@ -608,7 +608,7 @@ function TierRow({ eventId, eventStartsAt, ownerFeePct, tier }: TierRowProps) {
   );
 
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2 text-sm">
+    <div className="rounded-lg border border-white/14 bg-white/[0.05] px-3 py-2 text-sm">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -658,7 +658,7 @@ function TierRow({ eventId, eventStartsAt, ownerFeePct, tier }: TierRowProps) {
 
       {/* Calendario de subidas */}
       {phases.length > 0 ? (
-        <ul className="mt-2 space-y-0.5 border-t border-white/8 pt-2 text-[11px] text-muted-foreground">
+        <ul className="mt-2 space-y-0.5 border-t border-white/12 pt-2 text-[11px] text-muted-foreground">
           {phases.map((p, i) => {
             const d = phaseDate(eventStartsAt, p.daysBeforeEvent);
             return (
@@ -826,7 +826,7 @@ export function TiersSection({ eventId }: Props) {
   };
 
   return (
-    <div className="space-y-4 border-t border-white/10 pt-5">
+    <div className="space-y-4 border-t border-white/14 pt-5">
       <div>
         <h4 className="font-display text-base font-semibold">Tiers de precio</h4>
         <p className="text-xs text-muted-foreground">
@@ -841,7 +841,7 @@ export function TiersSection({ eventId }: Props) {
           <Loader2 className="size-4 animate-spin" /> Cargando tiers…
         </div>
       ) : tiers.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-white/15 bg-white/[0.015] p-3 text-center text-xs text-muted-foreground">
+        <p className="rounded-lg border border-dashed border-white/18 bg-white/[0.025] p-3 text-center text-xs text-muted-foreground">
           Aún no hay tiers. Agrega al menos uno para vender.
         </p>
       ) : (
@@ -860,7 +860,7 @@ export function TiersSection({ eventId }: Props) {
 
       {/* Crear tier — div, no form (no se puede anidar form en HTML) */}
       <div
-        className="space-y-3 rounded-lg border border-white/10 bg-white/[0.02] p-3"
+        className="space-y-3 rounded-lg border border-white/14 bg-white/[0.035] p-3"
         onKeyDown={(e) => {
           // Enter en cualquier input dispara el submit, sin disparar el form padre
           if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') {
@@ -914,7 +914,7 @@ export function TiersSection({ eventId }: Props) {
                 className={`flex-1 rounded-md border px-2 py-1 text-[10px] font-semibold transition ${
                   priceMode === 'gross'
                     ? 'border-primary/50 bg-primary/15 text-primary'
-                    : 'border-white/10 text-muted-foreground hover:bg-white/5'
+                    : 'border-white/14 text-muted-foreground hover:bg-white/5'
                 }`}
               >
                 Precio al cliente
@@ -925,7 +925,7 @@ export function TiersSection({ eventId }: Props) {
                 className={`flex-1 rounded-md border px-2 py-1 text-[10px] font-semibold transition ${
                   priceMode === 'net'
                     ? 'border-primary/50 bg-primary/15 text-primary'
-                    : 'border-white/10 text-muted-foreground hover:bg-white/5'
+                    : 'border-white/14 text-muted-foreground hover:bg-white/5'
                 }`}
               >
                 Lo que quiero recibir
@@ -989,7 +989,7 @@ export function TiersSection({ eventId }: Props) {
         </Field>
 
         {/* Subidas de precio programadas (opcional) */}
-        <div className="rounded-lg border border-white/10 bg-white/[0.015] p-3">
+        <div className="rounded-lg border border-white/14 bg-white/[0.025] p-3">
           <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary/70">
             Subidas de precio (opcional)
           </p>
@@ -1006,7 +1006,7 @@ export function TiersSection({ eventId }: Props) {
         </div>
 
         {previewCents > 0 ? (
-          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs">
+          <div className="rounded-lg border border-white/14 bg-white/[0.05] p-3 text-xs">
             <p className="mb-2 font-semibold uppercase tracking-wider text-primary/70">
               Cálculo · qué te queda (precio base)
             </p>
@@ -1033,7 +1033,7 @@ export function TiersSection({ eventId }: Props) {
                   </dd>
                 </div>
               ) : null}
-              <div className="mt-1 flex items-center justify-between gap-3 border-t border-white/8 pt-1.5">
+              <div className="mt-1 flex items-center justify-between gap-3 border-t border-white/12 pt-1.5">
                 <dt className="font-semibold text-foreground">Recibes</dt>
                 <dd className="font-display text-base font-bold tabular-nums text-emerald-300">
                   {formatCents(breakdown.netCents)}

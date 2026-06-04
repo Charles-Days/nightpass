@@ -87,7 +87,7 @@ export default async function MiLocalPage() {
         />
       </section>
 
-      <Card className="rounded-[22px] border border-white/10 bg-white/[0.025]">
+      <Card className="rounded-[22px] border border-white/14 bg-white/[0.05]">
         <CardHeader>
           <CardTitle className="text-base">Detalles del local</CardTitle>
         </CardHeader>
@@ -114,7 +114,7 @@ export default async function MiLocalPage() {
               </div>
             )}
           </div>
-          <div className="mt-4 flex gap-3 border-t border-white/5 pt-4">
+          <div className="mt-4 flex gap-3 border-t border-white/10 pt-4">
             <Link
               href={paths.miLocalEditar}
               className="rounded-full bg-primary/15 px-4 py-1.5 text-sm font-medium text-primary transition-colors duration-200 hover:bg-primary/25"
@@ -123,13 +123,13 @@ export default async function MiLocalPage() {
             </Link>
             <Link
               href={paths.miLocalEventos}
-              className="rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:bg-white/[0.06] hover:text-accent-foreground"
+              className="rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:bg-white/[0.09] hover:text-accent-foreground"
             >
               Ver eventos
             </Link>
             <Link
               href={paths.miLocalStaff}
-              className="rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:bg-white/[0.06] hover:text-accent-foreground"
+              className="rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:bg-white/[0.09] hover:text-accent-foreground"
             >
               Gestionar staff
             </Link>

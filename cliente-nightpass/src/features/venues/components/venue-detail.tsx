@@ -316,7 +316,7 @@ export function VenueDetail({ venue, hideHeader = false }: { venue: Venue; hideH
             <p className="mb-4 text-sm font-medium">Invitar nuevo miembro</p>
             <InviteStaffForm venueId={venue.id} />
           </div>
-          <div className="border-t border-white/5 pt-4">
+          <div className="border-t border-white/10 pt-4">
             <p className="mb-3 text-sm font-medium">Miembros actuales</p>
             <StaffTable venueId={venue.id} />
           </div>

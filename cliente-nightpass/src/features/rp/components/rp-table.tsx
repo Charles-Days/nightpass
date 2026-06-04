@@ -44,30 +44,30 @@ export function RpTable({ rps, isLoading, onViewDetail, basePath = '/api/rp' }: 
 
   if (rps.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center text-sm text-muted-foreground bg-white/[0.01]">
+      <div className="rounded-2xl border border-dashed border-white/14 p-12 text-center text-sm text-muted-foreground bg-white/[0.02]">
         No hay promotores de Relaciones Públicas registrados.
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#0c0c12] text-xs">
-      <div className="grid grid-cols-5 border-b border-white/8 bg-white/[0.02] p-4 font-semibold text-white/70">
+    <div className="overflow-hidden rounded-2xl border border-white/12 bg-[#0c0c12] text-xs">
+      <div className="grid grid-cols-5 border-b border-white/12 bg-white/[0.035] p-4 font-semibold text-white/70">
         <span>Código</span>
         <span>Nombre / Email</span>
         <span>Organizador</span>
         <span className="text-center">Estado</span>
         <span className="text-right">Acciones</span>
       </div>
-      <div className="divide-y divide-white/5">
+      <div className="divide-y divide-white/10">
         {rps.map((rp) => (
           <div
             key={rp.id}
             onClick={() => onViewDetail(rp.id)}
-            className="grid grid-cols-5 p-4 items-center hover:bg-white/[0.01] transition-colors cursor-pointer"
+            className="grid grid-cols-5 p-4 items-center hover:bg-white/[0.02] transition-colors cursor-pointer"
           >
             <div>
-              <span className="font-mono text-purple-300 font-bold bg-white/5 border border-white/10 px-2 py-0.5 rounded">
+              <span className="font-mono text-purple-300 font-bold bg-white/5 border border-white/14 px-2 py-0.5 rounded">
                 {rp.rpCode}
               </span>
             </div>
@@ -83,7 +83,7 @@ export function RpTable({ rps, isLoading, onViewDetail, basePath = '/api/rp' }: 
 
             <div className="text-muted-foreground">
               {rp.promoter?.name ? (
-                <Badge variant="outline" className="text-white border-white/20">
+                <Badge variant="outline" className="text-white border-white/22">
                   {rp.promoter.name}
                 </Badge>
               ) : (

@@ -315,7 +315,7 @@ export function StoryRecorder({ onRecorded, onCancel, maxDurationMs, fill = fals
   const ringOffset = ringCircumference * (1 - progress);
 
   return (
-    <div className={fill ? 'relative flex size-full flex-col overflow-hidden bg-black' : 'relative overflow-hidden rounded-[18px] border border-white/10 bg-black'}>
+    <div className={fill ? 'relative flex size-full flex-col overflow-hidden bg-black' : 'relative overflow-hidden rounded-[18px] border border-white/14 bg-black'}>
       <div className={fill ? 'relative min-h-0 flex-1' : 'relative aspect-[9/16] max-h-[560px] w-full'}>
         {/* Live preview — visible in initializing/idle/recording. Hidden but kept mounted while preview. */}
         <video
@@ -464,7 +464,7 @@ export function StoryRecorder({ onRecorded, onCancel, maxDurationMs, fill = fals
       </div>
 
       {state === 'preview' ? (
-        <div className="flex flex-col-reverse gap-2 border-t border-white/10 bg-black/70 px-4 py-3 sm:flex-row sm:justify-between">
+        <div className="flex flex-col-reverse gap-2 border-t border-white/14 bg-black/70 px-4 py-3 sm:flex-row sm:justify-between">
           <Button
             type="button"
             variant="ghost"

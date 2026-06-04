@@ -18,7 +18,7 @@ const STATUS: Record<
 > = {
   PENDING: { label: 'Pendiente', cls: 'bg-amber-500/15 text-amber-300' },
   CLAIMED: { label: 'Reclamado', cls: 'bg-emerald-500/15 text-emerald-300' },
-  EXPIRED: { label: 'Expirado', cls: 'bg-white/[0.06] text-muted-foreground' },
+  EXPIRED: { label: 'Expirado', cls: 'bg-white/[0.09] text-muted-foreground' },
   CANCELLED: { label: 'Cancelado', cls: 'bg-rose-500/15 text-rose-300' },
 };
 
@@ -54,7 +54,7 @@ function IssuedRow({ pass }: { pass: IssuedPassDetail }) {
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/14 bg-white/[0.05] px-4 py-3">
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-white">
           {pass.event.title}
@@ -124,7 +124,7 @@ export function IssuedPassesSection() {
           <Loader2 className="size-5 animate-spin text-primary" />
         </div>
       ) : passes.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-white/10 bg-white/[0.01] px-4 py-8 text-center text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-white/14 bg-white/[0.02] px-4 py-8 text-center text-sm text-muted-foreground">
           Aún no has emitido vales. Usa “Emitir pase” para generar uno.
         </p>
       ) : (

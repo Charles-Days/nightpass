@@ -82,22 +82,22 @@
   /* Dark mode — el default; replica fondo NightPass #0A0A0F */
   --background: oklch(0.078 0.005 280);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.13 0.01 280);
+  --card: oklch(0.16 0.012 280);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.13 0.01 280);
+  --popover: oklch(0.16 0.012 280);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.62 0.245 296.5); /* #A855F7 */
+  --primary: oklch(0.67 0.25 296.5); /* #A855F7 — un punto más brillante para saltar sobre el negro */
   --primary-foreground: oklch(0.13 0.01 280);
-  --secondary: oklch(0.22 0.015 280);
+  --secondary: oklch(0.24 0.015 280);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.22 0.015 280);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.28 0.06 296.5);
+  --muted: oklch(0.24 0.015 280);
+  --muted-foreground: oklch(0.78 0.01 280); /* texto secundario legible (antes 0.708) */
+  --accent: oklch(0.3 0.07 296.5);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
+  --border: oklch(1 0 0 / 16%);
+  --input: oklch(1 0 0 / 18%);
   --ring: oklch(0.62 0.245 296.5);
   --chart-1: oklch(0.62 0.245 296.5);
   --chart-2: oklch(0.5 0.22 296.5);

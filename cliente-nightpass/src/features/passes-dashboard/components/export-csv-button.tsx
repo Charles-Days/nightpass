@@ -23,7 +23,7 @@ export function ExportCsvButton({ venueId }: { venueId: string }) {
       variant="outline"
       size="sm"
       onClick={handleClick}
-      className="border-white/15 bg-white/[0.04] text-white/85 hover:bg-white/[0.07] hover:text-white"
+      className="border-white/18 bg-white/[0.07] text-white/85 hover:bg-white/[0.10] hover:text-white"
     >
       <Download className="size-4" />
       Exportar CSV

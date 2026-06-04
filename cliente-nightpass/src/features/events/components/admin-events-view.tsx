@@ -104,7 +104,7 @@ export function AdminEventsView() {
             className={
               filter === f.key
                 ? 'rounded-full bg-primary/15 px-4 py-1.5 text-sm font-semibold text-primary'
-                : 'rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.06]'
+                : 'rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.09]'
             }
           >
             {f.label}
@@ -112,9 +112,9 @@ export function AdminEventsView() {
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]">
+      <div className="overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05]">
         <table className="w-full text-sm">
-          <thead className="border-b border-white/8 bg-white/[0.02] text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <thead className="border-b border-white/12 bg-white/[0.035] text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-4 py-3 font-semibold">Evento</th>
               <th className="hidden px-4 py-3 font-semibold sm:table-cell">Organizador / Local</th>
@@ -138,7 +138,7 @@ export function AdminEventsView() {
               </tr>
             ) : (
               events.map((event) => (
-                <tr key={event.id} className="border-b border-white/5 hover:bg-white/[0.05]">
+                <tr key={event.id} className="border-b border-white/10 hover:bg-white/[0.08]">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5 font-medium">
                       {event.isFeatured ? (
@@ -221,7 +221,7 @@ export function AdminEventsView() {
       {/* Editar (drawer) */}
       <Sheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <SheetContent className="flex w-full flex-col overflow-hidden p-0 sm:max-w-2xl">
-          <SheetHeader className="shrink-0 border-b border-white/8 px-6 pb-4 pt-5">
+          <SheetHeader className="shrink-0 border-b border-white/12 px-6 pb-4 pt-5">
             <SheetTitle className="flex items-center gap-2">
               <Calendar className="size-4 text-primary" />
               {editing?.title}

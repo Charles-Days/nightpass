@@ -40,7 +40,7 @@ export function CreatePromoterDialog() {
         Nuevo organizador
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="border-white/10 bg-[#0f0d18]/95 backdrop-blur-xl sm:max-w-lg">
+        <DialogContent className="border-white/14 bg-[#0f0d18]/95 backdrop-blur-xl sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-display text-xl font-bold tracking-tight">
               Nuevo organizador
@@ -139,7 +139,7 @@ export function EditPromoterDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-white/10 bg-[#0f0d18]/95 backdrop-blur-xl sm:max-w-lg">
+      <DialogContent className="border-white/14 bg-[#0f0d18]/95 backdrop-blur-xl sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-display text-xl font-bold tracking-tight">
             Editar organizador
@@ -238,7 +238,7 @@ function CommissionSection({ promoter }: { promoter: Promoter }) {
   const invalid = value !== null && (isNaN(value) || value < 0 || value > 100);
 
   return (
-    <div className="mt-2 space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">
+    <div className="mt-2 space-y-3 rounded-xl border border-white/14 bg-white/[0.035] p-4">
       <div>
         <p className="text-sm font-semibold">Comisión NightPass</p>
         <p className="mt-0.5 text-xs text-white/55">
@@ -293,7 +293,7 @@ function CashCommissionSection({ promoter }: { promoter: Promoter }) {
   const exempt = promoter.cashCommissionExempt !== false;
 
   return (
-    <div className="mt-2 space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">
+    <div className="mt-2 space-y-3 rounded-xl border border-white/14 bg-white/[0.035] p-4">
       <div>
         <p className="text-sm font-semibold">Comisión en ventas en efectivo</p>
         <p className="mt-0.5 text-xs text-white/55">

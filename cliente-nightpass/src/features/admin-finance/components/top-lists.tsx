@@ -38,15 +38,15 @@ function Leaderboard<T>({
   keyOf,
 }: LeaderboardProps<T>) {
   return (
-    <div className="rounded-[24px] border border-white/10 bg-white/[0.025] p-5">
-      <div className="flex items-center gap-2.5 border-b border-white/5 pb-3">
+    <div className="rounded-[24px] border border-white/14 bg-white/[0.05] p-5">
+      <div className="flex items-center gap-2.5 border-b border-white/10 pb-3">
         <span className="text-purple-400">{icon}</span>
         <h3 className="font-display text-sm font-bold tracking-tight text-white">{title}</h3>
       </div>
       {rows.length === 0 ? (
         <p className="py-8 text-center text-xs text-muted-foreground">{empty}</p>
       ) : (
-        <ul className="mt-2 divide-y divide-white/5">
+        <ul className="mt-2 divide-y divide-white/10">
           {rows.map((row, i) => (
             <li key={keyOf(row)} className="flex items-center gap-3 py-2.5">
               <RankBadge index={i} />

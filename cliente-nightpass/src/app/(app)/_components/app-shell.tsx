@@ -112,7 +112,7 @@ function NavSection({
         const Icon = item.icon;
         const active = item.href === bestMatch;
         const base =
-          'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors';
+          'relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors';
         if (!item.enabled) {
           return (
             <div
@@ -136,10 +136,13 @@ function NavSection({
             className={cn(
               base,
               active
-                ? 'bg-primary/15 text-primary'
-                : 'text-muted-foreground hover:bg-white/[0.06] hover:text-accent-foreground',
+                ? 'bg-primary/20 font-semibold text-primary shadow-[inset_0_0_0_1px_rgba(168,85,247,0.25)]'
+                : 'text-muted-foreground hover:bg-white/[0.09] hover:text-accent-foreground',
             )}
           >
+            {active ? (
+              <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />
+            ) : null}
             <Icon className="size-4" />
             <span>{item.label}</span>
           </Link>
@@ -230,11 +233,11 @@ function SidebarBody({
           onNavigate={onNavigate}
         />
       </nav>
-      <div className="border-t border-white/8 pt-4">
+      <div className="border-t border-white/12 pt-4">
         <Link
           href={paths.miCuenta}
           onClick={onNavigate}
-          className="group mb-2 flex items-start gap-2.5 rounded-md px-2 py-2 transition hover:bg-white/[0.06]"
+          className="group mb-2 flex items-start gap-2.5 rounded-md px-2 py-2 transition hover:bg-white/[0.09]"
         >
           <UserCircle2 className="mt-0.5 size-8 shrink-0 text-primary/70 transition group-hover:text-primary" />
           <div className="min-w-0">
@@ -288,7 +291,7 @@ export function AppShell({ user, contextName = null, children }: { user: User; c
       </div>
 
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-[260px] flex-col border-r border-white/8 bg-white/[0.03] backdrop-blur-xl md:flex">
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-[260px] flex-col border-r border-white/12 bg-white/[0.05] backdrop-blur-xl md:flex">
         <SidebarBody
           user={user}
           contextName={contextName}
@@ -306,7 +309,7 @@ export function AppShell({ user, contextName = null, children }: { user: User; c
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent
           side="left"
-          className="w-[280px] border-r border-white/8 bg-background p-0 sm:max-w-[280px]"
+          className="w-[280px] border-r border-white/12 bg-background p-0 sm:max-w-[280px]"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Menú</SheetTitle>
@@ -330,7 +333,7 @@ export function AppShell({ user, contextName = null, children }: { user: User; c
       <div className="relative z-10 flex min-h-dvh flex-col md:pl-[260px]">
         {/* Mobile topbar */}
         <header
-          className="sticky top-0 z-10 flex items-center gap-3 border-b border-white/8 bg-background/85 px-4 pb-3 backdrop-blur-xl md:hidden"
+          className="sticky top-0 z-10 flex items-center gap-3 border-b border-white/12 bg-background/85 px-4 pb-3 backdrop-blur-xl md:hidden"
           style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
         >
           <Button

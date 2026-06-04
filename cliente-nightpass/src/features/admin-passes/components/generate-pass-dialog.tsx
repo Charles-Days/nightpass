@@ -121,7 +121,7 @@ export function GeneratePassDialog({ eventId: propEventId, eventName: propEventN
         )}
       </DialogTrigger>
 
-      <DialogContent className="max-w-md bg-neutral-900 border-white/10 text-white">
+      <DialogContent className="max-w-md bg-neutral-900 border-white/14 text-white">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold bg-gradient-to-r from-white to-purple-400 bg-clip-text text-transparent">
             {comp ? 'Generar boleto de cortesía' : 'Generar vale en efectivo'} (Admin)
@@ -147,7 +147,7 @@ export function GeneratePassDialog({ eventId: propEventId, eventName: propEventN
               className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition disabled:opacity-50 ${
                 comp
                   ? 'border-emerald-400/40 bg-emerald-400/10'
-                  : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.05]'
+                  : 'border-white/14 bg-white/[0.035] hover:bg-white/[0.08]'
               }`}
             >
               <span className="flex items-center gap-2.5">
@@ -187,7 +187,7 @@ export function GeneratePassDialog({ eventId: propEventId, eventName: propEventN
                     placeholder="Ej. JOSEXO-3605"
                     value={rpCode}
                     onChange={(e) => setRpCode(e.target.value)}
-                    className="bg-neutral-800 border-white/10 text-white pr-10 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 rounded-xl"
+                    className="bg-neutral-800 border-white/14 text-white pr-10 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 rounded-xl"
                     disabled={generate.isPending}
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
@@ -213,7 +213,7 @@ export function GeneratePassDialog({ eventId: propEventId, eventName: propEventN
               </div>
             )}
 
-            <div className="border-t border-white/5 pt-3">
+            <div className="border-t border-white/10 pt-3">
               {tiersQ.isLoading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="size-6 animate-spin text-purple-500" />
@@ -231,7 +231,7 @@ export function GeneratePassDialog({ eventId: propEventId, eventName: propEventN
                       type="button"
                       disabled={generate.isPending}
                       onClick={() => onPickTier(t.id)}
-                      className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3.5 text-left text-sm text-white transition hover:border-purple-500/40 hover:bg-white/[0.05] disabled:opacity-50"
+                      className="flex w-full items-center justify-between rounded-xl border border-white/14 bg-white/[0.035] px-4 py-3.5 text-left text-sm text-white transition hover:border-purple-500/40 hover:bg-white/[0.08] disabled:opacity-50"
                     >
                       <span className="font-semibold">{t.name}</span>
                       {comp ? (
@@ -327,7 +327,7 @@ function SuccessView({
         className={`rounded-[16px] border p-3 text-left ${
           comp
             ? 'border-emerald-400/30 bg-emerald-400/10'
-            : 'border-white/10 bg-white/[0.02]'
+            : 'border-white/14 bg-white/[0.035]'
         }`}
       >
         <p className="flex items-center gap-1.5 text-xs font-semibold text-white">
@@ -338,7 +338,7 @@ function SuccessView({
         <Button
           onClick={onCopy}
           variant="outline"
-          className="mt-2.5 w-full rounded-full border-white/10 text-white hover:bg-neutral-800 hover:text-white"
+          className="mt-2.5 w-full rounded-full border-white/14 text-white hover:bg-neutral-800 hover:text-white"
         >
           {copied ? (
             <>
@@ -363,7 +363,7 @@ function SuccessView({
           <CheckCircle2 className="size-3.5" /> El cliente lo escanea desde “Mis pases → Escanear”.
         </p>
       )}
-      <Button onClick={onAnother} variant="outline" className="w-full rounded-full border-white/10 hover:bg-neutral-800 text-white hover:text-white mt-2">
+      <Button onClick={onAnother} variant="outline" className="w-full rounded-full border-white/14 hover:bg-neutral-800 text-white hover:text-white mt-2">
         Emitir otro
       </Button>
     </div>

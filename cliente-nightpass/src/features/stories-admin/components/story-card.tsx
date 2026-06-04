@@ -41,7 +41,7 @@ export function StoryCard({ story, target }: StoryCardProps) {
   return (
     <>
       <div
-        className="group relative aspect-square overflow-hidden rounded-[18px] border border-white/10 bg-white/[0.025]"
+        className="group relative aspect-square overflow-hidden rounded-[18px] border border-white/14 bg-white/[0.05]"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >

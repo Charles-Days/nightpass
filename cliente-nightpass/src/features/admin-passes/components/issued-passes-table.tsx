@@ -38,9 +38,9 @@ export function IssuedPassesTable({ eventId }: Props) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.025]">
+    <div className="overflow-x-auto rounded-xl border border-white/14 bg-white/[0.05]">
       <table className="w-full text-sm text-left text-white">
-        <thead className="border-b border-white/8 bg-white/[0.02] text-xs uppercase tracking-wide text-neutral-400">
+        <thead className="border-b border-white/12 bg-white/[0.035] text-xs uppercase tracking-wide text-neutral-400">
           <tr>
             <th className="px-4 py-3 font-semibold">Evento / Tier</th>
             <th className="px-4 py-3 font-semibold">Emitido Por (Admin)</th>
@@ -50,9 +50,9 @@ export function IssuedPassesTable({ eventId }: Props) {
             <th className="px-4 py-3 font-semibold">Vence</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/5">
+        <tbody className="divide-y divide-white/10">
           {claims.map((claim) => (
-            <tr key={claim.id} className="hover:bg-white/[0.04] transition">
+            <tr key={claim.id} className="hover:bg-white/[0.07] transition">
               <td className="px-4 py-3">
                 <div className="font-semibold">{claim.event.title}</div>
                 <div className="text-xs text-purple-400 mt-0.5">{claim.tier.name} · {money(claim.amountCents)}</div>

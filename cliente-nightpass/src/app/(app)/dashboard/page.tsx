@@ -65,7 +65,7 @@ export default async function DashboardPage(props: {
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-col gap-4 border-b border-white/5 pb-6 sm:flex-row sm:items-end sm:justify-between">
+      <header className="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1.5">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary sm:text-[11px]">
             Panel de gestión
@@ -152,7 +152,7 @@ function VisitorsCard({ visitors }: { visitors: VisitorStats }) {
     );
 
   return (
-    <Card className="rounded-[22px] border border-white/10 bg-white/[0.025]">
+    <Card className="rounded-[22px] border border-white/14 bg-white/[0.05]">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Users className="size-4 text-primary" />
@@ -197,7 +197,7 @@ function VisitorsCard({ visitors }: { visitors: VisitorStats }) {
             {visitors.last7.map((d) => (
               <div key={d.date} className="flex flex-col items-center gap-1.5">
                 <span className="text-[10px] tabular-nums text-white/60">{d.count}</span>
-                <div className="flex h-16 w-5 items-end rounded-md bg-white/[0.04]">
+                <div className="flex h-16 w-5 items-end rounded-md bg-white/[0.07]">
                   <div
                     className="w-full rounded-md bg-gradient-to-t from-[#9333ea] to-[#a855f7]"
                     style={{ height: `${Math.round((d.count / max) * 100)}%` }}
@@ -212,7 +212,7 @@ function VisitorsCard({ visitors }: { visitors: VisitorStats }) {
         </div>
 
         {visitors.conversions && (
-          <div className="mt-5 grid grid-cols-2 gap-4 border-t border-white/8 pt-4 sm:grid-cols-4">
+          <div className="mt-5 grid grid-cols-2 gap-4 border-t border-white/12 pt-4 sm:grid-cols-4">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 Con cuenta
@@ -250,7 +250,7 @@ function VisitorsCard({ visitors }: { visitors: VisitorStats }) {
                 return (
                   <div key={d.date} className="flex flex-col items-center gap-1.5">
                     <span className="text-[10px] tabular-nums text-white/60">{d.count}</span>
-                    <div className="flex h-10 w-4 items-end rounded-md bg-white/[0.04]">
+                    <div className="flex h-10 w-4 items-end rounded-md bg-white/[0.07]">
                       <div
                         className="w-full rounded-md bg-gradient-to-t from-emerald-600 to-emerald-400"
                         style={{ height: `${Math.round((d.count / cmax) * 100)}%` }}
@@ -285,7 +285,7 @@ function WelcomeCard({ user }: { user: User }) {
         </p>
       </header>
 
-      <Card className="rounded-[22px] border border-white/10 bg-white/[0.025]">
+      <Card className="rounded-[22px] border border-white/14 bg-white/[0.05]">
         <CardHeader>
           <CardTitle>Tu cuenta</CardTitle>
           <CardDescription>Sesión activa</CardDescription>

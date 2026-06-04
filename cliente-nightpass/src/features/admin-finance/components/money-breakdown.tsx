@@ -20,7 +20,7 @@ export function MoneyBreakdown({ totals }: { totals: AdminFinanceTotals }) {
   const grossMax = Math.max(totals.grossCents, 1);
 
   return (
-    <div className="overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.025] p-6">
+    <div className="overflow-hidden rounded-[24px] border border-white/14 bg-white/[0.05] p-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Flujo de dinero</p>
@@ -36,7 +36,7 @@ export function MoneyBreakdown({ totals }: { totals: AdminFinanceTotals }) {
           return (
             <div
               key={line.label}
-              className="rounded-2xl border border-white/5 bg-white/[0.01] p-3.5"
+              className="rounded-2xl border border-white/10 bg-white/[0.02] p-3.5"
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2.5">

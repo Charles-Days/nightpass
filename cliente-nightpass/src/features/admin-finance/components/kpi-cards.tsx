@@ -23,7 +23,7 @@ const ACCENT: Record<KpiCardProps['accent'], { orb: string; icon: string }> = {
 function KpiCard({ label, value, hint, icon, accent, valueClassName }: KpiCardProps) {
   const a = ACCENT[accent];
   return (
-    <div className="relative overflow-hidden rounded-[24px] border border-white/8 bg-white/[0.015] p-5 backdrop-blur-xl transition hover:border-white/15">
+    <div className="relative overflow-hidden rounded-[24px] border border-white/12 bg-white/[0.025] p-5 backdrop-blur-xl transition hover:border-white/18">
       <div className={`pointer-events-none absolute -right-6 -bottom-6 size-24 rounded-full blur-2xl ${a.orb}`} />
       <div className="flex items-start justify-between">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">

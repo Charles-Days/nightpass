@@ -148,7 +148,7 @@ export function StoryUploader({ target, title, autoStart = null, returnTo = null
     media?.mediaType === 'VIDEO' && (!media.previewUrl || !media.playable);
 
   return (
-    <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-5 sm:p-6">
+    <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-5 sm:p-6">
       <div className="mb-4 flex items-start gap-3">
         <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-primary/30 bg-primary/10 text-primary">
           <Radio className="size-5" />
@@ -171,7 +171,7 @@ export function StoryUploader({ target, title, autoStart = null, returnTo = null
 
       {!media ? (
         <div className="space-y-3">
-          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
+          <div className="inline-flex rounded-full border border-white/14 bg-white/[0.05] p-1">
             <button
               type="button"
               onClick={() => setMode('pick')}
@@ -220,10 +220,10 @@ export function StoryUploader({ target, title, autoStart = null, returnTo = null
               className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[18px] border-2 border-dashed px-6 py-10 text-center transition ${
                 dragOver
                   ? 'border-primary/60 bg-primary/10'
-                  : 'border-white/15 bg-white/[0.015] hover:border-white/25 hover:bg-white/[0.04]'
+                  : 'border-white/18 bg-white/[0.025] hover:border-white/26 hover:bg-white/[0.07]'
               }`}
             >
-              <div className="grid size-12 place-items-center rounded-full border border-white/10 bg-white/[0.04]">
+              <div className="grid size-12 place-items-center rounded-full border border-white/14 bg-white/[0.07]">
                 {validating ? (
                   <Loader2 className="size-5 animate-spin text-primary" />
                 ) : (
@@ -252,12 +252,12 @@ export function StoryUploader({ target, title, autoStart = null, returnTo = null
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="relative overflow-hidden rounded-[18px] border border-white/10 bg-black">
+          <div className="relative overflow-hidden rounded-[18px] border border-white/14 bg-black">
             <div className="aspect-[9/16] max-h-[480px] w-full">
               {media.mediaType === 'VIDEO' ? (
                 showVideoPlaceholder ? (
                   <div className="flex size-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-black via-black to-purple-950/40 px-6 text-center">
-                    <div className="grid size-14 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-primary">
+                    <div className="grid size-14 place-items-center rounded-2xl border border-white/14 bg-white/[0.07] text-primary">
                       {phase === 'transcoding' ? (
                         <Loader2 className="size-6 animate-spin" />
                       ) : (
@@ -338,7 +338,7 @@ export function StoryUploader({ target, title, autoStart = null, returnTo = null
           </div>
 
           {create.isPending ? (
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+            <div className="rounded-2xl border border-white/14 bg-white/[0.05] px-4 py-3">
               <div className="flex items-center gap-2 text-sm text-white/80">
                 <Loader2 className="size-4 animate-spin text-primary" />
                 {phaseLabel[phase]}

@@ -57,7 +57,7 @@ function VenueCard({ venueId, venueName }: { venueId: string; venueName: string 
   const hasAccount = !!status.data?.accountId;
 
   return (
-    <Card className="rounded-[22px] border border-white/10 bg-white/[0.025]">
+    <Card className="rounded-[22px] border border-white/14 bg-white/[0.05]">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold">{venueName}</CardTitle>
@@ -133,7 +133,7 @@ function PromoterCard({ title }: { title: string }) {
   const hasAccount = !!status.data?.connected;
 
   return (
-    <Card className="rounded-[22px] border border-white/10 bg-white/[0.025]">
+    <Card className="rounded-[22px] border border-white/14 bg-white/[0.05]">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold">{title}</CardTitle>

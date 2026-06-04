@@ -54,7 +54,7 @@ export function PromoterEventsList() {
           <Loader2 className="size-5 animate-spin text-muted-foreground" />
         </div>
       ) : !data || data.items.length === 0 ? (
-        <div className="rounded-[22px] border border-dashed border-white/15 bg-white/[0.02] px-6 py-12 text-center">
+        <div className="rounded-[22px] border border-dashed border-white/18 bg-white/[0.035] px-6 py-12 text-center">
           <Calendar className="mx-auto size-6 text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">
             Aún no tienes eventos.
@@ -72,7 +72,7 @@ export function PromoterEventsList() {
             <Link
               key={event.id}
               href={`${paths.miOrganizadorEventos}/${event.id}`}
-              className="flex items-center justify-between gap-3 rounded-[14px] border border-white/10 bg-white/[0.025] px-4 py-3 text-sm transition-colors hover:bg-white/[0.05]"
+              className="flex items-center justify-between gap-3 rounded-[14px] border border-white/14 bg-white/[0.05] px-4 py-3 text-sm transition-colors hover:bg-white/[0.08]"
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{event.title}</p>

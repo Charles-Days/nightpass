@@ -30,7 +30,7 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   PENDING: { label: 'Pendiente', cls: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
   CONFIRMED: { label: 'Confirmada', cls: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
   CANCELLED: { label: 'Cancelada', cls: 'text-red-400 bg-red-500/10 border-red-500/20' },
-  EXPIRED: { label: 'Vencida', cls: 'text-white/40 bg-white/5 border-white/10' },
+  EXPIRED: { label: 'Vencida', cls: 'text-white/40 bg-white/5 border-white/14' },
 };
 
 /**
@@ -85,7 +85,7 @@ export function PhysicalRequestsSection() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+      <div className="flex items-center gap-2 border-b border-white/10 pb-2">
         <Banknote className="size-4 text-primary" />
         <h3 className="font-display text-lg font-bold tracking-tight">
           Solicitudes de pago en efectivo
@@ -104,7 +104,7 @@ export function PhysicalRequestsSection() {
             placeholder="Buscar por nombre, email, teléfono o evento…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-10 rounded-xl border-white/10 bg-white/[0.03] pl-9 text-sm text-white"
+            className="h-10 rounded-xl border-white/14 bg-white/[0.05] pl-9 text-sm text-white"
           />
         </div>
       )}
@@ -114,7 +114,7 @@ export function PhysicalRequestsSection() {
           <Loader2 className="size-4 animate-spin" /> Cargando…
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.01] p-10 text-center text-sm text-muted-foreground">
+        <div className="rounded-2xl border border-dashed border-white/14 bg-white/[0.02] p-10 text-center text-sm text-muted-foreground">
           {q
             ? `Sin resultados para “${query.trim()}”.`
             : 'Sin solicitudes de pago en efectivo por ahora.'}
@@ -127,7 +127,7 @@ export function PhysicalRequestsSection() {
             return (
               <div
                 key={r.id}
-                className="rounded-[22px] border border-white/8 bg-white/[0.015] p-4"
+                className="rounded-[22px] border border-white/12 bg-white/[0.025] p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 space-y-1">
@@ -153,7 +153,7 @@ export function PhysicalRequestsSection() {
                 </div>
 
                 {r.status === 'PENDING' && (
-                  <div className="mt-4 flex items-center gap-2 border-t border-white/5 pt-3">
+                  <div className="mt-4 flex items-center gap-2 border-t border-white/10 pt-3">
                     <Button
                       type="button"
                       disabled={isBusy}
@@ -181,7 +181,7 @@ export function PhysicalRequestsSection() {
                 )}
 
                 {r.status === 'CONFIRMED' && r.confirmedByRp && (
-                  <p className="mt-3 flex items-center gap-1.5 border-t border-white/5 pt-3 text-[11px] text-emerald-400/80">
+                  <p className="mt-3 flex items-center gap-1.5 border-t border-white/10 pt-3 text-[11px] text-emerald-400/80">
                     <Clock className="size-3" />
                     Confirmada por {r.confirmedByRp.displayName}
                   </p>

@@ -183,7 +183,7 @@ export default async function MiPromotoraPage() {
 
       {/* Row 2 — gráfico de ventas */}
       <section>
-        <Card className="rounded-[22px] border border-white/10 bg-white/[0.025]">
+        <Card className="rounded-[22px] border border-white/14 bg-white/[0.05]">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Ventas — últimos 30 días</CardTitle>
@@ -196,7 +196,7 @@ export default async function MiPromotoraPage() {
             {stats ? (
               <SalesChart data={stats.dailySeries} />
             ) : (
-              <div className="flex h-[260px] items-center justify-center rounded-[18px] border border-dashed border-white/10 text-sm text-muted-foreground">
+              <div className="flex h-[260px] items-center justify-center rounded-[18px] border border-dashed border-white/14 text-sm text-muted-foreground">
                 Sin datos para mostrar todavía
               </div>
             )}
@@ -206,7 +206,7 @@ export default async function MiPromotoraPage() {
 
       {/* Row 3 — próximo evento + top eventos */}
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-        <Card className="rounded-[22px] border border-white/10 bg-white/[0.025]">
+        <Card className="rounded-[22px] border border-white/14 bg-white/[0.05]">
           <CardHeader>
             <CardTitle className="text-base">Próximo evento</CardTitle>
           </CardHeader>
@@ -214,7 +214,7 @@ export default async function MiPromotoraPage() {
             {stats?.upcomingEvent ? (
               <Link
                 href={`${paths.miOrganizadorEventos}/${stats.upcomingEvent.id}`}
-                className="group block rounded-[18px] border border-white/8 bg-white/[0.02] p-4 transition-colors hover:bg-white/[0.05]"
+                className="group block rounded-[18px] border border-white/12 bg-white/[0.035] p-4 transition-colors hover:bg-white/[0.08]"
               >
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
                   {formatDate(stats.upcomingEvent.startsAt, { time: true })}
@@ -230,7 +230,7 @@ export default async function MiPromotoraPage() {
                 </span>
               </Link>
             ) : (
-              <div className="rounded-[18px] border border-dashed border-white/10 p-4 text-sm text-muted-foreground">
+              <div className="rounded-[18px] border border-dashed border-white/14 p-4 text-sm text-muted-foreground">
                 <p>No hay eventos próximos publicados.</p>
                 <Link
                   href={paths.miOrganizadorEventosNuevo}
@@ -244,7 +244,7 @@ export default async function MiPromotoraPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-[22px] border border-white/10 bg-white/[0.025]">
+        <Card className="rounded-[22px] border border-white/14 bg-white/[0.05]">
           <CardHeader>
             <CardTitle className="text-base">Top eventos por ventas</CardTitle>
           </CardHeader>
@@ -252,7 +252,7 @@ export default async function MiPromotoraPage() {
             {topEvents.length > 0 ? (
               <div className="overflow-hidden rounded-b-[22px]">
                 <table className="w-full text-sm">
-                  <thead className="border-b border-white/8 bg-white/[0.02] text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <thead className="border-b border-white/12 bg-white/[0.035] text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <tr>
                       <th className="px-5 py-2.5 font-medium">Evento</th>
                       <th className="px-5 py-2.5 text-right font-medium">Vendidos</th>
@@ -264,7 +264,7 @@ export default async function MiPromotoraPage() {
                     {topEvents.map((ev) => (
                       <tr
                         key={ev.eventId}
-                        className="border-b border-white/5 last:border-0 hover:bg-white/[0.04]"
+                        className="border-b border-white/10 last:border-0 hover:bg-white/[0.07]"
                       >
                         <td className="px-5 py-3">
                           <Link
@@ -318,7 +318,7 @@ export default async function MiPromotoraPage() {
       </section>
 
       {/* Acciones rápidas */}
-      <Card className="rounded-[22px] border border-white/10 bg-white/[0.025]">
+      <Card className="rounded-[22px] border border-white/14 bg-white/[0.05]">
         <CardHeader>
           <CardTitle className="text-base">Acciones rápidas</CardTitle>
         </CardHeader>
@@ -350,7 +350,7 @@ export default async function MiPromotoraPage() {
           ) : null}
           <Link
             href={paths.miOrganizadorEventos}
-            className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 font-medium text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-accent-foreground"
+            className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 font-medium text-muted-foreground transition-colors hover:bg-white/[0.09] hover:text-accent-foreground"
           >
             <Calendar className="size-3.5" />
             Ver eventos

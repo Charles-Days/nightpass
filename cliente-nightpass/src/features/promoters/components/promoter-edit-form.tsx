@@ -52,7 +52,7 @@ export function PromoterEditForm({ promoter }: Props) {
   return (
     <form
       onSubmit={onSubmit}
-      className="space-y-6 rounded-[22px] border border-white/10 bg-white/[0.025] p-6"
+      className="space-y-6 rounded-[22px] border border-white/14 bg-white/[0.05] p-6"
     >
       <Controller
         name="logoUrl"

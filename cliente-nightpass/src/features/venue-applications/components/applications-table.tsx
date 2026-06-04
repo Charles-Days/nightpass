@@ -65,7 +65,7 @@ export function ApplicationsTable({ data }: { data: PaginatedApplications }) {
 
   if (data.items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 rounded-[22px] border border-white/10 bg-white/[0.025] py-10 text-center sm:py-16">
+      <div className="flex flex-col items-center justify-center gap-2 rounded-[22px] border border-white/14 bg-white/[0.05] py-10 text-center sm:py-16">
         <Inbox className="size-8 text-muted-foreground/60" />
         <p className="font-medium">Sin solicitudes</p>
         <p className="text-sm text-muted-foreground">
@@ -79,9 +79,9 @@ export function ApplicationsTable({ data }: { data: PaginatedApplications }) {
     <>
       <ApplicationModal applicationId={activeId} onClose={() => setActiveId(null)} />
 
-      <div className="overflow-x-auto rounded-[22px] border border-white/10 bg-white/[0.025]">
+      <div className="overflow-x-auto rounded-[22px] border border-white/14 bg-white/[0.05]">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="border-b border-white/8 bg-white/[0.02] text-[11px] uppercase tracking-wide text-muted-foreground">
+          <thead className="border-b border-white/12 bg-white/[0.035] text-[11px] uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-4 py-3 font-medium">Local</th>
               <th className="px-4 py-3 font-medium">Ciudad</th>
@@ -95,7 +95,7 @@ export function ApplicationsTable({ data }: { data: PaginatedApplications }) {
             {data.items.map((app) => (
               <tr
                 key={app.id}
-                className="cursor-pointer border-b border-white/5 transition-colors last:border-b-0 hover:bg-white/[0.05]"
+                className="cursor-pointer border-b border-white/10 transition-colors last:border-b-0 hover:bg-white/[0.08]"
                 onClick={() => setActiveId(app.id)}
               >
                 <td className="px-4 py-3 font-medium">{app.venueName}</td>

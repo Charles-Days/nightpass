@@ -37,12 +37,12 @@ export default async function PromoterStaffPage() {
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        <section className="rounded-[22px] border border-white/10 bg-white/[0.025] p-6">
+        <section className="rounded-[22px] border border-white/14 bg-white/[0.05] p-6">
           <p className="mb-4 text-sm font-medium">Miembros actuales</p>
           <PromoterStaffList />
         </section>
 
-        <section className="rounded-[22px] border border-white/10 bg-white/[0.025] p-6">
+        <section className="rounded-[22px] border border-white/14 bg-white/[0.05] p-6">
           <p className="mb-4 text-sm font-medium">Invitar nuevo miembro</p>
           <PromoterStaffInviteForm />
         </section>

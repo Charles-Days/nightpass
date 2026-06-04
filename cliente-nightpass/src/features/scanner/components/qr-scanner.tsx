@@ -85,7 +85,7 @@ export function QrScanner() {
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {/* Cámara */}
-      <div className="overflow-hidden rounded-[22px] border border-white/10 bg-black/50">
+      <div className="overflow-hidden rounded-[22px] border border-white/14 bg-black/50">
         <div className="relative aspect-video md:aspect-square">
           <video
             ref={videoRef}
@@ -131,7 +131,7 @@ export function QrScanner() {
 function ResultPanel({ phase }: { phase: Phase }) {
   if (phase.kind === 'idle' || phase.kind === 'scanning') {
     return (
-      <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-6 text-sm text-muted-foreground">
+      <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-6 text-sm text-muted-foreground">
         Apunta la cámara al QR del pase. El resultado aparecerá aquí
         automáticamente.
       </div>

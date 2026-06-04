@@ -33,7 +33,7 @@ export default async function MiLocalStoriesPage({
           </p>
           <h1 className="font-display text-3xl font-bold tracking-tight">Historias</h1>
         </header>
-        <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-10 text-center text-sm text-muted-foreground">
+        <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-10 text-center text-sm text-muted-foreground">
           Aún no tienes un local asignado.
         </div>
       </div>

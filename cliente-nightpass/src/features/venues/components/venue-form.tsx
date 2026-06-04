@@ -380,7 +380,7 @@ export function VenueForm({
         hasUnsavedChanges={isEdit && dirtyHours}
         rightSlot={makeSaveSlot(HOURS_FIELDS)}
       >
-        <div className="divide-y rounded-lg border border-white/10">
+        <div className="divide-y rounded-lg border border-white/14">
           {Object.entries(openHours).map(([day, config]: [string, { open: string; close: string; closed: boolean }]) => {
             const DAY_ES: Record<string, string> = {
               monday: 'Lunes',
@@ -448,7 +448,7 @@ export function VenueForm({
               type="button"
               onClick={() => imagesInputRef.current?.click()}
               disabled={isUploadingImages}
-              className="flex items-center gap-1.5 rounded-full border border-white/20 px-3 py-1.5 text-xs font-medium text-white/80 transition-colors hover:bg-white/[0.06] disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-full border border-white/22 px-3 py-1.5 text-xs font-medium text-white/80 transition-colors hover:bg-white/[0.09] disabled:opacity-50"
             >
               {isUploadingImages ? <Loader2 className="size-3 animate-spin" /> : <Plus className="size-3" />}
               Subir Fotos
@@ -467,7 +467,7 @@ export function VenueForm({
         />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
           {images.map((url, idx) => (
-            <div key={idx} className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 bg-muted">
+            <div key={idx} className="group relative aspect-square overflow-hidden rounded-lg border border-white/14 bg-muted">
               <Image src={url} alt={`Foto ${idx}`} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" unoptimized className="object-cover" />
               <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                 <button
@@ -497,7 +497,7 @@ export function VenueForm({
           )}
           {images.length === 0 && !isUploadingImages && (
             <div
-              className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/20 text-muted-foreground hover:bg-white/[0.04]"
+              className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/22 text-muted-foreground hover:bg-white/[0.07]"
               onClick={() => imagesInputRef.current?.click()}
             >
               <Upload className="mb-2 size-6" />
@@ -521,7 +521,7 @@ export function VenueForm({
           <Field label="Imagen de Portada">
             <div className="flex flex-col gap-4">
               {coverImageUrl ? (
-                <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-white/10 bg-muted">
+                <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-white/14 bg-muted">
                   <Image src={coverImageUrl} alt="Portada" fill sizes="(max-width: 768px) 100vw, 50vw" unoptimized className="object-cover" />
                   <button
                     type="button"
@@ -533,7 +533,7 @@ export function VenueForm({
                 </div>
               ) : (
                 <div
-                  className="flex aspect-video w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/20 text-muted-foreground hover:bg-white/[0.04]"
+                  className="flex aspect-video w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/22 text-muted-foreground hover:bg-white/[0.07]"
                   onClick={() => coverInputRef.current?.click()}
                 >
                   {isUploadingCover ? <Loader2 className="size-8 animate-spin" /> : <Upload className="mb-2 size-8" />}

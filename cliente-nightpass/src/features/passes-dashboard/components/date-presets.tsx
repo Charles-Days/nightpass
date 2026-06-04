@@ -117,7 +117,7 @@ export function DatePresets() {
               'rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 active:scale-95',
               active
                 ? 'border border-primary/40 bg-primary/15 text-purple-100 hover:bg-primary/20'
-                : 'border border-white/10 bg-white/[0.03] text-white/75 hover:border-white/20 hover:bg-white/[0.06]',
+                : 'border border-white/14 bg-white/[0.05] text-white/75 hover:border-white/22 hover:bg-white/[0.09]',
             )}
           >
             {p.label}
@@ -131,7 +131,7 @@ export function DatePresets() {
           'rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 active:scale-95',
           activePreset === 'custom' || showCustom
             ? 'border border-primary/40 bg-primary/15 text-purple-100 hover:bg-primary/20'
-            : 'border border-white/10 bg-white/[0.03] text-white/75 hover:border-white/20 hover:bg-white/[0.06]',
+            : 'border border-white/14 bg-white/[0.05] text-white/75 hover:border-white/22 hover:bg-white/[0.09]',
         )}
       >
         Personalizado
@@ -143,14 +143,14 @@ export function DatePresets() {
             type="date"
             value={isoToInputDate(from)}
             onChange={(e) => applyCustom(inputDateToIso(e.target.value, false), to ?? '')}
-            className="h-8 rounded-md border border-white/10 bg-white/[0.04] px-2 text-xs text-white/90 outline-none focus:border-primary/40"
+            className="h-8 rounded-md border border-white/14 bg-white/[0.07] px-2 text-xs text-white/90 outline-none focus:border-primary/40"
           />
           <span className="text-xs text-muted-foreground">a</span>
           <input
             type="date"
             value={isoToInputDate(to)}
             onChange={(e) => applyCustom(from ?? '', inputDateToIso(e.target.value, true))}
-            className="h-8 rounded-md border border-white/10 bg-white/[0.04] px-2 text-xs text-white/90 outline-none focus:border-primary/40"
+            className="h-8 rounded-md border border-white/14 bg-white/[0.07] px-2 text-xs text-white/90 outline-none focus:border-primary/40"
           />
         </div>
       ) : null}

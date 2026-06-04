@@ -73,7 +73,7 @@ export default function RpDashboardPage() {
   return (
     <div className="space-y-8 text-white bg-transparent">
       {/* Header section */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5 border-b border-white/5 pb-6">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5 border-b border-white/10 pb-6">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">
@@ -136,7 +136,7 @@ export default function RpDashboardPage() {
       {/* Main Stats grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Total Sales Card */}
-        <div className="relative overflow-hidden rounded-[24px] border border-white/8 bg-white/[0.01] backdrop-blur-xl p-6 transition hover:border-white/15">
+        <div className="relative overflow-hidden rounded-[24px] border border-white/12 bg-white/[0.02] backdrop-blur-xl p-6 transition hover:border-white/18">
           <div className="pointer-events-none absolute -right-6 -bottom-6 size-24 bg-purple-500/5 rounded-full blur-2xl" />
           <div className="flex justify-between items-start">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -153,7 +153,7 @@ export default function RpDashboardPage() {
         </div>
 
         {/* Commission Earned Card */}
-        <div className="relative overflow-hidden rounded-[24px] border border-white/8 bg-white/[0.01] backdrop-blur-xl p-6 transition hover:border-white/15">
+        <div className="relative overflow-hidden rounded-[24px] border border-white/12 bg-white/[0.02] backdrop-blur-xl p-6 transition hover:border-white/18">
           <div className="pointer-events-none absolute -right-6 -bottom-6 size-24 bg-emerald-500/5 rounded-full blur-2xl" />
           <div className="flex justify-between items-start">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -189,7 +189,7 @@ export default function RpDashboardPage() {
                 return (
                   <div
                     key={`progress-${eventStat.eventId}`}
-                    className="rounded-[22px] border border-white/8 bg-white/[0.015] p-5 space-y-4"
+                    className="rounded-[22px] border border-white/12 bg-white/[0.025] p-5 space-y-4"
                   >
                     <div className="flex items-center justify-between">
                       <div className="max-w-[70%]">
@@ -206,7 +206,7 @@ export default function RpDashboardPage() {
                     </div>
 
                     {/* Progress bar */}
-                    <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden border border-white/10 p-0.5">
+                    <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden border border-white/14 p-0.5">
                       <div
                         className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full transition-all duration-500"
                         style={{ width: `${percentage}%` }}
@@ -228,9 +228,9 @@ export default function RpDashboardPage() {
 
       {/* Events tab selector */}
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-2">
           <h3 className="font-display text-lg font-bold tracking-tight">Mis Eventos</h3>
-          <div className="flex bg-white/5 p-1 rounded-xl border border-white/8 self-start sm:self-auto">
+          <div className="flex bg-white/5 p-1 rounded-xl border border-white/12 self-start sm:self-auto">
             <button
               onClick={() => setActiveTab('active')}
               className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -255,7 +255,7 @@ export default function RpDashboardPage() {
         </div>
 
         {visibleEvents.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center text-sm text-muted-foreground bg-white/[0.01]">
+          <div className="rounded-2xl border border-dashed border-white/14 p-12 text-center text-sm text-muted-foreground bg-white/[0.02]">
             {activeTab === 'active'
               ? 'No tienes eventos activos en este momento.'
               : 'No tienes registro de eventos pasados.'}
@@ -267,8 +267,8 @@ export default function RpDashboardPage() {
                 key={eventStat.eventId || `event-${idx}`}
                 className={`rounded-[24px] border p-5 flex flex-col justify-between transition-all bg-[#09090f] ${
                   eventStat.isPassed
-                    ? 'border-white/5 opacity-75'
-                    : 'border-white/8 hover:border-white/15'
+                    ? 'border-white/10 opacity-75'
+                    : 'border-white/12 hover:border-white/18'
                 }`}
               >
                 <div>
@@ -295,7 +295,7 @@ export default function RpDashboardPage() {
                   </div>
 
                   {/* Commission schema */}
-                  <div className="mt-4 p-3.5 rounded-xl bg-white/[0.02] border border-white/5 space-y-1.5">
+                  <div className="mt-4 p-3.5 rounded-xl bg-white/[0.035] border border-white/10 space-y-1.5">
                     <span className="text-[10px] uppercase tracking-wider text-white/40 block">Regla de Comisión</span>
                     {eventStat.rule?.type === 'PERCENTAGE' ? (
                       <div className="flex items-center gap-2 text-xs text-emerald-400 font-semibold">
@@ -312,18 +312,18 @@ export default function RpDashboardPage() {
 
                   {/* mini metrics */}
                   <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
-                    <div className="p-3 rounded-xl bg-white/[0.01] border border-white/5">
+                    <div className="p-3 rounded-xl bg-white/[0.02] border border-white/10">
                       <span className="text-[10px] text-muted-foreground block">Boletos</span>
                       <strong className="text-white text-base block mt-0.5">{eventStat.salesCount}</strong>
                     </div>
-                    <div className="p-3 rounded-xl bg-white/[0.01] border border-white/5">
+                    <div className="p-3 rounded-xl bg-white/[0.02] border border-white/10">
                       <span className="text-[10px] text-muted-foreground block">Ganancia</span>
                       <strong className="text-[#10b981] text-base block mt-0.5">{displayMoney(eventStat.earningsCents)}</strong>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between gap-4">
+                <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between gap-4">
                   {eventStat.isPassed ? (
                     <div className="flex items-center gap-1.5 text-xs text-red-400/70 py-2">
                       <Ban className="size-3.5" />
@@ -361,17 +361,17 @@ export default function RpDashboardPage() {
       <div className="space-y-3">
         <h3 className="font-display text-base font-bold tracking-tight">Historial General de Ventas</h3>
         {stats.sales.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center text-sm text-muted-foreground bg-white/[0.01]">
+          <div className="rounded-2xl border border-dashed border-white/14 p-12 text-center text-sm text-muted-foreground bg-white/[0.02]">
             No hay transacciones registradas todavía.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#0c0c12] text-xs">
-            <div className="grid grid-cols-3 border-b border-white/8 bg-white/[0.02] p-4 font-semibold text-white/70">
+          <div className="overflow-hidden rounded-2xl border border-white/12 bg-[#0c0c12] text-xs">
+            <div className="grid grid-cols-3 border-b border-white/12 bg-white/[0.035] p-4 font-semibold text-white/70">
               <span>Fecha / Evento</span>
               <span className="text-center">Tipo de Pase</span>
               <span className="text-right">Monto</span>
             </div>
-            <div className="divide-y divide-white/5 max-h-96 overflow-y-auto">
+            <div className="divide-y divide-white/10 max-h-96 overflow-y-auto">
               {stats.sales.map((sale) => (
                 <div key={sale.id} className="grid grid-cols-3 p-4 items-center">
                   <div className="space-y-0.5">

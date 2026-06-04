@@ -54,15 +54,15 @@ export function EventsTable({ rows }: { rows: AdminFinanceEventRow[] }) {
       </div>
 
       {rows.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-[22px] border border-dashed border-white/10 bg-white/[0.01] p-12 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-[22px] border border-dashed border-white/14 bg-white/[0.02] p-12 text-center">
           <CalendarOff className="size-7 text-muted-foreground/60" />
           <p className="text-sm text-muted-foreground">No hay ventas registradas en este periodo.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]">
+        <div className="overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05]">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-sm">
-              <thead className="border-b border-white/8 bg-white/[0.02] text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <thead className="border-b border-white/12 bg-white/[0.035] text-left text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="px-5 py-3.5 font-semibold">Evento</th>
                   <th className="px-5 py-3.5 font-semibold">Organizador</th>
@@ -80,7 +80,7 @@ export function EventsTable({ rows }: { rows: AdminFinanceEventRow[] }) {
                   <tr
                     key={row.eventId}
                     onClick={() => setOpenId(row.eventId)}
-                    className="group cursor-pointer border-b border-white/5 last:border-0 hover:bg-white/[0.05]"
+                    className="group cursor-pointer border-b border-white/10 last:border-0 hover:bg-white/[0.08]"
                   >
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-white">{row.title}</p>

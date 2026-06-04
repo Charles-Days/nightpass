@@ -15,7 +15,7 @@ function Ratio({
   const allConnected = total > 0 && connected >= total;
   const warn = !allConnected;
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/[0.015] p-4">
+    <div className="rounded-2xl border border-white/12 bg-white/[0.025] p-4">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           {label}
@@ -62,8 +62,8 @@ export function StripeHealthCard({
   failedCount: number;
 }) {
   return (
-    <div className="rounded-[24px] border border-white/10 bg-white/[0.025] p-6">
-      <div className="flex items-center justify-between border-b border-white/5 pb-4">
+    <div className="rounded-[24px] border border-white/14 bg-white/[0.05] p-6">
+      <div className="flex items-center justify-between border-b border-white/10 pb-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Infraestructura de cobro</p>
           <h2 className="mt-1 font-display text-lg font-bold tracking-tight">Salud de Stripe</h2>
@@ -81,7 +81,7 @@ export function StripeHealthCard({
           className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${
             refundedCount > 0
               ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-              : 'border-white/10 bg-white/[0.02] text-muted-foreground'
+              : 'border-white/14 bg-white/[0.035] text-muted-foreground'
           }`}
         >
           <RotateCcw className="size-3.5" />
@@ -91,7 +91,7 @@ export function StripeHealthCard({
           className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${
             failedCount > 0
               ? 'border-red-500/30 bg-red-500/10 text-red-300'
-              : 'border-white/10 bg-white/[0.02] text-muted-foreground'
+              : 'border-white/14 bg-white/[0.035] text-muted-foreground'
           }`}
         >
           <XCircle className="size-3.5" />
