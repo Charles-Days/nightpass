@@ -132,6 +132,17 @@ export default async function DashboardPage(props: {
 function VisitorsCard({ visitors }: { visitors: VisitorStats }) {
   const max = Math.max(1, ...visitors.last7.map((d) => d.count));
   const fmt = new Intl.NumberFormat('es-MX');
+
+  // Cuentas atribuibles a visitantes. El tracking de conversión (cookie np_vid)
+  // solo empezó a contar hace poco, así que `conversions.allTime` (p.ej. 4) NO
+  // refleja las cuentas que ya existían antes — la BD tiene `totalAccounts`
+  // (p.ej. 74). Tomamos el mayor de ambos y lo capamos al total de visitantes
+  // (no puede haber más titulares de cuenta que visitantes únicos). Así
+  // "con cuenta" + "sin cuenta" = total histórico y cuadra con la BD.
+  const accountsHeld = Math.min(
+    visitors.allTime,
+    Math.max(visitors.conversions?.allTime ?? 0, visitors.totalAccounts ?? 0),
+  );
   const dayLabel = (iso: string) =>
     new Intl.DateTimeFormat('es-MX', { weekday: 'short', timeZone: 'America/Mexico_City' }).format(
       new Date(`${iso}T12:00:00Z`),
@@ -201,10 +212,10 @@ function VisitorsCard({ visitors }: { visitors: VisitorStats }) {
           <div className="mt-5 grid grid-cols-2 gap-4 border-t border-white/8 pt-4 sm:grid-cols-4">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Crearon cuenta
+                Con cuenta
               </p>
               <p className="font-display text-2xl font-bold tabular-nums text-emerald-400">
-                {fmt.format(visitors.conversions.allTime)}
+                {fmt.format(accountsHeld)}
               </p>
               <p className="text-[10px] text-muted-foreground">
                 {fmt.format(visitors.conversions.today)} hoy
@@ -215,7 +226,7 @@ function VisitorsCard({ visitors }: { visitors: VisitorStats }) {
                 Sin cuenta
               </p>
               <p className="font-display text-2xl font-bold tabular-nums text-white/70">
-                {fmt.format(Math.max(0, visitors.allTime - visitors.conversions.allTime))}
+                {fmt.format(Math.max(0, visitors.allTime - accountsHeld))}
               </p>
               <p className="text-[10px] text-muted-foreground">visitaron, no se registraron</p>
             </div>
@@ -225,7 +236,7 @@ function VisitorsCard({ visitors }: { visitors: VisitorStats }) {
               </p>
               <p className="font-display text-2xl font-bold tabular-nums text-primary">
                 {visitors.allTime > 0
-                  ? `${((visitors.conversions.allTime / visitors.allTime) * 100).toFixed(1)}%`
+                  ? `${Math.min(100, (accountsHeld / visitors.allTime) * 100).toFixed(1)}%`
                   : '—'}
               </p>
               <p className="text-[10px] text-muted-foreground">cuentas / visitantes</p>
