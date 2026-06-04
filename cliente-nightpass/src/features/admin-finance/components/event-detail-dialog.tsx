@@ -59,15 +59,15 @@ function Stat({
   accent?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+    <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           {label}
         </span>
-        <Icon className="size-3.5 text-primary/60" />
+        <Icon className="size-3.5 shrink-0 text-primary/60" />
       </div>
-      <p className={`mt-2 font-display text-2xl font-bold ${accent}`}>{value}</p>
-      {hint ? <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p> : null}
+      <p className={`mt-2 break-words font-display text-2xl font-bold ${accent}`}>{value}</p>
+      {hint ? <p className="mt-0.5 break-words text-[11px] text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }
@@ -78,7 +78,7 @@ function PaymentDonut({ card, cash }: { card: number; cash: number }) {
   const cardPct = total > 0 ? (card / total) * 100 : 0;
   const cashPct = total > 0 ? (cash / total) * 100 : 0;
   return (
-    <div className="flex items-center gap-5">
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
       <div
         className="relative size-28 shrink-0 rounded-full"
         style={{
@@ -180,10 +180,10 @@ export function EventDetailDialog({
 
   return (
     <Dialog open={!!eventId} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[88vh] overflow-hidden border-white/10 bg-[#0a0a0f] p-0 sm:max-w-3xl">
-        <div className="flex max-h-[88vh] flex-col">
-          <DialogHeader className="shrink-0 border-b border-white/10 px-4 pb-4 pt-5 sm:px-6">
-            <DialogTitle className="font-display text-lg">
+      <DialogContent className="max-h-[88vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] overflow-hidden border-white/10 bg-[#0a0a0f] p-0 sm:w-full sm:max-w-3xl">
+        <div className="flex max-h-[88vh] min-w-0 flex-col">
+          <DialogHeader className="shrink-0 border-b border-white/10 px-4 pb-4 pt-5 pr-12 sm:px-6 sm:pr-12">
+            <DialogTitle className="min-w-0 break-words font-display text-base sm:text-lg">
               {data?.event.title ?? 'Detalle del evento'}
             </DialogTitle>
             {data ? (
@@ -206,7 +206,7 @@ export function EventDetailDialog({
             ) : null}
           </DialogHeader>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+          <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 sm:px-6">
             {isLoading ? (
               <div className="space-y-3">
                 <div className="h-24 animate-pulse rounded-2xl bg-white/[0.04]" />
@@ -218,7 +218,7 @@ export function EventDetailDialog({
                 {(error as Error)?.message ?? 'Error al cargar el detalle.'}
               </p>
             ) : data ? (
-              <div className="space-y-7">
+              <div className="min-w-0 space-y-7">
                 {/* KPIs */}
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <Stat
