@@ -27,6 +27,9 @@ export class UpdateEventDto {
   @IsOptional() @IsString() @MaxLength(500) flyerImageUrl?: string;
   @IsOptional() @IsEnum(EventStatus) status?: EventStatus;
   @IsOptional() @IsInt() @Min(1) capacity?: number;
+  // Boost de aforo visual (FOMO). Solo lo aplica ADMIN (el service lo ignora
+  // para otros roles). 0–100.
+  @IsOptional() @IsInt() @Min(0) @Max(100) aforoBoostPct?: number;
   @IsOptional() @IsBoolean() allowCashPayment?: boolean;
 
   @IsOptional() @IsString() @MaxLength(120) externalVenueName?: string;

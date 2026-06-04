@@ -321,7 +321,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
               <div className="min-w-0 flex-1">
                 <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Aforo</dt>
                 <dd className="mt-0.5 text-sm text-foreground">{event.capacity} lugares</dd>
-                <EventAforo sold={event.sold} capacity={event.capacity} className="mt-2 max-w-[260px]" />
+                <EventAforo sold={event.sold} capacity={event.capacity} boostPct={event.aforoBoostPct} className="mt-2 max-w-[260px]" />
               </div>
             </div>
           )}

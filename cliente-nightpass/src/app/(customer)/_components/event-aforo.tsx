@@ -7,6 +7,9 @@ import { cn } from '@/core/lib/utils/cn';
 interface Props {
   sold?: number | null;
   capacity?: number | null;
+  /** Boost visual (FOMO): se suma al % real mostrado, capado a 100. Solo afecta
+   * el número que ve el público — el aforo real (sold/capacity) no cambia. */
+  boostPct?: number | null;
   /** Variante chica para las cards de la lista. */
   compact?: boolean;
   className?: string;
@@ -44,7 +47,7 @@ function useCountUp(target: number, run: boolean) {
 // barra de llenado animada + un estado: "En tendencia" (>70%), "Casi agotado"
 // (>90%), "Agotado" (100%). No expone números de inventario, solo el porcentaje.
 // Cuando va caliente (>=70%) la barra brilla (shimmer) y pulsa para crear FOMO.
-export function EventAforo({ sold, capacity, compact, className }: Props) {
+export function EventAforo({ sold, capacity, boostPct, compact, className }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [seen, setSeen] = useState(false);
 
@@ -70,7 +73,9 @@ export function EventAforo({ sold, capacity, compact, className }: Props) {
   }, []);
 
   const validCapacity = capacity != null && capacity > 0;
-  const pct = validCapacity ? Math.min(100, Math.round(((sold ?? 0) / capacity!) * 100)) : 0;
+  const realPct = validCapacity ? Math.round(((sold ?? 0) / capacity!) * 100) : 0;
+  // Boost solo visual: se suma al % real y se capa a 100. No toca sold/capacity.
+  const pct = Math.min(100, realPct + Math.max(0, boostPct ?? 0));
   const animatedPct = useCountUp(pct, seen);
 
   if (!validCapacity) return null;

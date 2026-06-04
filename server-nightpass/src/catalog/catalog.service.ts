@@ -496,6 +496,7 @@ export class CatalogService {
       }),
       sold,
       capacity: event.capacity ?? null,
+      aforoBoostPct: event.aforoBoostPct ?? 0,
     };
     });
   }
