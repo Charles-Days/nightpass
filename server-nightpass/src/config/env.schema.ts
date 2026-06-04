@@ -77,6 +77,16 @@ export const envSchema = z.object({
   // Google OAuth (Sign in with Google). Sin GOOGLE_CLIENT_ID el endpoint /auth/google devuelve 503.
   GOOGLE_CLIENT_ID: z.string().optional(),
 
+  // WhatsApp Cloud API (Meta). Sin WHATSAPP_TOKEN/WHATSAPP_PHONE_NUMBER_ID el
+  // servicio corre en modo no-op (loguea, no envía). TOKEN = el permanente
+  // (System User). PHONE_NUMBER_ID y WABA_ID salen de WhatsApp → API Setup.
+  WHATSAPP_TOKEN: z.string().optional(),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  WHATSAPP_BUSINESS_ACCOUNT_ID: z.string().optional(),
+  WHATSAPP_API_VERSION: z.string().default('v21.0'),
+  // País por defecto para normalizar teléfonos de 10 dígitos (MX = 52).
+  SMS_DEFAULT_COUNTRY_CODE: z.string().default('52'),
+
   // Web Push (VAPID). Sin las dos keys el PushService corre en modo no-op.
   // Generar con: npx web-push generate-vapid-keys
   VAPID_PUBLIC_KEY: z.string().optional(),

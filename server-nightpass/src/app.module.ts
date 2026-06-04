@@ -35,6 +35,7 @@ import { PhysicalPaymentsModule } from './physical-payments/physical-payments.mo
 import { CashWalletModule } from './cash-wallet/cash-wallet.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { validateEnv } from './config/env.schema';
 
 @Module({
@@ -58,6 +59,7 @@ import { validateEnv } from './config/env.schema';
     ScheduleModule.forRoot(),
     PrismaModule,
     MailerModule,
+    WhatsappModule,
     PushModule,
     AuthModule,
     HealthModule,
