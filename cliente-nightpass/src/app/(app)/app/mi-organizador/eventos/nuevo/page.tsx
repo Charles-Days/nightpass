@@ -35,7 +35,7 @@ export default async function NuevoEventoPage() {
         </p>
       </header>
 
-      <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-6">
+      <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-6">
         <PromoterEventCreate promoterId={me.promoter.id} />
       </div>
     </div>

@@ -43,7 +43,7 @@ export function AdminStoriesClient({
   return (
     <>
       <Tabs defaultValue="venues" className="space-y-5">
-        <TabsList className="bg-white/[0.03]">
+        <TabsList className="bg-white/[0.05]">
           <TabsTrigger value="venues">Bares y antros</TabsTrigger>
           <TabsTrigger value="events">Eventos</TabsTrigger>
         </TabsList>
@@ -59,7 +59,7 @@ export function AdminStoriesClient({
 
       <Sheet open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <SheetContent className="flex w-full flex-col overflow-hidden p-0 sm:max-w-2xl">
-          <SheetHeader className="shrink-0 border-b border-white/10 px-6 pb-4 pt-5">
+          <SheetHeader className="shrink-0 border-b border-white/14 px-6 pb-4 pt-5">
             <SheetTitle className="font-display text-2xl">
               {selected ? `Historias · ${selected.name}` : 'Historias'}
             </SheetTitle>
@@ -106,8 +106,8 @@ function VenuesTab({
   }, [venues, query]);
 
   return (
-    <div className="rounded-[22px] border border-white/10 bg-white/[0.025]">
-      <div className="flex items-center gap-3 border-b border-white/8 px-5 py-4">
+    <div className="rounded-[22px] border border-white/14 bg-white/[0.05]">
+      <div className="flex items-center gap-3 border-b border-white/12 px-5 py-4">
         <Search className="size-4 text-muted-foreground" />
         <Input
           placeholder="Buscar local por nombre, ciudad o slug…"
@@ -122,14 +122,14 @@ function VenuesTab({
           No hay locales que coincidan.
         </div>
       ) : (
-        <ul className="divide-y divide-white/5">
+        <ul className="divide-y divide-white/10">
           {filtered.map((v) => (
             <li
               key={v.id}
               onClick={() => onSelect({ kind: 'venue', id: v.id, name: v.name })}
-              className="flex cursor-pointer items-center gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.05]"
+              className="flex cursor-pointer items-center gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.08]"
             >
-              <div className="relative size-10 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/[0.05]">
+              <div className="relative size-10 shrink-0 overflow-hidden rounded-full border border-white/14 bg-white/[0.08]">
                 {v.coverImageUrl ? (
                   <Image
                     src={v.coverImageUrl}
@@ -188,8 +188,8 @@ function EventsTab({
   }, [events, query]);
 
   return (
-    <div className="rounded-[22px] border border-white/10 bg-white/[0.025]">
-      <div className="flex items-center gap-3 border-b border-white/8 px-5 py-4">
+    <div className="rounded-[22px] border border-white/14 bg-white/[0.05]">
+      <div className="flex items-center gap-3 border-b border-white/12 px-5 py-4">
         <Search className="size-4 text-muted-foreground" />
         <Input
           placeholder="Buscar evento por nombre, organizador o slug…"
@@ -204,16 +204,16 @@ function EventsTab({
           No hay eventos que coincidan.
         </div>
       ) : (
-        <ul className="divide-y divide-white/5">
+        <ul className="divide-y divide-white/10">
           {filtered.map((e) => {
             const host = e.venue?.name ?? e.promoter?.name ?? e.externalVenueName ?? '—';
             return (
               <li
                 key={e.id}
                 onClick={() => onSelect({ kind: 'event', id: e.id, name: e.title })}
-                className="flex cursor-pointer items-center gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.05]"
+                className="flex cursor-pointer items-center gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.08]"
               >
-                <div className="relative size-10 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/[0.05]">
+                <div className="relative size-10 shrink-0 overflow-hidden rounded-full border border-white/14 bg-white/[0.08]">
                   {e.coverImageUrl ? (
                     <Image
                       src={e.coverImageUrl}

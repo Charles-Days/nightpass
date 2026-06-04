@@ -57,7 +57,7 @@ export default async function PagosOrganizadorPage() {
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <StripeConnectCard mode="promoter" title="Cuenta Stripe del organizador" />
 
-        <aside className="rounded-[22px] border border-white/10 bg-white/[0.025] p-5">
+        <aside className="rounded-[22px] border border-white/14 bg-white/[0.05] p-5">
           <div className="mb-4 flex items-center gap-2">
             <CreditCard className="size-4 text-primary" />
             <h2 className="font-display text-sm font-semibold uppercase tracking-[0.18em] text-primary">

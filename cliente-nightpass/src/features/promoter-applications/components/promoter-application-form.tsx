@@ -76,7 +76,7 @@ export function PromoterApplicationForm() {
             pronto tengamos una respuesta.
           </p>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3 text-left">
+        <div className="rounded-xl border border-white/14 bg-white/[0.05] px-4 py-3 text-left">
           <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/80">
             ID de seguimiento
           </p>
@@ -133,7 +133,7 @@ export function PromoterApplicationForm() {
         </Field>
       </section>
 
-      <div className="border-t border-white/5" />
+      <div className="border-t border-white/10" />
 
       <section className="space-y-4">
         <header className="space-y-1">
@@ -206,7 +206,7 @@ export function PromoterApplicationForm() {
         </div>
       </section>
 
-      <div className="border-t border-white/5" />
+      <div className="border-t border-white/10" />
 
       <section className="space-y-4">
         <header className="space-y-1">
@@ -321,7 +321,7 @@ function EventTypeChips({
             className={
               selected
                 ? 'rounded-full border border-primary/60 bg-primary/15 px-3.5 py-1.5 text-xs font-semibold text-primary shadow-[0_4px_18px_-8px_rgba(168,85,247,0.55)] transition'
-                : 'rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-white/20 hover:bg-white/[0.06] hover:text-foreground'
+                : 'rounded-full border border-white/14 bg-white/[0.05] px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-white/22 hover:bg-white/[0.09] hover:text-foreground'
             }
           >
             {EVENT_TYPE_LABELS[v]}

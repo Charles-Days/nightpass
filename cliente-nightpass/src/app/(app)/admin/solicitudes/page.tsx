@@ -162,7 +162,7 @@ function TypePill({
       className={
         active
           ? 'inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/15 px-4 py-1.5 text-sm font-medium text-primary transition-colors'
-          : 'inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.025] px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/[0.05] hover:text-foreground'
+          : 'inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.05] px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground'
       }
     >
       {icon}

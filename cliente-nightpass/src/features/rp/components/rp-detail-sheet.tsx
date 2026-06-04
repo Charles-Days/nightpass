@@ -73,12 +73,12 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col overflow-hidden p-0 sm:max-w-2xl border-l border-white/10 bg-[#0c0c12] text-white">
-        <SheetHeader className="shrink-0 border-b border-white/8 px-6 pb-4 pt-5">
+      <SheetContent className="flex w-full flex-col overflow-hidden p-0 sm:max-w-2xl border-l border-white/14 bg-[#0c0c12] text-white">
+        <SheetHeader className="shrink-0 border-b border-white/12 px-6 pb-4 pt-5">
           <SheetTitle className="font-display text-lg sm:text-xl font-bold tracking-tight text-white flex items-center justify-between gap-3">
             <span className="min-w-0 truncate">Detalle de Relaciones Públicas</span>
             {stats && (
-              <span className="shrink-0 text-xs bg-white/5 border border-white/10 px-3 py-1 rounded-full font-mono text-purple-300">
+              <span className="shrink-0 text-xs bg-white/5 border border-white/14 px-3 py-1 rounded-full font-mono text-purple-300">
                 {stats.rpCode}
               </span>
             )}
@@ -94,7 +94,7 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
         ) : (
           <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5">
             {/* Header / Info card */}
-            <div className="rounded-[22px] border border-white/8 bg-white/[0.02] p-5">
+            <div className="rounded-[22px] border border-white/12 bg-white/[0.035] p-5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <h2 className="font-display text-lg font-bold">{stats.displayName}</h2>
@@ -111,7 +111,7 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
 
               {/* Stats grid */}
               <div className="grid grid-cols-2 gap-4 mt-6">
-                <div className="rounded-xl bg-white/[0.02] border border-white/5 p-4">
+                <div className="rounded-xl bg-white/[0.035] border border-white/10 p-4">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide block">
                     Ventas Realizadas
                   </span>
@@ -122,7 +122,7 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
                     Vales reclamados (venta real). Los emitidos sin reclamar no cuentan aún.
                   </span>
                 </div>
-                <div className="rounded-xl bg-white/[0.02] border border-white/5 p-4">
+                <div className="rounded-xl bg-white/[0.035] border border-white/10 p-4">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide block">
                     Comisión Ganada
                   </span>
@@ -173,7 +173,7 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
               )}
 
               {stats.eventStats.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-white/10 p-6 text-center text-xs text-muted-foreground">
+                <div className="rounded-xl border border-dashed border-white/14 p-6 text-center text-xs text-muted-foreground">
                   No hay reglas de comisión configuradas. Agrega una para empezar a calcular.
                 </div>
               ) : (
@@ -181,7 +181,7 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
                   {stats.eventStats.map((ruleStat, idx) => (
                     <div
                       key={ruleStat.eventId || `global-${idx}`}
-                      className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.01] p-3 text-xs"
+                      className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] p-3 text-xs"
                     >
                       <div className="space-y-1">
                         <span className="font-medium text-white block">
@@ -233,17 +233,17 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
             <div className="space-y-3">
               <h3 className="font-display text-sm font-semibold tracking-tight">Historial de Ventas</h3>
               {stats.sales.length === 0 ? (
-                <div className="rounded-xl border border-white/5 bg-white/[0.01] p-6 text-center text-xs text-muted-foreground">
+                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6 text-center text-xs text-muted-foreground">
                   Aún no hay compras registradas con este código.
                 </div>
               ) : (
-                <div className="rounded-xl border border-white/5 bg-[#08080d] overflow-hidden text-xs">
-                  <div className="grid grid-cols-3 border-b border-white/5 bg-white/[0.02] p-3 font-semibold text-white/70">
+                <div className="rounded-xl border border-white/10 bg-[#08080d] overflow-hidden text-xs">
+                  <div className="grid grid-cols-3 border-b border-white/10 bg-white/[0.035] p-3 font-semibold text-white/70">
                     <span>Fecha / Evento</span>
                     <span className="text-center">Tipo de Pase</span>
                     <span className="text-right">Monto</span>
                   </div>
-                  <div className="divide-y divide-white/5 max-h-60 overflow-y-auto">
+                  <div className="divide-y divide-white/10 max-h-60 overflow-y-auto">
                     {stats.sales.map((sale) => (
                       <div key={sale.id} className="grid grid-cols-3 p-3 items-center">
                         <div className="space-y-0.5">

@@ -108,7 +108,7 @@ export function CashPaymentSection({ eventId }: { eventId: string }) {
   return (
     <div className="space-y-5">
       {/* Toggle activar/desactivar */}
-      <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+      <div className="flex items-center justify-between rounded-2xl border border-white/14 bg-white/[0.035] p-4">
         <div className="space-y-1">
           <p className="flex items-center gap-2 text-sm font-semibold text-white">
             <Banknote className="size-4 text-primary" />
@@ -139,7 +139,7 @@ export function CashPaymentSection({ eventId }: { eventId: string }) {
             Vendedores asignados (RP)
           </p>
           {rps.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-white/10 p-4 text-center text-xs text-muted-foreground">
+            <p className="rounded-xl border border-dashed border-white/14 p-4 text-center text-xs text-muted-foreground">
               No hay RPs registrados. Crea uno en Admin · RPs.
             </p>
           ) : (
@@ -154,7 +154,7 @@ export function CashPaymentSection({ eventId }: { eventId: string }) {
                     className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition ${
                       checked
                         ? 'border-primary/40 bg-primary/10'
-                        : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04]'
+                        : 'border-white/14 bg-white/[0.035] hover:bg-white/[0.07]'
                     }`}
                   >
                     <div className="min-w-0">
@@ -166,7 +166,7 @@ export function CashPaymentSection({ eventId }: { eventId: string }) {
                     </div>
                     <span
                       className={`grid size-5 shrink-0 place-items-center rounded-md border ${
-                        checked ? 'border-primary bg-primary text-white' : 'border-white/20'
+                        checked ? 'border-primary bg-primary text-white' : 'border-white/22'
                       }`}
                     >
                       {checked && <Check className="size-3.5" />}

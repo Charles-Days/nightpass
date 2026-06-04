@@ -15,7 +15,7 @@ export function DailyChart({ series }: { series: AdminFinanceDailyPoint[] }) {
   const totalGross = series.reduce((acc, p) => acc + p.grossCents, 0);
 
   return (
-    <div className="rounded-[24px] border border-white/10 bg-white/[0.025] p-6">
+    <div className="rounded-[24px] border border-white/14 bg-white/[0.05] p-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Tendencia</p>

@@ -12,7 +12,7 @@ import {
 export const metadata = { title: 'Mi cuenta', robots: { index: false, follow: false } };
 
 const CARD =
-  'rounded-[22px] border border-white/10 bg-white/[0.025] p-6 sm:p-7';
+  'rounded-[22px] border border-white/14 bg-white/[0.05] p-6 sm:p-7';
 
 export default async function MiCuentaPage() {
   let user: User;

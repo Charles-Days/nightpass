@@ -11,7 +11,7 @@ import { MEXICO_GEO } from '@/core/data/mexico-geo';
 import { useUpdateRpZone, type RpProfile } from '../hooks/use-rp';
 
 const SELECT_CLASS =
-  'h-10 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-white focus:border-primary/50 focus:outline-none';
+  'h-10 w-full rounded-xl border border-white/14 bg-white/[0.05] px-3 text-sm text-white focus:border-primary/50 focus:outline-none';
 
 /**
  * Edita la zona (estado/ciudad) del RP. La zona enruta las solicitudes de pago
@@ -58,7 +58,7 @@ export function RpZoneEditor({
   };
 
   return (
-    <div className="rounded-[22px] border border-white/8 bg-white/[0.02] p-5">
+    <div className="rounded-[22px] border border-white/12 bg-white/[0.035] p-5">
       <h3 className="mb-1 flex items-center gap-2 font-display text-sm font-semibold tracking-tight">
         <MapPin className="size-4 text-primary" />
         Zona (pago en efectivo)

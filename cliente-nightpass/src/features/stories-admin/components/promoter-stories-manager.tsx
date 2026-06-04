@@ -57,7 +57,7 @@ export function PromoterStoriesManager() {
 
   if (events.length === 0) {
     return (
-      <div className="rounded-[22px] border border-dashed border-white/15 bg-white/[0.02] px-6 py-12 text-center">
+      <div className="rounded-[22px] border border-dashed border-white/18 bg-white/[0.035] px-6 py-12 text-center">
         <Calendar className="mx-auto size-6 text-muted-foreground" />
         <p className="mt-2 text-sm text-muted-foreground">
           Aún no tienes eventos. Crea uno para empezar a publicar historias.
@@ -68,8 +68,8 @@ export function PromoterStoriesManager() {
 
   return (
     <>
-      <div className="rounded-[22px] border border-white/10 bg-white/[0.025]">
-        <div className="flex items-center gap-3 border-b border-white/8 px-5 py-4">
+      <div className="rounded-[22px] border border-white/14 bg-white/[0.05]">
+        <div className="flex items-center gap-3 border-b border-white/12 px-5 py-4">
           <Search className="size-4 text-muted-foreground" />
           <Input
             placeholder="Buscar evento por nombre o slug…"
@@ -84,14 +84,14 @@ export function PromoterStoriesManager() {
             No hay eventos que coincidan.
           </div>
         ) : (
-          <ul className="divide-y divide-white/5">
+          <ul className="divide-y divide-white/10">
             {filtered.map((e: Event) => (
               <li
                 key={e.id}
                 onClick={() => setSelected({ id: e.id, title: e.title })}
-                className="flex cursor-pointer items-center gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.05]"
+                className="flex cursor-pointer items-center gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.08]"
               >
-                <div className="relative size-10 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/[0.05]">
+                <div className="relative size-10 shrink-0 overflow-hidden rounded-full border border-white/14 bg-white/[0.08]">
                   {e.coverImageUrl ? (
                     <Image
                       src={e.coverImageUrl}
@@ -125,7 +125,7 @@ export function PromoterStoriesManager() {
 
       <Sheet open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <SheetContent className="flex w-full flex-col overflow-hidden p-0 sm:max-w-2xl">
-          <SheetHeader className="shrink-0 border-b border-white/10 px-6 pb-4 pt-5">
+          <SheetHeader className="shrink-0 border-b border-white/14 px-6 pb-4 pt-5">
             <SheetTitle className="font-display text-2xl">
               {selected ? `Historias · ${selected.title}` : 'Historias'}
             </SheetTitle>

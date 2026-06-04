@@ -13,13 +13,13 @@ import { ExportCsvButton } from './export-csv-button';
 
 const SalesChart = dynamic(() => import('./sales-chart').then((m) => m.SalesChart), {
   ssr: false,
-  loading: () => <div className="h-[260px] rounded-[22px] border border-white/10 bg-white/[0.025]" />,
+  loading: () => <div className="h-[260px] rounded-[22px] border border-white/14 bg-white/[0.05]" />,
 });
 const RedeemedDonut = dynamic(
   () => import('./redeemed-donut').then((m) => m.RedeemedDonut),
   {
     ssr: false,
-    loading: () => <div className="h-[260px] rounded-[22px] border border-white/10 bg-white/[0.025]" />,
+    loading: () => <div className="h-[260px] rounded-[22px] border border-white/14 bg-white/[0.05]" />,
   },
 );
 

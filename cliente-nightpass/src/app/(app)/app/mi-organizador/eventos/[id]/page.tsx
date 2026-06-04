@@ -50,7 +50,7 @@ export default async function EventoDetallePage({ params }: PageProps) {
         </p>
       </header>
 
-      <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-6">
+      <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-6">
         <PromoterEventEdit promoterId={me.promoter.id} eventId={id} />
       </div>
     </div>

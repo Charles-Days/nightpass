@@ -54,7 +54,7 @@ function EventRow({
   const isAdmin = session.data?.role === 'ADMIN';
   const [featureDialogOpen, setFeatureDialogOpen] = React.useState(false);
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[14px] border border-white/10 bg-white/[0.025] px-3 py-2 text-sm transition-colors hover:bg-white/[0.04]">
+    <div className="flex items-center justify-between gap-3 rounded-[14px] border border-white/14 bg-white/[0.05] px-3 py-2 text-sm transition-colors hover:bg-white/[0.07]">
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2 truncate font-medium">
           {event.isFeatured ? (
@@ -157,7 +157,7 @@ export function EventsPanel({ venueId }: { venueId: string }) {
       {/* Modal crear evento */}
       <Dialog open={creating} onOpenChange={(v) => !v && setCreating(false)}>
         <DialogContent className="flex max-h-[90vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl lg:max-w-3xl">
-          <DialogHeader className="shrink-0 border-b border-white/8 px-6 pb-3 pt-5">
+          <DialogHeader className="shrink-0 border-b border-white/12 px-6 pb-3 pt-5">
             <DialogTitle>Nuevo evento</DialogTitle>
           </DialogHeader>
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
@@ -172,7 +172,7 @@ export function EventsPanel({ venueId }: { venueId: string }) {
       {/* Modal editar evento */}
       <Dialog open={!!editingEvent} onOpenChange={(v) => !v && setEditingEvent(null)}>
         <DialogContent className="flex max-h-[90vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl lg:max-w-3xl">
-          <DialogHeader className="shrink-0 border-b border-white/8 px-6 pb-3 pt-5">
+          <DialogHeader className="shrink-0 border-b border-white/12 px-6 pb-3 pt-5">
             <DialogTitle className="truncate">
               Editar: {editingEvent?.title}
             </DialogTitle>

@@ -66,7 +66,7 @@ export default function RpsAdminPage() {
           placeholder="Buscar por nombre, código o email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 pl-10 placeholder-white/30 text-sm focus:border-primary/50"
+          className="bg-white/[0.05] border-white/14 text-white rounded-xl h-10 pl-10 placeholder-white/30 text-sm focus:border-primary/50"
         />
       </div>
 
@@ -89,7 +89,7 @@ export default function RpsAdminPage() {
               disabled={page === 1}
               onClick={() => setPage((p) => p - 1)}
               variant="outline"
-              className="rounded-lg h-8 text-xs border-white/10 text-white hover:bg-white/5"
+              className="rounded-lg h-8 text-xs border-white/14 text-white hover:bg-white/5"
             >
               Anterior
             </Button>
@@ -97,7 +97,7 @@ export default function RpsAdminPage() {
               disabled={page * limit >= data.total}
               onClick={() => setPage((p) => p + 1)}
               variant="outline"
-              className="rounded-lg h-8 text-xs border-white/10 text-white hover:bg-white/5"
+              className="rounded-lg h-8 text-xs border-white/14 text-white hover:bg-white/5"
             >
               Siguiente
             </Button>

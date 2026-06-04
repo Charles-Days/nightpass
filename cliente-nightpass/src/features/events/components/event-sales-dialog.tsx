@@ -62,7 +62,7 @@ export function EventSalesDialog({ eventId, eventTitle, onClose }: Props) {
                 {sales.data.byTier.map((t) => (
                   <div
                     key={t.tierId}
-                    className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm"
+                    className="flex items-center justify-between rounded-lg border border-white/14 bg-white/[0.035] px-3 py-2 text-sm"
                   >
                     <span className="font-medium">{t.name}</span>
                     <span className="text-muted-foreground">
@@ -88,7 +88,7 @@ export function EventSalesDialog({ eventId, eventTitle, onClose }: Props) {
                   {sales.data.orders.map((o) => (
                     <div
                       key={o.id}
-                      className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm"
+                      className="flex items-center justify-between rounded-lg border border-white/14 bg-white/[0.035] px-3 py-2 text-sm"
                     >
                       <div className="min-w-0">
                         <p className="truncate font-medium">
@@ -128,7 +128,7 @@ export function EventSalesDialog({ eventId, eventTitle, onClose }: Props) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[14px] border border-white/10 bg-white/[0.025] px-3 py-3">
+    <div className="rounded-[14px] border border-white/14 bg-white/[0.05] px-3 py-3">
       <p className="text-[10px] font-semibold uppercase tracking-wider text-primary/70">
         {label}
       </p>

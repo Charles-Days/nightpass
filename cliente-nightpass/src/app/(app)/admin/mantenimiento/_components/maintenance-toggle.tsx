@@ -76,7 +76,7 @@ export function MaintenanceToggle({ initial }: { initial: Status }) {
       </div>
 
       {/* Mensaje opcional */}
-      <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-5">
+      <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-5">
         <label
           htmlFor="maint-msg"
           className="text-sm font-medium text-foreground"
@@ -91,7 +91,7 @@ export function MaintenanceToggle({ initial }: { initial: Status }) {
           maxLength={280}
           rows={3}
           placeholder="Ej. Estamos mejorando los pagos. Volvemos en ~15 min."
-          className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-foreground outline-none placeholder:text-white/30 focus:border-primary/50"
+          className="mt-2 w-full resize-none rounded-xl border border-white/14 bg-black/30 px-3 py-2 text-sm text-foreground outline-none placeholder:text-white/30 focus:border-primary/50"
         />
         <p className="mt-1 text-right text-[11px] text-muted-foreground">
           {message.length}/280

@@ -163,7 +163,7 @@ function VenuePicker({
   return (
     <div className="space-y-2">
       {selected ? (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-white/14 bg-white/[0.07] px-3 py-2">
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{selected.name}</p>
             <p className="text-xs text-muted-foreground">{selected.city}</p>
@@ -197,7 +197,7 @@ function VenuePicker({
             disabled={disabled}
           />
           {open && (results.length > 0 || loading) ? (
-            <div className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-lg border border-white/10 bg-background shadow-xl">
+            <div className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-lg border border-white/14 bg-background shadow-xl">
               {loading ? (
                 <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
                   <Loader2 className="size-3.5 animate-spin" /> Buscando…
@@ -212,7 +212,7 @@ function VenuePicker({
                       setOpen(false);
                       onChange(v.id, v.name);
                     }}
-                    className="block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-white/[0.06]"
+                    className="block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-white/[0.09]"
                   >
                     <p className="font-medium">{v.name}</p>
                     <p className="text-xs text-muted-foreground">{v.city}</p>
@@ -319,7 +319,7 @@ export function EventFormPromoter({
       {/* Location switch. En edición, el TIPO (venue del catálogo vs externo) y la
           selección de venue quedan bloqueados (el UpdateEventDto no acepta cambiar
           venueId), pero los campos de un venue EXTERNO sí se pueden editar. */}
-      <fieldset className="space-y-4 rounded-[18px] border border-white/10 bg-white/[0.02] p-4">
+      <fieldset className="space-y-4 rounded-[18px] border border-white/14 bg-white/[0.035] p-4">
         <legend className="px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/70">
           ¿Dónde se realiza?
         </legend>
@@ -329,7 +329,7 @@ export function EventFormPromoter({
             className={`flex flex-1 cursor-pointer items-start gap-3 rounded-lg border px-3 py-2 transition-colors ${
               locationKind === 'venue'
                 ? 'border-primary/60 bg-primary/10'
-                : 'border-white/10 hover:bg-white/[0.04]'
+                : 'border-white/14 hover:bg-white/[0.07]'
             }`}
           >
             <input
@@ -350,7 +350,7 @@ export function EventFormPromoter({
             className={`flex flex-1 cursor-pointer items-start gap-3 rounded-lg border px-3 py-2 transition-colors ${
               locationKind === 'external'
                 ? 'border-primary/60 bg-primary/10'
-                : 'border-white/10 hover:bg-white/[0.04]'
+                : 'border-white/14 hover:bg-white/[0.07]'
             }`}
           >
             <input
@@ -624,7 +624,7 @@ export function EventFormPromoter({
       />
 
       {/* Grupos de WhatsApp — varios links que verá el cliente en el evento. */}
-      <fieldset className="space-y-3 rounded-[18px] border border-white/10 bg-white/[0.02] p-4">
+      <fieldset className="space-y-3 rounded-[18px] border border-white/14 bg-white/[0.035] p-4">
         <legend className="flex items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/70">
           <MessageCircle className="size-3.5" />
           Grupos de WhatsApp
@@ -656,7 +656,7 @@ export function EventFormPromoter({
               type="button"
               variant="outline"
               onClick={() => waRemove(i)}
-              className="shrink-0 rounded-md border-white/15 bg-transparent text-white/70 hover:bg-white/[0.06]"
+              className="shrink-0 rounded-md border-white/18 bg-transparent text-white/70 hover:bg-white/[0.09]"
               aria-label="Quitar grupo"
             >
               <Trash2 className="size-4" />
@@ -669,7 +669,7 @@ export function EventFormPromoter({
             type="button"
             variant="outline"
             onClick={() => waAppend({ label: '', url: '' })}
-            className="rounded-full border-white/15 bg-transparent text-sm text-white/80 hover:bg-white/[0.06]"
+            className="rounded-full border-white/18 bg-transparent text-sm text-white/80 hover:bg-white/[0.09]"
           >
             <Plus className="mr-1.5 size-4" />
             Agregar grupo

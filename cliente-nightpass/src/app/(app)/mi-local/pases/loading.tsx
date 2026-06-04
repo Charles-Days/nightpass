@@ -8,22 +8,22 @@ export default function MiLocalPasesLoading() {
       </div>
       <div className="flex flex-wrap gap-2">
         {[0, 1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-8 w-20 animate-pulse rounded-full bg-white/[0.04]" />
+          <div key={i} className="h-8 w-20 animate-pulse rounded-full bg-white/[0.07]" />
         ))}
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-28 animate-pulse rounded-[22px] border border-white/10 bg-white/[0.025]"
+            className="h-28 animate-pulse rounded-[22px] border border-white/14 bg-white/[0.05]"
           />
         ))}
       </div>
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-        <div className="h-[320px] animate-pulse rounded-[22px] border border-white/10 bg-white/[0.025]" />
-        <div className="h-[320px] animate-pulse rounded-[22px] border border-white/10 bg-white/[0.025]" />
+        <div className="h-[320px] animate-pulse rounded-[22px] border border-white/14 bg-white/[0.05]" />
+        <div className="h-[320px] animate-pulse rounded-[22px] border border-white/14 bg-white/[0.05]" />
       </div>
-      <div className="h-72 animate-pulse rounded-[22px] border border-white/10 bg-white/[0.025]" />
+      <div className="h-72 animate-pulse rounded-[22px] border border-white/14 bg-white/[0.05]" />
     </div>
   );
 }

@@ -19,9 +19,9 @@ export function PromoterStaffList() {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-white/10 bg-card/50">
+    <div className="overflow-x-auto rounded-xl border border-white/14 bg-card/50">
       <table className="w-full min-w-[560px] text-left text-sm">
-        <thead className="border-b border-white/8 bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground">
+        <thead className="border-b border-white/12 bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground">
           <tr>
             <th className="px-4 py-3 font-medium">Email</th>
             <th className="px-4 py-3 font-medium">Rol</th>

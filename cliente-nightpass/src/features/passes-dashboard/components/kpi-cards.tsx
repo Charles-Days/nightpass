@@ -33,7 +33,7 @@ function CardShell({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="rounded-[22px] border border-white/10 bg-white/[0.025] transition-colors hover:bg-white/[0.04]">
+    <Card className="rounded-[22px] border border-white/14 bg-white/[0.05] transition-colors hover:bg-white/[0.07]">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
         <Icon className="size-4 text-primary/60" />

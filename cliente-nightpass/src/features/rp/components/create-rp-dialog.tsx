@@ -130,7 +130,7 @@ export function CreateRpDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] rounded-[22px] border border-white/10 bg-[#0f0f17] text-white">
+      <DialogContent className="sm:max-w-[425px] rounded-[22px] border border-white/14 bg-[#0f0f17] text-white">
         <DialogHeader>
           <DialogTitle className="font-display text-xl font-bold tracking-tight text-white">
             Crear Nuevo RP
@@ -146,7 +146,7 @@ export function CreateRpDialog({
               placeholder="Ej. Carlos Mendoza"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
+              className="bg-white/[0.05] border-white/14 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
               required
             />
           </div>
@@ -163,7 +163,7 @@ export function CreateRpDialog({
                   setState(e.target.value);
                   setCity('');
                 }}
-                className="h-10 w-full rounded-xl border border-white/10 bg-[#0f0f17] px-3 text-sm text-white focus:border-primary/50 focus:outline-none"
+                className="h-10 w-full rounded-xl border border-white/14 bg-[#0f0f17] px-3 text-sm text-white focus:border-primary/50 focus:outline-none"
               >
                 <option value="">Estado…</option>
                 {MEXICO_GEO.map((e) => (
@@ -182,7 +182,7 @@ export function CreateRpDialog({
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 disabled={!state}
-                className="h-10 w-full rounded-xl border border-white/10 bg-[#0f0f17] px-3 text-sm text-white focus:border-primary/50 focus:outline-none disabled:opacity-50"
+                className="h-10 w-full rounded-xl border border-white/14 bg-[#0f0f17] px-3 text-sm text-white focus:border-primary/50 focus:outline-none disabled:opacity-50"
               >
                 <option value="">Ciudad…</option>
                 {rpCities.map((c) => (
@@ -208,7 +208,7 @@ export function CreateRpDialog({
               placeholder="carlos@nightpass.mx"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
+              className="bg-white/[0.05] border-white/14 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
               required
             />
           </div>
@@ -223,7 +223,7 @@ export function CreateRpDialog({
               placeholder="Dejar vacío para auto-generar"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
+              className="bg-white/[0.05] border-white/14 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
             />
           </div>
 
@@ -235,7 +235,7 @@ export function CreateRpDialog({
               id="event"
               value={eventId}
               onChange={(e) => setEventId(e.target.value)}
-              className="w-full bg-[#0f0f17] border border-white/10 rounded-xl h-10 px-3 text-white text-sm focus:border-primary/50 focus:outline-none"
+              className="w-full bg-[#0f0f17] border border-white/14 rounded-xl h-10 px-3 text-white text-sm focus:border-primary/50 focus:outline-none"
               required
             >
               <option value="" disabled>Selecciona un evento</option>
@@ -247,7 +247,7 @@ export function CreateRpDialog({
             </select>
           </div>
 
-          <div className="space-y-1.5 border-t border-white/5 pt-3">
+          <div className="space-y-1.5 border-t border-white/10 pt-3">
             <Label htmlFor="commissionType" className="text-white/70 text-xs font-semibold text-purple-300">
               Esquema de Comisión Inicial *
             </Label>
@@ -255,7 +255,7 @@ export function CreateRpDialog({
               id="commissionType"
               value={commissionType}
               onChange={(e) => setCommissionType(e.target.value as any)}
-              className="w-full bg-[#0f0f17] border border-white/10 rounded-xl h-10 px-3 text-white text-sm focus:border-primary/50 focus:outline-none"
+              className="w-full bg-[#0f0f17] border border-white/14 rounded-xl h-10 px-3 text-white text-sm focus:border-primary/50 focus:outline-none"
               required
             >
               <option value="PER_N_TICKETS">Por Cantidad (Ej. $150 MXN por cada 10 boletos)</option>
@@ -275,7 +275,7 @@ export function CreateRpDialog({
                   min="1"
                   value={nTickets}
                   onChange={(e) => setNTickets(e.target.value)}
-                  className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
+                  className="bg-white/[0.05] border-white/14 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
                   required
                 />
               </div>
@@ -290,7 +290,7 @@ export function CreateRpDialog({
                   placeholder="150"
                   value={reward}
                   onChange={(e) => setReward(e.target.value)}
-                  className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
+                  className="bg-white/[0.05] border-white/14 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
                   required
                 />
               </div>
@@ -308,7 +308,7 @@ export function CreateRpDialog({
                 max="100"
                 value={percentage}
                 onChange={(e) => setPercentage(e.target.value)}
-                className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
+                className="bg-white/[0.05] border-white/14 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
                 required
               />
             </div>
@@ -323,7 +323,7 @@ export function CreateRpDialog({
                 id="promoter"
                 value={promoterId}
                 onChange={(e) => setPromoterId(e.target.value)}
-                className="w-full bg-[#0f0f17] border border-white/10 rounded-xl h-10 px-3 text-white text-sm placeholder-white/30 focus:border-primary/50 focus:outline-none"
+                className="w-full bg-[#0f0f17] border border-white/14 rounded-xl h-10 px-3 text-white text-sm placeholder-white/30 focus:border-primary/50 focus:outline-none"
               >
                 <option value="">Ninguno - Global</option>
                 {promoters.map((p) => (
@@ -340,7 +340,7 @@ export function CreateRpDialog({
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="rounded-xl border border-white/10 text-white/70 hover:text-white"
+              className="rounded-xl border border-white/14 text-white/70 hover:text-white"
             >
               Cancelar
             </Button>

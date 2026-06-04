@@ -13,7 +13,7 @@ interface StoriesGridProps {
 export function StoriesGrid({ stories, target }: StoriesGridProps) {
   if (stories.length === 0) {
     return (
-      <div className="rounded-[22px] border border-dashed border-white/10 bg-white/[0.015] p-10 text-center">
+      <div className="rounded-[22px] border border-dashed border-white/14 bg-white/[0.025] p-10 text-center">
         <p className="text-sm text-white/70">
           Aún no has publicado historias. Sube una para empezar.
         </p>

@@ -216,11 +216,11 @@ export function CheckinQrPanel({ venueId, venueName, venueCity }: CheckinQrPanel
       </p>
 
       {isLoading ? (
-        <div className="flex items-center justify-center gap-2 rounded-[18px] border border-dashed border-white/10 bg-white/[0.015] p-8 text-sm text-muted-foreground">
+        <div className="flex items-center justify-center gap-2 rounded-[18px] border border-dashed border-white/14 bg-white/[0.025] p-8 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> Cargando QR…
         </div>
       ) : !data ? (
-        <div className="flex flex-col items-start gap-3 rounded-[18px] border border-dashed border-white/15 bg-white/[0.015] p-5">
+        <div className="flex flex-col items-start gap-3 rounded-[18px] border border-dashed border-white/18 bg-white/[0.025] p-5">
           <QrCode className="size-6 text-primary" />
           <p className="text-sm">
             Aún no tienes un QR de check-in para este local.
@@ -240,7 +240,7 @@ export function CheckinQrPanel({ venueId, venueName, venueCity }: CheckinQrPanel
           </Button>
         </div>
       ) : (
-        <div className="rounded-[18px] border border-white/10 bg-white/[0.025] p-5">
+        <div className="rounded-[18px] border border-white/14 bg-white/[0.05] p-5">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
             <div className="rounded-xl bg-white p-3">
               <QRCodeSVG

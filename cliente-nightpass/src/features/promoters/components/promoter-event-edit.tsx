@@ -111,7 +111,7 @@ export function PromoterEventEdit({
         <TiersSection eventId={eventId} />
       </CollapsibleCard>
 
-      <div className="flex justify-end border-t border-white/8 pt-4">
+      <div className="flex justify-end border-t border-white/12 pt-4">
         <Button
           type="button"
           variant="ghost"

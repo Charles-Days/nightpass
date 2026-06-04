@@ -98,7 +98,7 @@ export function CommissionRuleForm({ rpId, onSuccess, initialRule, assignedEvent
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-white/10 bg-white/[0.01] p-4 text-white">
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-white/14 bg-white/[0.02] p-4 text-white">
       <h3 className="font-display text-sm font-semibold tracking-tight">
         {isEditing ? 'Editar Regla de Comisión' : 'Asignar Evento y Comisión'}
       </h3>
@@ -112,7 +112,7 @@ export function CommissionRuleForm({ rpId, onSuccess, initialRule, assignedEvent
           value={eventId}
           onChange={(e) => setEventId(e.target.value)}
           disabled={isEditing}
-          className="w-full bg-[#0f0f17] border border-white/10 rounded-xl h-10 px-3 text-white text-sm focus:border-primary/50 focus:outline-none disabled:opacity-60"
+          className="w-full bg-[#0f0f17] border border-white/14 rounded-xl h-10 px-3 text-white text-sm focus:border-primary/50 focus:outline-none disabled:opacity-60"
         >
           <option value="">Cualquier Evento (Regla General)</option>
           {availableEvents.map((ev) => (
@@ -143,7 +143,7 @@ export function CommissionRuleForm({ rpId, onSuccess, initialRule, assignedEvent
           id="ruleType"
           value={type}
           onChange={(e) => setType(e.target.value as any)}
-          className="w-full bg-[#0f0f17] border border-white/10 rounded-xl h-10 px-3 text-white text-sm focus:border-primary/50 focus:outline-none"
+          className="w-full bg-[#0f0f17] border border-white/14 rounded-xl h-10 px-3 text-white text-sm focus:border-primary/50 focus:outline-none"
         >
           <option value="PER_N_TICKETS">Por Cantidad (Ej. $150 MXN por cada 10 boletos)</option>
           <option value="PERCENTAGE">Por Porcentaje (Ej. 5% de cada boleto)</option>
@@ -162,7 +162,7 @@ export function CommissionRuleForm({ rpId, onSuccess, initialRule, assignedEvent
               min="1"
               value={nTickets}
               onChange={(e) => setNTickets(e.target.value)}
-              className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
+              className="bg-white/[0.05] border-white/14 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
               required
             />
           </div>
@@ -177,7 +177,7 @@ export function CommissionRuleForm({ rpId, onSuccess, initialRule, assignedEvent
               placeholder="150"
               value={reward}
               onChange={(e) => setReward(e.target.value)}
-              className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
+              className="bg-white/[0.05] border-white/14 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
               required
             />
             <span className="text-[10px] text-muted-foreground block mt-1">
@@ -198,7 +198,7 @@ export function CommissionRuleForm({ rpId, onSuccess, initialRule, assignedEvent
             max="100"
             value={percentage}
             onChange={(e) => setPercentage(e.target.value)}
-            className="bg-white/[0.03] border-white/10 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
+            className="bg-white/[0.05] border-white/14 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
             required
           />
         </div>

@@ -59,7 +59,7 @@ function Stat({
   accent?: string;
 }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+    <div className="min-w-0 rounded-2xl border border-white/14 bg-white/[0.05] p-4">
       <div className="flex items-center justify-between gap-2">
         <span className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           {label}
@@ -127,7 +127,7 @@ function DailyBars({ daily }: { daily: AdminEventDetail['daily'] }) {
             <div key={d.day} className="group flex min-w-0 flex-1 flex-col items-center gap-1">
               <div className="relative flex h-full w-full flex-col justify-end">
                 <div
-                  className="pointer-events-none absolute -top-1 left-1/2 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md border border-white/10 bg-[#13131a] px-2 py-1 text-[10px] opacity-0 shadow-lg transition group-hover:opacity-100"
+                  className="pointer-events-none absolute -top-1 left-1/2 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md border border-white/14 bg-[#13131a] px-2 py-1 text-[10px] opacity-0 shadow-lg transition group-hover:opacity-100"
                 >
                   {d.card + d.cash} pases · {money(d.revenueCents)}
                 </div>
@@ -180,9 +180,9 @@ export function EventDetailDialog({
 
   return (
     <Dialog open={!!eventId} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[88vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] overflow-hidden border-white/10 bg-[#0a0a0f] p-0 sm:w-full sm:max-w-3xl">
+      <DialogContent className="max-h-[88vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] overflow-hidden border-white/14 bg-[#0a0a0f] p-0 sm:w-full sm:max-w-3xl">
         <div className="flex max-h-[88vh] min-w-0 flex-col">
-          <DialogHeader className="shrink-0 border-b border-white/10 px-4 pb-4 pt-5 pr-12 sm:px-6 sm:pr-12">
+          <DialogHeader className="shrink-0 border-b border-white/14 px-4 pb-4 pt-5 pr-12 sm:px-6 sm:pr-12">
             <DialogTitle className="min-w-0 break-words font-display text-base sm:text-lg">
               {data?.event.title ?? 'Detalle del evento'}
             </DialogTitle>
@@ -199,7 +199,7 @@ export function EventDetailDialog({
                     {data.event.city}
                   </span>
                 ) : null}
-                <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] uppercase tracking-wide">
+                <span className="rounded-full bg-white/[0.09] px-2 py-0.5 text-[10px] uppercase tracking-wide">
                   {data.event.status}
                 </span>
               </div>
@@ -209,9 +209,9 @@ export function EventDetailDialog({
           <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 sm:px-6">
             {isLoading ? (
               <div className="space-y-3">
-                <div className="h-24 animate-pulse rounded-2xl bg-white/[0.04]" />
-                <div className="h-40 animate-pulse rounded-2xl bg-white/[0.04]" />
-                <div className="h-40 animate-pulse rounded-2xl bg-white/[0.04]" />
+                <div className="h-24 animate-pulse rounded-2xl bg-white/[0.07]" />
+                <div className="h-40 animate-pulse rounded-2xl bg-white/[0.07]" />
+                <div className="h-40 animate-pulse rounded-2xl bg-white/[0.07]" />
               </div>
             ) : isError ? (
               <p className="text-sm text-destructive">
@@ -263,12 +263,12 @@ export function EventDetailDialog({
                 </div>
 
                 {/* Donut + cash detail */}
-                <section className="grid gap-5 rounded-2xl border border-white/10 bg-white/[0.025] p-5 sm:grid-cols-2">
+                <section className="grid gap-5 rounded-2xl border border-white/14 bg-white/[0.05] p-5 sm:grid-cols-2">
                   <div>
                     <SectionTitle>Mezcla de pago</SectionTitle>
                     <PaymentDonut card={data.summary.soldCard} cash={data.summary.soldCash} />
                   </div>
-                  <div className="space-y-2.5 sm:border-l sm:border-white/10 sm:pl-5">
+                  <div className="space-y-2.5 sm:border-l sm:border-white/14 sm:pl-5">
                     <SectionTitle>Efectivo (RP)</SectionTitle>
                     <div className="flex items-center justify-between text-sm">
                       <span className="inline-flex items-center gap-2 text-muted-foreground">
@@ -298,7 +298,7 @@ export function EventDetailDialog({
                 </section>
 
                 {/* Daily chart */}
-                <section className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
+                <section className="rounded-2xl border border-white/14 bg-white/[0.05] p-5">
                   <SectionTitle>Ventas por día</SectionTitle>
                   <DailyBars daily={data.daily} />
                 </section>
@@ -309,9 +309,9 @@ export function EventDetailDialog({
                   {data.byTier.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Este evento no tiene tiers.</p>
                   ) : (
-                    <div className="overflow-x-auto rounded-xl border border-white/10">
+                    <div className="overflow-x-auto rounded-xl border border-white/14">
                       <table className="w-full min-w-[34rem] text-left text-sm">
-                        <thead className="border-b border-white/8 bg-white/[0.02] text-[10px] uppercase tracking-wide text-muted-foreground">
+                        <thead className="border-b border-white/12 bg-white/[0.035] text-[10px] uppercase tracking-wide text-muted-foreground">
                           <tr>
                             <th className="px-3 py-2 font-medium">Tier</th>
                             <th className="px-3 py-2 font-medium">Precio</th>
@@ -323,7 +323,7 @@ export function EventDetailDialog({
                         </thead>
                         <tbody>
                           {data.byTier.map((t) => (
-                            <tr key={t.tierId} className="border-b border-white/5 last:border-b-0">
+                            <tr key={t.tierId} className="border-b border-white/10 last:border-b-0">
                               <td className="px-3 py-2 font-medium">{t.name}</td>
                               <td className="px-3 py-2 text-muted-foreground">
                                 {money(t.priceCents)}
@@ -367,7 +367,7 @@ export function EventDetailDialog({
                         return (
                           <div
                             key={rp.rpId}
-                            className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.025] px-4 py-2.5"
+                            className="flex items-center justify-between rounded-xl border border-white/14 bg-white/[0.05] px-4 py-2.5"
                           >
                             <div className="flex items-center gap-3">
                               <span className="flex size-6 items-center justify-center rounded-full bg-amber-500/15 text-[11px] font-bold text-amber-300">
@@ -404,9 +404,9 @@ export function EventDetailDialog({
                   {data.recentOrders.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Sin órdenes.</p>
                   ) : (
-                    <div className="overflow-x-auto rounded-xl border border-white/10">
+                    <div className="overflow-x-auto rounded-xl border border-white/14">
                       <table className="w-full min-w-[34rem] text-left text-sm">
-                        <thead className="border-b border-white/8 bg-white/[0.02] text-[10px] uppercase tracking-wide text-muted-foreground">
+                        <thead className="border-b border-white/12 bg-white/[0.035] text-[10px] uppercase tracking-wide text-muted-foreground">
                           <tr>
                             <th className="px-3 py-2 font-medium">Cliente</th>
                             <th className="px-3 py-2 font-medium">Método</th>
@@ -417,7 +417,7 @@ export function EventDetailDialog({
                         </thead>
                         <tbody>
                           {data.recentOrders.map((o) => (
-                            <tr key={o.id} className="border-b border-white/5 last:border-b-0">
+                            <tr key={o.id} className="border-b border-white/10 last:border-b-0">
                               <td className="px-3 py-2">
                                 <p className="font-medium">{o.userName ?? o.userEmail}</p>
                                 {o.userName ? (
@@ -448,7 +448,7 @@ export function EventDetailDialog({
                                     Canjeado
                                   </span>
                                 ) : (
-                                  <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                  <span className="rounded-full bg-white/[0.09] px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                                     Pendiente
                                   </span>
                                 )}

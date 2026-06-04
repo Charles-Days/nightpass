@@ -20,7 +20,7 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: Tooltip
   if (!active || !payload || payload.length === 0) return null;
   const point = payload[0].payload;
   return (
-    <div className="rounded-lg border border-white/10 bg-[#0a0a0f]/95 px-3 py-2 text-xs shadow-lg backdrop-blur">
+    <div className="rounded-lg border border-white/14 bg-[#0a0a0f]/95 px-3 py-2 text-xs shadow-lg backdrop-blur">
       <p className="font-medium text-white/90">{formatDay(point.day)}</p>
       <p className="text-muted-foreground">
         Pases: <span className="text-white/90">{point.sales}</span>
@@ -36,7 +36,7 @@ export function SalesChart({ data }: { data: PassesStatsDailyPoint[] }) {
   const hasData = data.length > 0 && data.some((d) => d.sales > 0);
 
   return (
-    <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-5">
+    <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-5">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">

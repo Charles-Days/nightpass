@@ -57,7 +57,7 @@ export function RangePicker({ from, to }: { from?: string; to?: string }) {
   }, [from, to]);
 
   return (
-    <div className="flex items-center gap-1 self-start rounded-xl border border-white/8 bg-white/5 p-1">
+    <div className="flex items-center gap-1 self-start rounded-xl border border-white/12 bg-white/5 p-1">
       {PRESETS.map((preset) => {
         const isActive = preset.key === activeKey;
         return (

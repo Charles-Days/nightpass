@@ -53,7 +53,7 @@ export function ApplicationForm() {
             pronto tengamos una respuesta.
           </p>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3 text-left">
+        <div className="rounded-xl border border-white/14 bg-white/[0.05] px-4 py-3 text-left">
           <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/80">
             ID de seguimiento
           </p>
@@ -110,7 +110,7 @@ export function ApplicationForm() {
         </Field>
       </section>
 
-      <div className="border-t border-white/5" />
+      <div className="border-t border-white/10" />
 
       <section className="space-y-4">
         <header className="space-y-1">
