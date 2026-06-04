@@ -30,6 +30,25 @@ export class EventsService {
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+  /**
+   * Valida una URL de imagen ENTRANTE (nueva o cambiada). Si resuelve a un
+   * objeto de nuestro storage subido por OTRO usuario, la rechaza: si no, un
+   * atacante podría persistir la URL de la imagen de otra cuenta y, al
+   * reemplazarla, disparar el cleanup que la borra (borrado cross-tenant).
+   * Las URLs externas (no resuelven a un key nuestro) se permiten — nunca se
+   * borran. ADMIN queda exento (puede curar imágenes ajenas).
+   */
+  private assertImageUrlOwned(
+    url: string | null | undefined,
+    user: AuthUser,
+  ): void {
+    if (!url || user.role === 'ADMIN') return;
+    if (!this.storage.isOwnStorageUrl(url)) return; // externa → ok
+    if (!this.storage.isOwnedUploadUrl(url, user.id)) {
+      throw new ForbiddenException('Imagen no pertenece a tu cuenta');
+    }
+  }
+
   private toSlug(title: string): string {
     return (
       title
@@ -116,6 +135,9 @@ export class EventsService {
       user.id,
       user.role,
     );
+
+    this.assertImageUrlOwned(dto.coverImageUrl, user);
+    this.assertImageUrlOwned(dto.flyerImageUrl, user);
 
     const baseSlug = this.toSlug(dto.title);
 
@@ -305,6 +327,16 @@ export class EventsService {
           `La nueva capacidad (${dto.capacity}) es menor que la suma de cupos de tiers (${sumTiers}). Ajusta los tiers primero.`,
         );
       }
+    }
+
+    // Validar prefijo de propietario solo en URLs que CAMBIAN — una imagen sin
+    // cambios ya estaba persistida y es de confianza; una nueva debe ser del
+    // propio usuario para no apuntar (y luego borrar) la de otra cuenta.
+    if (dto.coverImageUrl !== undefined && dto.coverImageUrl !== event.coverImageUrl) {
+      this.assertImageUrlOwned(dto.coverImageUrl, user);
+    }
+    if (dto.flyerImageUrl !== undefined && dto.flyerImageUrl !== event.flyerImageUrl) {
+      this.assertImageUrlOwned(dto.flyerImageUrl, user);
     }
 
     const data: Prisma.EventUpdateInput = {};

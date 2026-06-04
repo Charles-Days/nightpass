@@ -55,8 +55,11 @@ export class VenuesController {
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF)
-  getOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.service.getById(id);
+  getOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.service.getById(id, user);
   }
 
   @Patch(':id')

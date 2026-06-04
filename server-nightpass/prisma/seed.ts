@@ -9,6 +9,18 @@ import { seedPromoterApplication } from './seeds/promoter-application';
 import { seedPromoterOwner } from './seeds/promoter-owner';
 
 async function main() {
+  // Los seeders crean usuarios con contraseñas conocidas (admin@nightpass.local
+  // / AdminTest123, etc.) y FUERZAN role=ADMIN. Correr esto contra producción
+  // crearía un admin con credenciales públicas → takeover total. Abortamos salvo
+  // override explícito.
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PROD_SEED !== 'true') {
+    // eslint-disable-next-line no-console
+    console.error(
+      '⛔ Seed bloqueado en producción. Usa ALLOW_PROD_SEED=true solo si sabes lo que haces.',
+    );
+    process.exit(1);
+  }
+
   const prisma = new PrismaClient();
   try {
     // eslint-disable-next-line no-console

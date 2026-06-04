@@ -23,6 +23,7 @@ import { ConfirmEmailChangeDto } from './dto/confirm-email-change.dto';
 import { GoogleSigninDto } from './dto/google-signin.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthUser, CurrentUser } from './decorators/current-user.decorator';
+import { AllowPasswordChangePending } from './decorators/allow-password-change-pending.decorator';
 
 const STRICT_AUTH_THROTTLE = { default: { ttl: 60_000, limit: 5 } };
 const FORGOT_THROTTLE = { default: { ttl: 3_600_000, limit: 5 } };
@@ -67,6 +68,7 @@ export class AuthController {
   }
 
   @Get('me')
+  @AllowPasswordChangePending()
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: AuthUser) {
     return this.auth.getMe(user.id);
@@ -86,6 +88,7 @@ export class AuthController {
 
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
+  @AllowPasswordChangePending()
   @UseGuards(JwtAuthGuard)
   changePassword(@Body() dto: ChangePasswordDto, @CurrentUser() user: AuthUser) {
     return this.auth.changePassword(user.id, dto.oldPassword, dto.newPassword);

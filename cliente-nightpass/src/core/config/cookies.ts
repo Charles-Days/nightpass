@@ -8,10 +8,17 @@ export const REFRESH_COOKIE = 'np_refresh';
 export const RETURNING_COOKIE = 'np_returning';
 
 const isProd = process.env.NODE_ENV === 'production';
+// `Secure` no debe depender solo de NODE_ENV: en staging/preview (que corren sin
+// NODE_ENV=production) las cookies de sesión viajarían sin Secure sobre HTTPS.
+// COOKIE_SECURE permite forzarlo explícito en esos entornos.
+const secureCookies =
+  process.env.COOKIE_SECURE !== undefined
+    ? process.env.COOKIE_SECURE === 'true'
+    : isProd;
 
 const baseCookieOptions = {
   httpOnly: true,
-  secure: isProd,
+  secure: secureCookies,
   // 'lax' instead of 'strict' so QR scans / external deep links into authed
   // routes (e.g. /app/checkin/[venueId] opened from native camera app) carry
   // cookies on the initial GET. Lax still blocks cross-site POSTs.

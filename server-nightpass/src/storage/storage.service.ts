@@ -88,8 +88,13 @@ export class StorageService {
   }
 
   /**
-   * Extrae el `key` (path relativo) desde un publicUrl o URL relativa.
-   * Devuelve null si la URL no pertenece a este storage.
+   * Extrae el `key` (path relativo) desde un publicUrl de ESTE storage.
+   * Devuelve null si la URL no pertenece a una base conocida (R2 o local).
+   *
+   * Antes, cualquier string no-http se trataba como key relativo: una URL
+   * arbitraria del cliente podía resolverse a un key de borrado fuera de
+   * nuestras bases. Ahora solo se aceptan URLs que empiezan por la base R2 o la
+   * local configuradas.
    */
   keyFromPublicUrl(url: string | null | undefined): string | null {
     if (!url) return null;
@@ -101,7 +106,6 @@ export class StorageService {
       const base = this.localUploadsUrl.replace(/\/$/, '');
       if (url.startsWith(base + '/')) return url.slice(base.length + 1);
     }
-    if (!url.startsWith('http')) return url.replace(/^\/+/, '');
     return null;
   }
 
@@ -161,6 +165,30 @@ export class StorageService {
       .map(u => this.keyFromPublicUrl(u))
       .filter((k): k is string => !!k);
     if (keys.length) await this.deleteMany(keys);
+  }
+
+  /**
+   * ¿La URL apunta a un objeto de NUESTRO storage subido por `userId`?
+   *
+   * Los keys de upload tienen la forma `${kind}s/${userId}/<rand>.<ext>` (ver
+   * UploadsController). Sirve para evitar borrado cross-tenant: un atacante no
+   * puede persistir la URL de la imagen de otro usuario para que el cleanup la
+   * borre. Devuelve:
+   *   - true  → URL de nuestro storage bajo el prefijo de este usuario.
+   *   - false → URL de nuestro storage bajo OTRO usuario (rechazar).
+   * Una URL externa (no resuelve a un key nuestro) devuelve `false` aquí; los
+   * llamadores deben permitir externas por separado (nunca se borran).
+   */
+  isOwnedUploadUrl(url: string | null | undefined, userId: string): boolean {
+    const key = this.keyFromPublicUrl(url);
+    if (!key) return false;
+    const parts = key.split('/');
+    return parts.length >= 3 && parts[1] === userId;
+  }
+
+  /** ¿La URL resuelve a un key de nuestro storage (R2/local)? */
+  isOwnStorageUrl(url: string | null | undefined): boolean {
+    return this.keyFromPublicUrl(url) !== null;
   }
 
   getDriver() {

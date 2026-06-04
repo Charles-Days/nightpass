@@ -30,13 +30,16 @@ export class VenueStaffController {
     @Body() dto: InviteStaffDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.venueStaffService.invite(venueId, dto, user.id);
+    return this.venueStaffService.invite(venueId, dto, user);
   }
 
   @Get()
   @Roles(Role.ADMIN, Role.VENUE_OWNER)
-  list(@Param('venueId', ParseUUIDPipe) venueId: string) {
-    return this.venueStaffService.list(venueId);
+  list(
+    @Param('venueId', ParseUUIDPipe) venueId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.venueStaffService.list(venueId, user);
   }
 
   @Delete(':userId')
@@ -45,8 +48,9 @@ export class VenueStaffController {
   async revoke(
     @Param('venueId', ParseUUIDPipe) venueId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
+    @CurrentUser() user: AuthUser,
   ) {
-    await this.venueStaffService.revoke(venueId, userId);
+    await this.venueStaffService.revoke(venueId, userId, user);
     return { ok: true };
   }
 }

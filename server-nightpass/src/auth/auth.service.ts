@@ -142,7 +142,11 @@ export class AuthService {
     if (!payload?.sub || !payload?.email) {
       throw new UnauthorizedException('Token de Google sin datos requeridos');
     }
-    if (payload.email_verified === false) {
+    // Exigir email_verified === true explícitamente: antes solo se rechazaba
+    // `=== false`, así que un token sin el claim (undefined) pasaba y permitía
+    // auto-vincular por email a una cuenta existente sin prueba de control del
+    // correo. Sin verificación de email no hay account-linking seguro.
+    if (payload.email_verified !== true) {
       throw new UnauthorizedException('Email de Google no verificado');
     }
 

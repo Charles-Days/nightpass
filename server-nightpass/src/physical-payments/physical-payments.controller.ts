@@ -10,6 +10,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { PhysicalPaymentRequestStatus, Role } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -28,6 +29,7 @@ export class PhysicalPaymentsController {
 
   // Cliente: crea solicitud de pago en efectivo.
   @Post()
+  @Throttle({ default: { ttl: 60_000, limit: 15 } })
   @HttpCode(HttpStatus.CREATED)
   create(
     @CurrentUser() user: AuthUser,
@@ -65,6 +67,7 @@ export class PhysicalPaymentsController {
   @Post(':id/confirm')
   @UseGuards(RolesGuard)
   @Roles(Role.RP)
+  @Throttle({ default: { ttl: 60_000, limit: 20 } })
   @HttpCode(HttpStatus.OK)
   confirm(
     @CurrentUser() user: AuthUser,

@@ -24,9 +24,9 @@ import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { LocationsService } from '../locations/locations.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { parseQr, recomputeHmac, signPass, verifyHmac } from '../common/qr-hmac';
+import { requirePassSecret } from '../common/pass-secret';
+import { runSerializable } from '../common/serializable-tx';
 import { haversineMeters } from '../common/geo';
-
-const PASS_SECRET_FALLBACK = 'dev-hmac-secret-min32chars-replace-in-prod';
 
 // Una transferencia abierta vive como máximo 7 días — y nunca más allá del
 // inicio del evento (lo que ocurra primero).
@@ -152,47 +152,52 @@ export class PassesService {
       throw new ConflictException('El evento ya terminó');
     }
 
-    // Un pase por evento por usuario (igual que en la compra normal).
-    const dup = await this.prisma.pass.findFirst({
-      where: { eventId: claim.eventId, userId: user.id },
-      select: { id: true },
-    });
-    if (dup) {
-      throw new ConflictException('Ya tienes un pase para este evento');
-    }
-
-    // Aforo: por tier y por evento.
     const tier = await this.prisma.eventTier.findUnique({
       where: { id: claim.tierId },
       select: { capacity: true },
     });
-    if (tier?.capacity != null) {
-      const soldTier = await this.prisma.pass.count({
-        where: { eventId: claim.eventId, order: { tierId: claim.tierId } },
-      });
-      const pendingClaimsTier = await this.prisma.passClaim.count({
-        where: { tierId: claim.tierId, status: PassClaimStatus.PENDING },
-      });
-      if (soldTier + pendingClaimsTier >= tier.capacity) {
-        throw new ConflictException('Tier agotado');
-      }
-    }
-    if (event.capacity != null) {
-      const soldEvent = await this.prisma.pass.count({
-        where: { eventId: claim.eventId },
-      });
-      const pendingClaimsEvent = await this.prisma.passClaim.count({
-        where: { eventId: claim.eventId, status: PassClaimStatus.PENDING },
-      });
-      if (soldEvent + pendingClaimsEvent >= event.capacity) {
-        throw new ConflictException('Evento agotado');
-      }
-    }
 
-    const secret =
-      this.config.get<string>('PASS_HMAC_SECRET') || PASS_SECRET_FALLBACK;
+    const secret = requirePassSecret(this.config);
 
-    const passId = await this.prisma.$transaction(async (tx) => {
+    // Todo dentro de una tx Serializable con reintento: el dup-check (1 pase por
+    // evento) y el aforo se leen en la misma tx que la creación del pase, así
+    // dos reclamos concurrentes del mismo usuario/cupo entran en conflicto de
+    // serialización y uno se reintenta sobre el estado ya escrito — sin doble
+    // pase ni sobreventa.
+    const passId = await runSerializable(this.prisma, async (tx) => {
+      // Un pase por evento por usuario (igual que en la compra normal).
+      const dup = await tx.pass.findFirst({
+        where: { eventId: claim.eventId, userId: user.id },
+        select: { id: true },
+      });
+      if (dup) {
+        throw new ConflictException('Ya tienes un pase para este evento');
+      }
+
+      // Aforo: por tier y por evento.
+      if (tier?.capacity != null) {
+        const soldTier = await tx.pass.count({
+          where: { eventId: claim.eventId, order: { tierId: claim.tierId } },
+        });
+        const pendingClaimsTier = await tx.passClaim.count({
+          where: { tierId: claim.tierId, status: PassClaimStatus.PENDING },
+        });
+        if (soldTier + pendingClaimsTier >= tier.capacity) {
+          throw new ConflictException('Tier agotado');
+        }
+      }
+      if (event.capacity != null) {
+        const soldEvent = await tx.pass.count({
+          where: { eventId: claim.eventId },
+        });
+        const pendingClaimsEvent = await tx.passClaim.count({
+          where: { eventId: claim.eventId, status: PassClaimStatus.PENDING },
+        });
+        if (soldEvent + pendingClaimsEvent >= event.capacity) {
+          throw new ConflictException('Evento agotado');
+        }
+      }
+
       const order = await tx.order.create({
         data: {
           userId: user.id,
@@ -525,23 +530,23 @@ export class PassesService {
       throw new ConflictException('El pase ya fue usado');
     }
 
-    // Un pase por evento por usuario (igual que en compra y claim).
-    const dup = await this.prisma.pass.findFirst({
-      where: {
-        eventId: transfer.pass.eventId,
-        userId: user.id,
-        id: { not: transfer.passId },
-      },
-      select: { id: true },
-    });
-    if (dup) {
-      throw new ConflictException('Ya tienes un pase para este evento');
-    }
+    const secret = requirePassSecret(this.config);
 
-    const secret =
-      this.config.get<string>('PASS_HMAC_SECRET') || PASS_SECRET_FALLBACK;
+    await runSerializable(this.prisma, async (tx) => {
+      // Un pase por evento por usuario (igual que en compra y claim). Dentro de
+      // la tx Serializable para que no se cuele un segundo pase por carrera.
+      const dup = await tx.pass.findFirst({
+        where: {
+          eventId: transfer.pass.eventId,
+          userId: user.id,
+          id: { not: transfer.passId },
+        },
+        select: { id: true },
+      });
+      if (dup) {
+        throw new ConflictException('Ya tienes un pase para este evento');
+      }
 
-    await this.prisma.$transaction(async (tx) => {
       const qr = signPass(
         transfer.passId,
         transfer.pass.eventId,

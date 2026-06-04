@@ -14,10 +14,16 @@ const PRIVATE_IP = /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|fc|fd)/i;
  * ¿La IP es interna/infra (proxy de Coolify, contenedores Next que hacen SSR y
  * proxean /api)? Esas IPs concentran TODO el tráfico server-side; jamás deben
  * contar para el rate-limit ni quedar baneadas — si no, una sola IP se autobanea
- * y tumba el sitio entero. Sin IP fiable ('unknown') → tratar como interno.
+ * y tumba el sitio entero.
+ *
+ * `unknown` (sin IP de socket ni XFF fiable) ya NO se trata como interno:
+ * eximirlo permitía que tráfico no atribuible evadiera el throttle/ban. Con
+ * TRUST_PROXY bien configurado `req.ip` siempre resuelve, así que 'unknown' es
+ * un caso anómalo y debe quedar sujeto al límite (fail-closed), compartiendo un
+ * único bucket sin afectar a IPs reales.
  */
 export function isInternalIp(ip: string): boolean {
-  if (!ip || ip === 'unknown') return true;
+  if (!ip || ip === 'unknown') return false;
   const clean = ip.replace(/^::ffff:/i, '');
   return clean === '::1' || PRIVATE_IP.test(clean);
 }
