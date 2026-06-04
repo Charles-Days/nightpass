@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import {
   ArrowLeft,
+  Bell,
   Camera,
   ChevronRight,
   KeyRound,
@@ -21,6 +22,7 @@ import { paths } from '@/core/config/paths';
 import type { Role, User } from '@/core/types/api';
 import { LocationPermissionStatus } from '@/features/geolocation';
 import { LoyaltyCard } from '@/features/loyalty';
+import { NotificationsToggle } from '@/features/push';
 import { LogoutButton } from './_components/logout-button';
 import { RankingPreferences } from './_components/ranking-preferences';
 
@@ -335,6 +337,15 @@ export default async function PerfilPage() {
           </Link>
           .
         </p>
+      </section>
+
+      {/* NOTIFICACIONES */}
+      <section className="mt-8">
+        <h3 className="mb-3 flex items-center gap-1.5 px-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+          <Bell className="size-3 text-primary" />
+          Notificaciones
+        </h3>
+        <NotificationsToggle />
       </section>
 
       {/* RANKING */}
