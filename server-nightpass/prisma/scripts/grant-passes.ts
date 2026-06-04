@@ -17,12 +17,16 @@ import { issuePasses } from '../../src/passes/issue-passes';
 
 const prisma = new PrismaClient();
 
-const PASS_SECRET_FALLBACK = 'dev-hmac-secret-min32chars-replace-in-prod';
 const EMAIL = process.env.EMAIL ?? 'cbenjamindp2004@gmail.com';
 const QTY = Math.max(1, Math.min(6, Number(process.env.QTY ?? 3)));
 
 async function main() {
-  const secret = process.env.PASS_HMAC_SECRET || PASS_SECRET_FALLBACK;
+  const secret = process.env.PASS_HMAC_SECRET;
+  if (!secret) {
+    throw new Error(
+      'PASS_HMAC_SECRET no está definido — necesario para firmar QR válidos. Sin él los pases no escanearían.',
+    );
+  }
 
   const user = await prisma.user.findUnique({ where: { email: EMAIL } });
   if (!user) throw new Error(`No existe usuario con email ${EMAIL}`);

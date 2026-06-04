@@ -14,11 +14,15 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 /**
  * Interpreta TRUST_PROXY a lo que espera Fastify (ver env.schema.ts).
- * Default 'true' para no romper dev/local; en prod definir número o lista de
- * IPs confiables — si no, X-Forwarded-For es falsificable y evade el rate-limit.
+ *
+ * En prod, `env.schema.ts` exige que esté definido y rechaza 'true' (confiar en
+ * cualquier proxy permite falsear X-Forwarded-For y evadir el rate-limit/ban).
+ * Por eso aquí el default seguro solo aplica fuera de prod: en dev/local
+ * confiamos en loopback (1 salto) para que el rate-limit por IP funcione igual
+ * detrás del proxy de Next en SSR, sin abrir el spoofing de XFF.
  */
 function parseTrustProxy(raw?: string): boolean | number | string[] {
-  if (raw === undefined || raw.trim() === '') return true;
+  if (raw === undefined || raw.trim() === '') return 1;
   const v = raw.trim();
   if (v === 'true') return true;
   if (v === 'false') return false;

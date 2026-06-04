@@ -9,6 +9,7 @@ import { ListCatalogVenuesQuery } from './dto/list-catalog-venues.query';
 import { ListCatalogEventsQuery } from './dto/list-catalog-events.query';
 import { resolveTierPrice } from '../events/tier-pricing';
 import { computeCashUnitPrice } from '../common/cash-pricing';
+import { isDevBypassEnabled } from '../common/dev-bypass';
 
 export type OccupancyBucket = 'low' | 'medium' | 'high';
 
@@ -576,7 +577,7 @@ export class CatalogService {
     }
 
     const paymentsEnabled =
-      process.env.STRIPE_DEV_BYPASS === 'true' ||
+      isDevBypassEnabled() ||
       venue?.stripeAccount?.chargesEnabled === true ||
       promoter?.stripeAccount?.chargesEnabled === true;
 

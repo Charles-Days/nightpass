@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -85,7 +86,7 @@ export class VenuesService {
     };
   }
 
-  async getById(id: string) {
+  async getById(id: string, user?: AuthUser) {
     const venue = await this.prisma.venue.findUnique({
       where: { id },
       include: {
@@ -112,6 +113,25 @@ export class VenuesService {
       },
     });
     if (!venue) throw new NotFoundException('Local no encontrado');
+
+    // El rol no basta: un OWNER/STAFF solo puede ver el detalle (incluye PII de
+    // los owners) de un local al que pertenece. Sin esto cualquier owner leía
+    // cualquier local ajeno (BOLA). ADMIN ve todo.
+    if (user && user.role !== Role.ADMIN) {
+      const isOwner = venue.owners.some((o) => o.userId === user.id);
+      let isStaff = false;
+      if (!isOwner) {
+        const staff = await this.prisma.venueStaff.findUnique({
+          where: { venueId_userId: { venueId: id, userId: user.id } },
+          select: { status: true },
+        });
+        isStaff = staff?.status === VenueStaffStatus.ACTIVE;
+      }
+      if (!isOwner && !isStaff) {
+        throw new NotFoundException('Local no encontrado');
+      }
+    }
+
     return this._mapVenueUrls(venue);
   }
 
@@ -233,6 +253,22 @@ export class VenuesService {
       // Non-admin callers cannot mutate moderation fields.
       delete (dto as Record<string, unknown>).status;
       delete (dto as Record<string, unknown>).slug;
+
+      // Validar que las imágenes entrantes (cover + galería) que apunten a
+      // nuestro storage sean del propio usuario — si no, podría persistir la
+      // imagen de otra cuenta y disparar su borrado al reemplazarla
+      // (cross-tenant deletion). Las externas se permiten (nunca se borran).
+      const incoming = [dto.coverImageUrl, ...(dto.images ?? [])].filter(
+        (u): u is string => !!u,
+      );
+      for (const url of incoming) {
+        if (
+          this.storage.isOwnStorageUrl(url) &&
+          !this.storage.isOwnedUploadUrl(url, user.id)
+        ) {
+          throw new ForbiddenException('Imagen no pertenece a tu cuenta');
+        }
+      }
     }
 
     const { images, ...rest } = dto;

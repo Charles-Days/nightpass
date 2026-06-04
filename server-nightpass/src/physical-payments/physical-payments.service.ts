@@ -26,6 +26,7 @@ import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { resolveTierPrice } from '../events/tier-pricing';
 import { computeCashUnitPrice } from '../common/cash-pricing';
 import { issuePasses } from '../passes/issue-passes';
+import { requirePassSecret } from '../common/pass-secret';
 import { CreatePhysicalPaymentDto } from './dto/create-physical-payment.dto';
 
 @Injectable()
@@ -392,9 +393,7 @@ export class PhysicalPaymentsService {
       request.quantity,
     );
 
-    const passSecret =
-      this.config.get<string>('PASS_HMAC_SECRET') ||
-      'dev-hmac-secret-min32chars-replace-in-prod';
+    const passSecret = requirePassSecret(this.config);
 
     // Comisión de NightPass sobre la venta en efectivo. El dinero del efectivo no
     // pasa por Stripe, así que la comisión se cobra del saldo PREPAGADO del

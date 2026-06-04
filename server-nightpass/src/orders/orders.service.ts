@@ -14,6 +14,8 @@ import { StripeService } from '../stripe/stripe.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { resolveTierPrice } from '../events/tier-pricing';
 import { issuePasses } from '../passes/issue-passes';
+import { isDevBypassEnabled } from '../common/dev-bypass';
+import { requirePassSecret } from '../common/pass-secret';
 
 const ORDER_LIMBO_MINUTES = 30;
 
@@ -39,7 +41,7 @@ export class OrdersService {
     promoter?: { stripeAccount?: { stripeAccountId: string; chargesEnabled: boolean } | null } | null;
   }): { stripeAccountId: string; chargesEnabled: boolean } | null {
     const active = event.venue?.stripeAccount ?? event.promoter?.stripeAccount ?? null;
-    if (!active && process.env.STRIPE_DEV_BYPASS === 'true') {
+    if (!active && isDevBypassEnabled()) {
       return { stripeAccountId: 'acct_dummy_development_default', chargesEnabled: true };
     }
     return active;
@@ -114,7 +116,7 @@ export class OrdersService {
         HttpStatus.CONFLICT,
       );
     }
-    if (event.startsAt.getTime() <= Date.now() && process.env.STRIPE_DEV_BYPASS !== 'true') {
+    if (event.startsAt.getTime() <= Date.now() && !isDevBypassEnabled()) {
       throw new HttpException(
         { message: 'El evento ya comenzó', errorCode: 'EVENT_STARTED' },
         HttpStatus.CONFLICT,
@@ -131,7 +133,7 @@ export class OrdersService {
       );
     }
     const stripeAccount = this.resolveStripeAccount(event);
-    const isDevBypass = process.env.STRIPE_DEV_BYPASS === 'true';
+    const isDevBypass = isDevBypassEnabled();
     if (!stripeAccount?.chargesEnabled && !isDevBypass) {
       throw new HttpException(
         {
@@ -196,7 +198,7 @@ export class OrdersService {
       },
     });
     const demand = issuedCount + (pendingMine._sum.quantity ?? 0);
-    if (demand + quantity > 6 && process.env.STRIPE_DEV_BYPASS !== 'true') {
+    if (demand + quantity > 6 && !isDevBypassEnabled()) {
       throw new HttpException(
         {
           message: `Límite excedido. Ya tienes ${demand} pases y estás intentando adquirir ${quantity} más (máximo 6 por cuenta).`,
@@ -235,10 +237,10 @@ export class OrdersService {
       }
     }
 
-    // --- BYPASS DE COMPRA DIRECTA EN DESARROLLO (requiere STRIPE_DEV_BYPASS=true en .env) ---
-    if (process.env.STRIPE_DEV_BYPASS === 'true') {
-      const passSecret = this.config.get<string>('PASS_HMAC_SECRET') || 'dev-hmac-secret-min32chars-replace-in-prod';
-      
+    // --- BYPASS DE COMPRA DIRECTA EN DESARROLLO (requiere STRIPE_DEV_BYPASS=true + NODE_ENV!=production) ---
+    if (isDevBypassEnabled()) {
+      const passSecret = requirePassSecret(this.config);
+
       const order = await this.prisma.order.create({
         data: {
           userId,

@@ -24,9 +24,8 @@ import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { LocationsService } from '../locations/locations.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { parseQr, recomputeHmac, signPass, verifyHmac } from '../common/qr-hmac';
+import { requirePassSecret } from '../common/pass-secret';
 import { haversineMeters } from '../common/geo';
-
-const PASS_SECRET_FALLBACK = 'dev-hmac-secret-min32chars-replace-in-prod';
 
 // Una transferencia abierta vive como máximo 7 días — y nunca más allá del
 // inicio del evento (lo que ocurra primero).
@@ -189,8 +188,7 @@ export class PassesService {
       }
     }
 
-    const secret =
-      this.config.get<string>('PASS_HMAC_SECRET') || PASS_SECRET_FALLBACK;
+    const secret = requirePassSecret(this.config);
 
     const passId = await this.prisma.$transaction(async (tx) => {
       const order = await tx.order.create({
@@ -538,8 +536,7 @@ export class PassesService {
       throw new ConflictException('Ya tienes un pase para este evento');
     }
 
-    const secret =
-      this.config.get<string>('PASS_HMAC_SECRET') || PASS_SECRET_FALLBACK;
+    const secret = requirePassSecret(this.config);
 
     await this.prisma.$transaction(async (tx) => {
       const qr = signPass(

@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { Role, VenueStaffStatus } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
@@ -6,6 +11,7 @@ import { MailerService } from '../mailer/mailer.service';
 import { generateTemporaryPassword } from '../auth/utils/temporary-password';
 import { InviteStaffDto } from './dto/invite-staff.dto';
 import { reconcileUserRole } from '../common/reconcile-user-role';
+import { AuthUser } from '../auth/decorators/current-user.decorator';
 
 const ARGON2_OPTS: argon2.Options = {
   type: argon2.argon2id,
@@ -23,13 +29,35 @@ export class VenueStaffService {
     private readonly mailer: MailerService,
   ) {}
 
+  /**
+   * El rol por sí solo (VENUE_OWNER) no autoriza a gestionar el staff de
+   * CUALQUIER local — sin esto un dueño podía inyectar/listar/revocar staff de
+   * locales ajenos (IDOR). ADMIN pasa siempre; cualquier otro debe ser owner
+   * registrado de ESTE venue.
+   */
+  private async assertVenueAccess(
+    venueId: string,
+    user: AuthUser,
+  ): Promise<void> {
+    if (user.role === Role.ADMIN) return;
+    const owner = await this.prisma.venueOwner.findUnique({
+      where: { userId_venueId: { userId: user.id, venueId } },
+      select: { userId: true },
+    });
+    if (!owner) {
+      throw new ForbiddenException('No administras este local');
+    }
+  }
+
   async invite(
     venueId: string,
     dto: InviteStaffDto,
-    invitedById: string,
+    user: AuthUser,
   ): Promise<{ userId: string; temporaryPassword?: string }> {
     const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) throw new NotFoundException('Local no encontrado');
+    await this.assertVenueAccess(venueId, user);
+    const invitedById = user.id;
 
     const email = dto.email.toLowerCase();
     const existing = await this.prisma.user.findUnique({ where: { email } });
@@ -130,7 +158,8 @@ export class VenueStaffService {
     return { userId: newUser.id, temporaryPassword: tempPassword };
   }
 
-  async list(venueId: string) {
+  async list(venueId: string, user: AuthUser) {
+    await this.assertVenueAccess(venueId, user);
     return this.prisma.venueStaff.findMany({
       where: { venueId, status: { not: VenueStaffStatus.REVOKED } },
       include: {
@@ -139,7 +168,8 @@ export class VenueStaffService {
     });
   }
 
-  async revoke(venueId: string, userId: string) {
+  async revoke(venueId: string, userId: string, user: AuthUser) {
+    await this.assertVenueAccess(venueId, user);
     const staff = await this.prisma.venueStaff.findUnique({
       where: { venueId_userId: { venueId, userId } },
       include: {

@@ -64,6 +64,10 @@ export const envSchema = z.object({
   STRIPE_CONNECT_COUNTRY: z.string().length(2).default('MX'),
   STRIPE_CONNECT_DEFAULT_CURRENCY: z.string().length(3).default('mxn'),
 
+  // Bypass de compra directa SOLO para desarrollo: emite pases sin cobrar.
+  // El refine de abajo hace fallar el boot si queda truthy en producción.
+  STRIPE_DEV_BYPASS: z.string().optional(),
+
   // Pass HMAC signing (Fase 3)
   PASS_HMAC_SECRET: z
     .string()
@@ -79,9 +83,14 @@ export const envSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().default('mailto:noreply@nightpass.mx'),
 }).refine(
-  (env) => !env.STRIPE_SECRET_KEY || !!env.PASS_HMAC_SECRET,
+  // El secreto de firma de QR es necesario para CUALQUIER emisión de pase
+  // (compra Stripe, vale en efectivo del RP, transferencia). El modelo central
+  // es efectivo/RP, que no usa Stripe — por eso ya no se ata a STRIPE_SECRET_KEY:
+  // en producción es obligatorio siempre. Sin él, firmar caería a un secreto
+  // público y los QR serían falsificables.
+  (env) => env.NODE_ENV !== 'production' || !!env.PASS_HMAC_SECRET,
   {
-    message: 'PASS_HMAC_SECRET is required when STRIPE_SECRET_KEY is set',
+    message: 'PASS_HMAC_SECRET is required in production',
     path: ['PASS_HMAC_SECRET'],
   },
 ).refine(
@@ -89,6 +98,30 @@ export const envSchema = z.object({
   {
     message: 'STRIPE_WEBHOOK_SECRET is required when STRIPE_SECRET_KEY is set',
     path: ['STRIPE_WEBHOOK_SECRET'],
+  },
+).refine(
+  // Defensa en profundidad: el bypass de compra jamás debe quedar activo en
+  // producción. Si la variable se filtra a un .env de prod, el boot falla.
+  (env) =>
+    env.NODE_ENV !== 'production' || env.STRIPE_DEV_BYPASS !== 'true',
+  {
+    message: 'STRIPE_DEV_BYPASS must not be enabled in production',
+    path: ['STRIPE_DEV_BYPASS'],
+  },
+).refine(
+  // En producción TRUST_PROXY debe ser explícito y NUNCA 'true': confiar en
+  // cualquier proxy deja que el cliente falsee X-Forwarded-For y evada el
+  // rate-limit/ban por IP. Usar el número exacto de saltos (p.ej. '2' para
+  // Cloudflare→Coolify) o una lista de IPs/CIDR del proxy.
+  (env) =>
+    env.NODE_ENV !== 'production' ||
+    (!!env.TRUST_PROXY &&
+      env.TRUST_PROXY.trim() !== '' &&
+      env.TRUST_PROXY.trim() !== 'true'),
+  {
+    message:
+      'TRUST_PROXY must be set in production to the proxy hop count or trusted IP list (never "true")',
+    path: ['TRUST_PROXY'],
   },
 );
 
