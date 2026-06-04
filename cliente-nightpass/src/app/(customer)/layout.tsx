@@ -9,6 +9,7 @@ import { CustomerBokeh } from './_components/customer-bokeh';
 import { SWRegister } from './_components/sw-register';
 import { NoPinchZoom } from './_components/no-pinch-zoom';
 import { VisitTracker } from '@/core/components/visit-tracker';
+import { EnableNotificationsBanner } from '@/features/push';
 
 export const metadata: Metadata = {
   title: 'NightPass',
@@ -66,6 +67,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
       <VisitTracker />
       <CustomerBokeh />
       <TopBar user={user} isReturning={isReturning} />
+      {user ? <EnableNotificationsBanner /> : null}
       <main className="flex-1 pb-[calc(88px+env(safe-area-inset-bottom))] md:pb-12">
         {children}
       </main>
