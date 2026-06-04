@@ -311,6 +311,8 @@ export interface Event {
   flyerImageUrl: string | null;
   status: EventStatus;
   capacity: number | null;
+  /** Boost de aforo visual (FOMO), 0–100. Solo lo ajusta el ADMIN. */
+  aforoBoostPct?: number;
   createdAt: string;
   updatedAt: string;
   tiers?: EventTier[];
@@ -561,6 +563,8 @@ export interface CatalogEventDetail {
   flyerImageUrl: string | null;
   capacity: number | null;
   sold?: number | null;
+  /** Boost de aforo solo visual (FOMO), 0–100. Se suma al % "lleno" mostrado. */
+  aforoBoostPct?: number;
   tiers: Array<{
     id: string;
     name: string;

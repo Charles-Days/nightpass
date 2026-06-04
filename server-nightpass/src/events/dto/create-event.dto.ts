@@ -50,6 +50,10 @@ export class CreateEventDto {
   @IsOptional() @IsInt() @Min(1)
   capacity?: number;
 
+  // Boost de aforo visual (FOMO). Solo ADMIN; el service lo ignora para otros.
+  @IsOptional() @IsInt() @Min(0) @Max(100)
+  aforoBoostPct?: number;
+
   @IsOptional() @IsBoolean()
   allowCashPayment?: boolean;
 

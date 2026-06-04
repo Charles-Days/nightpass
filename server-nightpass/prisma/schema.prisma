@@ -471,6 +471,10 @@ model Event {
   flyerImageUrl    String?
   status           EventStatus @default(DRAFT)
   capacity         Int?
+  // Boost de aforo SOLO visual (FOMO): se suma al % "lleno" que se muestra al
+  // público. NO afecta el aforo real ni la lógica de cupo/sobreventa — es solo
+  // marketing. 0 = sin boost. Lo ajusta el ADMIN.
+  aforoBoostPct    Int         @default(0)
   // Habilita el flujo de PAGO EN EFECTIVO (boleto digital, pago físico vía RP).
   // Si es false, la app no ofrece la opción y el backend rechaza solicitudes.
   allowCashPayment Boolean     @default(false)

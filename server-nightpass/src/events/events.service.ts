@@ -169,6 +169,8 @@ export class EventsService {
       flyerImageUrl: dto.flyerImageUrl ?? null,
       status: dto.status ?? 'DRAFT',
       capacity: dto.capacity ?? null,
+      // Boost de aforo: solo ADMIN puede definirlo (es marketing, no dato real).
+      aforoBoostPct: user.role === 'ADMIN' ? dto.aforoBoostPct ?? 0 : 0,
       allowCashPayment: dto.allowCashPayment ?? false,
       externalVenueName: externalAllowed ? dto.externalVenueName ?? null : null,
       externalVenueAddress: externalAllowed ? dto.externalVenueAddress ?? null : null,
@@ -348,6 +350,10 @@ export class EventsService {
     if (dto.flyerImageUrl !== undefined) data.flyerImageUrl = dto.flyerImageUrl;
     if (dto.status !== undefined) data.status = dto.status;
     if (dto.capacity !== undefined) data.capacity = dto.capacity;
+    // Boost de aforo: solo ADMIN puede tocarlo (marketing, no dato real).
+    if (dto.aforoBoostPct !== undefined && user.role === 'ADMIN') {
+      data.aforoBoostPct = dto.aforoBoostPct;
+    }
     if (dto.allowCashPayment !== undefined) data.allowCashPayment = dto.allowCashPayment;
     if (dto.whatsappGroups !== undefined) {
       data.whatsappGroups = dto.whatsappGroups as unknown as Prisma.InputJsonValue;

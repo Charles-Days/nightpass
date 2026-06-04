@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Calendar, Tag, Banknote } from 'lucide-react';
+import { Calendar, Tag, Banknote, Flame } from 'lucide-react';
 import { toast } from 'sonner';
 import { clientFetch, ClientApiError } from '@/core/lib/api/client-client';
 import { CollapsibleCard } from '@/core/components/ui/collapsible-card';
+import { Button } from '@/core/components/ui/button';
 import type { Event } from '@/core/types/api';
 import { EventForm } from './event-form';
 import { EventFormPromoter, toPromoterEventDefaults } from './event-form-promoter';
@@ -100,6 +102,73 @@ export function AdminEventEdit({ event, onDone }: { event: Event; onDone: () => 
       >
         <CashPaymentSection eventId={event.id} />
       </CollapsibleCard>
+
+      <CollapsibleCard
+        icon={<Flame className="size-4 text-primary" />}
+        title="Aforo (FOMO)"
+      >
+        <AforoBoostSection event={event} />
+      </CollapsibleCard>
+    </div>
+  );
+}
+
+/**
+ * Control SOLO admin para inflar el "% lleno" que ve el público (marketing).
+ * Se suma al porcentaje real (capado a 100). NO toca el aforo real ni el cupo:
+ * no causa sobreventa, es puramente visual.
+ */
+function AforoBoostSection({ event }: { event: Event }) {
+  const qc = useQueryClient();
+  const [boost, setBoost] = useState(event.aforoBoostPct ?? 0);
+
+  const save = useMutation({
+    mutationFn: (aforoBoostPct: number) =>
+      clientFetch<Event>(`/api/events/${event.id}`, {
+        method: 'PATCH',
+        body: { aforoBoostPct },
+      }),
+    onSuccess: () => {
+      toast.success('Aforo visual actualizado');
+      qc.invalidateQueries({ queryKey: ['events'] });
+    },
+    onError: () => toast.error('No pudimos actualizar el aforo'),
+  });
+
+  const clamped = Math.max(0, Math.min(100, Number.isFinite(boost) ? boost : 0));
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        Suma un porcentaje al <strong className="text-foreground">% lleno</strong> que ve el público,
+        para crear urgencia. Es solo visual: no cambia el aforo real ni el cupo, no causa sobreventa.
+      </p>
+      <div className="flex items-end gap-3">
+        <label className="flex-1">
+          <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Boost de aforo (%)
+          </span>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={boost}
+            onChange={(e) => setBoost(e.target.valueAsNumber)}
+            className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          />
+        </label>
+        <Button
+          type="button"
+          onClick={() => save.mutate(clamped)}
+          disabled={save.isPending || clamped === (event.aforoBoostPct ?? 0)}
+        >
+          {save.isPending ? 'Guardando…' : 'Guardar'}
+        </Button>
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        Ej.: real 3% + boost 50 → se muestra <strong className="text-foreground">53% lleno</strong>.
+        0 = sin boost.
+      </p>
     </div>
   );
 }
