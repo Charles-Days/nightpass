@@ -504,10 +504,19 @@ export class RpService {
       status: 'COMPLETED',
     };
 
-    if (from || to) {
+    // Validar fechas: un string inválido produce `Invalid Date` y Prisma lanza
+    // → 500. Solo aplicamos los límites que parsean a una fecha válida.
+    const parseDate = (raw?: string): Date | null => {
+      if (!raw) return null;
+      const d = new Date(raw);
+      return Number.isNaN(d.getTime()) ? null : d;
+    };
+    const fromDate = parseDate(from);
+    const toDate = parseDate(to);
+    if (fromDate || toDate) {
       where.createdAt = {};
-      if (from) where.createdAt.gte = new Date(from);
-      if (to) where.createdAt.lte = new Date(to);
+      if (fromDate) where.createdAt.gte = fromDate;
+      if (toDate) where.createdAt.lte = toDate;
     }
 
     const orders = await this.prisma.order.findMany({

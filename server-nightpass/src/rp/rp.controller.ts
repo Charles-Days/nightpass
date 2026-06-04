@@ -13,6 +13,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -75,6 +76,7 @@ export class RpController {
   @Post('passes/issue')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.RP)
+  @Throttle({ default: { ttl: 60_000, limit: 20 } })
   @HttpCode(HttpStatus.CREATED)
   issuePass(@CurrentUser() user: AuthUser, @Body() dto: IssuePassDto) {
     return this.service.issuePass(user.id, dto);
@@ -90,6 +92,7 @@ export class RpController {
   @Post('passes/:claimId/cancel')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.RP)
+  @Throttle({ default: { ttl: 60_000, limit: 20 } })
   @HttpCode(HttpStatus.OK)
   cancelIssuedPass(
     @CurrentUser() user: AuthUser,

@@ -8,6 +8,27 @@ const ALLOWED_HOSTS = new Set([
   'www.google.com',
 ]);
 
+const MAX_REDIRECTS = 5;
+
+/**
+ * ¿El host pertenece a Google? `goo.gl` es un acortador genérico: seguir sus
+ * redirects con `redirect: 'follow'` permitiría apuntar a IPs internas
+ * (169.254.169.254 metadata, servicios privados) → SSRF. Validamos CADA salto:
+ * solo dominios Google, nunca literales IP.
+ */
+function hostAllowed(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  // Rechazar literales IP (IPv4/IPv6) — los dominios Google nunca lo son.
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(h) || h.includes(':') || h === 'localhost') {
+    return false;
+  }
+  if (ALLOWED_HOSTS.has(h)) return true;
+  if (h === 'goo.gl' || h.endsWith('.goo.gl')) return true;
+  if (h === 'g.co' || h.endsWith('.g.co')) return true;
+  // google.com y ccTLDs (google.com.mx, google.es, …)
+  return /(^|\.)google\.[a-z]{2,}(\.[a-z]{2})?$/.test(h);
+}
+
 // Resuelve un short link de Google Maps siguiendo redirects y devuelve la URL
 // final (que ya contiene las coords parseables por parseGoogleMapsUrl).
 export async function GET(req: Request) {
@@ -29,14 +50,30 @@ export async function GET(req: Request) {
   }
 
   try {
-    const res = await fetch(parsed.toString(), {
-      method: 'GET',
-      redirect: 'follow',
-      headers: {
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    });
-    const resolvedUrl = res.url;
+    // Seguimos los redirects A MANO validando el host de cada salto (anti-SSRF).
+    let current = parsed;
+    let res: Response | null = null;
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+      if (!hostAllowed(current.hostname)) {
+        return NextResponse.json({ error: 'Host no permitido' }, { status: 400 });
+      }
+      res = await fetch(current.toString(), {
+        method: 'GET',
+        redirect: 'manual',
+        headers: { 'Accept-Language': 'en-US,en;q=0.9' },
+      });
+      if (res.status >= 300 && res.status < 400) {
+        const loc = res.headers.get('location');
+        if (!loc) break;
+        current = new URL(loc, current); // resuelve relativos
+        continue;
+      }
+      break;
+    }
+    if (!res) {
+      return NextResponse.json({ error: 'No se pudo resolver el link' }, { status: 502 });
+    }
+    const resolvedUrl = current.toString();
     let lat: number | undefined;
     let lng: number | undefined;
     try {

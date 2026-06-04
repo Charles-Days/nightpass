@@ -501,7 +501,7 @@ export class PhysicalPaymentsService {
   async cancel(user: AuthUser, requestId: string) {
     const request = await this.prisma.physicalPaymentRequest.findUnique({
       where: { id: requestId },
-      select: { id: true, userId: true, eventId: true, status: true },
+      select: { id: true, userId: true, eventId: true, status: true, assignedRpId: true },
     });
     if (!request) throw new NotFoundException('Solicitud no encontrada');
 
@@ -512,13 +512,20 @@ export class PhysicalPaymentsService {
         select: { id: true },
       });
       if (rp) {
-        const assignment = await this.prisma.eventRp.findUnique({
-          where: {
-            eventId_rpProfileId: { eventId: request.eventId, rpProfileId: rp.id },
-          },
-          select: { eventId: true },
-        });
-        authorized = assignment != null;
+        if (request.assignedRpId) {
+          // Solicitud enrutada a un RP concreto: solo ese RP puede cancelarla
+          // (mismo criterio que confirm). Antes cualquier RP del evento podía.
+          authorized = request.assignedRpId === rp.id;
+        } else {
+          // Legacy sin assignedRpId: cae al chequeo de asignación al evento.
+          const assignment = await this.prisma.eventRp.findUnique({
+            where: {
+              eventId_rpProfileId: { eventId: request.eventId, rpProfileId: rp.id },
+            },
+            select: { eventId: true },
+          });
+          authorized = assignment != null;
+        }
       }
     }
     if (!authorized) {

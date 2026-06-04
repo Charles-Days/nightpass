@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ClientApiError, clientFetch } from '@/core/lib/api/client-client';
 import { paths } from '@/core/config/paths';
+import { safeRedirectPath } from '@/core/lib/safe-redirect';
 import type { User } from '@/core/types/api';
 import type { LoginInput } from '../schemas/login.schema';
 import { sessionQueryKey } from './use-session';
@@ -42,7 +43,7 @@ export function useLogin() {
       // Navegación dura: re-corre el middleware con la cookie recién seteada.
       // router.replace()+refresh() encadenados se pisaban y dejaban al usuario
       // atascado en el login hasta recargar a mano.
-      window.location.assign(from && from.startsWith('/') ? from : paths.dashboard);
+      window.location.assign(safeRedirectPath(from, paths.dashboard));
     },
     onError: (error) => {
       toast.error(readErrorMessage(error));

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { ClientApiError, clientFetch } from '@/core/lib/api/client-client';
 import { paths } from '@/core/config/paths';
 import { saveRpRef, extractRefFromPath } from '@/features/rp-referral/rp-referral';
+import { safeRedirectPath } from '@/core/lib/safe-redirect';
 import type { User } from '@/core/types/api';
 import type { SignupInput } from '../schemas/signup.schema';
 import { sessionQueryKey } from './use-session';
@@ -38,7 +39,7 @@ export function useCustomerSignup() {
       qc.setQueryData(sessionQueryKey, data.user);
       toast.success(`Bienvenido a NightPass, ${data.user.name ?? ''}`);
       const from = params.get('from');
-      const safeFrom = from && from.startsWith('/') ? from : null;
+      const safeFrom = safeRedirectPath(from, '') || null;
       // Preserva el código RP anidado en `from` antes del reload del registro.
       const ref = extractRefFromPath(safeFrom);
       if (ref) saveRpRef(ref);
