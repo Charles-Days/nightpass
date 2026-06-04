@@ -182,7 +182,7 @@ export function EventDetailDialog({
     <Dialog open={!!eventId} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[88vh] overflow-hidden border-white/10 bg-[#0a0a0f] p-0 sm:max-w-3xl">
         <div className="flex max-h-[88vh] flex-col">
-          <DialogHeader className="shrink-0 border-b border-white/10 px-6 pb-4 pt-5">
+          <DialogHeader className="shrink-0 border-b border-white/10 px-4 pb-4 pt-5 sm:px-6">
             <DialogTitle className="font-display text-lg">
               {data?.event.title ?? 'Detalle del evento'}
             </DialogTitle>
@@ -206,7 +206,7 @@ export function EventDetailDialog({
             ) : null}
           </DialogHeader>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
             {isLoading ? (
               <div className="space-y-3">
                 <div className="h-24 animate-pulse rounded-2xl bg-white/[0.04]" />
@@ -309,8 +309,8 @@ export function EventDetailDialog({
                   {data.byTier.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Este evento no tiene tiers.</p>
                   ) : (
-                    <div className="overflow-hidden rounded-xl border border-white/10">
-                      <table className="w-full text-left text-sm">
+                    <div className="overflow-x-auto rounded-xl border border-white/10">
+                      <table className="w-full min-w-[34rem] text-left text-sm">
                         <thead className="border-b border-white/8 bg-white/[0.02] text-[10px] uppercase tracking-wide text-muted-foreground">
                           <tr>
                             <th className="px-3 py-2 font-medium">Tier</th>
@@ -404,8 +404,8 @@ export function EventDetailDialog({
                   {data.recentOrders.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Sin órdenes.</p>
                   ) : (
-                    <div className="overflow-hidden rounded-xl border border-white/10">
-                      <table className="w-full text-left text-sm">
+                    <div className="overflow-x-auto rounded-xl border border-white/10">
+                      <table className="w-full min-w-[34rem] text-left text-sm">
                         <thead className="border-b border-white/8 bg-white/[0.02] text-[10px] uppercase tracking-wide text-muted-foreground">
                           <tr>
                             <th className="px-3 py-2 font-medium">Cliente</th>
