@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from '@/core/components/ui/card';
 import { serverFetch } from '@/core/lib/api/server-client';
+import { PushTestCard } from '@/features/push';
 import type { AdminFinanceStats, User, VisitorStats } from '@/core/types/api';
 import {
   KpiCards,
@@ -78,6 +79,8 @@ export default async function DashboardPage(props: {
         </div>
         <RangePicker from={from} to={to} />
       </header>
+
+      <PushTestCard />
 
       {visitors && <VisitorsCard visitors={visitors} />}
 
