@@ -520,11 +520,18 @@ export function EventFormPromoter({
       <Field label="Descripción" htmlFor="ev-description" error={errors.description?.message}>
         <textarea
           id="ev-description"
-          rows={3}
-          placeholder="Descripción opcional…"
-          className="flex w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          rows={5}
+          placeholder={'Soporta formato:\n## Título\n**negrita**, *cursiva*\n- lista\n> cita'}
+          className="flex w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           {...register('description')}
         />
+        <p className="mt-1.5 text-[11px] text-muted-foreground">
+          Soporta formato Markdown: <code className="text-foreground">**negrita**</code>,{' '}
+          <code className="text-foreground">*cursiva*</code>,{' '}
+          <code className="text-foreground">## título</code>,{' '}
+          <code className="text-foreground">- listas</code>,{' '}
+          <code className="text-foreground">&gt; cita</code>.
+        </p>
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">

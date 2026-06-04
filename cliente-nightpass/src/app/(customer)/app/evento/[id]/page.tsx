@@ -19,6 +19,7 @@ import { EventAforo } from '@/app/(customer)/_components/event-aforo';
 import { EventHeroFx } from '@/app/(customer)/_components/event-hero-fx';
 import { EventCountdown } from '@/app/(customer)/_components/event-countdown';
 import { WhatsappIcon } from '@/core/components/icons/whatsapp-icon';
+import { EventDescription } from '@/core/components/event-description';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -223,9 +224,10 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
           )}
 
           {event.description && (
-            <p className="np-rise mt-4 whitespace-pre-line border-t border-white/8 pt-4 text-sm leading-relaxed text-muted-foreground" style={{ animationDelay: '340ms' }}>
-              {event.description}
-            </p>
+            <EventDescription
+              text={event.description}
+              className="np-rise mt-4 border-t border-white/8 pt-4"
+            />
           )}
         </div>
       </section>
