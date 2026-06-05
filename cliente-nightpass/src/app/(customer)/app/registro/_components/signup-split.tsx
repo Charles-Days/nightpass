@@ -60,29 +60,6 @@ export function SignupSplit() {
           <SignupPreview name={name} />
         </div>
       </div>
-
-      {/* PROOF STRIP */}
-      <section className="mt-14 border-t border-white/14 pt-7 lg:mt-20">
-        <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-4">
-          {[
-            { k: '+2,400', l: 'personas ya entran sin fila' },
-            { k: '★ 4.8', l: 'rating en App Store' },
-            { k: '0 min', l: 'espera promedio' },
-            { k: '100%', l: 'pago seguro o devolución' },
-          ].map((s, i, arr) => (
-            <div
-              key={s.l}
-              className={`np-rise transform-gpu px-6 text-center first:text-left sm:text-center ${i < arr.length - 1 ? 'sm:border-r sm:border-white/14' : ''}`}
-              style={{ animationDelay: `${400 + i * 70}ms` }}
-            >
-              <p className="font-display text-[26px] font-bold tracking-[-0.025em] sm:text-3xl">
-                {s.k}
-              </p>
-              <p className="mt-1.5 text-xs text-white/55">{s.l}</p>
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }
