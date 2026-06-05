@@ -128,4 +128,49 @@ export class PushService implements OnModuleInit {
       tag: 'np-test',
     });
   }
+
+  /**
+   * Prueba con diagnóstico: cuántas suscripciones tiene el usuario y, si el
+   * envío falla, el statusCode/cuerpo que devolvió el push service. Sirve para
+   * distinguir "no hay subs en la BD" de "claves VAPID no coinciden" (403/401).
+   */
+  async sendTestVerbose(userId: string): Promise<{
+    enabled: boolean;
+    subscriptions: number;
+    delivered: number;
+    failures: { statusCode?: number; reason: string }[];
+  }> {
+    if (!this.enabled) {
+      return { enabled: false, subscriptions: 0, delivered: 0, failures: [] };
+    }
+
+    const subs = await this.prisma.pushSubscription.findMany({ where: { userId } });
+    const body = JSON.stringify({
+      title: 'NightPass 🎉',
+      body: 'Notificaciones activadas. Te avisaremos de lo importante.',
+      url: '/dashboard',
+      tag: 'np-test',
+    });
+
+    let delivered = 0;
+    const failures: { statusCode?: number; reason: string }[] = [];
+
+    for (const sub of subs) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          body,
+        );
+        delivered += 1;
+      } catch (err) {
+        const e = err as { statusCode?: number; body?: string };
+        failures.push({
+          statusCode: e.statusCode,
+          reason: String(e.body ?? err).slice(0, 200),
+        });
+      }
+    }
+
+    return { enabled: true, subscriptions: subs.length, delivered, failures };
+  }
 }

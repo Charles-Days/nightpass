@@ -40,12 +40,8 @@ export class PushController {
   @Post('test')
   @HttpCode(HttpStatus.OK)
   async test(@CurrentUser() user: AuthUser) {
-    const delivered = await this.push.sendToUser(user.id, {
-      title: 'NightPass 🎉',
-      body: 'Notificaciones activadas. Te avisaremos de lo importante.',
-      url: '/dashboard',
-      tag: 'np-test',
-    });
-    return { ok: true, delivered };
+    // Devuelve diagnóstico (subscriptions/failures) para depurar delivered:0.
+    const result = await this.push.sendTestVerbose(user.id);
+    return { ok: true, ...result };
   }
 }
