@@ -84,6 +84,21 @@ export class PushService implements OnModuleInit {
     return { ok: true };
   }
 
+  /**
+   * Conteo de suscripciones activas para el panel admin: cuántos dispositivos
+   * y cuántas personas distintas tienen las notificaciones push activadas.
+   */
+  async getStats(): Promise<{ devices: number; people: number }> {
+    const [devices, distinct] = await Promise.all([
+      this.prisma.pushSubscription.count(),
+      this.prisma.pushSubscription.findMany({
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+    ]);
+    return { devices, people: distinct.length };
+  }
+
   /** Elimina una suscripción por endpoint (logout / opt-out). */
   async unsubscribe(endpoint: string) {
     await this.prisma.pushSubscription.deleteMany({ where: { endpoint } });

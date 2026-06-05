@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Headers,
   HttpCode,
   HttpStatus,
@@ -50,6 +51,14 @@ export class PushController {
     // Devuelve diagnóstico (subscriptions/failures) para depurar delivered:0.
     const result = await this.push.sendTestVerbose(user.id);
     return { ok: true, ...result };
+  }
+
+  /** Conteo de suscriptores activos (dispositivos / personas). Solo ADMIN. */
+  @Get('stats')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  getStats() {
+    return this.push.getStats();
   }
 
   /** Difunde una notificación a TODOS los suscriptores. Solo ADMIN. */
