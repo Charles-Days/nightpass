@@ -29,6 +29,7 @@ import { resolveTierPrice } from '../events/tier-pricing';
 import { computeCashUnitPrice } from '../common/cash-pricing';
 import { issuePasses } from '../passes/issue-passes';
 import { requirePassSecret } from '../common/pass-secret';
+import { PushService } from '../push/push.service';
 import { CreatePhysicalPaymentDto } from './dto/create-physical-payment.dto';
 
 @Injectable()
@@ -41,6 +42,7 @@ export class PhysicalPaymentsService {
     private readonly config: ConfigService,
     private readonly stripe: StripeService,
     private readonly cashWallet: CashWalletService,
+    private readonly push: PushService,
   ) {}
 
   private formatMoney(cents: number, currency: string): string {
@@ -269,6 +271,22 @@ export class PhysicalPaymentsService {
         .catch((err) =>
           this.logger.error(
             `Error notificando RP ${rpUser.email}: ${err instanceof Error ? err.message : err}`,
+          ),
+        );
+    }
+
+    // Push al RP asignado (best-effort) — para que lo vea al instante en su panel.
+    if (assignedRp?.rpProfile.userId) {
+      this.push
+        .sendToUser(assignedRp.rpProfile.userId, {
+          title: 'Nueva solicitud de boleto físico',
+          body: `${customerName} pide ${quantity} ${quantity === 1 ? 'pase' : 'pases'} (${amountFormatted}) para ${event.title}`,
+          url: '/rp-dashboard',
+          tag: `physical-${request.id}`,
+        })
+        .catch((err) =>
+          this.logger.warn(
+            `Push a RP ${assignedRp.rpProfile.userId} falló: ${err instanceof Error ? err.message : err}`,
           ),
         );
     }
@@ -648,6 +666,7 @@ export class PhysicalPaymentsService {
     assignedRps: Array<{
       rpProfile: {
         id: string;
+        userId: string;
         state: string | null;
         city: string | null;
         displayName: string;

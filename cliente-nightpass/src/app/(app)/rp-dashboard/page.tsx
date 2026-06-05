@@ -3,6 +3,7 @@
 import { useRpMeStats } from '@/features/rp/hooks/use-rp';
 import { PhysicalRequestsSection } from '@/features/rp/components/physical-requests-section';
 import { IssuePassDialog } from '@/features/rp/components/issue-pass-dialog';
+import { RpReferralDialog } from '@/features/rp/components/rp-referral-dialog';
 
 export default function RpDashboardPage() {
   const { data: stats } = useRpMeStats();
@@ -19,9 +20,17 @@ export default function RpDashboardPage() {
             Solicitudes de boleto
           </h1>
         </div>
-        <IssuePassDialog
-          events={activeEvents.map((e) => ({ eventId: e.eventId, eventName: e.eventName }))}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          {stats?.rpCode ? (
+            <RpReferralDialog
+              rpCode={stats.rpCode}
+              events={activeEvents.map((e) => ({ eventId: e.eventId, eventName: e.eventName }))}
+            />
+          ) : null}
+          <IssuePassDialog
+            events={activeEvents.map((e) => ({ eventId: e.eventId, eventName: e.eventName }))}
+          />
+        </div>
       </header>
 
       <PhysicalRequestsSection />
