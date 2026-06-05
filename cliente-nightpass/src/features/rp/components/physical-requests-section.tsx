@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Loader2, Banknote, Check, X, Clock, Search } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { Input } from '@/core/components/ui/input';
+import { ConfirmDialog } from '@/core/components/ui/confirm-dialog';
 import { ClientApiError } from '@/core/lib/api/client-client';
 import {
   useRpPhysicalRequests,
@@ -42,11 +43,18 @@ export function PhysicalRequestsSection() {
   const confirm = useConfirmPhysicalRequest();
   const cancel = useCancelPhysicalRequest();
   const [busyId, setBusyId] = React.useState<string | null>(null);
+  // Solicitud pendiente de confirmar (abre el modal "¿ya te pagó?").
+  const [confirming, setConfirming] = React.useState<PhysicalPaymentRequest | null>(null);
 
-  const onConfirm = (r: PhysicalPaymentRequest) => {
+  const doConfirm = () => {
+    const r = confirming;
+    if (!r) return;
     setBusyId(r.id);
     confirm.mutate(r.id, {
-      onSuccess: () => toast.success('Pago confirmado · pase emitido al cliente'),
+      onSuccess: () => {
+        toast.success('Pago confirmado · pase emitido al cliente');
+        setConfirming(null);
+      },
       onError: (e) => toast.error(confirmErrorMessage(e)),
       onSettled: () => setBusyId(null),
     });
@@ -157,7 +165,7 @@ export function PhysicalRequestsSection() {
                     <Button
                       type="button"
                       disabled={isBusy}
-                      onClick={() => onConfirm(r)}
+                      onClick={() => setConfirming(r)}
                       className="rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:brightness-110"
                     >
                       {isBusy && confirm.isPending ? (
@@ -191,6 +199,21 @@ export function PhysicalRequestsSection() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirming}
+        onOpenChange={(o) => !o && setConfirming(null)}
+        title="¿Ya te pagó?"
+        description={
+          confirming
+            ? `Confirma que ${confirming.customer?.name || confirming.customer?.email || 'el cliente'} ya te pagó ${money(confirming.amountCents, confirming.currency)} en efectivo. Se emitirá el pase de inmediato y no se puede deshacer.`
+            : undefined
+        }
+        confirmLabel="Sí, ya me pagó"
+        cancelLabel="Cancelar"
+        loading={confirm.isPending}
+        onConfirm={doConfirm}
+      />
     </div>
   );
 }
