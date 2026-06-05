@@ -68,7 +68,7 @@ export function IssuePassDialog({ events }: Props) {
       <DialogTrigger asChild>
         <Button className="rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)]">
           <QrCode className="mr-1.5 size-4" />
-          Emitir pase
+          Generar pase
         </Button>
       </DialogTrigger>
 
