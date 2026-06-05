@@ -22,6 +22,13 @@ export interface PushPayload {
 const DEFAULT_ICON = '/icons/icon-192.png';
 const DEFAULT_BADGE = '/icons/badge-96.png'; // monocromo: el status bar lo tinta
 
+/**
+ * urgency 'high' evita que Android (Doze/batching) agrupe y retrase la
+ * entrega — llega al instante. TTL 24h: si el device está offline, el push
+ * service la guarda y la entrega al reconectar (dentro de ese plazo).
+ */
+const SEND_OPTIONS = { urgency: 'high', TTL: 60 * 60 * 24 } as const;
+
 @Injectable()
 export class PushService implements OnModuleInit {
   private readonly logger = new Logger(PushService.name);
@@ -104,6 +111,7 @@ export class PushService implements OnModuleInit {
           await webpush.sendNotification(
             { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
             body,
+            SEND_OPTIONS,
           );
           delivered += 1;
         } catch (err) {
@@ -169,6 +177,7 @@ export class PushService implements OnModuleInit {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           body,
+          SEND_OPTIONS,
         );
         delivered += 1;
       } catch (err) {
@@ -205,6 +214,7 @@ export class PushService implements OnModuleInit {
           await webpush.sendNotification(
             { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
             body,
+            SEND_OPTIONS,
           );
           delivered += 1;
         } catch (err) {
