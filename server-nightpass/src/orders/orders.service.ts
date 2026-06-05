@@ -68,7 +68,7 @@ export class OrdersService {
       );
     }
 
-    if (!this.stripe.isEnabled()) {
+    if (!this.stripe.isEnabled() && process.env.STRIPE_DEV_BYPASS !== 'true') {
       throw new HttpException(
         {
           message: 'Pagos no configurados en este servidor',

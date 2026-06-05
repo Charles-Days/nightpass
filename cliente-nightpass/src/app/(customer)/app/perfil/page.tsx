@@ -84,12 +84,25 @@ export default async function PerfilPage() {
   const serial = makeSerial(user.id);
   const isInsider = user.role === 'CUSTOMER';
 
-  // TODO Fase 4/5: conectar a backend cuando existan endpoints /me/stats, /me/recent-activity, /me/next-pass
+  interface MyStats {
+    pasesComprados: number;
+    noches: number;
+    baresVisitados: number;
+    ahorradoCents: number;
+  }
+  let rawStats: MyStats | null = null;
+  try {
+    rawStats = await serverFetch<MyStats>('/auth/me/stats');
+  } catch {
+    rawStats = null;
+  }
+
+  const fmt = (n: number) => n.toLocaleString('es-MX');
   const stats = {
-    pases: '—',
-    noches: '—',
-    bares: '—',
-    ahorrado: '—',
+    pases: rawStats ? fmt(rawStats.pasesComprados) : '—',
+    noches: rawStats ? fmt(rawStats.noches) : '—',
+    bares: rawStats ? fmt(rawStats.baresVisitados) : '—',
+    ahorrado: rawStats ? fmt(Math.round(rawStats.ahorradoCents / 100)) : '—',
   };
   type RecentActivityItem = { date: string; venue: string; note: string };
   type NextPass = { venue: string; city: string; time: string; serial: string; price: string };
