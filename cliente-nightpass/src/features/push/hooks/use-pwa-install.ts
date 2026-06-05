@@ -21,19 +21,33 @@ function detectPlatform(): Platform {
   return 'other';
 }
 
+function isIosUA(ua: string): boolean {
+  return (
+    /iphone|ipad|ipod/i.test(ua) ||
+    (/macintosh/i.test(ua) && typeof document !== 'undefined' && 'ontouchend' in document)
+  );
+}
+
 /**
- * ¿Es Safari en iOS? En iOS SOLO Safari puede "Agregar a inicio" (instalar la
- * PWA). Chrome (CriOS), Firefox (FxiOS), Edge (EdgiOS), Opera (OPiOS), etc.
- * usan WebKit pero no exponen ese flujo → hay que mandarlos a Safari.
+ * ¿Es Safari en iOS? Safari instala la PWA vía Compartir → Agregar a inicio.
+ * Excluye Chrome (CriOS), Firefox (FxiOS), Edge (EdgiOS), Opera (OPiOS), etc.
  */
 function detectIosSafari(): boolean {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent || '';
-  const isIos =
-    /iphone|ipad|ipod/i.test(ua) ||
-    (/macintosh/i.test(ua) && 'ontouchend' in document);
-  if (!isIos) return false;
+  if (!isIosUA(ua)) return false;
   return !/CriOS|FxiOS|EdgiOS|OPiOS|mercury|GSA/i.test(ua);
+}
+
+/**
+ * ¿Es Chrome en iOS (CriOS)? También puede "Agregar a inicio" desde su propio
+ * menú, con un flujo distinto a Safari → le mostramos su propio video.
+ */
+function detectIosChrome(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  if (!isIosUA(ua)) return false;
+  return /CriOS/i.test(ua);
 }
 
 /** ¿La app corre como PWA instalada (standalone), no como pestaña? */
@@ -59,12 +73,14 @@ export function usePwaInstall() {
   const [isStandalone, setIsStandalone] = React.useState(false);
   const [platform, setPlatform] = React.useState<Platform>('other');
   const [iosSafari, setIosSafari] = React.useState(false);
+  const [iosChrome, setIosChrome] = React.useState(false);
   const deferredRef = React.useRef<BeforeInstallPromptEvent | null>(null);
   const [canPrompt, setCanPrompt] = React.useState(false);
 
   React.useEffect(() => {
     setPlatform(detectPlatform());
     setIosSafari(detectIosSafari());
+    setIosChrome(detectIosChrome());
     setIsStandalone(detectStandalone());
     setChecked(true);
 
@@ -104,5 +120,5 @@ export function usePwaInstall() {
     return outcome === 'accepted';
   }, []);
 
-  return { checked, isStandalone, canPrompt, platform, iosSafari, promptInstall };
+  return { checked, isStandalone, canPrompt, platform, iosSafari, iosChrome, promptInstall };
 }

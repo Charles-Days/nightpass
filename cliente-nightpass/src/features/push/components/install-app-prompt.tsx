@@ -73,7 +73,7 @@ function Step({
  * - Desktop / standalone: no se muestra.
  */
 export function InstallAppPrompt() {
-  const { checked, isStandalone, canPrompt, platform, iosSafari, promptInstall } =
+  const { checked, isStandalone, canPrompt, platform, iosSafari, iosChrome, promptInstall } =
     usePwaInstall();
   const [open, setOpen] = React.useState(false);
   const [installing, setInstalling] = React.useState(false);
@@ -153,8 +153,22 @@ export function InstallAppPrompt() {
                 </Step>
               </ol>
             </>
+          ) : platform === 'ios' && iosChrome ? (
+            // iOS Chrome (CriOS): tiene su propio flujo de "Agregar a inicio".
+            <>
+              <VideoFrame src={CHROME_INSTALL_VIDEO} />
+              <ol className="flex flex-col gap-2">
+                <Step n={1} icon={<Share className="size-4" />}>
+                  Toca <strong className="font-semibold">Compartir</strong>
+                </Step>
+                <Step n={2} icon={<Plus className="size-4" />}>
+                  Elige{' '}
+                  <strong className="font-semibold">Agregar a inicio</strong>
+                </Step>
+              </ol>
+            </>
           ) : platform === 'ios' ? (
-            // iOS pero NO Safari (Chrome/Firefox/etc): no pueden instalar PWA.
+            // iOS en Firefox/Edge/etc: lo más fiable es abrir en Safari.
             <ol className="flex flex-col gap-2">
               <Step n={1} icon={<Compass className="size-4" />}>
                 Abre <strong className="font-semibold">nightpass.mx</strong> en{' '}
