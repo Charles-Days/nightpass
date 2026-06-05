@@ -9,8 +9,6 @@ export { pingLocation } from './lib/ping-location';
 export type { PingLocationInput, LocationSource } from './lib/ping-location';
 export { getSnooze, setSnooze, clearSnooze, isSnoozed } from './lib/snooze';
 
-export { InstallTutorial } from './components/install-tutorial';
-export { InstallBanner } from './components/install-banner';
 export { EnableLocationOnboarding } from './components/enable-location-onboarding';
 export { OnboardingGate } from './components/onboarding-gate';
 export { LocationPermissionStatus } from './components/location-permission-status';
