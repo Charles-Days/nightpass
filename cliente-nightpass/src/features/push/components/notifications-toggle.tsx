@@ -10,20 +10,10 @@ import { usePushNotifications } from '../hooks/use-push-notifications';
  * Reusa el mismo hook que el banner — fuente única de verdad de la suscripción.
  */
 export function NotificationsToggle() {
-  const { supported, permission, isSubscribed, loading, subscribe, unsubscribe, sendTest } =
+  const { supported, permission, isSubscribed, loading, subscribe, unsubscribe } =
     usePushNotifications();
-  const [sending, setSending] = React.useState(false);
 
   const denied = permission === 'denied';
-
-  const onTest = async () => {
-    setSending(true);
-    try {
-      await sendTest();
-    } finally {
-      setSending(false);
-    }
-  };
 
   const toggle = () => {
     if (loading || !supported || denied) return;
@@ -74,23 +64,6 @@ export function NotificationsToggle() {
           </span>
         </button>
       </div>
-
-      {isSubscribed ? (
-        <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/8 pt-4">
-          <p className="text-[11px] text-muted-foreground">
-            ¿Quieres comprobar que llegan? Envíate una de prueba.
-          </p>
-          <button
-            type="button"
-            onClick={onTest}
-            disabled={sending}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15 disabled:opacity-60"
-          >
-            {sending ? <Loader2 className="size-3.5 animate-spin" /> : null}
-            Enviar prueba
-          </button>
-        </div>
-      ) : null}
 
       {!supported ? (
         <p className="mt-4 border-t border-white/12 pt-4 text-[11px] leading-relaxed text-white/45">
