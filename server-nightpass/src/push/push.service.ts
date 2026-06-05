@@ -18,10 +18,19 @@ export interface PushPayload {
   data?: Record<string, unknown>;
 }
 
+/** Íconos por defecto (resueltos contra el origen del cliente por el SW). */
+const DEFAULT_ICON = '/icons/icon-192.png';
+const DEFAULT_BADGE = '/icons/badge-96.png'; // monocromo: el status bar lo tinta
+
 @Injectable()
 export class PushService implements OnModuleInit {
   private readonly logger = new Logger(PushService.name);
   private enabled = false;
+
+  /** Serializa el payload añadiendo icon/badge por defecto si faltan. */
+  private buildBody(payload: PushPayload): string {
+    return JSON.stringify({ icon: DEFAULT_ICON, badge: DEFAULT_BADGE, ...payload });
+  }
 
   constructor(
     private readonly prisma: PrismaService,
@@ -85,7 +94,7 @@ export class PushService implements OnModuleInit {
     });
     if (subs.length === 0) return 0;
 
-    const body = JSON.stringify(payload);
+    const body = this.buildBody(payload);
     let delivered = 0;
     const deadEndpoints: string[] = [];
 
@@ -145,7 +154,7 @@ export class PushService implements OnModuleInit {
     }
 
     const subs = await this.prisma.pushSubscription.findMany({ where: { userId } });
-    const body = JSON.stringify({
+    const body = this.buildBody({
       title: 'NightPass 🎉',
       body: 'Notificaciones activadas. Te avisaremos de lo importante.',
       url: '/dashboard',
@@ -172,5 +181,51 @@ export class PushService implements OnModuleInit {
     }
 
     return { enabled: true, subscriptions: subs.length, delivered, failures };
+  }
+
+  /**
+   * Difunde una notificación a TODAS las suscripciones (broadcast admin).
+   * Limpia endpoints muertos. Devuelve recuento para feedback en el panel.
+   */
+  async sendToAll(
+    payload: PushPayload,
+  ): Promise<{ subscriptions: number; delivered: number }> {
+    if (!this.enabled) return { subscriptions: 0, delivered: 0 };
+
+    const subs = await this.prisma.pushSubscription.findMany();
+    if (subs.length === 0) return { subscriptions: 0, delivered: 0 };
+
+    const body = this.buildBody(payload);
+    let delivered = 0;
+    const deadEndpoints: string[] = [];
+
+    await Promise.all(
+      subs.map(async (sub) => {
+        try {
+          await webpush.sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            body,
+          );
+          delivered += 1;
+        } catch (err) {
+          const statusCode = (err as { statusCode?: number }).statusCode;
+          if (statusCode === 404 || statusCode === 410) {
+            deadEndpoints.push(sub.endpoint);
+          } else {
+            this.logger.warn(
+              `Broadcast: fallo a ${sub.endpoint.slice(0, 40)}…: ${String(err)}`,
+            );
+          }
+        }
+      }),
+    );
+
+    if (deadEndpoints.length > 0) {
+      await this.prisma.pushSubscription
+        .deleteMany({ where: { endpoint: { in: deadEndpoints } } })
+        .catch(() => undefined);
+    }
+
+    return { subscriptions: subs.length, delivered };
   }
 }
