@@ -8,6 +8,25 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+// Captura temprana: `beforeinstallprompt` se dispara apenas carga la página, a
+// menudo ANTES de que monte React. Si solo escucháramos dentro del efecto, lo
+// perderíamos y nunca saldría el botón "Instalar". Por eso lo capturamos a nivel
+// módulo (se ejecuta al cargar el bundle) y avisamos a los hooks suscritos.
+let deferredPrompt: BeforeInstallPromptEvent | null = null;
+const promptListeners = new Set<() => void>();
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e as BeforeInstallPromptEvent;
+    promptListeners.forEach((fn) => fn());
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    promptListeners.forEach((fn) => fn());
+  });
+}
+
 type Platform = 'ios' | 'android' | 'desktop' | 'other';
 
 function detectPlatform(): Platform {
@@ -21,19 +40,33 @@ function detectPlatform(): Platform {
   return 'other';
 }
 
+function isIosUA(ua: string): boolean {
+  return (
+    /iphone|ipad|ipod/i.test(ua) ||
+    (/macintosh/i.test(ua) && typeof document !== 'undefined' && 'ontouchend' in document)
+  );
+}
+
 /**
- * ¿Es Safari en iOS? En iOS SOLO Safari puede "Agregar a inicio" (instalar la
- * PWA). Chrome (CriOS), Firefox (FxiOS), Edge (EdgiOS), Opera (OPiOS), etc.
- * usan WebKit pero no exponen ese flujo → hay que mandarlos a Safari.
+ * ¿Es Safari en iOS? Safari instala la PWA vía Compartir → Agregar a inicio.
+ * Excluye Chrome (CriOS), Firefox (FxiOS), Edge (EdgiOS), Opera (OPiOS), etc.
  */
 function detectIosSafari(): boolean {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent || '';
-  const isIos =
-    /iphone|ipad|ipod/i.test(ua) ||
-    (/macintosh/i.test(ua) && 'ontouchend' in document);
-  if (!isIos) return false;
+  if (!isIosUA(ua)) return false;
   return !/CriOS|FxiOS|EdgiOS|OPiOS|mercury|GSA/i.test(ua);
+}
+
+/**
+ * ¿Es Chrome en iOS (CriOS)? También puede "Agregar a inicio" desde su propio
+ * menú, con un flujo distinto a Safari → le mostramos su propio video.
+ */
+function detectIosChrome(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  if (!isIosUA(ua)) return false;
+  return /CriOS/i.test(ua);
 }
 
 /** ¿La app corre como PWA instalada (standalone), no como pestaña? */
@@ -59,28 +92,25 @@ export function usePwaInstall() {
   const [isStandalone, setIsStandalone] = React.useState(false);
   const [platform, setPlatform] = React.useState<Platform>('other');
   const [iosSafari, setIosSafari] = React.useState(false);
-  const deferredRef = React.useRef<BeforeInstallPromptEvent | null>(null);
+  const [iosChrome, setIosChrome] = React.useState(false);
+  // Lee el singleton: si el evento ya se capturó (antes de montar), arranca true.
   const [canPrompt, setCanPrompt] = React.useState(false);
 
   React.useEffect(() => {
     setPlatform(detectPlatform());
     setIosSafari(detectIosSafari());
+    setIosChrome(detectIosChrome());
     setIsStandalone(detectStandalone());
     setChecked(true);
 
-    const onBeforeInstall = (e: Event) => {
-      e.preventDefault(); // evita el mini-infobar de Chrome; lo disparamos nosotros.
-      deferredRef.current = e as BeforeInstallPromptEvent;
-      setCanPrompt(true);
+    // Sincroniza con el singleton (puede que el prompt ya se haya capturado
+    // antes de montar este hook) y reacciona a capturas/instalaciones futuras.
+    const sync = () => {
+      setCanPrompt(Boolean(deferredPrompt));
+      if (!deferredPrompt) setIsStandalone(detectStandalone());
     };
-    const onInstalled = () => {
-      deferredRef.current = null;
-      setCanPrompt(false);
-      setIsStandalone(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', onBeforeInstall);
-    window.addEventListener('appinstalled', onInstalled);
+    sync();
+    promptListeners.add(sync);
 
     // Cambio de display-mode (instala/desinstala) sin recargar.
     const mql = window.matchMedia?.('(display-mode: standalone)');
@@ -88,21 +118,20 @@ export function usePwaInstall() {
     mql?.addEventListener?.('change', onDisplayChange);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', onBeforeInstall);
-      window.removeEventListener('appinstalled', onInstalled);
+      promptListeners.delete(sync);
       mql?.removeEventListener?.('change', onDisplayChange);
     };
   }, []);
 
   const promptInstall = React.useCallback(async (): Promise<boolean> => {
-    const ev = deferredRef.current;
+    const ev = deferredPrompt;
     if (!ev) return false;
     await ev.prompt();
     const { outcome } = await ev.userChoice;
-    deferredRef.current = null;
+    deferredPrompt = null;
     setCanPrompt(false);
     return outcome === 'accepted';
   }, []);
 
-  return { checked, isStandalone, canPrompt, platform, iosSafari, promptInstall };
+  return { checked, isStandalone, canPrompt, platform, iosSafari, iosChrome, promptInstall };
 }
