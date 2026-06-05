@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Download, Loader2, Share, Plus, MoreVertical } from 'lucide-react';
+import { Download, Loader2, Plus, MoreVertical, Compass } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,10 @@ import { Button } from '@/core/components/ui/button';
 import { usePwaInstall } from '../hooks/use-pwa-install';
 
 const SESSION_KEY = 'np-install-prompt-shown';
+
+/** Video del flujo "Agregar a inicio" en Safari (servido desde R2/CDN). */
+const IOS_INSTALL_VIDEO =
+  'https://pub-2830ac97394b4104993532e9c452b1c2.r2.dev/static/ios-install.mp4';
 
 function Step({
   icon,
@@ -41,7 +45,7 @@ function Step({
  * - Desktop / standalone: no se muestra.
  */
 export function InstallAppPrompt() {
-  const { checked, isStandalone, canPrompt, platform, promptInstall } =
+  const { checked, isStandalone, canPrompt, platform, iosSafari, promptInstall } =
     usePwaInstall();
   const [open, setOpen] = React.useState(false);
   const [installing, setInstalling] = React.useState(false);
@@ -107,14 +111,32 @@ export function InstallAppPrompt() {
               )}
               Instalar app
             </Button>
+          ) : platform === 'ios' && iosSafari ? (
+            // iOS Safari: no hay API. Un video corto muestra "Agregar a inicio".
+            <div className="space-y-2">
+              <video
+                src={IOS_INSTALL_VIDEO}
+                className="mx-auto w-full max-w-[240px] rounded-2xl border border-white/10"
+                autoPlay
+                muted
+                loop
+                playsInline
+                controls
+              />
+              <p className="text-center text-sm text-muted-foreground">
+                Toca <strong className="text-foreground">Compartir</strong> y luego{' '}
+                <strong className="text-foreground">Agregar a inicio</strong>.
+              </p>
+            </div>
           ) : platform === 'ios' ? (
-            // iOS Safari: no hay API, guiamos paso a paso.
+            // iOS pero NO Safari (Chrome/Firefox/etc): no pueden instalar PWA.
             <ol className="flex flex-col gap-2">
-              <Step icon={<Share className="size-4" />}>
-                Toca <strong>Compartir</strong> en la barra de Safari.
+              <Step icon={<Compass className="size-4" />}>
+                Abre <strong>nightpass</strong> en <strong>Safari</strong> (no
+                desde este navegador).
               </Step>
               <Step icon={<Plus className="size-4" />}>
-                Elige <strong>Agregar a inicio</strong>.
+                Ahí toca <strong>Compartir → Agregar a inicio</strong>.
               </Step>
             </ol>
           ) : (

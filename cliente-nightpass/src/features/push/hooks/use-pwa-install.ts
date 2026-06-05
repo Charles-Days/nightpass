@@ -21,6 +21,21 @@ function detectPlatform(): Platform {
   return 'other';
 }
 
+/**
+ * ¿Es Safari en iOS? En iOS SOLO Safari puede "Agregar a inicio" (instalar la
+ * PWA). Chrome (CriOS), Firefox (FxiOS), Edge (EdgiOS), Opera (OPiOS), etc.
+ * usan WebKit pero no exponen ese flujo → hay que mandarlos a Safari.
+ */
+function detectIosSafari(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const isIos =
+    /iphone|ipad|ipod/i.test(ua) ||
+    (/macintosh/i.test(ua) && 'ontouchend' in document);
+  if (!isIos) return false;
+  return !/CriOS|FxiOS|EdgiOS|OPiOS|mercury|GSA/i.test(ua);
+}
+
 /** ¿La app corre como PWA instalada (standalone), no como pestaña? */
 function detectStandalone(): boolean {
   if (typeof window === 'undefined') return false;
@@ -43,11 +58,13 @@ export function usePwaInstall() {
   const [checked, setChecked] = React.useState(false);
   const [isStandalone, setIsStandalone] = React.useState(false);
   const [platform, setPlatform] = React.useState<Platform>('other');
+  const [iosSafari, setIosSafari] = React.useState(false);
   const deferredRef = React.useRef<BeforeInstallPromptEvent | null>(null);
   const [canPrompt, setCanPrompt] = React.useState(false);
 
   React.useEffect(() => {
     setPlatform(detectPlatform());
+    setIosSafari(detectIosSafari());
     setIsStandalone(detectStandalone());
     setChecked(true);
 
@@ -87,5 +104,5 @@ export function usePwaInstall() {
     return outcome === 'accepted';
   }, []);
 
-  return { checked, isStandalone, canPrompt, platform, promptInstall };
+  return { checked, isStandalone, canPrompt, platform, iosSafari, promptInstall };
 }
