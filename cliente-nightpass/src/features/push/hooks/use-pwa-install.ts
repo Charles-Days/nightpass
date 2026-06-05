@@ -8,6 +8,25 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+// Captura temprana: `beforeinstallprompt` se dispara apenas carga la página, a
+// menudo ANTES de que monte React. Si solo escucháramos dentro del efecto, lo
+// perderíamos y nunca saldría el botón "Instalar". Por eso lo capturamos a nivel
+// módulo (se ejecuta al cargar el bundle) y avisamos a los hooks suscritos.
+let deferredPrompt: BeforeInstallPromptEvent | null = null;
+const promptListeners = new Set<() => void>();
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e as BeforeInstallPromptEvent;
+    promptListeners.forEach((fn) => fn());
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    promptListeners.forEach((fn) => fn());
+  });
+}
+
 type Platform = 'ios' | 'android' | 'desktop' | 'other';
 
 function detectPlatform(): Platform {
@@ -74,7 +93,7 @@ export function usePwaInstall() {
   const [platform, setPlatform] = React.useState<Platform>('other');
   const [iosSafari, setIosSafari] = React.useState(false);
   const [iosChrome, setIosChrome] = React.useState(false);
-  const deferredRef = React.useRef<BeforeInstallPromptEvent | null>(null);
+  // Lee el singleton: si el evento ya se capturó (antes de montar), arranca true.
   const [canPrompt, setCanPrompt] = React.useState(false);
 
   React.useEffect(() => {
@@ -84,19 +103,14 @@ export function usePwaInstall() {
     setIsStandalone(detectStandalone());
     setChecked(true);
 
-    const onBeforeInstall = (e: Event) => {
-      e.preventDefault(); // evita el mini-infobar de Chrome; lo disparamos nosotros.
-      deferredRef.current = e as BeforeInstallPromptEvent;
-      setCanPrompt(true);
+    // Sincroniza con el singleton (puede que el prompt ya se haya capturado
+    // antes de montar este hook) y reacciona a capturas/instalaciones futuras.
+    const sync = () => {
+      setCanPrompt(Boolean(deferredPrompt));
+      if (!deferredPrompt) setIsStandalone(detectStandalone());
     };
-    const onInstalled = () => {
-      deferredRef.current = null;
-      setCanPrompt(false);
-      setIsStandalone(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', onBeforeInstall);
-    window.addEventListener('appinstalled', onInstalled);
+    sync();
+    promptListeners.add(sync);
 
     // Cambio de display-mode (instala/desinstala) sin recargar.
     const mql = window.matchMedia?.('(display-mode: standalone)');
@@ -104,18 +118,17 @@ export function usePwaInstall() {
     mql?.addEventListener?.('change', onDisplayChange);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', onBeforeInstall);
-      window.removeEventListener('appinstalled', onInstalled);
+      promptListeners.delete(sync);
       mql?.removeEventListener?.('change', onDisplayChange);
     };
   }, []);
 
   const promptInstall = React.useCallback(async (): Promise<boolean> => {
-    const ev = deferredRef.current;
+    const ev = deferredPrompt;
     if (!ev) return false;
     await ev.prompt();
     const { outcome } = await ev.userChoice;
-    deferredRef.current = null;
+    deferredPrompt = null;
     setCanPrompt(false);
     return outcome === 'accepted';
   }, []);
