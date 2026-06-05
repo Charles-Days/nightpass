@@ -218,7 +218,7 @@ export default function ScanCheckinPage() {
       </section>
 
       {/* Visor cámara */}
-      <section className="np-rise relative mt-6 overflow-hidden rounded-[22px] border border-white/10 bg-black" style={{ animationDelay: '240ms' }}>
+      <section className="np-rise relative mt-6 overflow-hidden rounded-[22px] border border-white/14 bg-black" style={{ animationDelay: '240ms' }}>
         <div className="relative aspect-square">
           <video
             ref={videoRef}
@@ -300,7 +300,7 @@ export default function ScanCheckinPage() {
               </p>
               <button
                 onClick={() => setPhase({ kind: 'scanning' })}
-                className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm transform-gpu transition active:scale-95 hover:bg-white/[0.06]"
+                className="inline-flex items-center gap-2 rounded-full border border-white/22 px-4 py-2 text-sm transform-gpu transition active:scale-95 hover:bg-white/[0.09]"
               >
                 <RefreshCw className="size-4" />
                 Reintentar
@@ -357,7 +357,7 @@ function SuccessFrame({
   const tierStyle = TIER_STYLES[tier];
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-160px)] w-full max-w-2xl flex-col items-center justify-center px-6 py-10 text-center">
-      <div className="np-pop-in relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.025] px-8 py-10 sm:px-12 sm:py-14">
+      <div className="np-pop-in relative overflow-hidden rounded-[28px] border border-white/14 bg-white/[0.05] px-8 py-10 sm:px-12 sm:py-14">
         {awarded > 0 ? (
           <div
             aria-hidden
@@ -393,7 +393,7 @@ function SuccessFrame({
 
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
             <TierBadge tier={tier} />
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold text-white/75">
+            <span className="rounded-full border border-white/14 bg-white/[0.07] px-2.5 py-1 text-[11px] font-semibold text-white/75">
               Racha: {streakDays} {streakDays === 1 ? 'día' : 'días'}
             </span>
           </div>

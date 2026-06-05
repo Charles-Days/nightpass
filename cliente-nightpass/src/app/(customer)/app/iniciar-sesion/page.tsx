@@ -31,7 +31,7 @@ export default async function CustomerLoginPage({
 
       <div className="mt-8 np-rise" style={{ animationDelay: '180ms' }}>
         <Suspense
-          fallback={<div className="h-72 animate-pulse rounded-[18px] bg-white/[0.04]" />}
+          fallback={<div className="h-72 animate-pulse rounded-[18px] bg-white/[0.07]" />}
         >
           <CustomerLoginForm />
         </Suspense>

@@ -23,7 +23,7 @@ export function LoyaltyCard({ variant = 'compact', hideTierNames = false, classN
     return (
       <div
         className={cn(
-          'rounded-[22px] border border-white/10 bg-white/[0.025] p-6',
+          'rounded-[22px] border border-white/14 bg-white/[0.05] p-6',
           variant === 'hero' && 'p-8',
           className,
         )}
@@ -39,7 +39,7 @@ export function LoyaltyCard({ variant = 'compact', hideTierNames = false, classN
     return (
       <div
         className={cn(
-          'rounded-[22px] border border-white/10 bg-white/[0.025] p-6',
+          'rounded-[22px] border border-white/14 bg-white/[0.05] p-6',
           className,
         )}
       >
@@ -68,7 +68,7 @@ export function LoyaltyCard({ variant = 'compact', hideTierNames = false, classN
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]',
+        'relative overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05]',
         isHero ? 'p-7 sm:p-9' : 'p-6 sm:p-7',
         className,
       )}

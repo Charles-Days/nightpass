@@ -31,7 +31,7 @@ export function LogoutButton() {
           variant="ghost"
           onClick={() => setConfirming(false)}
           disabled={isPending}
-          className="h-12 w-full rounded-[12px] text-sm font-medium text-white/70 hover:bg-white/[0.04] hover:text-foreground active:scale-95 transform-gpu sm:flex-1"
+          className="h-12 w-full rounded-[12px] text-sm font-medium text-white/70 hover:bg-white/[0.07] hover:text-foreground active:scale-95 transform-gpu sm:flex-1"
         >
           Cancelar
         </Button>

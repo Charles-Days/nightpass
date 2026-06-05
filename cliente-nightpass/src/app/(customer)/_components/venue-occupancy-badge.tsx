@@ -57,7 +57,7 @@ function VenueOccupancyBadgeImpl({
   const bucket = data.bucket;
 
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.05] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white/75">
+    <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.08] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white/75">
       <span
         className={`h-1.5 w-1.5 origin-center transform-gpu rounded-full ${DOT_CLASS[bucket]}`}
         aria-hidden

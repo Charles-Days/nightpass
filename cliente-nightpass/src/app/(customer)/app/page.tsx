@@ -60,7 +60,7 @@ export default function AntrosPage() {
 
       {/* Hero "Próximamente" */}
       <div
-        className="np-rise relative mt-6 overflow-hidden rounded-[24px] border border-primary/25 bg-white/[0.025] p-6 text-center shadow-[0_0_44px_-18px_rgba(168,85,247,0.55)] sm:p-9"
+        className="np-rise relative mt-6 overflow-hidden rounded-[24px] border border-primary/25 bg-white/[0.05] p-6 text-center shadow-[0_0_44px_-18px_rgba(168,85,247,0.55)] sm:p-9"
         style={{ animationDelay: '90ms' }}
       >
         <div
@@ -91,10 +91,10 @@ export default function AntrosPage() {
         {features.map(({ icon: Icon, title: t, text }, i) => (
           <div
             key={t}
-            className="np-rise flex items-start gap-3 rounded-[20px] border border-white/10 bg-white/[0.025] p-4"
+            className="np-rise flex items-start gap-3 rounded-[20px] border border-white/14 bg-white/[0.05] p-4"
             style={{ animationDelay: `${130 + i * 50}ms` }}
           >
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04]">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/14 bg-white/[0.07]">
               <Icon className="size-5 text-primary" />
             </span>
             <div className="space-y-0.5">
@@ -108,7 +108,7 @@ export default function AntrosPage() {
       {/* CTA a Eventos (ya funcional) */}
       <Link
         href={paths.eventos}
-        className="np-rise mt-5 flex items-center justify-between gap-3 rounded-[20px] border border-white/10 bg-white/[0.025] p-4 transition hover:border-primary/40 hover:bg-white/[0.05] active:scale-[0.99]"
+        className="np-rise mt-5 flex items-center justify-between gap-3 rounded-[20px] border border-white/14 bg-white/[0.05] p-4 transition hover:border-primary/40 hover:bg-white/[0.08] active:scale-[0.99]"
         style={{ animationDelay: '340ms' }}
       >
         <div>

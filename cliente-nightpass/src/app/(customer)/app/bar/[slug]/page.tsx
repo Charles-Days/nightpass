@@ -106,7 +106,7 @@ export default async function VenueDetailPage({ params }: Props) {
       </Link>
 
       {/* Hero */}
-      <section className="np-rise mt-5 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]" style={{ animationDelay: '80ms' }}>
+      <section className="np-rise mt-5 overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05]" style={{ animationDelay: '80ms' }}>
         <div className="group relative aspect-video bg-gradient-to-br from-purple-900/40 to-purple-600/10 sm:aspect-[16/9]">
           {venue.coverImageUrl ? (
             <Image
@@ -200,7 +200,7 @@ export default async function VenueDetailPage({ params }: Props) {
                 }
               />
             </div>
-            <div className="rounded-[18px] border border-white/10 bg-white/[0.025] p-4">
+            <div className="rounded-[18px] border border-white/14 bg-white/[0.05] p-4">
               <FeaturedAforo venueId={venue.id} isClosed={!status.open} />
             </div>
           </section>
@@ -244,7 +244,7 @@ export default async function VenueDetailPage({ params }: Props) {
             {stats.map((s) => (
               <div
                 key={s.label}
-                className="rounded-[16px] border border-white/10 bg-white/[0.025] p-3"
+                className="rounded-[16px] border border-white/14 bg-white/[0.05] p-3"
               >
                 <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
                   {s.icon}
@@ -270,7 +270,7 @@ export default async function VenueDetailPage({ params }: Props) {
             {venue.musicTypes.map((m) => (
               <span
                 key={m}
-                className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-white/85"
+                className="rounded-full border border-white/14 bg-white/[0.07] px-3 py-1.5 text-xs font-semibold text-white/85"
               >
                 {m}
               </span>
@@ -287,7 +287,7 @@ export default async function VenueDetailPage({ params }: Props) {
             {venue.photos.map((p) => (
               <div
                 key={p.id}
-                className="relative aspect-square overflow-hidden rounded-[14px] border border-white/8 bg-white/[0.02]"
+                className="relative aspect-square overflow-hidden rounded-[14px] border border-white/12 bg-white/[0.035]"
               >
                 <Image
                   src={p.url}
@@ -313,7 +313,7 @@ export default async function VenueDetailPage({ params }: Props) {
               <Clock className="size-4 text-primary" />
               Horarios
             </h2>
-            <div className="rounded-[18px] border border-white/10 bg-white/[0.025] p-4">
+            <div className="rounded-[18px] border border-white/14 bg-white/[0.05] p-4">
               <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {hours.map((h) => (
                   <div key={h.day} className="flex items-center justify-between gap-3 text-sm">
@@ -335,7 +335,7 @@ export default async function VenueDetailPage({ params }: Props) {
             {venue.phone && (
               <a
                 href={`tel:${venue.phone}`}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/[0.08] active:scale-95"
+                className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.07] px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/[0.11] active:scale-95"
               >
                 <Phone className="size-4" />
                 {venue.phone}
@@ -346,7 +346,7 @@ export default async function VenueDetailPage({ params }: Props) {
                 href={venue.googleMapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/[0.08] active:scale-95"
+                className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.07] px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/[0.11] active:scale-95"
               >
                 <MapPin className="size-4" />
                 Cómo llegar
@@ -358,7 +358,7 @@ export default async function VenueDetailPage({ params }: Props) {
                 href={venue.menuUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/[0.08] active:scale-95"
+                className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.07] px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/[0.11] active:scale-95"
               >
                 <Utensils className="size-4" />
                 Menú
@@ -373,7 +373,7 @@ export default async function VenueDetailPage({ params }: Props) {
       <section className="np-rise mt-8" style={{ animationDelay: '420ms' }}>
         <h2 className="mb-4 font-display text-xl font-bold tracking-tight">Próximos eventos</h2>
         {(venue.events?.length ?? 0) === 0 ? (
-          <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-8 text-center text-sm text-muted-foreground">
             Aún no hay eventos publicados.
           </div>
         ) : (
@@ -386,7 +386,7 @@ export default async function VenueDetailPage({ params }: Props) {
               return (
                 <li
                   key={ev.id}
-                  className="np-rise overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.025] transform-gpu transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.05] hover:shadow-[0_18px_40px_-20px_rgba(168,85,247,0.45)] active:scale-[0.98] active:duration-100"
+                  className="np-rise overflow-hidden rounded-[20px] border border-white/14 bg-white/[0.05] transform-gpu transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-white/22 hover:bg-white/[0.08] hover:shadow-[0_18px_40px_-20px_rgba(168,85,247,0.45)] active:scale-[0.98] active:duration-100"
                   style={{ animationDelay: `${Math.min(280 + i * 40, 560)}ms` }}
                 >
                   <Link href={`${paths.evento}/${ev.id}`} className="group flex items-stretch gap-4 p-3 sm:p-4">

@@ -94,7 +94,7 @@ export function ClaimScanner() {
 
   return (
     <div className="space-y-4">
-      <div className="relative aspect-square w-full overflow-hidden rounded-[24px] border border-white/10 bg-black/40">
+      <div className="relative aspect-square w-full overflow-hidden rounded-[24px] border border-white/14 bg-black/40">
         <video ref={videoRef} className="size-full object-cover" muted playsInline />
 
         {/* Overlay según fase */}

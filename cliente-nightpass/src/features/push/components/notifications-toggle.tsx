@@ -35,7 +35,7 @@ export function NotificationsToggle() {
   };
 
   return (
-    <div className="rounded-[20px] border border-white/10 bg-white/[0.025] p-6 sm:p-7">
+    <div className="rounded-[20px] border border-white/14 bg-white/[0.05] p-6 sm:p-7">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="inline-flex items-center gap-1.5 text-sm font-semibold">
@@ -93,12 +93,12 @@ export function NotificationsToggle() {
       ) : null}
 
       {!supported ? (
-        <p className="mt-4 border-t border-white/8 pt-4 text-[11px] leading-relaxed text-white/45">
+        <p className="mt-4 border-t border-white/12 pt-4 text-[11px] leading-relaxed text-white/45">
           Tu navegador no soporta notificaciones push. En iOS, añade NightPass a
           la pantalla de inicio para activarlas.
         </p>
       ) : denied ? (
-        <p className="mt-4 border-t border-white/8 pt-4 text-[11px] leading-relaxed text-amber-300/80">
+        <p className="mt-4 border-t border-white/12 pt-4 text-[11px] leading-relaxed text-amber-300/80">
           Bloqueaste las notificaciones en el navegador. Actívalas desde los
           ajustes del sitio para volver a recibirlas.
         </p>

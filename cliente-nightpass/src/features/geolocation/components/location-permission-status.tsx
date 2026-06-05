@@ -68,7 +68,7 @@ export function LocationPermissionStatus() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-start gap-3 rounded-[16px] border border-white/10 bg-white/[0.025] p-4">
+      <div className="flex items-start gap-3 rounded-[16px] border border-white/14 bg-white/[0.05] p-4">
         <span
           className={
             'mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl ' +
@@ -76,7 +76,7 @@ export function LocationPermissionStatus() {
               ? 'bg-emerald-400/15 text-emerald-300'
               : status === 'denied'
                 ? 'bg-amber-400/15 text-amber-300'
-                : 'bg-white/[0.04] text-white/55')
+                : 'bg-white/[0.07] text-white/55')
           }
         >
           {status === 'granted' ? (
@@ -106,7 +106,7 @@ export function LocationPermissionStatus() {
           </p>
 
           {platform.os === 'ios' && platform.standalone && (
-            <p className="mt-2 rounded-lg border border-white/8 bg-white/[0.02] px-2.5 py-1.5 text-[11px] leading-snug text-white/45">
+            <p className="mt-2 rounded-lg border border-white/12 bg-white/[0.035] px-2.5 py-1.5 text-[11px] leading-snug text-white/45">
               En iPhone, al cerrar y volver a abrir la app puede que tengas que
               reactivar la ubicación. Es una limitación de iOS para apps
               agregadas a la pantalla de inicio.
@@ -139,7 +139,7 @@ export function LocationPermissionStatus() {
         variant="ghost"
         onClick={() => setConfirmOpen(true)}
         disabled={clearing}
-        className="h-10 w-full justify-start gap-3 rounded-[16px] border border-white/8 bg-white/[0.02] px-4 text-sm font-medium text-white/75 hover:bg-white/[0.04] hover:text-white"
+        className="h-10 w-full justify-start gap-3 rounded-[16px] border border-white/12 bg-white/[0.035] px-4 text-sm font-medium text-white/75 hover:bg-white/[0.07] hover:text-white"
       >
         {clearing ? (
           <Loader2 className="size-4 animate-spin" />

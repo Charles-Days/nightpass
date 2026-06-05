@@ -161,7 +161,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
         {event.venue?.name ?? event.promoter?.name ?? 'Volver'}
       </Link>
 
-      <section className="np-rise mt-5 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]" style={{ animationDelay: '80ms' }}>
+      <section className="np-rise mt-5 overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05]" style={{ animationDelay: '80ms' }}>
         {/* Foto limpia — sin texto encima para no encimarse con el flyer. */}
         <div className="group relative aspect-video bg-gradient-to-br from-purple-900/40 to-purple-600/10">
           {event.coverImageUrl ? (
@@ -216,7 +216,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
           {event.promoter && event.venue && (
             <Link
               href={`${paths.promotora}/${event.promoter.slug}`}
-              className="np-rise mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/80 backdrop-blur transition hover:bg-white/[0.12] active:scale-95"
+              className="np-rise mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/[0.09] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/80 backdrop-blur transition hover:bg-white/[0.12] active:scale-95"
               style={{ animationDelay: '320ms' }}
             >
               Organiza · {event.promoter.name}
@@ -226,7 +226,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
           {event.description && (
             <EventDescription
               text={event.description}
-              className="np-rise mt-4 border-t border-white/8 pt-4"
+              className="np-rise mt-4 border-t border-white/12 pt-4"
             />
           )}
         </div>
@@ -240,7 +240,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
       />
 
       <section
-        className="np-rise mt-5 rounded-[22px] border border-white/10 bg-white/[0.025] p-5 sm:p-7"
+        className="np-rise mt-5 rounded-[22px] border border-white/14 bg-white/[0.05] p-5 sm:p-7"
         style={{ animationDelay: '350ms' }}
       >
         <h2 className="mb-4 font-display text-lg font-bold tracking-tight">Detalles</h2>
@@ -342,7 +342,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
 
       {event.flyerImageUrl && (
         <section
-          className="np-rise mt-5 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]"
+          className="np-rise mt-5 overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05]"
           style={{ animationDelay: '360ms' }}
         >
           <Image
@@ -367,7 +367,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
       <section className="np-rise mt-8" style={{ animationDelay: '400ms' }}>
         <h2 className="mb-4 font-display text-xl font-bold tracking-tight">Boletos</h2>
         {event.tiers.length === 0 ? (
-          <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-8 text-center text-sm text-muted-foreground">
             Aún no hay tiers disponibles.
           </div>
         ) : (
@@ -388,7 +388,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
               return (
                 <li
                   key={tier.id}
-                  className="np-rise flex flex-col gap-3 rounded-[18px] border border-white/10 bg-white/[0.025] p-4 transform-gpu transition-all duration-300 ease-out hover:border-white/20 hover:bg-white/[0.04] active:scale-[0.98] active:duration-100 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-5"
+                  className="np-rise flex flex-col gap-3 rounded-[18px] border border-white/14 bg-white/[0.05] p-4 transform-gpu transition-all duration-300 ease-out hover:border-white/22 hover:bg-white/[0.07] active:scale-[0.98] active:duration-100 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-5"
                   style={{ animationDelay: `${Math.min(280 + i * 40, 520)}ms` }}
                 >
                   <div className="min-w-0 flex-1">
@@ -401,7 +401,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
                           className={
                             locked
                               ? 'inline-flex items-center gap-1 rounded-full border border-amber-300/35 bg-amber-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200'
-                              : 'inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70'
+                              : 'inline-flex items-center gap-1 rounded-full border border-white/18 bg-white/[0.07] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70'
                           }
                         >
                           {locked ? <Lock className="size-2.5" /> : null}
@@ -443,7 +443,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
                     {locked ? (
                       <span
                         aria-disabled
-                        className="shrink-0 cursor-not-allowed rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-white/45"
+                        className="shrink-0 cursor-not-allowed rounded-full border border-white/18 bg-white/[0.07] px-4 py-2 text-sm font-semibold text-white/45"
                       >
                         Bloqueado
                       </span>

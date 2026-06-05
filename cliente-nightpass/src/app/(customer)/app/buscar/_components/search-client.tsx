@@ -89,7 +89,7 @@ function FeaturedVenueCard({ venue }: { venue: CatalogVenueSummary }) {
   return (
     <Link
       href={`${paths.bar}/${venue.slug}`}
-      className="np-zoom-in group relative mb-4 block overflow-hidden rounded-[24px] border border-primary/25 bg-white/[0.02] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.005] hover:border-primary/55 sm:grid sm:grid-cols-[1.45fr_1fr]"
+      className="np-zoom-in group relative mb-4 block overflow-hidden rounded-[24px] border border-primary/25 bg-white/[0.035] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.005] hover:border-primary/55 sm:grid sm:grid-cols-[1.45fr_1fr]"
     >
       <div className="relative aspect-[16/10] overflow-hidden sm:aspect-auto sm:min-h-[270px]">
         {venue.coverImageUrl ? (
@@ -120,7 +120,7 @@ function FeaturedVenueCard({ venue }: { venue: CatalogVenueSummary }) {
             {tags.map((t) => (
               <span
                 key={t}
-                className="rounded-full bg-white/[0.06] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-white/75"
+                className="rounded-full bg-white/[0.09] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-white/75"
               >
                 {t}
               </span>
@@ -164,7 +164,7 @@ function FeaturedEventCard({ ev }: { ev: EventFeed }) {
   return (
     <Link
       href={`${paths.evento}/${ev.id}`}
-      className="np-zoom-in group relative mb-4 block overflow-hidden rounded-[24px] border border-primary/25 bg-white/[0.02] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.005] hover:border-primary/55 sm:grid sm:grid-cols-[1.45fr_1fr]"
+      className="np-zoom-in group relative mb-4 block overflow-hidden rounded-[24px] border border-primary/25 bg-white/[0.035] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.005] hover:border-primary/55 sm:grid sm:grid-cols-[1.45fr_1fr]"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-600/10 sm:aspect-auto sm:min-h-[270px]">
         {ev.coverImageUrl ? (
@@ -278,7 +278,7 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
         {/* Tabs + search on one row — tabs hidden when mode is fixed by the page */}
         <div className="flex items-center gap-2.5">
           {!mode && (
-            <div className="inline-flex shrink-0 gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+            <div className="inline-flex shrink-0 gap-1 rounded-full border border-white/14 bg-white/[0.05] p-1">
               <button
                 type="button"
                 onClick={() => setTab('venues')}
@@ -310,7 +310,7 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={tab === 'venues' ? 'Bar, ciudad, género…' : 'Evento, organizador…'}
-              className="h-11 rounded-full border-white/15 bg-white/[0.04] pl-11 pr-11 text-sm transition focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="h-11 rounded-full border-white/18 bg-white/[0.07] pl-11 pr-11 text-sm transition focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/40"
             />
             {loading && query.trim().length > 0 ? (
               <Loader2
@@ -332,7 +332,7 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
                   className={`shrink-0 whitespace-nowrap transform-gpu rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 active:scale-95 ${
                     category === null
                       ? 'border-primary/40 bg-primary/15 text-primary'
-                      : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground'
+                      : 'border-white/14 bg-white/[0.05] text-muted-foreground hover:bg-white/[0.10] hover:text-foreground'
                   }`}
                 >
                   Todos
@@ -345,7 +345,7 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
                     className={`shrink-0 whitespace-nowrap transform-gpu rounded-full border px-3 py-1.5 text-xs font-semibold capitalize transition-all duration-200 active:scale-95 ${
                       category === c
                         ? 'border-primary/40 bg-primary/15 text-primary'
-                        : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground'
+                        : 'border-white/14 bg-white/[0.05] text-muted-foreground hover:bg-white/[0.10] hover:text-foreground'
                     }`}
                   >
                     {c}
@@ -361,7 +361,7 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
                   className={`shrink-0 whitespace-nowrap transform-gpu rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 active:scale-95 ${
                     eventDate === d.value
                       ? 'border-primary/40 bg-primary/15 text-primary'
-                      : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground'
+                      : 'border-white/14 bg-white/[0.05] text-muted-foreground hover:bg-white/[0.10] hover:text-foreground'
                   }`}
                 >
                   {d.label}
@@ -431,7 +431,7 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
                 <Link
                   key={ev.id}
                   href={`${paths.evento}/${ev.id}`}
-                  className="np-rise group block overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.025] transform-gpu transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.05] hover:shadow-[0_18px_40px_-20px_rgba(168,85,247,0.45)] active:scale-[0.98]"
+                  className="np-rise group block overflow-hidden rounded-[20px] border border-white/14 bg-white/[0.05] transform-gpu transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-white/22 hover:bg-white/[0.08] hover:shadow-[0_18px_40px_-20px_rgba(168,85,247,0.45)] active:scale-[0.98]"
                   style={{ animationDelay: `${i * 60}ms` }}
                 >
                   <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-600/10">
@@ -447,7 +447,7 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
                     )}
                     <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
                     {cheapest && (
-                      <span className="absolute right-3 top-3 rounded-full border border-white/15 bg-black/65 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+                      <span className="absolute right-3 top-3 rounded-full border border-white/18 bg-black/65 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
                         Desde {cheapest}
                       </span>
                     )}

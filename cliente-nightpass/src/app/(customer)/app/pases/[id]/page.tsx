@@ -67,17 +67,17 @@ export default async function PassDetailPage({ params }: Props) {
       </Link>
 
       <section
-        className="mt-6 overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-br from-white/[0.04] via-white/[0.025] to-primary/[0.04] backdrop-blur-xl np-rise transform-gpu"
+        className="mt-6 overflow-hidden rounded-[24px] border border-white/14 bg-gradient-to-br from-white/[0.04] via-white/[0.025] to-primary/[0.04] backdrop-blur-xl np-rise transform-gpu"
         style={{ animationDelay: '60ms' }}
       >
         {/* Top: status pill */}
-        <div className="flex items-center justify-between border-b border-white/8 px-5 py-3.5 sm:px-6">
+        <div className="flex items-center justify-between border-b border-white/12 px-5 py-3.5 sm:px-6">
           <p className="flex items-center gap-2 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
             <Ticket className="size-3.5" />
             Pase NightPass
           </p>
           {used ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55">
+            <span className="inline-flex items-center gap-1 rounded-full border border-white/14 bg-white/[0.07] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55">
               <Check className="size-3" />
               Usado
             </span>
@@ -109,7 +109,7 @@ export default async function PassDetailPage({ params }: Props) {
         <div className="relative my-2">
           <div className="absolute -left-2 top-1/2 size-4 -translate-y-1/2 rounded-full bg-background" />
           <div className="absolute -right-2 top-1/2 size-4 -translate-y-1/2 rounded-full bg-background" />
-          <div className="mx-6 border-t border-dashed border-white/15" />
+          <div className="mx-6 border-t border-dashed border-white/18" />
         </div>
 
         {/* Event info */}
@@ -127,7 +127,7 @@ export default async function PassDetailPage({ params }: Props) {
 
           {event?.startsAt && (
             <div
-              className="flex items-start gap-3 rounded-[16px] border border-white/8 bg-white/[0.02] p-3 np-rise transform-gpu"
+              className="flex items-start gap-3 rounded-[16px] border border-white/12 bg-white/[0.035] p-3 np-rise transform-gpu"
               style={{ animationDelay: '400ms' }}
             >
               <Calendar className="mt-0.5 size-4 shrink-0 text-primary" />
@@ -144,7 +144,7 @@ export default async function PassDetailPage({ params }: Props) {
 
           {venue && (
             <div
-              className="flex items-start gap-3 rounded-[16px] border border-white/8 bg-white/[0.02] p-3 np-rise transform-gpu"
+              className="flex items-start gap-3 rounded-[16px] border border-white/12 bg-white/[0.035] p-3 np-rise transform-gpu"
               style={{ animationDelay: '480ms' }}
             >
               <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
@@ -162,7 +162,7 @@ export default async function PassDetailPage({ params }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-white/8 px-5 py-3 sm:px-6">
+        <div className="border-t border-white/12 px-5 py-3 sm:px-6">
           <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             Pase ID
           </p>
@@ -178,7 +178,7 @@ export default async function PassDetailPage({ params }: Props) {
       )}
 
       {!used && !pass.canTransfer && pass.transferBlockedReason && (
-        <p className="mt-5 rounded-[16px] border border-white/8 bg-white/[0.02] px-4 py-3 text-center text-[12px] text-muted-foreground">
+        <p className="mt-5 rounded-[16px] border border-white/12 bg-white/[0.035] px-4 py-3 text-center text-[12px] text-muted-foreground">
           {pass.transferBlockedReason}
         </p>
       )}

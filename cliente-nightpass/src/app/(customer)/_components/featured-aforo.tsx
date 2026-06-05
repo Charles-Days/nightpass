@@ -79,7 +79,7 @@ export function FeaturedAforo({
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
           Aforo en vivo
         </p>
-        <div className="mt-2 flex items-center gap-2 rounded-[12px] border border-white/8 bg-white/[0.02] px-3 py-2 text-[11px] text-muted-foreground">
+        <div className="mt-2 flex items-center gap-2 rounded-[12px] border border-white/12 bg-white/[0.035] px-3 py-2 text-[11px] text-muted-foreground">
           <Moon className="size-3.5 shrink-0 text-rose-300/70" />
           <span>Cerrado · sin aforo</span>
         </div>
@@ -122,7 +122,7 @@ export function FeaturedAforo({
           type="button"
           onClick={handleActivate}
           disabled={requesting}
-          className="mt-2 flex w-full items-center gap-2 rounded-[12px] border border-white/10 bg-white/[0.04] px-3 py-2 text-left text-[11px] text-white/70 transition hover:bg-white/[0.06] disabled:opacity-60"
+          className="mt-2 flex w-full items-center gap-2 rounded-[12px] border border-white/14 bg-white/[0.07] px-3 py-2 text-left text-[11px] text-white/70 transition hover:bg-white/[0.09] disabled:opacity-60"
         >
           {requesting ? (
             <Loader2 className="size-3.5 shrink-0 animate-spin text-primary" />
@@ -158,7 +158,7 @@ export function FeaturedAforo({
               className={`h-1.5 flex-1 origin-center transform-gpu rounded-full transition-colors duration-500 ${
                 filled
                   ? `${SEGMENT_COLOR[bucket]} ${isLeading ? PULSE_CLASS[bucket] : ''}`
-                  : 'bg-white/[0.07]'
+                  : 'bg-white/[0.10]'
               }`}
             />
           );

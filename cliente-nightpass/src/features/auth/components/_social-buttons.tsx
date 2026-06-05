@@ -24,7 +24,7 @@ export function SocialButtons({ variant = 'full' }: SocialButtonsProps) {
         type="button"
         onClick={() => toast('Google sign-in se activa cuando NEXT_PUBLIC_GOOGLE_CLIENT_ID esté en .env')}
         aria-label="Continuar con Google"
-        className="inline-flex w-full items-center justify-center gap-2.5 rounded-[14px] border border-white/10 bg-white/[0.04] px-4 py-3 text-[13px] font-semibold text-white/85 transition hover:bg-white/[0.07]"
+        className="inline-flex w-full items-center justify-center gap-2.5 rounded-[14px] border border-white/14 bg-white/[0.07] px-4 py-3 text-[13px] font-semibold text-white/85 transition hover:bg-white/[0.10]"
       >
         <GoogleIcon />
         {variant === 'full' ? 'Continuar con Google' : 'Google'}
@@ -43,7 +43,7 @@ export function SocialButtons({ variant = 'full' }: SocialButtonsProps) {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 flex items-center justify-center gap-2.5 rounded-full border border-white/10 bg-white/[0.04] px-4 text-[13px] font-semibold text-white/90"
+        className="pointer-events-none absolute inset-0 flex items-center justify-center gap-2.5 rounded-full border border-white/14 bg-white/[0.07] px-4 text-[13px] font-semibold text-white/90"
       >
         <GoogleIcon />
         {variant === 'full' ? 'Continuar con Google' : 'Google'}

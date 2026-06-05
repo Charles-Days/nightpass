@@ -76,7 +76,7 @@ export default async function RecompensasPage() {
         <HistoryList limit={30} />
       </section>
 
-      <section className="np-rise mt-10 rounded-[22px] border border-white/10 bg-white/[0.025] p-6 sm:p-7" style={{ animationDelay: '820ms' }}>
+      <section className="np-rise mt-10 rounded-[22px] border border-white/14 bg-white/[0.05] p-6 sm:p-7" style={{ animationDelay: '820ms' }}>
         <h3 className="font-display text-lg font-bold tracking-tight">
           ¿Cómo gano puntos?
         </h3>
