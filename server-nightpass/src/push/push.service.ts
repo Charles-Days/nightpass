@@ -1,8 +1,10 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import webpush from 'web-push';
 import { PrismaService } from '../prisma/prisma.service';
+import { haversineMeters } from '../common/geo';
 import { SubscribeDto } from './dto/subscribe.dto';
+import type { EventAudience } from './dto/notify-event.dto';
 
 /** Payload que recibe el service worker en el evento `push`. */
 export interface PushPayload {
@@ -227,5 +229,105 @@ export class PushService implements OnModuleInit {
     }
 
     return { subscriptions: subs.length, delivered };
+  }
+
+  /**
+   * Notifica a una muestra ALEATORIA de personas que creemos están en el
+   * evento ahora: por su ubicación reciente cerca del venue (GEO) y/o porque
+   * escanearon su pase hace poco (CHECKIN). Solo cuentan quienes tienen push
+   * activado. `max` topa cuántas reciben.
+   */
+  async notifyEventAudience(
+    eventId: string,
+    opts: { title: string; body: string; max: number; audience: EventAudience; url?: string },
+  ): Promise<{ present: number; eligible: number; targeted: number; delivered: number }> {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: {
+        id: true,
+        externalVenueLat: true,
+        externalVenueLng: true,
+        venue: { select: { latitude: true, longitude: true, geofenceRadiusM: true } },
+      },
+    });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+
+    const wantGeo = opts.audience === 'GEO' || opts.audience === 'BOTH';
+    const wantCheckin = opts.audience === 'CHECKIN' || opts.audience === 'BOTH';
+    const present = new Set<string>();
+
+    // CHECK-IN: pases escaneados en las últimas 8h para este evento.
+    if (wantCheckin) {
+      const since = new Date(Date.now() - 8 * 60 * 60_000);
+      const passes = await this.prisma.pass.findMany({
+        where: { eventId, usedAt: { gte: since } },
+        select: { userId: true },
+      });
+      passes.forEach((p) => present.add(p.userId));
+    }
+
+    // GEO: pings dentro del radio del venue en las últimas 3h.
+    if (wantGeo) {
+      const lat = event.venue?.latitude ?? event.externalVenueLat;
+      const lng = event.venue?.longitude ?? event.externalVenueLng;
+      const radius = event.venue?.geofenceRadiusM ?? 150;
+      if (lat != null && lng != null && radius > 0) {
+        const cutoff = new Date(Date.now() - 3 * 60 * 60_000);
+        const padded = radius * 1.05;
+        const dLat = padded / 111_320;
+        const cosLat = Math.cos((lat * Math.PI) / 180);
+        const dLng = cosLat === 0 ? padded : padded / (111_320 * Math.abs(cosLat));
+        const pings = await this.prisma.locationPing.findMany({
+          where: {
+            createdAt: { gte: cutoff },
+            latitude: { gte: lat - dLat, lte: lat + dLat },
+            longitude: { gte: lng - dLng, lte: lng + dLng },
+          },
+          select: { userId: true, latitude: true, longitude: true },
+        });
+        for (const ping of pings) {
+          if (haversineMeters(ping.latitude, ping.longitude, lat, lng) <= radius) {
+            present.add(ping.userId);
+          }
+        }
+      }
+    }
+
+    const presentIds = Array.from(present);
+    if (presentIds.length === 0) {
+      return { present: 0, eligible: 0, targeted: 0, delivered: 0 };
+    }
+
+    // Solo quienes tienen push activado pueden recibir.
+    const subs = await this.prisma.pushSubscription.findMany({
+      where: { userId: { in: presentIds } },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+    const eligible = subs.map((s) => s.userId);
+
+    // Fisher-Yates: muestra aleatoria, tope `max`.
+    for (let i = eligible.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [eligible[i], eligible[j]] = [eligible[j], eligible[i]];
+    }
+    const targeted = eligible.slice(0, Math.max(1, opts.max));
+
+    let delivered = 0;
+    for (const userId of targeted) {
+      delivered += await this.sendToUser(userId, {
+        title: opts.title,
+        body: opts.body,
+        url: opts.url ?? `/app/evento/${eventId}`,
+        tag: `event-${eventId}`,
+      });
+    }
+
+    return {
+      present: presentIds.length,
+      eligible: eligible.length,
+      targeted: targeted.length,
+      delivered,
+    };
   }
 }
