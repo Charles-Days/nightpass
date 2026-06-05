@@ -17,8 +17,10 @@ const SESSION_KEY = 'np-install-prompt-shown';
 const R2_STATIC = 'https://pub-2830ac97394b4104993532e9c452b1c2.r2.dev/static';
 /** Video del flujo "Agregar a inicio" en Safari iOS. */
 const IOS_INSTALL_VIDEO = `${R2_STATIC}/ios-install.mp4`;
-/** Video del flujo "Instalar app" en Chrome / Android. */
+/** Video del flujo "Agregar a inicio" en Chrome iOS. */
 const CHROME_INSTALL_VIDEO = `${R2_STATIC}/chrome-install.mp4`;
+/** Video del flujo "Instalar app" en Chrome Android. */
+const ANDROID_INSTALL_VIDEO = `${R2_STATIC}/android-install.mp4`;
 
 /** Paso numerado con icono — solo para iOS sin video (Firefox/Edge → Safari). */
 function Step({
@@ -80,7 +82,13 @@ export function InstallAppPrompt() {
 
   const isMobile = platform === 'ios' || platform === 'android';
   const iosNoInstall = platform === 'ios' && !iosSafari && !iosChrome;
-  const videoSrc = iosSafari ? IOS_INSTALL_VIDEO : CHROME_INSTALL_VIDEO;
+  // iOS Safari → su video; iOS Chrome → video Chrome iOS; resto (Android
+  // fallback) → video Chrome Android.
+  const videoSrc = iosSafari
+    ? IOS_INSTALL_VIDEO
+    : iosChrome
+      ? CHROME_INSTALL_VIDEO
+      : ANDROID_INSTALL_VIDEO;
 
   React.useEffect(() => {
     if (!checked || isStandalone || !isMobile) return;
