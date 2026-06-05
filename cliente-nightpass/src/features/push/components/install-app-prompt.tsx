@@ -14,9 +14,28 @@ import { usePwaInstall } from '../hooks/use-pwa-install';
 
 const SESSION_KEY = 'np-install-prompt-shown';
 
-/** Video del flujo "Agregar a inicio" en Safari (servido desde R2/CDN). */
-const IOS_INSTALL_VIDEO =
-  'https://pub-2830ac97394b4104993532e9c452b1c2.r2.dev/static/ios-install.mp4';
+const R2_STATIC = 'https://pub-2830ac97394b4104993532e9c452b1c2.r2.dev/static';
+/** Video del flujo "Agregar a inicio" en Safari iOS. */
+const IOS_INSTALL_VIDEO = `${R2_STATIC}/ios-install.mp4`;
+/** Video del flujo "Instalar app" en Chrome / Android. */
+const CHROME_INSTALL_VIDEO = `${R2_STATIC}/chrome-install.mp4`;
+
+/** Marco con glow para los videos de instalación. */
+function VideoFrame({ src }: { src: string }) {
+  return (
+    <div className="relative mx-auto w-fit">
+      <div className="absolute -inset-3 -z-10 rounded-[28px] bg-primary/20 blur-2xl" />
+      <video
+        src={src}
+        className="w-[210px] rounded-[26px] border border-white/12 shadow-2xl"
+        autoPlay
+        muted
+        loop
+        playsInline
+      />
+    </div>
+  );
+}
 
 /** Paso numerado con icono — guía clara de "qué botón tocar". */
 function Step({
@@ -123,17 +142,7 @@ export function InstallAppPrompt() {
           ) : platform === 'ios' && iosSafari ? (
             // iOS Safari: video del flujo + pasos numerados.
             <>
-              <div className="relative mx-auto w-fit">
-                <div className="absolute -inset-3 -z-10 rounded-[28px] bg-primary/20 blur-2xl" />
-                <video
-                  src={IOS_INSTALL_VIDEO}
-                  className="w-[210px] rounded-[26px] border border-white/12 shadow-2xl"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                />
-              </div>
+              <VideoFrame src={IOS_INSTALL_VIDEO} />
               <ol className="flex flex-col gap-2">
                 <Step n={1} icon={<Share className="size-4" />}>
                   Toca <strong className="font-semibold">Compartir</strong>
@@ -159,19 +168,20 @@ export function InstallAppPrompt() {
               </Step>
             </ol>
           ) : (
-            // Android sin beforeinstallprompt (ya descartado, u otro navegador).
-            <ol className="flex flex-col gap-2">
-              <Step n={1} icon={<MoreVertical className="size-4" />}>
-                Abre el menú <strong className="font-semibold">⋮</strong> del
-                navegador
-              </Step>
-              <Step n={2} icon={<Plus className="size-4" />}>
-                Elige{' '}
-                <strong className="font-semibold">
-                  Instalar app / Agregar a inicio
-                </strong>
-              </Step>
-            </ol>
+            // Android sin beforeinstallprompt (ya descartado, u otro navegador):
+            // video del flujo Chrome + pasos numerados.
+            <>
+              <VideoFrame src={CHROME_INSTALL_VIDEO} />
+              <ol className="flex flex-col gap-2">
+                <Step n={1} icon={<MoreVertical className="size-4" />}>
+                  Abre el menú <strong className="font-semibold">⋮</strong>
+                </Step>
+                <Step n={2} icon={<Plus className="size-4" />}>
+                  Elige{' '}
+                  <strong className="font-semibold">Instalar app</strong>
+                </Step>
+              </ol>
+            </>
           )}
 
           <Button
