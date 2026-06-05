@@ -3,13 +3,19 @@
 import * as React from 'react';
 import { Bell, Loader2, X } from 'lucide-react';
 import { usePushNotifications } from '../hooks/use-push-notifications';
+import { usePwaInstall } from '../hooks/use-pwa-install';
 
 const DISMISS_KEY = 'np-push-banner-dismissed';
 
 export function EnableNotificationsBanner() {
   const { supported, checked, permission, isSubscribed, loading, subscribe } =
     usePushNotifications();
+  const { checked: pwaChecked, isStandalone, platform } = usePwaInstall();
   const [dismissed, setDismissed] = React.useState(true);
+
+  // En móvil sin instalar no insistimos con notificaciones (va el install prompt).
+  const mobileNotInstalled =
+    (platform === 'ios' || platform === 'android') && !isStandalone;
 
   // Lee el dismiss persistido (evita parpadeo en SSR → hidrata cerrado).
   React.useEffect(() => {
@@ -23,7 +29,15 @@ export function EnableNotificationsBanner() {
 
   // Ocultar hasta verificar el estado real (evita el flash), y si: no soporta,
   // ya suscrito, permiso denegado, o cerrado.
-  if (!checked || !supported || isSubscribed || permission === 'denied' || dismissed) {
+  if (
+    !checked ||
+    !pwaChecked ||
+    mobileNotInstalled ||
+    !supported ||
+    isSubscribed ||
+    permission === 'denied' ||
+    dismissed
+  ) {
     return null;
   }
 

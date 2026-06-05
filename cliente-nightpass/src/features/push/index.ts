@@ -4,4 +4,6 @@ export { PushTestButton } from './components/push-test-button';
 export { PushTestCard } from './components/push-test-card';
 export { PushBroadcastDialog } from './components/push-broadcast-dialog';
 export { PushPrompt } from './components/push-prompt';
+export { InstallAppPrompt } from './components/install-app-prompt';
 export { usePushNotifications } from './hooks/use-push-notifications';
+export { usePwaInstall } from './hooks/use-pwa-install';

@@ -11,6 +11,7 @@ import {
 } from '@/core/components/ui/dialog';
 import { Button } from '@/core/components/ui/button';
 import { usePushNotifications } from '../hooks/use-push-notifications';
+import { usePwaInstall } from '../hooks/use-pwa-install';
 
 const SESSION_KEY = 'np-push-prompt-shown';
 
@@ -23,9 +24,16 @@ const SESSION_KEY = 'np-push-prompt-shown';
 export function PushPrompt() {
   const { supported, permission, isSubscribed, loading, subscribe } =
     usePushNotifications();
+  const { checked: pwaChecked, isStandalone, platform } = usePwaInstall();
   const [open, setOpen] = React.useState(false);
 
+  // En móvil sin instalar primero va el prompt de instalación; los permisos se
+  // piden recién dentro de la PWA instalada. En desktop se pide directo.
+  const mobileNotInstalled =
+    (platform === 'ios' || platform === 'android') && !isStandalone;
+
   React.useEffect(() => {
+    if (!pwaChecked || mobileNotInstalled) return;
     if (!supported || isSubscribed || permission !== 'default') return;
     if (sessionStorage.getItem(SESSION_KEY) === '1') return;
 
@@ -37,7 +45,7 @@ export function PushPrompt() {
       setOpen(true);
     }, 1500);
     return () => clearTimeout(t);
-  }, [supported, isSubscribed, permission]);
+  }, [pwaChecked, mobileNotInstalled, supported, isSubscribed, permission]);
 
   // Si se suscribe (desde aquí o el banner), cerrar.
   React.useEffect(() => {
