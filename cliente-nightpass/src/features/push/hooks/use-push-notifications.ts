@@ -32,6 +32,9 @@ export function usePushNotifications() {
   const [permission, setPermission] = React.useState<PermissionState>('default');
   const [isSubscribed, setIsSubscribed] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
+  // false hasta que el efecto inicial resuelve el estado real de la suscripción.
+  // Evita que el banner parpadee mientras `getSubscription` (async) responde.
+  const [checked, setChecked] = React.useState(false);
 
   const vapidKey = clientEnv.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
@@ -46,6 +49,7 @@ export function usePushNotifications() {
   React.useEffect(() => {
     if (!supported || !vapidKey) {
       setPermission('unsupported');
+      setChecked(true);
       return;
     }
     setPermission(Notification.permission);
@@ -78,6 +82,8 @@ export function usePushNotifications() {
         if (!cancelled) setIsSubscribed(true);
       } catch {
         if (!cancelled) setIsSubscribed(false);
+      } finally {
+        if (!cancelled) setChecked(true);
       }
     })();
 
@@ -148,5 +154,5 @@ export function usePushNotifications() {
     }
   }, []);
 
-  return { supported, permission, isSubscribed, loading, subscribe, unsubscribe, sendTest };
+  return { supported, checked, permission, isSubscribed, loading, subscribe, unsubscribe, sendTest };
 }

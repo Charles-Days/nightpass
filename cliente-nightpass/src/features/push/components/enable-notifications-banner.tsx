@@ -7,7 +7,7 @@ import { usePushNotifications } from '../hooks/use-push-notifications';
 const DISMISS_KEY = 'np-push-banner-dismissed';
 
 export function EnableNotificationsBanner() {
-  const { supported, permission, isSubscribed, loading, subscribe } =
+  const { supported, checked, permission, isSubscribed, loading, subscribe } =
     usePushNotifications();
   const [dismissed, setDismissed] = React.useState(true);
 
@@ -21,8 +21,9 @@ export function EnableNotificationsBanner() {
     setDismissed(true);
   };
 
-  // Ocultar si: no soporta, ya suscrito, permiso denegado, o cerrado.
-  if (!supported || isSubscribed || permission === 'denied' || dismissed) {
+  // Ocultar hasta verificar el estado real (evita el flash), y si: no soporta,
+  // ya suscrito, permiso denegado, o cerrado.
+  if (!checked || !supported || isSubscribed || permission === 'denied' || dismissed) {
     return null;
   }
 
