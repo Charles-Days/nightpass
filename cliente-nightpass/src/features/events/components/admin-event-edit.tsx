@@ -12,6 +12,7 @@ import { EventForm } from './event-form';
 import { EventFormPromoter, toPromoterEventDefaults } from './event-form-promoter';
 import { TiersSection } from './tiers-section';
 import { CashPaymentSection } from './cash-payment-section';
+import { EventNotifyCard } from './event-notify-card';
 
 function venueDefaults(event: Event) {
   return {
@@ -109,6 +110,8 @@ export function AdminEventEdit({ event, onDone }: { event: Event; onDone: () => 
       >
         <AforoBoostSection event={event} />
       </CollapsibleCard>
+
+      <EventNotifyCard eventId={event.id} />
     </div>
   );
 }

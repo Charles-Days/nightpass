@@ -4,6 +4,8 @@ import {
   Headers,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -19,6 +21,7 @@ import { PushService } from './push.service';
 import { SubscribeDto } from './dto/subscribe.dto';
 import { UnsubscribeDto } from './dto/unsubscribe.dto';
 import { BroadcastDto } from './dto/broadcast.dto';
+import { NotifyEventDto } from './dto/notify-event.dto';
 
 @Controller('push')
 @UseGuards(JwtAuthGuard)
@@ -60,6 +63,28 @@ export class PushController {
       body: dto.body,
       url: dto.url ?? '/',
       tag: 'np-broadcast',
+    });
+    return { ok: true, ...result };
+  }
+
+  /**
+   * Notifica a una muestra aleatoria de presentes en un evento (geo/check-in).
+   * Solo ADMIN.
+   */
+  @Post('event/:eventId')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  async notifyEvent(
+    @Param('eventId', ParseUUIDPipe) eventId: string,
+    @Body() dto: NotifyEventDto,
+  ) {
+    const result = await this.push.notifyEventAudience(eventId, {
+      title: dto.title,
+      body: dto.body,
+      max: dto.max,
+      audience: dto.audience,
+      url: dto.url,
     });
     return { ok: true, ...result };
   }
