@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Bell, BellRing, Loader2, Send } from 'lucide-react';
 import { usePushNotifications } from '../hooks/use-push-notifications';
+import { PushBroadcastDialog } from './push-broadcast-dialog';
 
 /**
  * Card de prueba de notificaciones push para el dashboard admin.
@@ -49,7 +50,8 @@ export function PushTestCard() {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 flex-wrap items-center gap-3">
+          <PushBroadcastDialog />
           {!isSubscribed ? (
             <button
               type="button"
