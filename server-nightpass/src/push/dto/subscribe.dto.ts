@@ -1,5 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsObject, IsString, MinLength, ValidateNested } from 'class-validator';
+import {
+  IsObject,
+  IsOptional,
+  IsString,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 
 class SubscriptionKeysDto {
   @IsString()
@@ -20,4 +26,10 @@ export class SubscribeDto {
   @ValidateNested()
   @Type(() => SubscriptionKeysDto)
   keys!: SubscriptionKeysDto;
+
+  // El navegador incluye expirationTime (number|null) en sub.toJSON(). Sin
+  // declararlo, forbidNonWhitelisted lo rechaza con 400 y la suscripción nunca
+  // se guarda. No lo usamos, solo lo toleramos.
+  @IsOptional()
+  expirationTime?: number | null;
 }
