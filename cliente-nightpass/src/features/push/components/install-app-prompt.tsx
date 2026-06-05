@@ -20,14 +20,15 @@ const IOS_INSTALL_VIDEO = `${R2_STATIC}/ios-install.mp4`;
 /** Video del flujo "Instalar app" en Chrome / Android. */
 const CHROME_INSTALL_VIDEO = `${R2_STATIC}/chrome-install.mp4`;
 
-/** Marco con glow para los videos de instalación. */
+/** Marco con glow para los videos de instalación. Escala por altura para no
+ * desbordar pantallas chicas. */
 function VideoFrame({ src }: { src: string }) {
   return (
     <div className="relative mx-auto w-fit">
-      <div className="absolute -inset-3 -z-10 rounded-[28px] bg-primary/20 blur-2xl" />
+      <div className="absolute -inset-2 -z-10 rounded-[24px] bg-primary/20 blur-2xl" />
       <video
         src={src}
-        className="w-[210px] rounded-[26px] border border-white/12 shadow-2xl"
+        className="max-h-[38svh] w-auto rounded-[22px] border border-white/12 shadow-2xl"
         autoPlay
         muted
         loop
@@ -48,7 +49,7 @@ function Step({
   children: React.ReactNode;
 }) {
   return (
-    <li className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm">
+    <li className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm">
       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#9333ea] to-[#a855f7] text-xs font-bold text-white">
         {n}
       </span>
@@ -109,21 +110,20 @@ export function InstallAppPrompt() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="gap-0 overflow-hidden sm:max-w-sm">
-        <DialogHeader className="space-y-3">
-          <div className="relative mx-auto grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-[#9333ea] to-[#a855f7] text-white shadow-[0_8px_30px_rgba(168,85,247,0.45)]">
-            <Download className="size-8" />
+      <DialogContent className="max-h-[90svh] gap-0 overflow-y-auto sm:max-w-sm">
+        <DialogHeader className="space-y-2">
+          <div className="relative mx-auto grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-[#9333ea] to-[#a855f7] text-white shadow-[0_8px_30px_rgba(168,85,247,0.45)]">
+            <Download className="size-6" />
           </div>
-          <DialogTitle className="text-center text-2xl font-bold">
+          <DialogTitle className="text-center text-xl font-bold">
             Instala NightPass
           </DialogTitle>
-          <DialogDescription className="text-center text-[13px] leading-relaxed">
-            Añádela a tu inicio para entrar más rápido y recibir avisos de
-            eventos, ventas y tus pases.
+          <DialogDescription className="text-center text-xs leading-relaxed">
+            Añádela a tu inicio para entrar más rápido y no perderte nada.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-5 flex flex-col gap-4">
+        <div className="mt-4 flex flex-col gap-3">
           {canPrompt ? (
             // Android Chrome: instalación nativa en un toque.
             <Button
