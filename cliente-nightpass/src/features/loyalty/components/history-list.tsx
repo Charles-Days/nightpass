@@ -68,7 +68,7 @@ export function HistoryList({ limit = 50 }: { limit?: number }) {
 
   if (isLoading) {
     return (
-      <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-6">
+      <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-6">
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> Cargando actividad…
         </p>
@@ -78,7 +78,7 @@ export function HistoryList({ limit = 50 }: { limit?: number }) {
 
   if (isError || !data || data.length === 0) {
     return (
-      <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-7 text-center">
+      <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-7 text-center">
         <p className="text-sm text-white/65">Aún no tienes movimientos.</p>
         <p className="mt-1 text-[11px] text-white/40">
           Tu primer check-in aparecerá aquí.
@@ -88,7 +88,7 @@ export function HistoryList({ limit = 50 }: { limit?: number }) {
   }
 
   return (
-    <ul className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]">
+    <ul className="overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05]">
       {data.map((entry, i) => {
         const meta = TYPE_META[entry.type];
         const Icon = meta.icon;
@@ -98,7 +98,7 @@ export function HistoryList({ limit = 50 }: { limit?: number }) {
             key={entry.id}
             className={cn(
               'flex items-center gap-3 px-4 py-3.5 sm:px-5',
-              i > 0 && 'border-t border-white/5',
+              i > 0 && 'border-t border-white/10',
             )}
           >
             <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-primary/12 text-primary">

@@ -81,7 +81,7 @@ export function EnableLocationOnboarding({ open, onComplete }: EnableLocationOnb
     <Dialog open={open}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-[calc(100%-2rem)] gap-0 overflow-hidden rounded-[24px] border border-white/10 bg-[#0E0B14]/95 p-0 text-white backdrop-blur-xl sm:max-w-md"
+        className="max-w-[calc(100%-2rem)] gap-0 overflow-hidden rounded-[24px] border border-white/14 bg-[#0E0B14]/95 p-0 text-white backdrop-blur-xl sm:max-w-md"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
@@ -111,11 +111,11 @@ export function EnableLocationOnboarding({ open, onComplete }: EnableLocationOnb
 
           {/* Trust strip */}
           <ul className="mt-5 grid gap-2 text-left">
-            <li className="flex items-start gap-2 rounded-[14px] border border-white/8 bg-white/[0.025] px-3 py-2 text-xs text-white/65">
+            <li className="flex items-start gap-2 rounded-[14px] border border-white/12 bg-white/[0.05] px-3 py-2 text-xs text-white/65">
               <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-300" />
               No vendemos ni compartimos tu ubicación con terceros.
             </li>
-            <li className="flex items-start gap-2 rounded-[14px] border border-white/8 bg-white/[0.025] px-3 py-2 text-xs text-white/65">
+            <li className="flex items-start gap-2 rounded-[14px] border border-white/12 bg-white/[0.05] px-3 py-2 text-xs text-white/65">
               <Clock className="mt-0.5 size-3.5 shrink-0 text-primary" />
               Borrado automático cada 24h. Tú decides desde tu perfil.
             </li>
@@ -153,7 +153,7 @@ export function EnableLocationOnboarding({ open, onComplete }: EnableLocationOnb
             <Button
               variant="ghost"
               onClick={handleLater}
-              className="h-10 w-full rounded-full text-xs font-semibold uppercase tracking-[0.16em] text-white/55 hover:bg-white/[0.04] hover:text-white"
+              className="h-10 w-full rounded-full text-xs font-semibold uppercase tracking-[0.16em] text-white/55 hover:bg-white/[0.07] hover:text-white"
             >
               Más tarde
             </Button>

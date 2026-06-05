@@ -41,7 +41,7 @@ export function InstallBanner() {
 
   return (
     <>
-      <div className="mx-auto mb-4 flex w-full max-w-6xl items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs backdrop-blur">
+      <div className="mx-auto mb-4 flex w-full max-w-6xl items-center gap-3 rounded-full border border-white/14 bg-white/[0.07] px-4 py-2 text-xs backdrop-blur">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -56,7 +56,7 @@ export function InstallBanner() {
           type="button"
           aria-label="Cerrar"
           onClick={handleDismiss}
-          className="grid size-6 place-items-center rounded-full text-white/45 transition hover:bg-white/[0.06] hover:text-white"
+          className="grid size-6 place-items-center rounded-full text-white/45 transition hover:bg-white/[0.09] hover:text-white"
         >
           <X className="size-3.5" />
         </button>

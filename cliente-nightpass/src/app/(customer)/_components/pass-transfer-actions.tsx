@@ -122,7 +122,7 @@ export function PassTransferActions({ passId, initialTransfer }: Props) {
   const busy = create.isPending || cancel.isPending;
 
   return (
-    <div className="mt-5 rounded-[20px] border border-white/10 bg-white/[0.025] p-4 sm:p-5">
+    <div className="mt-5 rounded-[20px] border border-white/14 bg-white/[0.05] p-4 sm:p-5">
       {!transfer ? (
         <>
           <div className="flex items-start gap-3">
@@ -167,7 +167,7 @@ export function PassTransferActions({ passId, initialTransfer }: Props) {
                   onClick={() => setConfirming(false)}
                   disabled={busy}
                   variant="outline"
-                  className="rounded-full border-white/15 bg-transparent py-5 text-sm font-semibold text-white/80 hover:bg-white/[0.06]"
+                  className="rounded-full border-white/18 bg-transparent py-5 text-sm font-semibold text-white/80 hover:bg-white/[0.09]"
                 >
                   Cancelar
                 </Button>
@@ -205,14 +205,14 @@ export function PassTransferActions({ passId, initialTransfer }: Props) {
             pierde.
           </p>
 
-          <div className="mt-3 flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2">
+          <div className="mt-3 flex items-center gap-2 rounded-xl border border-white/14 bg-black/30 px-3 py-2">
             <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-white/60">
               {link}
             </span>
             <button
               type="button"
               onClick={onCopy}
-              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px] font-medium text-white/80 transition hover:bg-white/[0.08]"
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-white/14 bg-white/[0.07] px-2 py-1 text-[11px] font-medium text-white/80 transition hover:bg-white/[0.11]"
             >
               {copied ? (
                 <>
@@ -239,7 +239,7 @@ export function PassTransferActions({ passId, initialTransfer }: Props) {
               onClick={() => cancel.mutate()}
               disabled={busy}
               variant="outline"
-              className="rounded-full border-white/15 bg-transparent py-5 text-sm font-semibold text-white/80 hover:bg-white/[0.06]"
+              className="rounded-full border-white/18 bg-transparent py-5 text-sm font-semibold text-white/80 hover:bg-white/[0.09]"
             >
               {cancel.isPending ? (
                 <Loader2 className="size-4 animate-spin" />

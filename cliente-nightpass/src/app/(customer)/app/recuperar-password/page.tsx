@@ -19,8 +19,8 @@ export default function CustomerForgotPasswordPage() {
         Ingresa tu email y te enviamos un link para crear una nueva. El link expira en 60 minutos.
       </p>
 
-      <div className="mt-8 rounded-[22px] border border-white/10 bg-white/[0.025] p-6 np-zoom-in transform-gpu" style={{ animationDelay: '180ms' }}>
-        <Suspense fallback={<div className="h-40 animate-pulse rounded-md bg-white/[0.04]" />}>
+      <div className="mt-8 rounded-[22px] border border-white/14 bg-white/[0.05] p-6 np-zoom-in transform-gpu" style={{ animationDelay: '180ms' }}>
+        <Suspense fallback={<div className="h-40 animate-pulse rounded-md bg-white/[0.07]" />}>
           <ForgotPasswordForm />
         </Suspense>
       </div>

@@ -68,7 +68,7 @@ export function SignupPreview({ name }: SignupPreviewProps) {
               {tonightVenues.map((v, i, arr) => (
                 <li
                   key={v.name}
-                  className={`flex items-center gap-2.5 py-2 ${i < arr.length - 1 ? 'border-b border-white/8' : ''}`}
+                  className={`flex items-center gap-2.5 py-2 ${i < arr.length - 1 ? 'border-b border-white/12' : ''}`}
                 >
                   <span
                     className="size-7 shrink-0 rounded-[7px]"

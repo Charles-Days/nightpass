@@ -37,7 +37,7 @@ export function SignupSplit() {
           <div className="mt-8 np-rise" style={{ animationDelay: '180ms' }}>
             <Suspense
               fallback={
-                <div className="h-[480px] animate-pulse rounded-[18px] bg-white/[0.04]" />
+                <div className="h-[480px] animate-pulse rounded-[18px] bg-white/[0.07]" />
               }
             >
               <CustomerSignupForm onNameChange={setName} />
@@ -62,7 +62,7 @@ export function SignupSplit() {
       </div>
 
       {/* PROOF STRIP */}
-      <section className="mt-14 border-t border-white/10 pt-7 lg:mt-20">
+      <section className="mt-14 border-t border-white/14 pt-7 lg:mt-20">
         <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-4">
           {[
             { k: '+2,400', l: 'personas ya entran sin fila' },
@@ -72,7 +72,7 @@ export function SignupSplit() {
           ].map((s, i, arr) => (
             <div
               key={s.l}
-              className={`np-rise transform-gpu px-6 text-center first:text-left sm:text-center ${i < arr.length - 1 ? 'sm:border-r sm:border-white/10' : ''}`}
+              className={`np-rise transform-gpu px-6 text-center first:text-left sm:text-center ${i < arr.length - 1 ? 'sm:border-r sm:border-white/14' : ''}`}
               style={{ animationDelay: `${400 + i * 70}ms` }}
             >
               <p className="font-display text-[26px] font-bold tracking-[-0.025em] sm:text-3xl">

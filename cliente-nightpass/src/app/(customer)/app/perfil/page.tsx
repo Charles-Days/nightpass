@@ -173,7 +173,7 @@ export default async function PerfilPage() {
               <Mail className="size-3.5 shrink-0" />
               <span className="truncate">{user.email}</span>
             </p>
-            <div className="mt-6 flex flex-wrap gap-7 border-t border-white/10 pt-5">
+            <div className="mt-6 flex flex-wrap gap-7 border-t border-white/14 pt-5">
               <div>
                 <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/35">
                   Miembro desde
@@ -195,7 +195,7 @@ export default async function PerfilPage() {
               className="absolute size-60 rounded-full opacity-50 blur-3xl"
               style={{ background: 'radial-gradient(circle, #a855f7, transparent 70%)' }}
             />
-            <div className="relative grid size-32 place-items-center rounded-full bg-gradient-to-br from-[#a855f7] via-[#9333ea] to-[#ec4899] font-display text-[64px] font-bold leading-none text-white shadow-[inset_0_0_0_2px_rgba(255,255,255,0.12),0_20px_50px_-10px_rgba(168,85,247,0.6)] ring-2 ring-white/10 np-pop-in transform-gpu sm:size-40 sm:text-[80px]">
+            <div className="relative grid size-32 place-items-center rounded-full bg-gradient-to-br from-[#a855f7] via-[#9333ea] to-[#ec4899] font-display text-[64px] font-bold leading-none text-white shadow-[inset_0_0_0_2px_rgba(255,255,255,0.12),0_20px_50px_-10px_rgba(168,85,247,0.6)] ring-2 ring-white/14 np-pop-in transform-gpu sm:size-40 sm:text-[80px]">
               {getInitial(user)}
             </div>
           </div>
@@ -219,7 +219,7 @@ export default async function PerfilPage() {
         ].map((s, i) => (
           <div
             key={s.l}
-            className="rounded-[18px] border border-white/10 bg-white/[0.025] p-5 transition-colors hover:bg-white/[0.04] np-rise transform-gpu"
+            className="rounded-[18px] border border-white/14 bg-white/[0.05] p-5 transition-colors hover:bg-white/[0.07] np-rise transform-gpu"
             style={{ animationDelay: `${160 + i * 60}ms` }}
           >
             <div className="mb-4 flex items-start justify-between">
@@ -286,7 +286,7 @@ export default async function PerfilPage() {
           )}
         </div>
 
-        <div className="rounded-[20px] border border-white/10 bg-white/[0.025] p-6 np-rise transform-gpu sm:p-7" style={{ animationDelay: '500ms' }}>
+        <div className="rounded-[20px] border border-white/14 bg-white/[0.05] p-6 np-rise transform-gpu sm:p-7" style={{ animationDelay: '500ms' }}>
           <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Actividad reciente
           </p>
@@ -295,7 +295,7 @@ export default async function PerfilPage() {
               {recentActivity.map((a, i, arr) => (
                 <li
                   key={`${a.date}-${i}`}
-                  className={`flex items-center justify-between py-3 ${i < arr.length - 1 ? 'border-b border-white/5' : ''}`}
+                  className={`flex items-center justify-between py-3 ${i < arr.length - 1 ? 'border-b border-white/10' : ''}`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="w-11 font-mono text-[10px] tracking-wider text-white/35">
@@ -392,7 +392,7 @@ export default async function PerfilPage() {
 
       {/* LOGOUT */}
       <section className="mt-8">
-        <div className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025] p-2">
+        <div className="overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05] p-2">
           <LogoutButton />
         </div>
       </section>
@@ -436,7 +436,7 @@ function SettingItem({ icon: Icon, title, desc, href }: SettingItemProps) {
   );
 
   const className =
-    'group flex items-center gap-3.5 rounded-[14px] border border-white/10 bg-white/[0.025] px-4 py-3.5 transition-all hover:bg-white/[0.04] hover:border-white/15 active:scale-[0.98] transform-gpu';
+    'group flex items-center gap-3.5 rounded-[14px] border border-white/14 bg-white/[0.05] px-4 py-3.5 transition-all hover:bg-white/[0.07] hover:border-white/18 active:scale-[0.98] transform-gpu';
 
   if (href) {
     return (

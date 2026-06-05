@@ -15,7 +15,7 @@ export function StreakBadge({ streak, className }: StreakBadgeProps) {
         'inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-semibold',
         active
           ? 'border-orange-400/35 bg-orange-500/15 text-orange-200'
-          : 'border-white/10 bg-white/[0.04] text-white/55',
+          : 'border-white/14 bg-white/[0.07] text-white/55',
         className,
       )}
     >

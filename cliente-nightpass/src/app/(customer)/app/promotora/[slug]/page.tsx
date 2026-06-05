@@ -87,13 +87,13 @@ export default async function PromoterDetailPage({ params }: Props) {
 
       {/* Hero */}
       <section
-        className="np-rise mt-5 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]"
+        className="np-rise mt-5 overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05]"
         style={{ animationDelay: '80ms' }}
       >
         <div className="relative flex flex-col items-start gap-5 p-6 sm:flex-row sm:items-center sm:p-8">
           <div className="pointer-events-none absolute inset-0 -z-0 bg-gradient-to-br from-purple-700/15 via-fuchsia-500/10 to-transparent" />
 
-          <div className="relative z-10 grid size-20 shrink-0 place-items-center overflow-hidden rounded-full border border-white/15 bg-gradient-to-br from-purple-700/40 to-fuchsia-600/30 shadow-[0_8px_24px_-6px_rgba(168,85,247,0.45)] sm:size-24">
+          <div className="relative z-10 grid size-20 shrink-0 place-items-center overflow-hidden rounded-full border border-white/18 bg-gradient-to-br from-purple-700/40 to-fuchsia-600/30 shadow-[0_8px_24px_-6px_rgba(168,85,247,0.45)] sm:size-24">
             {promoter.logoUrl ? (
               <Image
                 src={promoter.logoUrl}
@@ -132,7 +132,7 @@ export default async function PromoterDetailPage({ params }: Props) {
                     href={instagramUrl(promoter.instagram)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/80 transition hover:bg-white/[0.08] active:scale-95"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/14 bg-white/[0.07] px-3 py-1 text-xs text-white/80 transition hover:bg-white/[0.11] active:scale-95"
                   >
                     <Instagram className="size-3.5" />
                     @{promoter.instagram.replace(/^@/, '')}
@@ -143,7 +143,7 @@ export default async function PromoterDetailPage({ params }: Props) {
                     href={promoter.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/80 transition hover:bg-white/[0.08] active:scale-95"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/14 bg-white/[0.07] px-3 py-1 text-xs text-white/80 transition hover:bg-white/[0.11] active:scale-95"
                   >
                     <Globe className="size-3.5" />
                     Sitio
@@ -155,7 +155,7 @@ export default async function PromoterDetailPage({ params }: Props) {
         </div>
 
         {promoter.bio && (
-          <div className="np-rise relative z-10 border-t border-white/8 p-5 sm:p-8" style={{ animationDelay: '320ms' }}>
+          <div className="np-rise relative z-10 border-t border-white/12 p-5 sm:p-8" style={{ animationDelay: '320ms' }}>
             <p className="text-sm leading-relaxed text-muted-foreground">{promoter.bio}</p>
           </div>
         )}
@@ -165,7 +165,7 @@ export default async function PromoterDetailPage({ params }: Props) {
       <section className="np-rise mt-8" style={{ animationDelay: '380ms' }}>
         <h2 className="mb-4 font-display text-xl font-bold tracking-tight">Próximos eventos</h2>
         {promoter.events.length === 0 ? (
-          <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-8 text-center text-sm text-muted-foreground">
             Aún no hay eventos publicados.
           </div>
         ) : (
@@ -183,7 +183,7 @@ export default async function PromoterDetailPage({ params }: Props) {
               return (
                 <li
                   key={ev.id}
-                  className="np-rise overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.025] transform-gpu transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.05] hover:shadow-[0_18px_40px_-20px_rgba(168,85,247,0.45)] active:scale-[0.98] active:duration-100"
+                  className="np-rise overflow-hidden rounded-[20px] border border-white/14 bg-white/[0.05] transform-gpu transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-white/22 hover:bg-white/[0.08] hover:shadow-[0_18px_40px_-20px_rgba(168,85,247,0.45)] active:scale-[0.98] active:duration-100"
                   style={{ animationDelay: `${Math.min(280 + i * 40, 520)}ms` }}
                 >
                   <Link href={`${paths.evento}/${ev.id}`} className="group flex items-stretch gap-4 p-3 sm:p-4">

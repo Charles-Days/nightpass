@@ -46,7 +46,7 @@ const STATUS: Record<OrderStatus, { label: string; className: string }> = {
   },
   REFUNDED: {
     label: 'Reembolsado',
-    className: 'border-white/15 bg-white/[0.05] text-white/60',
+    className: 'border-white/18 bg-white/[0.08] text-white/60',
   },
 };
 
@@ -87,10 +87,10 @@ export default async function ComprasPage() {
 
       {orders.length === 0 ? (
         <div
-          className="mt-8 flex flex-col items-center rounded-[22px] border border-white/10 bg-white/[0.025] p-10 text-center np-rise"
+          className="mt-8 flex flex-col items-center rounded-[22px] border border-white/14 bg-white/[0.05] p-10 text-center np-rise"
           style={{ animationDelay: '180ms' }}
         >
-          <div className="grid size-14 place-items-center rounded-full border border-white/10 bg-white/[0.04] np-pop-in">
+          <div className="grid size-14 place-items-center rounded-full border border-white/14 bg-white/[0.07] np-pop-in">
             <ShoppingBag className="size-6 text-primary" />
           </div>
           <h2 className="mt-5 font-display text-lg font-bold tracking-tight">
@@ -118,7 +118,7 @@ export default async function ComprasPage() {
                 className="np-rise transform-gpu"
                 style={{ animationDelay: `${Math.min(80 + idx * 40, 480)}ms` }}
               >
-                <div className="flex items-stretch gap-4 rounded-[20px] border border-white/10 bg-white/[0.025] p-3 sm:p-4">
+                <div className="flex items-stretch gap-4 rounded-[20px] border border-white/14 bg-white/[0.05] p-3 sm:p-4">
                   <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[14px] bg-gradient-to-br from-purple-900/40 to-purple-600/10 sm:h-28 sm:w-32">
                     {event?.coverImageUrl ? (
                       <Image

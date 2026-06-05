@@ -139,7 +139,7 @@ function Status({
   message: string;
 }) {
   return (
-    <div className="np-pop-in w-full rounded-[26px] border border-white/10 bg-white/[0.025] p-7 text-center">
+    <div className="np-pop-in w-full rounded-[26px] border border-white/14 bg-white/[0.05] p-7 text-center">
       <div className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-primary/12">
         {icon}
       </div>
@@ -214,7 +214,7 @@ function Success({ data }: { data: VenueCheckinResponse }) {
   const already = data.awarded === 0 && data.alreadyCheckedInToday;
 
   return (
-    <div className="np-pop-in relative w-full overflow-hidden rounded-[26px] border border-white/12 bg-white/[0.03] p-7 text-center">
+    <div className="np-pop-in relative w-full overflow-hidden rounded-[26px] border border-white/12 bg-white/[0.05] p-7 text-center">
       <div
         className={`absolute inset-x-8 -top-20 h-44 rounded-full bg-gradient-to-br ${tierStyle.gradient} opacity-30 blur-3xl`}
       />

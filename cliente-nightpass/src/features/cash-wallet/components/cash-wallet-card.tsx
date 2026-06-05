@@ -219,7 +219,7 @@ export function CashWalletCard({
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Movimientos recientes
             </p>
-            <ul className="divide-y divide-white/5 rounded-lg border border-white/10">
+            <ul className="divide-y divide-white/10 rounded-lg border border-white/14">
               {data.transactions.slice(0, 8).map((t) => (
                 <li
                   key={t.id}

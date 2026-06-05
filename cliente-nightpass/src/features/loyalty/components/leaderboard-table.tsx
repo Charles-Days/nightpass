@@ -15,7 +15,7 @@ export function LeaderboardTable({ city, currentUserId }: LeaderboardTableProps)
 
   if (!city) {
     return (
-      <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-7 text-center text-sm text-white/55">
+      <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-7 text-center text-sm text-white/55">
         Activa tu ciudad para ver el ranking.
       </div>
     );
@@ -23,7 +23,7 @@ export function LeaderboardTable({ city, currentUserId }: LeaderboardTableProps)
 
   if (isLoading) {
     return (
-      <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-6">
+      <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-6">
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> Cargando ranking…
         </p>
@@ -33,7 +33,7 @@ export function LeaderboardTable({ city, currentUserId }: LeaderboardTableProps)
 
   if (isError || !data || data.length === 0) {
     return (
-      <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-7 text-center">
+      <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-7 text-center">
         <p className="text-sm text-white/65">
           Aún no hay suficientes Insiders en {city}.
         </p>
@@ -45,9 +45,9 @@ export function LeaderboardTable({ city, currentUserId }: LeaderboardTableProps)
   }
 
   return (
-    <div className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025]">
+    <div className="overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05]">
       <table className="w-full text-sm">
-        <thead className="border-b border-white/8 bg-white/[0.02] text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">
+        <thead className="border-b border-white/12 bg-white/[0.035] text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">
           <tr>
             <th className="px-4 py-3 sm:px-5">#</th>
             <th className="px-2 py-3">Insider</th>
@@ -62,10 +62,10 @@ export function LeaderboardTable({ city, currentUserId }: LeaderboardTableProps)
               <tr
                 key={row.userId}
                 className={cn(
-                  'border-b border-white/5 last:border-b-0 transition',
+                  'border-b border-white/10 last:border-b-0 transition',
                   isMe
                     ? 'bg-primary/[0.08] hover:bg-primary/[0.12]'
-                    : 'hover:bg-white/[0.04]',
+                    : 'hover:bg-white/[0.07]',
                 )}
               >
                 <td className="px-4 py-3 sm:px-5 font-mono text-[12px] tabular-nums text-white/55">

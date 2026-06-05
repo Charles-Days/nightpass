@@ -17,7 +17,7 @@ interface CityRankingProps {
 }
 
 const SELECT_CLASS =
-  'w-full appearance-none rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition focus:border-primary/60 focus:bg-white/[0.05] disabled:opacity-50';
+  'w-full appearance-none rounded-xl border border-white/14 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none transition focus:border-primary/60 focus:bg-white/[0.08] disabled:opacity-50';
 
 export function CityRanking({
   initialState,
@@ -90,7 +90,7 @@ export function CityRanking({
       </div>
 
       {editing ? (
-        <div className="rounded-[22px] border border-white/10 bg-white/[0.025] p-6 sm:p-7">
+        <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-6 sm:p-7">
           <p className="text-sm text-white/65">
             Elige de qué ciudad eres para ver el ranking de Insiders. Lo
             guardamos en tu cuenta — solo te lo preguntamos una vez.
@@ -133,14 +133,14 @@ export function CityRanking({
             type="button"
             onClick={() => setWantsRanking((v) => !v)}
             disabled={isPending}
-            className="mt-4 flex w-full items-start gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-4 text-left transition hover:bg-white/[0.04]"
+            className="mt-4 flex w-full items-start gap-3 rounded-xl border border-white/14 bg-white/[0.035] p-4 text-left transition hover:bg-white/[0.07]"
           >
             <span
               className={cn(
                 'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md border transition',
                 wantsRanking
                   ? 'border-primary bg-primary text-white'
-                  : 'border-white/20 bg-transparent',
+                  : 'border-white/22 bg-transparent',
               )}
             >
               {wantsRanking ? <Check className="size-3.5" /> : null}

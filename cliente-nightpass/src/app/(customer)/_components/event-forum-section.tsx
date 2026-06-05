@@ -87,7 +87,7 @@ export function EventForumSection({ eventId, startsAt, endsAt }: Props) {
 
   if (!open) {
     return (
-      <section className="np-rise mt-6 rounded-[18px] border border-white/10 bg-white/[0.025] p-5 text-center">
+      <section className="np-rise mt-6 rounded-[18px] border border-white/14 bg-white/[0.05] p-5 text-center">
         <Lock className="mx-auto size-5 text-muted-foreground" />
         <p className="mt-2 font-display text-base font-semibold">Foro del evento</p>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -129,7 +129,7 @@ export function EventForumSection({ eventId, startsAt, endsAt }: Props) {
               setRequesting(false);
             }
           }}
-          className="flex w-full items-center gap-2 rounded-[16px] border border-white/12 bg-white/[0.04] px-4 py-3 text-sm text-white/75 transition hover:bg-white/[0.06]"
+          className="flex w-full items-center gap-2 rounded-[16px] border border-white/12 bg-white/[0.07] px-4 py-3 text-sm text-white/75 transition hover:bg-white/[0.09]"
         >
           {requesting ? (
             <Loader2 className="size-4 animate-spin text-primary" />
@@ -140,7 +140,7 @@ export function EventForumSection({ eventId, startsAt, endsAt }: Props) {
         </button>
       ) : (
         <div className="space-y-3">
-          <div className="rounded-[18px] border border-white/10 bg-white/[0.025] p-3">
+          <div className="rounded-[18px] border border-white/14 bg-white/[0.05] p-3">
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
@@ -178,7 +178,7 @@ export function EventForumSection({ eventId, startsAt, endsAt }: Props) {
               {list.data.items.map((p) => (
                 <li
                   key={p.id}
-                  className="rounded-[14px] border border-white/8 bg-white/[0.02] px-3 py-2"
+                  className="rounded-[14px] border border-white/12 bg-white/[0.035] px-3 py-2"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-semibold text-white/85">
@@ -195,7 +195,7 @@ export function EventForumSection({ eventId, startsAt, endsAt }: Props) {
               ))}
             </ul>
           ) : (
-            <p className="rounded-[14px] border border-dashed border-white/10 bg-white/[0.015] p-6 text-center text-xs text-muted-foreground">
+            <p className="rounded-[14px] border border-dashed border-white/14 bg-white/[0.025] p-6 text-center text-xs text-muted-foreground">
               Aún no hay mensajes. Sé el primero.
             </p>
           )}

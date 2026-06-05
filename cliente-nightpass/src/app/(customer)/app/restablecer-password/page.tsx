@@ -60,8 +60,8 @@ export default async function CustomerResetPasswordPage({ searchParams }: PagePr
         Elige una contraseña segura que no hayas usado antes. Después podrás iniciar sesión normalmente.
       </p>
 
-      <div className="mt-8 rounded-[22px] border border-white/10 bg-white/[0.025] p-6 np-zoom-in transform-gpu" style={{ animationDelay: '180ms' }}>
-        <Suspense fallback={<div className="h-48 animate-pulse rounded-md bg-white/[0.04]" />}>
+      <div className="mt-8 rounded-[22px] border border-white/14 bg-white/[0.05] p-6 np-zoom-in transform-gpu" style={{ animationDelay: '180ms' }}>
+        <Suspense fallback={<div className="h-48 animate-pulse rounded-md bg-white/[0.07]" />}>
           <ResetPasswordForm token={token} variant="customer" />
         </Suspense>
       </div>

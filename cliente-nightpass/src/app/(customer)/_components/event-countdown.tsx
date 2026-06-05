@@ -40,7 +40,7 @@ function Segment({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center">
       {/* key={padded} remonta el span → dispara np-digit-pop en cada cambio. */}
-      <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1.5 tabular-nums sm:px-3.5 sm:py-2">
+      <div className="overflow-hidden rounded-xl border border-white/14 bg-white/[0.07] px-2.5 py-1.5 tabular-nums sm:px-3.5 sm:py-2">
         <span
           key={padded}
           className="np-digit-pop block font-display text-2xl font-bold leading-none text-white sm:text-3xl"
@@ -75,7 +75,7 @@ export function EventCountdown({ startsAt, endsAt, className, style }: Props) {
     return (
       <section
         className={cn(
-          'np-rise flex items-center gap-3 rounded-[22px] border border-white/10 bg-white/[0.025] px-5 py-4',
+          'np-rise flex items-center gap-3 rounded-[22px] border border-white/14 bg-white/[0.05] px-5 py-4',
           className,
         )}
         style={style}

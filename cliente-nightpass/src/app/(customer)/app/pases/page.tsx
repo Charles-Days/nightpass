@@ -53,8 +53,8 @@ export default async function PassesPage() {
       </p>
 
       {passes.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center rounded-[22px] border border-white/10 bg-white/[0.025] p-10 text-center np-rise" style={{ animationDelay: '180ms' }}>
-          <div className="grid size-14 place-items-center rounded-full border border-white/10 bg-white/[0.04] np-pop-in">
+        <div className="mt-8 flex flex-col items-center rounded-[22px] border border-white/14 bg-white/[0.05] p-10 text-center np-rise" style={{ animationDelay: '180ms' }}>
+          <div className="grid size-14 place-items-center rounded-full border border-white/14 bg-white/[0.07] np-pop-in">
             <Ticket className="size-6 text-primary" />
           </div>
           <h2 className="mt-5 font-display text-lg font-bold tracking-tight">
@@ -136,14 +136,14 @@ export default async function PassesPage() {
                       <li key={pass.id}>
                         <Link
                           href={`${paths.pases}/${pass.id}`}
-                          className="flex items-center gap-3 rounded-[16px] border border-white/10 bg-white/[0.025] px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/[0.04] hover:border-white/15 active:scale-[0.98] transform-gpu"
+                          className="flex items-center gap-3 rounded-[16px] border border-white/14 bg-white/[0.05] px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/[0.07] hover:border-white/18 active:scale-[0.98] transform-gpu"
                         >
                           <QrCode className="size-4 shrink-0 text-primary" />
                           <span className="flex-1 truncate text-sm font-semibold">
                             {multi ? `Boleto ${idx + 1}` : 'Tu boleto'}
                           </span>
                           {used ? (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-white/14 bg-white/[0.07] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55">
                               <CheckCircle2 className="size-3" />
                               Usado
                             </span>

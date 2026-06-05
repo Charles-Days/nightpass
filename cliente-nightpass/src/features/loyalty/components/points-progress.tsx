@@ -31,7 +31,7 @@ export function PointsProgress({
 
   return (
     <div className={cn('space-y-2', className)}>
-      <div className="relative h-2 overflow-hidden rounded-full bg-white/[0.06]">
+      <div className="relative h-2 overflow-hidden rounded-full bg-white/[0.09]">
         <div
           className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] shadow-[0_0_18px_rgba(168,85,247,0.45)] transition-[width] duration-700 ease-out"
           style={{ width: `${pct}%` }}

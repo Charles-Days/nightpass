@@ -454,7 +454,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
         <h1 className="mt-2 font-display text-2xl font-bold tracking-tight">Confirma tu pase</h1>
       </header>
 
-      <section className="mt-6 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.025] p-5 np-rise" style={{ animationDelay: '120ms' }}>
+      <section className="mt-6 overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05] p-5 np-rise" style={{ animationDelay: '120ms' }}>
         <div>
           <p className="font-display text-base font-semibold leading-tight">{summary.title}</p>
           {(summary.venueName || summary.startsAt) && (
@@ -497,7 +497,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
         )}
 
         {/* Código de RP */}
-        <div className="mt-4 border-t border-white/5 pt-4">
+        <div className="mt-4 border-t border-white/10 pt-4">
           <details className="group text-xs">
             <summary className="flex cursor-pointer items-center justify-between text-muted-foreground hover:text-foreground transition-colors">
               <span>¿Tienes un código de RP?</span>
@@ -511,7 +511,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                 placeholder="Ej. CARLOS-A3F2"
                 value={manualRpCode}
                 onChange={e => setManualRpCode(e.target.value.toUpperCase())}
-                className="h-9 flex-1 rounded-xl border border-white/10 bg-black/40 px-3 text-xs text-white placeholder-white/30 focus:border-primary/50 focus:outline-none"
+                className="h-9 flex-1 rounded-xl border border-white/14 bg-black/40 px-3 text-xs text-white placeholder-white/30 focus:border-primary/50 focus:outline-none"
               />
               <Button
                 type="button"
@@ -542,7 +542,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
 
       <section
         key={phase}
-        className={`mt-5 rounded-[22px] border border-white/10 bg-white/[0.025] p-5 transform-gpu ${isErrorPhase ? 'np-shake border-red-400/20' : 'np-rise'}`}
+        className={`mt-5 rounded-[22px] border border-white/14 bg-white/[0.05] p-5 transform-gpu ${isErrorPhase ? 'np-shake border-red-400/20' : 'np-rise'}`}
         style={{ animationDelay: '180ms' }}
       >
         {phase === 'select_quantity' && (
@@ -560,7 +560,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                     className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
                       method === 'online'
                         ? 'border-primary/50 bg-primary/15 text-white'
-                        : 'border-white/10 bg-white/[0.02] text-muted-foreground hover:bg-white/[0.05]'
+                        : 'border-white/14 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.08]'
                     } ${onlineUnavailable ? 'cursor-not-allowed opacity-40' : ''}`}
                   >
                     En línea
@@ -571,7 +571,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                     className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
                       method === 'cash'
                         ? 'border-primary/50 bg-primary/15 text-white'
-                        : 'border-white/10 bg-white/[0.02] text-muted-foreground hover:bg-white/[0.05]'
+                        : 'border-white/14 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.08]'
                     }`}
                   >
                     En efectivo
@@ -599,7 +599,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                       placeholder="Ej. 55 1234 5678"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white placeholder-white/30 focus:border-primary/50 focus:outline-none"
+                      className="h-10 w-full rounded-xl border border-white/14 bg-black/40 px-3 text-sm text-white placeholder-white/30 focus:border-primary/50 focus:outline-none"
                     />
                   </div>
                 )}
@@ -616,7 +616,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                           setStateName(e.target.value);
                           setCity('');
                         }}
-                        className="h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white focus:border-primary/50 focus:outline-none"
+                        className="h-10 w-full rounded-xl border border-white/14 bg-black/40 px-3 text-sm text-white focus:border-primary/50 focus:outline-none"
                       >
                         <option value="">Estado…</option>
                         {MEXICO_GEO.map((e) => (
@@ -635,7 +635,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
                         disabled={!stateName}
-                        className="h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white focus:border-primary/50 focus:outline-none disabled:opacity-50"
+                        className="h-10 w-full rounded-xl border border-white/14 bg-black/40 px-3 text-sm text-white focus:border-primary/50 focus:outline-none disabled:opacity-50"
                       >
                         <option value="">Ciudad…</option>
                         {cashCities.map((c) => (
@@ -661,7 +661,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                 variant="outline"
                 onClick={() => setQuantity(q => Math.max(1, q - 1))}
                 disabled={quantity <= 1}
-                className="size-11 rounded-full border-white/10 bg-white/[0.02] hover:bg-white/10 text-lg font-bold text-white"
+                className="size-11 rounded-full border-white/14 bg-white/[0.035] hover:bg-white/10 text-lg font-bold text-white"
               >
                 -
               </Button>
@@ -673,7 +673,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                 variant="outline"
                 onClick={() => setQuantity(q => Math.min(maxQuantity, q + 1))}
                 disabled={quantity >= maxQuantity}
-                className="size-11 rounded-full border-white/10 bg-white/[0.02] hover:bg-white/10 text-lg font-bold text-white"
+                className="size-11 rounded-full border-white/14 bg-white/[0.035] hover:bg-white/10 text-lg font-bold text-white"
               >
                 +
               </Button>

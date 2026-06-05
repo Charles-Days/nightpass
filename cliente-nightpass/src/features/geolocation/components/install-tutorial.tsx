@@ -54,7 +54,7 @@ export function InstallTutorial({ open, onOpenChange }: InstallTutorialProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[88dvh] max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-[22px] border border-white/10 bg-[#0E0B14]/95 p-0 text-white backdrop-blur-xl sm:max-w-md">
+      <DialogContent className="flex max-h-[88dvh] max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-[22px] border border-white/14 bg-[#0E0B14]/95 p-0 text-white backdrop-blur-xl sm:max-w-md">
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
         <div className="flex flex-col gap-1 text-left">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
@@ -96,7 +96,7 @@ export function InstallTutorial({ open, onOpenChange }: InstallTutorialProps) {
 
           <TabsContent value="ios" className="mt-4">
             {isFirefoxOnIOS ? (
-              <div className="flex items-start gap-3 rounded-[16px] border border-white/10 bg-white/[0.03] p-4">
+              <div className="flex items-start gap-3 rounded-[16px] border border-white/14 bg-white/[0.05] p-4">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-300" />
                 <div>
                   <p className="text-sm font-semibold">Abre en Safari, Chrome o Edge</p>
@@ -237,7 +237,7 @@ function Step({
   desc: string;
 }) {
   return (
-    <li className="flex items-start gap-3 rounded-[16px] border border-white/8 bg-white/[0.025] p-3">
+    <li className="flex items-start gap-3 rounded-[16px] border border-white/12 bg-white/[0.05] p-3">
       <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
         <span className="text-[11px] font-semibold">{index}</span>
       </div>

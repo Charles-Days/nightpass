@@ -43,7 +43,7 @@ export function TopBar({ user: initialUser, isReturning = false }: Props) {
         'sticky top-0 z-20 transition-all duration-300 ease-out',
         'pt-[env(safe-area-inset-top)]',
         scrolled
-          ? 'border-b border-white/10 bg-background/70 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.6)] backdrop-blur-sm'
+          ? 'border-b border-white/14 bg-background/70 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.6)] backdrop-blur-sm'
           : 'border-b border-transparent bg-background/30',
       )}
       style={scrolled ? { WebkitBackdropFilter: 'blur(8px)' } : undefined}
@@ -63,19 +63,19 @@ export function TopBar({ user: initialUser, isReturning = false }: Props) {
         <div className="hidden md:flex md:items-center md:gap-2">
           <Link
             href={paths.appHome}
-            className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground active:scale-95"
+            className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.08] hover:text-foreground active:scale-95"
           >
             Antros
           </Link>
           <Link
             href={paths.eventos}
-            className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground active:scale-95"
+            className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.08] hover:text-foreground active:scale-95"
           >
             Eventos
           </Link>
           <Link
             href={paths.pases}
-            className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground active:scale-95"
+            className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-white/[0.08] hover:text-foreground active:scale-95"
           >
             Mis pases
           </Link>

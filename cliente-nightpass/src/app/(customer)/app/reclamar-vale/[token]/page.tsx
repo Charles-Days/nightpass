@@ -92,8 +92,8 @@ export default async function ReclamarValePage({ params }: Props) {
         Mis pases
       </Link>
 
-      <section className="mt-6 overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-br from-white/[0.04] via-white/[0.025] to-primary/[0.04] backdrop-blur-xl">
-        <div className="flex items-center gap-2 border-b border-white/8 px-5 py-3.5 sm:px-6">
+      <section className="mt-6 overflow-hidden rounded-[24px] border border-white/14 bg-gradient-to-br from-white/[0.04] via-white/[0.025] to-primary/[0.04] backdrop-blur-xl">
+        <div className="flex items-center gap-2 border-b border-white/12 px-5 py-3.5 sm:px-6">
           <p className="flex items-center gap-2 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
             <Gift className="size-3.5" />
             Te regalaron un boleto
@@ -116,13 +116,13 @@ export default async function ReclamarValePage({ params }: Props) {
                 Cortesía · Gratis
               </p>
             ) : (
-              <p className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/80">
+              <p className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/[0.07] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/80">
                 {money(preview.amountCents, preview.currency)}
               </p>
             )}
           </div>
 
-          <div className="flex items-start gap-3 rounded-[16px] border border-white/8 bg-white/[0.02] p-3">
+          <div className="flex items-start gap-3 rounded-[16px] border border-white/12 bg-white/[0.035] p-3">
             <Calendar className="mt-0.5 size-4 shrink-0 text-primary" />
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -135,7 +135,7 @@ export default async function ReclamarValePage({ params }: Props) {
           </div>
 
           {venueName && (
-            <div className="flex items-start gap-3 rounded-[16px] border border-white/8 bg-white/[0.02] p-3">
+            <div className="flex items-start gap-3 rounded-[16px] border border-white/12 bg-white/[0.035] p-3">
               <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -154,9 +154,9 @@ export default async function ReclamarValePage({ params }: Props) {
           )}
         </div>
 
-        <div className="border-t border-white/8 px-5 py-5 sm:px-6">
+        <div className="border-t border-white/12 px-5 py-5 sm:px-6">
           {blocked ? (
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-center">
+            <div className="rounded-xl border border-white/14 bg-white/[0.05] px-4 py-3 text-center">
               <p className="text-sm font-medium text-white/80">
                 {blocked.title}
               </p>

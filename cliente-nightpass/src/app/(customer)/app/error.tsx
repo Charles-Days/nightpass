@@ -77,7 +77,7 @@ export default function CustomerAppError({
 
   return (
     <div className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col items-center justify-center px-5 text-center">
-      <div className="grid size-14 place-items-center rounded-full border border-white/10 bg-white/[0.04]">
+      <div className="grid size-14 place-items-center rounded-full border border-white/14 bg-white/[0.07]">
         <AlertCircle className="size-6 text-primary" />
       </div>
       <h1 className="mt-5 font-display text-xl font-bold tracking-tight">
@@ -97,7 +97,7 @@ export default function CustomerAppError({
         </button>
         <Link
           href={paths.appHome}
-          className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-white/80 transition hover:bg-white/[0.08] active:scale-95"
+          className="inline-flex items-center rounded-full border border-white/14 bg-white/[0.07] px-5 py-2.5 text-sm font-semibold text-white/80 transition hover:bg-white/[0.11] active:scale-95"
         >
           Ir al inicio
         </Link>

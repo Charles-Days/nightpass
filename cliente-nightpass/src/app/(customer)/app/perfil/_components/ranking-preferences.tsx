@@ -14,7 +14,7 @@ interface RankingPreferencesProps {
 }
 
 const SELECT_CLASS =
-  'w-full appearance-none rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition focus:border-primary/60 focus:bg-white/[0.05] disabled:opacity-50';
+  'w-full appearance-none rounded-xl border border-white/14 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none transition focus:border-primary/60 focus:bg-white/[0.08] disabled:opacity-50';
 
 export function RankingPreferences({
   initialState,
@@ -81,7 +81,7 @@ export function RankingPreferences({
   };
 
   return (
-    <div className="rounded-[20px] border border-white/10 bg-white/[0.025] p-6 sm:p-7">
+    <div className="rounded-[20px] border border-white/14 bg-white/[0.05] p-6 sm:p-7">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold">Aparecer en el ranking</p>
@@ -110,7 +110,7 @@ export function RankingPreferences({
         </button>
       </div>
 
-      <div className="mt-5 border-t border-white/8 pt-4">
+      <div className="mt-5 border-t border-white/12 pt-4">
         {editingCity ? (
           <div className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">

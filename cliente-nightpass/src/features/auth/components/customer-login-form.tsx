@@ -44,7 +44,7 @@ export function CustomerLoginForm() {
                 type="email"
                 autoComplete="email"
                 placeholder="tu@email.com"
-                className={`h-12 rounded-[12px] border-white/10 bg-white/[0.04] pl-10 text-base transition-colors focus:border-primary/40 ${emailValue ? 'border-primary/40' : ''} ${errors.email ? 'border-destructive/60' : ''}`}
+                className={`h-12 rounded-[12px] border-white/14 bg-white/[0.07] pl-10 text-base transition-colors focus:border-primary/40 ${emailValue ? 'border-primary/40' : ''} ${errors.email ? 'border-destructive/60' : ''}`}
                 {...register('email')}
               />
             </div>
@@ -60,7 +60,7 @@ export function CustomerLoginForm() {
                 type="password"
                 autoComplete="current-password"
                 placeholder="••••••••"
-                className={`h-12 rounded-[12px] border-white/10 bg-white/[0.04] pl-10 text-base transition-colors focus:border-primary/40 ${passwordValue ? 'border-primary/40' : ''} ${errors.password ? 'border-destructive/60' : ''}`}
+                className={`h-12 rounded-[12px] border-white/14 bg-white/[0.07] pl-10 text-base transition-colors focus:border-primary/40 ${passwordValue ? 'border-primary/40' : ''} ${errors.password ? 'border-destructive/60' : ''}`}
                 {...register('password')}
               />
             </div>
