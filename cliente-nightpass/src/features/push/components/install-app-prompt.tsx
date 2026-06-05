@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Download, Loader2, Plus, MoreVertical, Compass, Share } from 'lucide-react';
+import { Download, Loader2, Plus, Compass } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -20,25 +20,7 @@ const IOS_INSTALL_VIDEO = `${R2_STATIC}/ios-install.mp4`;
 /** Video del flujo "Instalar app" en Chrome / Android. */
 const CHROME_INSTALL_VIDEO = `${R2_STATIC}/chrome-install.mp4`;
 
-/** Marco con glow para los videos de instalación. Escala por altura para no
- * desbordar pantallas chicas. */
-function VideoFrame({ src }: { src: string }) {
-  return (
-    <div className="relative mx-auto w-fit">
-      <div className="absolute -inset-2 -z-10 rounded-[24px] bg-primary/20 blur-2xl" />
-      <video
-        src={src}
-        className="max-h-[38svh] w-auto rounded-[22px] border border-white/12 shadow-2xl"
-        autoPlay
-        muted
-        loop
-        playsInline
-      />
-    </div>
-  );
-}
-
-/** Paso numerado con icono — guía clara de "qué botón tocar". */
+/** Paso numerado con icono — solo para iOS sin video (Firefox/Edge → Safari). */
 function Step({
   n,
   icon,
@@ -49,7 +31,7 @@ function Step({
   children: React.ReactNode;
 }) {
   return (
-    <li className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm">
+    <li className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm">
       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#9333ea] to-[#a855f7] text-xs font-bold text-white">
         {n}
       </span>
@@ -63,15 +45,32 @@ function Step({
   );
 }
 
+/** Marco con glow para los videos de instalación. Escala por altura para no
+ * desbordar pantallas chicas. */
+function VideoFrame({ src }: { src: string }) {
+  return (
+    <div className="relative mx-auto w-fit">
+      <div className="absolute -inset-2 -z-10 rounded-[24px] bg-primary/20 blur-2xl" />
+      <video
+        src={src}
+        className="max-h-[58svh] w-auto rounded-[22px] border border-white/12 shadow-2xl"
+        autoPlay
+        muted
+        loop
+        playsInline
+      />
+    </div>
+  );
+}
+
 /**
- * Primer contacto sin la app instalada: en vez de bombardear con permisos,
- * invitamos a instalar la PWA. Los permisos (notificaciones) se piden después,
- * ya dentro de la app instalada (ver gating en el layout customer).
+ * Primer contacto sin la app instalada: invitamos a instalar la PWA (los
+ * permisos se piden después, ya instalada — ver gating en el layout customer).
  *
- * - Android Chrome: botón nativo "Instalar app" si capturamos beforeinstallprompt.
- * - iOS Safari: video del flujo Compartir → Agregar a inicio (no hay API).
- * - iOS en otro navegador: aviso de abrir en Safari (solo Safari instala PWA).
- * - Desktop / standalone: no se muestra.
+ * - Android Chrome con prompt nativo: botón "Instalar app" (un toque).
+ * - iOS Safari / iOS Chrome / Android fallback: video del flujo. Se cierra con
+ *   la X (sin pasos ni "Ahora no" — el video muestra todo).
+ * - iOS Firefox/Edge/etc: no instalan PWA → texto para abrir en Safari.
  */
 export function InstallAppPrompt() {
   const { checked, isStandalone, canPrompt, platform, iosSafari, iosChrome, promptInstall } =
@@ -80,6 +79,8 @@ export function InstallAppPrompt() {
   const [installing, setInstalling] = React.useState(false);
 
   const isMobile = platform === 'ios' || platform === 'android';
+  const iosNoInstall = platform === 'ios' && !iosSafari && !iosChrome;
+  const videoSrc = iosSafari ? IOS_INSTALL_VIDEO : CHROME_INSTALL_VIDEO;
 
   React.useEffect(() => {
     if (!checked || isStandalone || !isMobile) return;
@@ -110,7 +111,7 @@ export function InstallAppPrompt() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-h-[90svh] gap-0 overflow-y-auto sm:max-w-sm">
+      <DialogContent className="max-h-[92svh] gap-0 overflow-y-auto sm:max-w-sm">
         <DialogHeader className="space-y-2">
           <div className="relative mx-auto grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-[#9333ea] to-[#a855f7] text-white shadow-[0_8px_30px_rgba(168,85,247,0.45)]">
             <Download className="size-6" />
@@ -139,36 +140,8 @@ export function InstallAppPrompt() {
               )}
               Instalar app
             </Button>
-          ) : platform === 'ios' && iosSafari ? (
-            // iOS Safari: video del flujo + pasos numerados.
-            <>
-              <VideoFrame src={IOS_INSTALL_VIDEO} />
-              <ol className="flex flex-col gap-2">
-                <Step n={1} icon={<Share className="size-4" />}>
-                  Toca <strong className="font-semibold">Compartir</strong>
-                </Step>
-                <Step n={2} icon={<Plus className="size-4" />}>
-                  Elige{' '}
-                  <strong className="font-semibold">Agregar a inicio</strong>
-                </Step>
-              </ol>
-            </>
-          ) : platform === 'ios' && iosChrome ? (
-            // iOS Chrome (CriOS): tiene su propio flujo de "Agregar a inicio".
-            <>
-              <VideoFrame src={CHROME_INSTALL_VIDEO} />
-              <ol className="flex flex-col gap-2">
-                <Step n={1} icon={<Share className="size-4" />}>
-                  Toca <strong className="font-semibold">Compartir</strong>
-                </Step>
-                <Step n={2} icon={<Plus className="size-4" />}>
-                  Elige{' '}
-                  <strong className="font-semibold">Agregar a inicio</strong>
-                </Step>
-              </ol>
-            </>
-          ) : platform === 'ios' ? (
-            // iOS en Firefox/Edge/etc: lo más fiable es abrir en Safari.
+          ) : iosNoInstall ? (
+            // iOS en Firefox/Edge/etc: no hay video del flujo → abrir en Safari.
             <ol className="flex flex-col gap-2">
               <Step n={1} icon={<Compass className="size-4" />}>
                 Abre <strong className="font-semibold">nightpass.mx</strong> en{' '}
@@ -182,30 +155,9 @@ export function InstallAppPrompt() {
               </Step>
             </ol>
           ) : (
-            // Android sin beforeinstallprompt (ya descartado, u otro navegador):
-            // video del flujo Chrome + pasos numerados.
-            <>
-              <VideoFrame src={CHROME_INSTALL_VIDEO} />
-              <ol className="flex flex-col gap-2">
-                <Step n={1} icon={<MoreVertical className="size-4" />}>
-                  Abre el menú <strong className="font-semibold">⋮</strong>
-                </Step>
-                <Step n={2} icon={<Plus className="size-4" />}>
-                  Elige{' '}
-                  <strong className="font-semibold">Instalar app</strong>
-                </Step>
-              </ol>
-            </>
+            // iOS Safari / iOS Chrome / Android fallback: solo el video (la X cierra).
+            <VideoFrame src={videoSrc} />
           )}
-
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => setOpen(false)}
-            className="w-full rounded-xl text-sm text-muted-foreground hover:text-foreground"
-          >
-            Ahora no
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
