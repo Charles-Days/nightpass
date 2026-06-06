@@ -950,6 +950,33 @@ export interface FunnelStats {
   topExit: { path: string; count: number }[];
 }
 
+export interface InsightsStats {
+  windowDays: number;
+  trafficSources: { source: string; visitors: number }[];
+  eventConversion: {
+    eventId: string;
+    title: string;
+    views: number;
+    clicks: number;
+    purchases: number;
+  }[];
+  redemption: { sold: number; redeemed: number; noShow: number; ratePct: number };
+  audience: {
+    dau: number;
+    wau: number;
+    mau: number;
+    stickinessPct: number;
+    returning: number;
+    oneTime: number;
+  };
+  revenue: {
+    totalOrders: number;
+    avgTicketCents: number;
+    byTier: { tier: string; orders: number; revenueCents: number }[];
+    byMethod: { method: string; orders: number; revenueCents: number }[];
+  };
+}
+
 export interface AdminFinanceStats {
   range: { from: string; to: string };
   totals: AdminFinanceTotals;
