@@ -187,7 +187,15 @@ export class MetricsService {
   async getFunnel(windowDays = 30): Promise<FunnelStats> {
     const since = new Date(Date.now() - windowDays * 86_400_000);
 
-    const [byStep, entry, exit] = await Promise.all([
+    const [enteredRows, byStep, entry, exit] = await Promise.all([
+      // Total de visitantes distintos = "Entró al sitio". Cuenta cualquier paso,
+      // porque quien cae directo a un evento dispara view_event (no page_view);
+      // sin esto el primer escalón del embudo saldría en 0.
+      this.prisma.$queryRaw<{ visitors: bigint }[]>`
+        SELECT COUNT(DISTINCT "visitorId")::bigint AS visitors
+        FROM analytics_events
+        WHERE "createdAt" >= ${since}
+      `,
       // Visitantes únicos por paso.
       this.prisma.$queryRaw<{ name: string; visitors: bigint }[]>`
         SELECT name, COUNT(DISTINCT "visitorId")::bigint AS visitors
@@ -215,11 +223,13 @@ export class MetricsService {
       `,
     ]);
 
+    const entered = Number(enteredRows[0]?.visitors ?? 0);
     const countByName = new Map(byStep.map((r) => [r.name, Number(r.visitors)]));
     const steps: FunnelStepStat[] = FUNNEL_STEPS.map((name) => ({
       name,
       label: FUNNEL_LABELS[name],
-      visitors: countByName.get(name) ?? 0,
+      // El primer escalón es el total de visitantes; el resto, por su paso.
+      visitors: name === 'page_view' ? entered : (countByName.get(name) ?? 0),
     }));
 
     const toPaths = (rows: { path: string; count: bigint }[]): PathCount[] =>
