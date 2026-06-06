@@ -2,6 +2,7 @@ export const paths = {
   home: '/',
   login: '/login',
   dashboard: '/dashboard',
+  metricas: '/metricas',
   solicitarLocal: '/solicitar-local',
   solicitarOrganizador: '/solicitar-organizador',
   adminApplications: '/admin/solicitudes',

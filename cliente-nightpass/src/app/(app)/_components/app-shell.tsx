@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LogOut,
   LayoutDashboard,
+  BarChart3,
   Calendar,
   Ticket,
   Store,
@@ -46,6 +47,7 @@ interface NavItem {
 
 const PLATFORM_NAV: NavItem[] = [
   { href: paths.dashboard, label: 'Dashboard', icon: LayoutDashboard, enabled: true, roles: ['ADMIN'] },
+  { href: paths.metricas, label: 'Métricas', icon: BarChart3, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminApplications, label: 'Solicitudes', icon: Inbox, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminVenues, label: 'Locales', icon: Store, enabled: true, roles: ['ADMIN'] },
   { href: paths.adminOrganizadores, label: 'Organizadores', icon: Sparkles, enabled: true, roles: ['ADMIN'] },
