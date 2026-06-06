@@ -9,6 +9,7 @@ import { CustomerBokeh } from './_components/customer-bokeh';
 import { SWRegister } from './_components/sw-register';
 import { NoPinchZoom } from './_components/no-pinch-zoom';
 import { VisitTracker } from '@/core/components/visit-tracker';
+import { AnalyticsTracker } from '@/core/components/analytics-tracker';
 import { EnableNotificationsBanner, PushPrompt, InstallAppPrompt } from '@/features/push';
 
 export const metadata: Metadata = {
@@ -65,6 +66,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
       <SWRegister />
       <NoPinchZoom />
       <VisitTracker />
+      <AnalyticsTracker />
       <CustomerBokeh />
       <TopBar user={user} isReturning={isReturning} />
       {user ? <EnableNotificationsBanner /> : null}

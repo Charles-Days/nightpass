@@ -38,6 +38,13 @@ export function useCustomerSignup() {
     onSuccess: (data) => {
       qc.setQueryData(sessionQueryKey, data.user);
       toast.success(`Bienvenido a NightPass, ${data.user.name ?? ''}`);
+      // Cierra el embudo: marca la conversión visita→cuenta.
+      void fetch('/api/metrics/track', {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'signup_complete', path: '/app/registro' }),
+      }).catch(() => {});
       const from = params.get('from');
       const safeFrom = safeRedirectPath(from, '') || null;
       // Preserva el código RP anidado en `from` antes del reload del registro.

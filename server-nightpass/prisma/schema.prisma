@@ -1020,3 +1020,24 @@ model RpCommissionRule {
   @@index([rpProfileId])
   @@map("rp_commission_rules")
 }
+
+// Eventos de analítica para reconstruir el recorrido del visitante (embudo):
+// qué páginas vio, en qué orden y dónde terminó. Distinto del contador HLL de
+// `MetricsService` (que solo cuenta únicos). `visitorId` = cookie np_vid o hash
+// IP+UA; `userId` se llena si ya tenía sesión. `name` es el paso del embudo
+// (page_view, view_event, open_checkout, view_signup, signup_complete).
+model AnalyticsEvent {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  visitorId String
+  userId    String?  @db.Uuid
+  name      String
+  path      String
+  eventId   String?  @db.Uuid
+  referrer  String?
+  createdAt DateTime @default(now())
+
+  @@index([name, createdAt])
+  @@index([visitorId, createdAt])
+  @@index([createdAt])
+  @@map("analytics_events")
+}

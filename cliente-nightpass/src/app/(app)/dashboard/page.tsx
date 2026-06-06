@@ -8,7 +8,7 @@ import {
 } from '@/core/components/ui/card';
 import { serverFetch } from '@/core/lib/api/server-client';
 import { PushTestCard } from '@/features/push';
-import type { AdminFinanceStats, User, VisitorStats } from '@/core/types/api';
+import type { AdminFinanceStats, FunnelStats, User, VisitorStats } from '@/core/types/api';
 import {
   KpiCards,
   MoneyBreakdown,
@@ -63,6 +63,13 @@ export default async function DashboardPage(props: {
     visitors = null;
   }
 
+  let funnel: FunnelStats | null = null;
+  try {
+    funnel = await serverFetch<FunnelStats>('/metrics/funnel', { revalidate: 120 });
+  } catch {
+    funnel = null;
+  }
+
   return (
     <div className="space-y-8">
       <header className="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
@@ -83,6 +90,8 @@ export default async function DashboardPage(props: {
       <PushTestCard />
 
       {visitors && <VisitorsCard visitors={visitors} />}
+
+      {funnel && <FunnelCard funnel={funnel} />}
 
       {stats === null ? (
         <Card className="rounded-[22px] border border-amber-500/20 bg-amber-500/[0.04]">
@@ -129,6 +138,114 @@ export default async function DashboardPage(props: {
         </>
       )}
     </div>
+  );
+}
+
+function FunnelCard({ funnel }: { funnel: FunnelStats }) {
+  const nf = new Intl.NumberFormat('es-MX');
+  const base = Math.max(1, funnel.steps[0]?.visitors ?? 0);
+  const hasData = funnel.steps.some((s) => s.visitors > 0);
+
+  const prettyPath = (p: string) =>
+    p
+      .replace(/^\/app\/evento\/[0-9a-f-]{36}.*/i, '/app/evento/…')
+      .replace(/^\/app\/checkout\/.*/i, '/app/checkout/…');
+
+  return (
+    <Card className="rounded-[22px] border border-white/14 bg-white/[0.05]">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Users className="size-4 text-primary" />
+          Recorrido y embudo
+        </CardTitle>
+        <CardDescription>
+          Últimos {funnel.windowDays} días — por dónde entra la gente, cómo avanza
+          y dónde se cae antes de crear cuenta.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {!hasData ? (
+          <p className="text-sm text-muted-foreground">
+            Aún no hay datos de recorrido. Se empiezan a registrar con las
+            visitas a partir de este deploy.
+          </p>
+        ) : (
+          <>
+            <div className="space-y-2.5">
+              {funnel.steps.map((s, i) => {
+                const prev = funnel.steps[i - 1]?.visitors;
+                const drop =
+                  prev && prev > 0 ? Math.round((1 - s.visitors / prev) * 100) : null;
+                const width = Math.round((s.visitors / base) * 100);
+                return (
+                  <div key={s.name} className="flex items-center gap-3">
+                    <span className="w-32 shrink-0 text-xs text-muted-foreground">
+                      {s.label}
+                    </span>
+                    <div className="relative h-7 flex-1 overflow-hidden rounded-lg bg-white/[0.06]">
+                      <div
+                        className="flex h-full items-center rounded-lg bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-2"
+                        style={{ width: `${Math.max(width, 6)}%` }}
+                      >
+                        <span className="text-[11px] font-bold tabular-nums text-white">
+                          {nf.format(s.visitors)}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="w-16 shrink-0 text-right text-[11px] tabular-nums">
+                      {drop != null ? (
+                        <span className={drop > 0 ? 'text-amber-300' : 'text-emerald-400'}>
+                          {drop > 0 ? `−${drop}%` : '0%'}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">100%</span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 gap-5 border-t border-white/12 pt-4 sm:grid-cols-2">
+              <div>
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Por dónde entran
+                </p>
+                <ul className="space-y-1.5">
+                  {funnel.topEntry.length === 0 ? (
+                    <li className="text-xs text-muted-foreground">—</li>
+                  ) : (
+                    funnel.topEntry.map((p) => (
+                      <li key={`in-${p.path}`} className="flex items-center justify-between gap-3 text-xs">
+                        <code className="min-w-0 truncate text-white/70">{prettyPath(p.path)}</code>
+                        <span className="shrink-0 tabular-nums text-muted-foreground">{nf.format(p.count)}</span>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+              <div>
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Dónde terminan (abandono)
+                </p>
+                <ul className="space-y-1.5">
+                  {funnel.topExit.length === 0 ? (
+                    <li className="text-xs text-muted-foreground">—</li>
+                  ) : (
+                    funnel.topExit.map((p) => (
+                      <li key={`out-${p.path}`} className="flex items-center justify-between gap-3 text-xs">
+                        <code className="min-w-0 truncate text-white/70">{prettyPath(p.path)}</code>
+                        <span className="shrink-0 tabular-nums text-muted-foreground">{nf.format(p.count)}</span>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

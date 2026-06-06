@@ -3,6 +3,34 @@ import type Redis from 'ioredis';
 import { Role } from '@prisma/client';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { FUNNEL_STEPS, type FunnelStep } from './dto/track-event.dto';
+
+/** Etiquetas legibles de cada paso del embudo (orden = orden del embudo). */
+const FUNNEL_LABELS: Record<FunnelStep, string> = {
+  page_view: 'Entró al sitio',
+  view_event: 'Vio un evento',
+  open_checkout: 'Abrió el checkout',
+  view_signup: 'Llegó al registro',
+  signup_complete: 'Creó cuenta',
+};
+
+export interface FunnelStepStat {
+  name: FunnelStep;
+  label: string;
+  visitors: number;
+}
+
+export interface PathCount {
+  path: string;
+  count: number;
+}
+
+export interface FunnelStats {
+  windowDays: number;
+  steps: FunnelStepStat[];
+  topEntry: PathCount[];
+  topExit: PathCount[];
+}
 
 const ALL_KEY = 'visits:uniq:all';
 const dayKey = (d: string) => `visits:uniq:${d}`;
@@ -124,6 +152,84 @@ export class MetricsService {
         last7: toSeries(convDays),
       },
       totalAccounts,
+    };
+  }
+
+  /**
+   * Registra un paso del recorrido del visitante (page_view, view_event, …).
+   * A diferencia del HLL, esto sí guarda fila por fila para reconstruir el
+   * embudo y ver dónde se cae la gente. Fire-and-forget desde el caller.
+   */
+  async recordEvent(input: {
+    visitorId: string;
+    name: FunnelStep;
+    path: string;
+    eventId?: string | null;
+    referrer?: string | null;
+  }): Promise<void> {
+    if (!input.visitorId) return;
+    await this.prisma.analyticsEvent.create({
+      data: {
+        visitorId: input.visitorId,
+        name: input.name,
+        path: input.path.slice(0, 512),
+        eventId: input.eventId ?? null,
+        referrer: input.referrer?.slice(0, 512) ?? null,
+      },
+    });
+  }
+
+  /**
+   * Embudo de conversión sobre los últimos `windowDays` días: visitantes únicos
+   * en cada paso + páginas de entrada y de salida más comunes. Sirve para ver
+   * dónde entra la gente, por dónde se mueve y dónde abandona.
+   */
+  async getFunnel(windowDays = 30): Promise<FunnelStats> {
+    const since = new Date(Date.now() - windowDays * 86_400_000);
+
+    const [byStep, entry, exit] = await Promise.all([
+      // Visitantes únicos por paso.
+      this.prisma.$queryRaw<{ name: string; visitors: bigint }[]>`
+        SELECT name, COUNT(DISTINCT "visitorId")::bigint AS visitors
+        FROM analytics_events
+        WHERE "createdAt" >= ${since}
+        GROUP BY name
+      `,
+      // Primera página de cada visitante (entrada).
+      this.prisma.$queryRaw<{ path: string; count: bigint }[]>`
+        SELECT path, COUNT(*)::bigint AS count FROM (
+          SELECT DISTINCT ON ("visitorId") "visitorId", path
+          FROM analytics_events
+          WHERE "createdAt" >= ${since}
+          ORDER BY "visitorId", "createdAt" ASC
+        ) t GROUP BY path ORDER BY count DESC LIMIT 8
+      `,
+      // Última página de cada visitante (salida / abandono).
+      this.prisma.$queryRaw<{ path: string; count: bigint }[]>`
+        SELECT path, COUNT(*)::bigint AS count FROM (
+          SELECT DISTINCT ON ("visitorId") "visitorId", path
+          FROM analytics_events
+          WHERE "createdAt" >= ${since}
+          ORDER BY "visitorId", "createdAt" DESC
+        ) t GROUP BY path ORDER BY count DESC LIMIT 8
+      `,
+    ]);
+
+    const countByName = new Map(byStep.map((r) => [r.name, Number(r.visitors)]));
+    const steps: FunnelStepStat[] = FUNNEL_STEPS.map((name) => ({
+      name,
+      label: FUNNEL_LABELS[name],
+      visitors: countByName.get(name) ?? 0,
+    }));
+
+    const toPaths = (rows: { path: string; count: bigint }[]): PathCount[] =>
+      rows.map((r) => ({ path: r.path, count: Number(r.count) }));
+
+    return {
+      windowDays,
+      steps,
+      topEntry: toPaths(entry),
+      topExit: toPaths(exit),
     };
   }
 }
