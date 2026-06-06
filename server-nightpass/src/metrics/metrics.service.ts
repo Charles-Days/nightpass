@@ -9,6 +9,7 @@ import { FUNNEL_STEPS, type FunnelStep } from './dto/track-event.dto';
 const FUNNEL_LABELS: Record<FunnelStep, string> = {
   page_view: 'Entró al sitio',
   view_event: 'Vio un evento',
+  click_buy: 'Tocó "Comprar"',
   open_checkout: 'Abrió el checkout',
   view_signup: 'Llegó al registro',
   signup_complete: 'Creó cuenta',

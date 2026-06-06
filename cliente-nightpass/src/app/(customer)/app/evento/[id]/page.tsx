@@ -19,6 +19,7 @@ import { EventAforo } from '@/app/(customer)/_components/event-aforo';
 import { EventHeroFx } from '@/app/(customer)/_components/event-hero-fx';
 import { EventCountdown } from '@/app/(customer)/_components/event-countdown';
 import { BuyCta } from '@/app/(customer)/_components/buy-cta';
+import { BuyTierButton } from '@/app/(customer)/_components/buy-tier-button';
 import { WhatsappIcon } from '@/core/components/icons/whatsapp-icon';
 import { EventDescription } from '@/core/components/event-description';
 
@@ -449,12 +450,13 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
                         Bloqueado
                       </span>
                     ) : (
-                      <Link
+                      <BuyTierButton
                         href={`${paths.checkout}/${tier.id}${refQuery}`}
+                        eventId={event.id}
                         className="np-glow-pulse shrink-0 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95 hover:brightness-110"
                       >
                         Comprar
-                      </Link>
+                      </BuyTierButton>
                     )}
                   </div>
                 </li>

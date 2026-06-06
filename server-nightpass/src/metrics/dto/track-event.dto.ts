@@ -12,6 +12,7 @@ import {
 export const FUNNEL_STEPS = [
   'page_view',
   'view_event',
+  'click_buy',
   'open_checkout',
   'view_signup',
   'signup_complete',

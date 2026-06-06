@@ -6,6 +6,23 @@ import { usePathname } from 'next/navigation';
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * Registra un paso del embudo manualmente (p. ej. al tocar "Comprar"). El
+ * visitorId lo resuelve el route handler vía cookie np_vid.
+ */
+export function trackEvent(name: string, eventId?: string) {
+  void fetch('/api/metrics/track', {
+    method: 'POST',
+    keepalive: true,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name,
+      path: typeof window !== 'undefined' ? window.location.pathname : '/app',
+      eventId,
+    }),
+  }).catch(() => {});
+}
+
 /** Deriva el paso del embudo a partir de la ruta. */
 function deriveStep(path: string): { name: string; eventId?: string } {
   const ev = path.match(/^\/app\/evento\/([^/?#]+)/);
