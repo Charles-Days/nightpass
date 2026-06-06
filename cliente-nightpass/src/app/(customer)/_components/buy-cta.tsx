@@ -30,7 +30,7 @@ export function BuyCta({ targetId, label }: BuyCtaProps) {
         // Mostrar solo si la sección está por DEBAJO del viewport (aún no llegas).
         setShow(!entry.isIntersecting && entry.boundingClientRect.top > 0);
       },
-      { threshold: 0, rootMargin: '0px 0px -45% 0px' },
+      { threshold: 0, rootMargin: '0px 0px -10% 0px' },
     );
     io.observe(el);
     return () => io.disconnect();
