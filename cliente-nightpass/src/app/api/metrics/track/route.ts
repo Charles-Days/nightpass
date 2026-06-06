@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.name && body.path) {
-    const referrer = req.headers.get('referer') ?? undefined;
+    // Truncar: el DTO del backend rechaza referrer > 512 (y perdería el evento).
+    const referrer = (req.headers.get('referer') ?? '').slice(0, 512) || undefined;
     try {
       await fetch(`${serverEnv.API_URL}/api/v1/metrics/track`, {
         method: 'POST',
