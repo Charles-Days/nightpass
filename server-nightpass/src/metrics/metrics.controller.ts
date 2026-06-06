@@ -14,6 +14,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { MetricsService } from './metrics.service';
 import { RecordVisitDto } from './dto/record-visit.dto';
+import { TrackEventDto } from './dto/track-event.dto';
 
 @Controller('metrics')
 export class MetricsController {
@@ -37,11 +38,27 @@ export class MetricsController {
     await this.service.recordConversion(dto.visitorId);
   }
 
+  // Público: registra un paso del recorrido del visitante para el embudo.
+  @Post('track')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Throttle({ default: { ttl: 60_000, limit: 120 } })
+  async track(@Body() dto: TrackEventDto): Promise<void> {
+    await this.service.recordEvent(dto);
+  }
+
   // Solo ADMIN: visitantes únicos de hoy, all-time y últimos 7 días.
   @Get('visitors')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   getVisitors() {
     return this.service.getStats();
+  }
+
+  // Solo ADMIN: embudo de conversión + páginas de entrada/salida.
+  @Get('funnel')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  getFunnel() {
+    return this.service.getFunnel(30);
   }
 }

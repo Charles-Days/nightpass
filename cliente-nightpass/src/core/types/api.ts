@@ -943,6 +943,13 @@ export interface VisitorStats {
   totalAccounts?: number;
 }
 
+export interface FunnelStats {
+  windowDays: number;
+  steps: { name: string; label: string; visitors: number }[];
+  topEntry: { path: string; count: number }[];
+  topExit: { path: string; count: number }[];
+}
+
 export interface AdminFinanceStats {
   range: { from: string; to: string };
   totals: AdminFinanceTotals;
