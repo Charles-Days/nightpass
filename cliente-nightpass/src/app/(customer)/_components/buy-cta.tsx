@@ -56,11 +56,11 @@ export function BuyCta({ targetId, label }: BuyCtaProps) {
         tabIndex={show ? 0 : -1}
         className={`${
           show ? 'pointer-events-auto' : ''
-        } inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_28px_-6px_rgba(168,85,247,0.7)] backdrop-blur transition active:scale-95 hover:brightness-110`}
+        } inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-[13px] font-semibold text-white shadow-[0_8px_28px_-6px_rgba(168,85,247,0.7)] backdrop-blur transition active:scale-95 hover:brightness-110`}
       >
-        <Ticket className="size-4" />
+        <Ticket className="size-3.5" />
         {label}
-        <ArrowDown className="size-4 animate-bounce" />
+        <ArrowDown className="size-3.5 animate-bounce" />
       </button>
     </div>
   );
