@@ -18,6 +18,7 @@ import { EventForumSection } from '@/app/(customer)/_components/event-forum-sect
 import { EventAforo } from '@/app/(customer)/_components/event-aforo';
 import { EventHeroFx } from '@/app/(customer)/_components/event-hero-fx';
 import { EventCountdown } from '@/app/(customer)/_components/event-countdown';
+import { BuyCta } from '@/app/(customer)/_components/buy-cta';
 import { WhatsappIcon } from '@/core/components/icons/whatsapp-icon';
 import { EventDescription } from '@/core/components/event-description';
 
@@ -364,7 +365,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
         endsAt={event.endsAt}
       />
 
-      <section className="np-rise mt-8" style={{ animationDelay: '400ms' }}>
+      <section id="boletos" className="np-rise mt-8 scroll-mt-20" style={{ animationDelay: '400ms' }}>
         <h2 className="mb-4 font-display text-xl font-bold tracking-tight">Boletos</h2>
         {event.tiers.length === 0 ? (
           <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-8 text-center text-sm text-muted-foreground">
@@ -462,6 +463,17 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
           </ul>
         )}
       </section>
+
+      {event.tiers.length > 0 && (
+        <BuyCta
+          targetId="boletos"
+          label={
+            cheapestTier
+              ? `Comprar desde ${formatPrice(cheapestTier.priceCents, cheapestTier.currency)}`
+              : 'Comprar'
+          }
+        />
+      )}
     </div>
   );
 }
