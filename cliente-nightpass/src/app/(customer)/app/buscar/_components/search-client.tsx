@@ -30,6 +30,7 @@ interface EventFeed {
   tiers: Array<{ id: string; priceCents: number; currency: string }>;
   sold?: number | null;
   capacity?: number | null;
+  aforoBoostPct?: number | null;
 }
 
 interface EventsResponse {
@@ -201,7 +202,7 @@ function FeaturedEventCard({ ev }: { ev: EventFeed }) {
             {where}
           </p>
         )}
-        <EventAforo sold={ev.sold} capacity={ev.capacity} className="max-w-[240px]" />
+        <EventAforo sold={ev.sold} capacity={ev.capacity} boostPct={ev.aforoBoostPct} className="max-w-[240px]" />
         <span className="np-shimmer mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.6)] transition group-hover:brightness-110">
           Conseguir pase{' '}
           <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -470,7 +471,7 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
                       <MapPin className="size-3 shrink-0" />
                       {where}
                     </p>
-                    <EventAforo sold={ev.sold} capacity={ev.capacity} compact className="pt-0.5" />
+                    <EventAforo sold={ev.sold} capacity={ev.capacity} boostPct={ev.aforoBoostPct} compact className="pt-0.5" />
                   </div>
                 </Link>
               );

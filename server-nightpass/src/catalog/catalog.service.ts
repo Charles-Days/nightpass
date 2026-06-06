@@ -401,6 +401,8 @@ export class CatalogService {
         ...this._mapEvent(e),
         sold: soldByEvent.get(e.id) ?? 0,
         capacity: e.capacity ?? null,
+        // Mismo boost visual FOMO que el detalle, para que el % cuadre en ambos.
+        aforoBoostPct: e.aforoBoostPct ?? 0,
       })),
       total,
       page: query.page,
