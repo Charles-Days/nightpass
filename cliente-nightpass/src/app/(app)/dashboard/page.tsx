@@ -8,7 +8,7 @@ import {
 } from '@/core/components/ui/card';
 import { serverFetch } from '@/core/lib/api/server-client';
 import { PushTestCard } from '@/features/push';
-import type { AdminFinanceStats, FunnelStats, User, VisitorStats } from '@/core/types/api';
+import type { AdminFinanceStats, FunnelStats, InsightsStats, User, VisitorStats } from '@/core/types/api';
 import {
   KpiCards,
   MoneyBreakdown,
@@ -70,6 +70,13 @@ export default async function DashboardPage(props: {
     funnel = null;
   }
 
+  let insights: InsightsStats | null = null;
+  try {
+    insights = await serverFetch<InsightsStats>('/metrics/insights', { revalidate: 120 });
+  } catch {
+    insights = null;
+  }
+
   return (
     <div className="space-y-8">
       <header className="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
@@ -92,6 +99,8 @@ export default async function DashboardPage(props: {
       {visitors && <VisitorsCard visitors={visitors} />}
 
       {funnel && <FunnelCard funnel={funnel} />}
+
+      {insights && <InsightsCard insights={insights} />}
 
       {stats === null ? (
         <Card className="rounded-[22px] border border-amber-500/20 bg-amber-500/[0.04]">
@@ -138,6 +147,184 @@ export default async function DashboardPage(props: {
         </>
       )}
     </div>
+  );
+}
+
+function InsightsCard({ insights }: { insights: InsightsStats }) {
+  const nf = new Intl.NumberFormat('es-MX');
+  const money = (c: number) =>
+    `$${(c / 100).toLocaleString('es-MX', { maximumFractionDigits: 0 })} MXN`;
+  const a = insights.audience;
+  const r = insights.redemption;
+  const maxSrc = Math.max(1, ...insights.trafficSources.map((s) => s.visitors));
+
+  const Stat = ({
+    label,
+    value,
+    sub,
+    tone = 'text-white',
+  }: {
+    label: string;
+    value: string;
+    sub?: string;
+    tone?: string;
+  }) => (
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        {label}
+      </p>
+      <p className={`font-display text-2xl font-bold tabular-nums ${tone}`}>{value}</p>
+      {sub ? <p className="text-[10px] text-muted-foreground">{sub}</p> : null}
+    </div>
+  );
+
+  return (
+    <Card className="rounded-[22px] border border-white/14 bg-white/[0.05]">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Users className="size-4 text-primary" />
+          Insights de comportamiento
+        </CardTitle>
+        <CardDescription>
+          Últimos {insights.windowDays} días — tráfico, conversión por evento, canje
+          de pases, audiencia e ingresos.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Audiencia */}
+        <div>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+            Audiencia
+          </p>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+            <Stat label="Activos hoy" value={nf.format(a.dau)} />
+            <Stat label="Semana" value={nf.format(a.wau)} />
+            <Stat label="Mes" value={nf.format(a.mau)} />
+            <Stat label="Stickiness" value={`${a.stickinessPct}%`} sub="DAU/MAU" tone="text-primary" />
+            <Stat label="Recurrentes" value={nf.format(a.returning)} sub="≥2 días" tone="text-emerald-400" />
+            <Stat label="Una sola vez" value={nf.format(a.oneTime)} />
+          </div>
+        </div>
+
+        {/* Canje */}
+        <div className="border-t border-white/12 pt-4">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+            Canje de pases
+          </p>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <Stat label="Comprados" value={nf.format(r.sold)} />
+            <Stat label="Canjeados" value={nf.format(r.redeemed)} tone="text-emerald-400" />
+            <Stat label="No-show" value={nf.format(r.noShow)} tone="text-amber-300" />
+            <Stat label="Tasa de canje" value={`${r.ratePct}%`} tone="text-primary" />
+          </div>
+        </div>
+
+        {/* Tráfico */}
+        <div className="border-t border-white/12 pt-4">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+            Por dónde llegan
+          </p>
+          {insights.trafficSources.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Sin datos aún.</p>
+          ) : (
+            <div className="space-y-2">
+              {insights.trafficSources.slice(0, 8).map((s) => (
+                <div key={s.source} className="flex items-center gap-3">
+                  <span className="w-24 shrink-0 text-xs text-muted-foreground">{s.source}</span>
+                  <div className="h-5 flex-1 overflow-hidden rounded-md bg-white/[0.06]">
+                    <div
+                      className="h-full rounded-md bg-gradient-to-r from-[#9333ea] to-[#a855f7]"
+                      style={{ width: `${Math.max(6, Math.round((s.visitors / maxSrc) * 100))}%` }}
+                    />
+                  </div>
+                  <span className="w-10 shrink-0 text-right text-xs tabular-nums">{nf.format(s.visitors)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Conversión por evento */}
+        <div className="border-t border-white/12 pt-4">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+            Conversión por evento
+          </p>
+          {insights.eventConversion.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Sin datos aún.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <th className="py-2 pr-2 font-semibold">Evento</th>
+                    <th className="py-2 px-2 text-right font-semibold">Vieron</th>
+                    <th className="py-2 px-2 text-right font-semibold">Tocaron</th>
+                    <th className="py-2 pl-2 text-right font-semibold">Compraron</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {insights.eventConversion.map((e) => (
+                    <tr key={e.eventId} className="border-b border-white/5">
+                      <td className="max-w-[200px] truncate py-2 pr-2">{e.title}</td>
+                      <td className="px-2 py-2 text-right tabular-nums">{nf.format(e.views)}</td>
+                      <td className="px-2 py-2 text-right tabular-nums text-amber-300">{nf.format(e.clicks)}</td>
+                      <td className="py-2 pl-2 text-right tabular-nums text-emerald-400">{nf.format(e.purchases)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Ingresos */}
+        <div className="border-t border-white/12 pt-4">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+            Ingresos (órdenes pagadas)
+          </p>
+          <div className="mb-3 grid grid-cols-2 gap-4">
+            <Stat label="Órdenes" value={nf.format(insights.revenue.totalOrders)} />
+            <Stat label="Ticket promedio" value={money(insights.revenue.avgTicketCents)} tone="text-emerald-400" />
+          </div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div>
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Por tier</p>
+              <ul className="space-y-1">
+                {insights.revenue.byTier.length === 0 ? (
+                  <li className="text-xs text-muted-foreground">—</li>
+                ) : (
+                  insights.revenue.byTier.map((t) => (
+                    <li key={t.tier} className="flex items-center justify-between gap-3 text-xs">
+                      <span className="truncate">{t.tier}</span>
+                      <span className="shrink-0 tabular-nums text-muted-foreground">
+                        {nf.format(t.orders)} · {money(t.revenueCents)}
+                      </span>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+            <div>
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Por método</p>
+              <ul className="space-y-1">
+                {insights.revenue.byMethod.length === 0 ? (
+                  <li className="text-xs text-muted-foreground">—</li>
+                ) : (
+                  insights.revenue.byMethod.map((m) => (
+                    <li key={m.method} className="flex items-center justify-between gap-3 text-xs">
+                      <span className="truncate">{m.method}</span>
+                      <span className="shrink-0 tabular-nums text-muted-foreground">
+                        {nf.format(m.orders)} · {money(m.revenueCents)}
+                      </span>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

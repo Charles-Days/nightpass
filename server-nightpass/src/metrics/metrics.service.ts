@@ -9,6 +9,7 @@ import { FUNNEL_STEPS, type FunnelStep } from './dto/track-event.dto';
 const FUNNEL_LABELS: Record<FunnelStep, string> = {
   page_view: 'Entró al sitio',
   view_event: 'Vio un evento',
+  click_buy: 'Tocó "Comprar"',
   open_checkout: 'Abrió el checkout',
   view_signup: 'Llegó al registro',
   signup_complete: 'Creó cuenta',
@@ -30,6 +31,53 @@ export interface FunnelStats {
   steps: FunnelStepStat[];
   topEntry: PathCount[];
   topExit: PathCount[];
+}
+
+export interface InsightsStats {
+  windowDays: number;
+  trafficSources: { source: string; visitors: number }[];
+  eventConversion: {
+    eventId: string;
+    title: string;
+    views: number;
+    clicks: number;
+    purchases: number;
+  }[];
+  redemption: { sold: number; redeemed: number; noShow: number; ratePct: number };
+  audience: {
+    dau: number;
+    wau: number;
+    mau: number;
+    stickinessPct: number;
+    returning: number;
+    oneTime: number;
+  };
+  revenue: {
+    totalOrders: number;
+    avgTicketCents: number;
+    byTier: { tier: string; orders: number; revenueCents: number }[];
+    byMethod: { method: string; orders: number; revenueCents: number }[];
+  };
+}
+
+/** Agrupa un referrer (URL) en una fuente legible. */
+function bucketSource(referrer: string | null): string {
+  if (!referrer) return 'Directo';
+  let host = referrer;
+  try {
+    host = new URL(referrer).hostname;
+  } catch {
+    /* no era URL válida → usar el string crudo */
+  }
+  const h = host.toLowerCase();
+  if (h.includes('instagram') || h === 'l.instagram.com') return 'Instagram';
+  if (h.includes('facebook') || h === 'fb.com' || h.includes('fb.me')) return 'Facebook';
+  if (h.includes('whatsapp') || h.includes('wa.me')) return 'WhatsApp';
+  if (h.includes('tiktok')) return 'TikTok';
+  if (h.includes('t.co') || h.includes('twitter') || h.includes('x.com')) return 'Twitter/X';
+  if (h.includes('google')) return 'Google';
+  if (h.includes('nightpass')) return 'Directo';
+  return host || 'Otros';
 }
 
 const ALL_KEY = 'visits:uniq:all';
@@ -240,6 +288,181 @@ export class MetricsService {
       steps,
       topEntry: toPaths(entry),
       topExit: toPaths(exit),
+    };
+  }
+
+  /**
+   * Panel de insights de comportamiento sobre los últimos `windowDays` días:
+   * fuentes de tráfico, conversión por evento, canje/no-show, audiencia
+   * (DAU/WAU/MAU + recurrentes) e ingresos (mix de tier/método, ticket promedio).
+   */
+  async getInsights(windowDays = 30): Promise<InsightsStats> {
+    const now = Date.now();
+    const since = new Date(now - windowDays * 86_400_000);
+    const dayAgo = new Date(now - 86_400_000);
+    const weekAgo = new Date(now - 7 * 86_400_000);
+
+    const [
+      firstRef,
+      evRows,
+      purchasesByEvent,
+      sold,
+      redeemed,
+      dauRows,
+      wauRows,
+      mauRows,
+      returningRows,
+      ordersByTier,
+      ordersByMethod,
+      ordersAgg,
+    ] = await Promise.all([
+      // Primer referrer de cada visitante → fuente de entrada.
+      this.prisma.$queryRaw<{ referrer: string | null }[]>`
+        SELECT referrer FROM (
+          SELECT DISTINCT ON ("visitorId") "visitorId", referrer
+          FROM analytics_events WHERE "createdAt" >= ${since}
+          ORDER BY "visitorId", "createdAt" ASC
+        ) t
+      `,
+      // Vistas y clics de compra por evento.
+      this.prisma.$queryRaw<{ eventId: string; name: string; c: bigint }[]>`
+        SELECT "eventId", name, COUNT(DISTINCT "visitorId")::bigint AS c
+        FROM analytics_events
+        WHERE "createdAt" >= ${since}
+          AND "eventId" IS NOT NULL
+          AND name IN ('view_event', 'click_buy')
+        GROUP BY "eventId", name
+      `,
+      // Compras completadas por evento.
+      this.prisma.order.groupBy({
+        by: ['eventId'],
+        where: { status: 'COMPLETED', createdAt: { gte: since } },
+        _count: { _all: true },
+      }),
+      this.prisma.pass.count(),
+      this.prisma.pass.count({ where: { usedAt: { not: null } } }),
+      // Audiencia activa por ventana.
+      this.prisma.$queryRaw<{ c: bigint }[]>`
+        SELECT COUNT(DISTINCT "visitorId")::bigint AS c FROM analytics_events WHERE "createdAt" >= ${dayAgo}
+      `,
+      this.prisma.$queryRaw<{ c: bigint }[]>`
+        SELECT COUNT(DISTINCT "visitorId")::bigint AS c FROM analytics_events WHERE "createdAt" >= ${weekAgo}
+      `,
+      this.prisma.$queryRaw<{ c: bigint }[]>`
+        SELECT COUNT(DISTINCT "visitorId")::bigint AS c FROM analytics_events WHERE "createdAt" >= ${since}
+      `,
+      // Recurrentes = activos en ≥2 días distintos dentro de la ventana.
+      this.prisma.$queryRaw<{ c: bigint }[]>`
+        SELECT COUNT(*)::bigint AS c FROM (
+          SELECT "visitorId" FROM analytics_events
+          WHERE "createdAt" >= ${since}
+          GROUP BY "visitorId"
+          HAVING COUNT(DISTINCT date_trunc('day', "createdAt")) >= 2
+        ) t
+      `,
+      this.prisma.order.groupBy({
+        by: ['tierId'],
+        where: { status: 'COMPLETED', createdAt: { gte: since } },
+        _count: { _all: true },
+        _sum: { totalCents: true },
+      }),
+      this.prisma.order.groupBy({
+        by: ['paymentMethod'],
+        where: { status: 'COMPLETED', createdAt: { gte: since } },
+        _count: { _all: true },
+        _sum: { totalCents: true },
+      }),
+      this.prisma.order.aggregate({
+        where: { status: 'COMPLETED', createdAt: { gte: since } },
+        _count: { _all: true },
+        _sum: { totalCents: true },
+      }),
+    ]);
+
+    // ── Fuentes de tráfico ──
+    const srcMap = new Map<string, number>();
+    for (const r of firstRef) {
+      const s = bucketSource(r.referrer);
+      srcMap.set(s, (srcMap.get(s) ?? 0) + 1);
+    }
+    const trafficSources = [...srcMap.entries()]
+      .map(([source, visitors]) => ({ source, visitors }))
+      .sort((a, b) => b.visitors - a.visitors);
+
+    // ── Conversión por evento ──
+    const evMap = new Map<string, { views: number; clicks: number }>();
+    for (const row of evRows) {
+      const e = evMap.get(row.eventId) ?? { views: 0, clicks: 0 };
+      if (row.name === 'view_event') e.views = Number(row.c);
+      else if (row.name === 'click_buy') e.clicks = Number(row.c);
+      evMap.set(row.eventId, e);
+    }
+    const purchaseMap = new Map(
+      purchasesByEvent.map((p) => [p.eventId, p._count._all]),
+    );
+    const eventIds = [...new Set([...evMap.keys(), ...purchaseMap.keys()])];
+    const titles = eventIds.length
+      ? await this.prisma.event.findMany({
+          where: { id: { in: eventIds } },
+          select: { id: true, title: true },
+        })
+      : [];
+    const titleMap = new Map(titles.map((t) => [t.id, t.title]));
+    const eventConversion = eventIds
+      .map((eventId) => ({
+        eventId,
+        title: titleMap.get(eventId) ?? 'Evento',
+        views: evMap.get(eventId)?.views ?? 0,
+        clicks: evMap.get(eventId)?.clicks ?? 0,
+        purchases: purchaseMap.get(eventId) ?? 0,
+      }))
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 10);
+
+    // ── Canje / no-show ──
+    const noShow = Math.max(0, sold - redeemed);
+    const ratePct = sold > 0 ? Math.round((redeemed / sold) * 100) : 0;
+
+    // ── Audiencia ──
+    const dau = Number(dauRows[0]?.c ?? 0);
+    const wau = Number(wauRows[0]?.c ?? 0);
+    const mau = Number(mauRows[0]?.c ?? 0);
+    const returning = Number(returningRows[0]?.c ?? 0);
+    const stickinessPct = mau > 0 ? Math.round((dau / mau) * 100) : 0;
+    const oneTime = Math.max(0, mau - returning);
+
+    // ── Ingresos ──
+    const tierIds = ordersByTier.map((o) => o.tierId);
+    const tierNames = tierIds.length
+      ? await this.prisma.eventTier.findMany({
+          where: { id: { in: tierIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+    const tierNameMap = new Map(tierNames.map((t) => [t.id, t.name]));
+    const byTier = ordersByTier
+      .map((o) => ({
+        tier: tierNameMap.get(o.tierId) ?? 'Tier',
+        orders: o._count._all,
+        revenueCents: o._sum.totalCents ?? 0,
+      }))
+      .sort((a, b) => b.revenueCents - a.revenueCents);
+    const byMethod = ordersByMethod.map((o) => ({
+      method: o.paymentMethod,
+      orders: o._count._all,
+      revenueCents: o._sum.totalCents ?? 0,
+    }));
+    const totalOrders = ordersAgg._count._all;
+    const totalRevenue = ordersAgg._sum.totalCents ?? 0;
+    const avgTicketCents = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
+
+    return {
+      windowDays,
+      trafficSources,
+      eventConversion,
+      redemption: { sold, redeemed, noShow, ratePct },
+      audience: { dau, wau, mau, stickinessPct, returning, oneTime },
+      revenue: { totalOrders, avgTicketCents, byTier, byMethod },
     };
   }
 }

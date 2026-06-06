@@ -61,4 +61,13 @@ export class MetricsController {
   getFunnel() {
     return this.service.getFunnel(30);
   }
+
+  // Solo ADMIN: insights de comportamiento (tráfico, conversión por evento,
+  // canje, audiencia, ingresos).
+  @Get('insights')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  getInsights() {
+    return this.service.getInsights(30);
+  }
 }
