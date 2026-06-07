@@ -108,6 +108,9 @@ enum LoyaltyEventType {
   STREAK_DAILY_BONUS
   STREAK_MILESTONE
   BRING_FRIEND_BONUS
+  REFERRAL_VISIT
+  REFERRAL_SIGNUP
+  REDEEM
   ADMIN_ADJUST
 }
 
@@ -141,6 +144,11 @@ model User {
   // (se le pregunta una vez), true = aparece, false = optó por no salir.
   rankingOptIn        Boolean?
 
+  // Referidos cliente→cliente: código propio para invitar (se genera la 1ª vez
+  // que abre "Invita y gana") y de quién vino este usuario (atribución).
+  referralCode String? @unique
+  referredById String? @db.Uuid
+
   oauthAccounts OAuthAccount[]
 
   refreshTokens           RefreshToken[]
@@ -161,6 +169,9 @@ model User {
   loyaltyEvents           LoyaltyEvent[]
   streak                  UserStreak?
   loyaltyTotal            UserLoyaltyTotal?
+  referredBy              User?                    @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals               User[]                   @relation("UserReferrals")
+  rewardRedemptions       RewardRedemption[]
   createdStories          Story[]                  @relation("StoryAuthor")
   forumPosts              EventForumPost[]
   pushSubscriptions       PushSubscription[]
@@ -245,6 +256,7 @@ model Venue {
   status    VenueStatus @default(ACTIVE)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+  rewards   Reward[]
 
   description    String?
   capacity       Int?
@@ -380,6 +392,7 @@ model Promoter {
   status    PromoterStatus @default(ACTIVE)
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
+  rewards   Reward[]
 
   // Platform fee % NightPass keeps per ticket (0-100). Admin-set.
   // null = usa la comisión global del servidor; un número (incl. 0) es explícito.
@@ -1040,4 +1053,81 @@ model AnalyticsEvent {
   @@index([visitorId, createdAt])
   @@index([createdAt])
   @@map("analytics_events")
+}
+
+// ── Recompensas (canje de NPP) ───────────────────────────────────────────────
+// Ver docs/RECOMPENSAS_CANJE.md para el modelo económico completo.
+
+enum RewardKind {
+  VENUE_PERK // lo valida el staff en barra/puerta (scanner), no toca Stripe
+  TICKET_DISCOUNT // se aplica en el checkout online (Fase 2)
+}
+
+enum RewardFunder {
+  VENUE
+  PROMOTER
+  NIGHTPASS
+}
+
+enum RewardDiscountType {
+  NONE // perk no monetario (trago, line-skip)
+  PERCENT // % sobre la orden
+  FIXED // monto fijo en centavos MXN
+}
+
+enum RedemptionStatus {
+  PENDING
+  USED
+  EXPIRED
+  REVERSED
+}
+
+model Reward {
+  id               String             @id @default(uuid(7)) @db.Uuid
+  // Dueño que la ofrece (exactamente uno de los dos).
+  venueId          String?            @db.Uuid
+  promoterId       String?            @db.Uuid
+  kind             RewardKind
+  funder           RewardFunder
+  title            String
+  description      String?
+  costNpp          Int // NPP que cuesta canjearla
+  discountType     RewardDiscountType @default(NONE)
+  discountValue    Int                @default(0) // PERCENT: 1-100 · FIXED: centavos
+  maxDiscountCents Int? // tope para PERCENT
+  active           Boolean            @default(true)
+  perUserLimit     Int? // canjes por usuario (null = sin límite)
+  expiresInH       Int                @default(72) // vigencia del cupón tras canjear
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  venue       Venue?             @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  promoter    Promoter?          @relation(fields: [promoterId], references: [id], onDelete: Cascade)
+  redemptions RewardRedemption[]
+
+  @@index([venueId, active])
+  @@index([promoterId, active])
+  @@map("rewards")
+}
+
+model RewardRedemption {
+  id           String           @id @default(uuid(7)) @db.Uuid
+  rewardId     String           @db.Uuid
+  userId       String           @db.Uuid
+  costNpp      Int // snapshot del costo al canjear
+  status       RedemptionStatus @default(PENDING)
+  code         String           @unique // token corto del cupón/QR
+  // Solo TICKET_DISCOUNT: a qué orden se aplicó y cuánto descontó de verdad.
+  orderId      String?          @db.Uuid
+  appliedCents Int?
+  redeemedAt   DateTime         @default(now())
+  usedAt       DateTime?
+  expiresAt    DateTime
+
+  reward Reward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([rewardId])
+  @@map("reward_redemptions")
 }

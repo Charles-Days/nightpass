@@ -26,6 +26,8 @@ import { PassesModule } from './passes/passes.module';
 import { PasesModule } from './pases/pases.module';
 import { LocationsModule } from './locations/locations.module';
 import { LoyaltyModule } from './loyalty/loyalty.module';
+import { ReferralModule } from './referral/referral.module';
+import { RewardsModule } from './rewards/rewards.module';
 import { LoyaltyCheckinModule } from './loyalty-checkin/loyalty-checkin.module';
 import { StoriesModule } from './stories/stories.module';
 import { RpModule } from './rp/rp.module';
@@ -76,6 +78,8 @@ import { validateEnv } from './config/env.schema';
     PasesModule,
     LocationsModule,
     LoyaltyModule,
+    ReferralModule,
+    RewardsModule,
     LoyaltyCheckinModule,
     StoriesModule,
     RpModule,

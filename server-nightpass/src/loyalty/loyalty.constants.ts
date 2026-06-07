@@ -13,6 +13,10 @@ export const POINTS = {
   STREAK_MILESTONE_100: 500,
   STREAK_MILESTONE_365: 1000,
   BRING_FRIEND_BONUS: 20, // fase 4
+  REFERRAL_VISIT: 1, // link general: alguien abrió tu link (dedup por visitante)
+  REFERRAL_SIGNUP: 5, // link general: tu invitado creó cuenta (1 vez por invitado)
+  REFERRAL_VISIT_EVENT: 2, // link por evento: vale el doble (impulsa ventas)
+  REFERRAL_SIGNUP_EVENT: 10, // link por evento: vale el doble
 } as const;
 
 export const MULTIPLIERS = {

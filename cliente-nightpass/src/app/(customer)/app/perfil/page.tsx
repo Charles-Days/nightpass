@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import {
   ArrowLeft,
+  Gift,
   Mail,
   MapPin,
   Settings,
@@ -14,6 +15,7 @@ import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import type { User } from '@/core/types/api';
 import { LoyaltyCard } from '@/features/loyalty';
+import { InviteDialog } from '@/features/invite';
 
 export const metadata = {
   title: 'Mi perfil — NightPass',
@@ -168,6 +170,29 @@ export default async function PerfilPage() {
       {isCustomer ? (
         <section className="mt-5">
           <LoyaltyCard />
+        </section>
+      ) : null}
+
+      {/* INVITA Y GANA NPP */}
+      {isCustomer ? (
+        <section className="mt-5">
+          <InviteDialog>
+            <button
+              type="button"
+              className="group flex w-full items-center gap-3.5 rounded-[18px] border border-primary/25 bg-primary/[0.06] px-5 py-4 text-left transition-all hover:bg-primary/[0.1] active:scale-[0.99] transform-gpu"
+            >
+              <span className="grid size-10 place-items-center rounded-[12px] bg-primary/15 text-primary">
+                <Gift className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">Invita y gana NPP</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Comparte tu link y suma puntos por cada amigo
+                </p>
+              </div>
+              <Gift className="size-4 shrink-0 text-primary/60 transition group-hover:scale-110" />
+            </button>
+          </InviteDialog>
         </section>
       ) : null}
 

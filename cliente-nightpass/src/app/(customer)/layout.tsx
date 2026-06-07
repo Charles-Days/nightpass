@@ -11,6 +11,7 @@ import { NoPinchZoom } from './_components/no-pinch-zoom';
 import { VisitTracker } from '@/core/components/visit-tracker';
 import { AnalyticsTracker } from '@/core/components/analytics-tracker';
 import { EnableNotificationsBanner, PushPrompt, InstallAppPrompt } from '@/features/push';
+import { InviteCapture } from '@/features/invite';
 
 export const metadata: Metadata = {
   title: 'NightPass',
@@ -67,6 +68,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
       <NoPinchZoom />
       <VisitTracker />
       <AnalyticsTracker />
+      <InviteCapture />
       <CustomerBokeh />
       <TopBar user={user} isReturning={isReturning} />
       {user ? <EnableNotificationsBanner /> : null}

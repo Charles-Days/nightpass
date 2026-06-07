@@ -21,6 +21,7 @@ import {
   Smartphone,
   Wrench,
   UserCircle2,
+  Gift,
   type LucideIcon,
 } from 'lucide-react';
 import { useLogout } from '@/features/auth';
@@ -67,6 +68,7 @@ const VENUE_NAV: NavItem[] = [
   { href: paths.miLocalPases, label: 'Pases', icon: Ticket, enabled: true, roles: ['VENUE_OWNER'] },
   { href: paths.miLocalStories, label: 'Historias', icon: Radio, enabled: true, roles: ['VENUE_OWNER', 'VENUE_STAFF'] },
   { href: paths.miLocalStaff, label: 'Staff', icon: Users, enabled: true, roles: ['VENUE_OWNER'] },
+  { href: paths.miLocalRecompensas, label: 'Recompensas', icon: Gift, enabled: true, roles: ['VENUE_OWNER', 'VENUE_STAFF'] },
 ];
 
 const PROMOTER_NAV: NavItem[] = [
