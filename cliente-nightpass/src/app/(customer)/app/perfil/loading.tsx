@@ -28,22 +28,8 @@ export default function Loading() {
         <div className="h-44 animate-pulse rounded-[20px] bg-white/[0.07]" />
       </div>
 
-      {/* Settings section label */}
-      <div className="mt-8 h-3 w-16 animate-pulse rounded bg-white/[0.08]" />
-
-      {/* Settings grid */}
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-14 animate-pulse rounded-[14px] bg-white/[0.07]"
-            style={{ animationDelay: `${i * 40}ms` }}
-          />
-        ))}
-      </div>
-
-      {/* Logout */}
-      <div className="mt-8 h-12 animate-pulse rounded-[22px] bg-white/[0.07]" />
+      {/* Ajustes link row */}
+      <div className="mt-8 h-16 w-full animate-pulse rounded-[16px] bg-white/[0.07]" />
     </div>
   );
 }

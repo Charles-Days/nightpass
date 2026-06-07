@@ -56,6 +56,7 @@ export const paths = {
   reclamarVale: '/app/reclamar-vale',
   compras: '/app/compras',
   perfil: '/app/perfil',
+  ajustes: '/app/ajustes',
   recompensas: '/app/recompensas',
   recompensasScan: '/app/recompensas/scan',
 } as const;

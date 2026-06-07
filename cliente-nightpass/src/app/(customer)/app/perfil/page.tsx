@@ -2,16 +2,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import {
   ArrowLeft,
-  Bell,
-  Camera,
-  ChevronRight,
-  KeyRound,
-  LayoutDashboard,
   Mail,
   MapPin,
-  Shield,
-  ShieldCheck,
-  ShoppingBag,
+  Settings,
   Sparkles,
   Star,
   Ticket,
@@ -19,25 +12,11 @@ import {
 } from 'lucide-react';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
-import type { Role, User } from '@/core/types/api';
-import { LocationPermissionStatus } from '@/features/geolocation';
+import type { User } from '@/core/types/api';
 import { LoyaltyCard } from '@/features/loyalty';
-import { NotificationsToggle } from '@/features/push';
-import { LogoutButton } from './_components/logout-button';
-import { RankingPreferences } from './_components/ranking-preferences';
 
 export const metadata = {
   title: 'Mi perfil — NightPass',
-};
-
-const ROLE_LABEL: Record<Role, string> = {
-  ADMIN: 'Administrador',
-  VENUE_OWNER: 'Dueno de local',
-  VENUE_STAFF: 'Staff de local',
-  PROMOTER: 'Organizador',
-  PROMOTER_STAFF: 'Staff organizador',
-  RP: 'Relaciones Públicas',
-  CUSTOMER: 'Insider',
 };
 
 function getInitial(user: User) {
@@ -110,35 +89,18 @@ export default async function PerfilPage() {
         <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
           Mi cuenta
         </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="mt-3 flex items-start justify-between gap-3">
           <h1 className="font-display text-3xl font-bold leading-[1.05] tracking-[-0.035em] sm:text-5xl">
             Hola, {firstName}.
           </h1>
-          {(user.role === 'VENUE_OWNER' || user.role === 'VENUE_STAFF') && (
-            <Link
-              href={`${paths.miLocalStories}?compose=record&return=profile`}
-              aria-label="Subir historia del local"
-              title="Subir historia"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-fuchsia-400/30 bg-gradient-to-tr from-fuchsia-500/15 via-purple-500/15 to-pink-500/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-fuchsia-200 transition active:scale-95 hover:from-fuchsia-500/25 hover:via-purple-500/25 hover:to-pink-500/25"
-            >
-              <Camera className="size-3.5" />
-              Historia
-            </Link>
-          )}
-          {(user.role === 'VENUE_OWNER' ||
-            user.role === 'VENUE_STAFF' ||
-            user.role === 'PROMOTER' ||
-            user.role === 'PROMOTER_STAFF') && (
-            <Link
-              href={paths.dashboard}
-              aria-label="Ir al panel de gestión"
-              title="Ir al panel"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-primary transition active:scale-95 hover:bg-primary/15"
-            >
-              <LayoutDashboard className="size-3.5" />
-              Panel
-            </Link>
-          )}
+          <Link
+            href={paths.ajustes}
+            aria-label="Ajustes"
+            title="Ajustes"
+            className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-white/14 bg-white/[0.05] text-foreground transition active:scale-95 hover:bg-white/[0.09]"
+          >
+            <Settings className="size-5" />
+          </Link>
         </div>
       </section>
 
@@ -323,78 +285,23 @@ export default async function PerfilPage() {
         </div>
       </section>
 
-      {/* UBICACION */}
-      <section id="ubicacion" className="mt-8 scroll-mt-24">
-        <h3 className="mb-3 flex items-center gap-1.5 px-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-          <MapPin className="size-3 text-primary" />
-          Ubicación
-        </h3>
-        <LocationPermissionStatus />
-        <p className="mt-3 px-1 text-[11px] leading-relaxed text-muted-foreground">
-          Borramos pings automáticamente cada 24h. Puedes borrar todo ahora.{' '}
-          <Link href="/privacidad" className="text-primary underline-offset-2 hover:underline">
-            Política de privacidad
-          </Link>
-          .
-        </p>
-      </section>
-
-      {/* NOTIFICACIONES */}
+      {/* Acceso a configuración (además del engrane del header) */}
       <section className="mt-8">
-        <h3 className="mb-3 flex items-center gap-1.5 px-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-          <Bell className="size-3 text-primary" />
-          Notificaciones
-        </h3>
-        <NotificationsToggle />
-      </section>
-
-      {/* RANKING */}
-      {isCustomer ? (
-        <section className="mt-8">
-          <h3 className="mb-3 px-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            Ranking
-          </h3>
-          <RankingPreferences
-            initialState={user.state}
-            initialCity={user.city}
-            initialRankingOptIn={user.rankingOptIn}
-          />
-        </section>
-      ) : null}
-
-      {/* CUENTA SETTINGS GRID */}
-      <section className="mt-8">
-        <h3 className="mb-3 px-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-          Cuenta
-        </h3>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <SettingItem icon={Ticket} title="Mis pases" desc="Tus pases activos" href={paths.pases} />
-          <SettingItem icon={ShoppingBag} title="Compras" desc="Historial de pagos" href={paths.compras} />
-          <SettingItem icon={Shield} title="Privacidad" desc="Permisos y datos" href="/privacidad" />
-          {!isCustomer && (
-            <SettingItem
-              icon={KeyRound}
-              title="Cambiar contraseña"
-              desc="Seguridad de la cuenta"
-              href={paths.cambiarPassword}
-            />
-          )}
-          {!isCustomer && (
-            <SettingItem
-              icon={ShieldCheck}
-              title="Panel admin"
-              desc="Ir al dashboard"
-              href={paths.dashboard}
-            />
-          )}
-        </div>
-      </section>
-
-      {/* LOGOUT */}
-      <section className="mt-8">
-        <div className="overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05] p-2">
-          <LogoutButton />
-        </div>
+        <Link
+          href={paths.ajustes}
+          className="group flex items-center gap-3.5 rounded-[16px] border border-white/14 bg-white/[0.05] px-5 py-4 transition-all hover:bg-white/[0.07] hover:border-white/18 active:scale-[0.99] transform-gpu"
+        >
+          <span className="grid size-10 place-items-center rounded-[12px] bg-primary/15 text-primary">
+            <Settings className="size-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">Ajustes y privacidad</p>
+            <p className="text-[11px] text-muted-foreground">
+              Ubicación, notificaciones{isCustomer ? ', ranking' : ''} y cuenta
+            </p>
+          </div>
+          <ArrowLeft className="size-4 shrink-0 rotate-180 text-white/35 transition group-hover:translate-x-0.5 group-hover:text-foreground" />
+        </Link>
       </section>
 
       {/* FOOTER */}
@@ -403,51 +310,7 @@ export default async function PerfilPage() {
           NightPass
         </p>
         <p className="text-[11px] text-muted-foreground/70">v1.0.0</p>
-        <button
-          type="button"
-          className="mt-2 text-xs text-muted-foreground transition hover:text-primary"
-        >
-          Soporte
-        </button>
       </footer>
-    </div>
-  );
-}
-
-interface SettingItemProps {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  desc: string;
-  href?: string;
-}
-
-function SettingItem({ icon: Icon, title, desc, href }: SettingItemProps) {
-  const inner = (
-    <>
-      <span className="grid size-9 place-items-center rounded-[10px] bg-primary/15 text-primary">
-        <Icon className="size-4" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{title}</p>
-        <p className="truncate text-[11px] text-muted-foreground">{desc}</p>
-      </div>
-      <ChevronRight className="size-4 shrink-0 text-white/35 transition group-hover:translate-x-0.5 group-hover:text-foreground" />
-    </>
-  );
-
-  const className =
-    'group flex items-center gap-3.5 rounded-[14px] border border-white/14 bg-white/[0.05] px-4 py-3.5 transition-all hover:bg-white/[0.07] hover:border-white/18 active:scale-[0.98] transform-gpu';
-
-  if (href) {
-    return (
-      <Link href={href} className={className}>
-        {inner}
-      </Link>
-    );
-  }
-  return (
-    <div className={className + ' opacity-70'} aria-disabled>
-      {inner}
     </div>
   );
 }
