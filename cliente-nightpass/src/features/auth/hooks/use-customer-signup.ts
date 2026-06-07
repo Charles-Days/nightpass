@@ -6,6 +6,12 @@ import { toast } from 'sonner';
 import { ClientApiError, clientFetch } from '@/core/lib/api/client-client';
 import { paths } from '@/core/config/paths';
 import { saveRpRef, extractRefFromPath } from '@/features/rp-referral/rp-referral';
+import {
+  readInviteRef,
+  readInviteEvent,
+  extractInviteFromPath,
+  clearInviteRef,
+} from '@/features/invite';
 import { safeRedirectPath } from '@/core/lib/safe-redirect';
 import type { User } from '@/core/types/api';
 import type { SignupInput } from '../schemas/signup.schema';
@@ -50,6 +56,20 @@ export function useCustomerSignup() {
       // Preserva el código RP anidado en `from` antes del reload del registro.
       const ref = extractRefFromPath(safeFrom);
       if (ref) saveRpRef(ref);
+      // Atribución de referido cliente→cliente: el invitado reclama su código
+      // (acredita NPP a quien lo invitó). Idempotente server-side. keepalive
+      // para que sobreviva a la navegación dura de abajo.
+      const inv = readInviteRef() ?? extractInviteFromPath(safeFrom);
+      if (inv) {
+        void fetch('/api/referral/claim', {
+          method: 'POST',
+          keepalive: true,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: inv, eventId: readInviteEvent() ?? undefined }),
+        })
+          .then(() => clearInviteRef())
+          .catch(() => {});
+      }
       // Navegación dura — ver nota en use-customer-login. Evita que el
       // refresh aborte la nav y deje al usuario atascado en el registro.
       window.location.assign(safeFrom ?? paths.appHome);

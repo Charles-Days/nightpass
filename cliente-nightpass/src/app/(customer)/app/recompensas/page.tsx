@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowLeft, QrCode } from 'lucide-react';
+import { ArrowLeft, Gift, QrCode } from 'lucide-react';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
-import { CityRanking, HistoryList, LoyaltyCard } from '@/features/loyalty';
+import { LoyaltyCard } from '@/features/loyalty';
+import { InviteDialog } from '@/features/invite';
 import type { User } from '@/core/types/api';
+import { RewardsTabs } from './_components/rewards-tabs';
 
 export const metadata = {
   title: 'Recompensas — NightPass',
@@ -50,54 +52,32 @@ export default async function RecompensasPage() {
         <LoyaltyCard variant="hero" hideTierNames />
       </section>
 
-      <section className="np-rise mt-6 flex flex-wrap gap-3" style={{ animationDelay: '300ms' }}>
+      <section className="np-rise mt-6 grid grid-cols-2 gap-3" style={{ animationDelay: '300ms' }}>
         <Link
           href={paths.recompensasScan}
-          className="np-glow-pulse inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95 hover:brightness-110 sm:flex-none"
+          className="np-glow-pulse flex h-24 flex-col items-center justify-center gap-2 rounded-[20px] bg-gradient-to-br from-[#9333ea] to-[#a855f7] px-3 text-center text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95 hover:brightness-110"
         >
-          <QrCode className="size-4" />
-          Escanear QR del bar
+          <QrCode className="size-6" />
+          Escanear QR
         </Link>
+        <InviteDialog>
+          <button
+            type="button"
+            className="flex h-24 w-full flex-col items-center justify-center gap-2 rounded-[20px] border border-primary/30 bg-primary/10 px-3 text-center text-sm font-semibold text-primary transform-gpu transition active:scale-95 hover:bg-primary/15"
+          >
+            <Gift className="size-6" />
+            Invita y gana
+          </button>
+        </InviteDialog>
       </section>
 
-      <section className="np-rise mt-12" style={{ animationDelay: '640ms' }}>
-        <CityRanking
-          initialState={me.state}
-          initialCity={me.city}
-          initialRankingOptIn={me.rankingOptIn}
-          currentUserId={me.id}
+      <section className="np-rise mt-10" style={{ animationDelay: '560ms' }}>
+        <RewardsTabs
+          state={me.state}
+          city={me.city}
+          rankingOptIn={me.rankingOptIn}
+          userId={me.id}
         />
-      </section>
-
-      <section className="np-rise mt-10" style={{ animationDelay: '700ms' }}>
-        <h2 className="mb-4 font-display text-xl font-bold tracking-tight">
-          Actividad reciente
-        </h2>
-        <HistoryList limit={30} />
-      </section>
-
-      <section className="np-rise mt-10 rounded-[22px] border border-white/14 bg-white/[0.05] p-6 sm:p-7" style={{ animationDelay: '820ms' }}>
-        <h3 className="font-display text-lg font-bold tracking-tight">
-          ¿Cómo gano puntos?
-        </h3>
-        <ul className="mt-3 space-y-2 text-sm text-white/75">
-          <li>
-            <span className="font-semibold text-foreground">+25 NPP</span> cuando
-            el staff escanea tu pase al entrar a un evento.
-          </li>
-          <li>
-            <span className="font-semibold text-foreground">+10 NPP</span> al
-            escanear el QR del bar (máximo una vez al día por bar).
-          </li>
-          <li>
-            <span className="font-semibold text-foreground">+15 NPP</span> de
-            bonus la primera vez que visitas un bar.
-          </li>
-          <li>
-            <span className="font-semibold text-foreground">+5 NPP</span> por
-            cada día consecutivo de racha. Hitos en 7, 30, 100 y 365 días.
-          </li>
-        </ul>
       </section>
     </div>
   );

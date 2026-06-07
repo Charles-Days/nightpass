@@ -653,6 +653,9 @@ export type LoyaltyEventType =
   | 'STREAK_DAILY_BONUS'
   | 'STREAK_MILESTONE'
   | 'BRING_FRIEND_BONUS'
+  | 'REFERRAL_VISIT'
+  | 'REFERRAL_SIGNUP'
+  | 'REDEEM'
   | 'ADMIN_ADJUST';
 
 export interface LoyaltyStreak {

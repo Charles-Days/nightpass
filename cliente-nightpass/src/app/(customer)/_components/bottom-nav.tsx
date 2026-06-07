@@ -51,23 +51,25 @@ function BottomNavImpl() {
           const { href, label, icon: Icon } = item;
           const active = isActive(pathname, item);
           return (
-            <li key={href} className="relative z-10">
+            <li key={href} className="relative z-10 min-w-0">
               <Link
                 href={href}
                 className={cn(
-                  'flex h-16 min-h-[44px] flex-col items-center justify-center gap-1 px-2 text-[10px] font-medium transition-colors duration-200 active:scale-95',
+                  'flex h-16 min-h-[44px] flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium transition-colors duration-200 active:scale-95',
                   active ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
                 )}
                 aria-current={active ? 'page' : undefined}
               >
                 <Icon
                   className={cn(
-                    'size-5 transform-gpu transition-transform duration-200',
+                    'size-5 shrink-0 transform-gpu transition-transform duration-200',
                     active && 'scale-110 drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]',
                   )}
                   strokeWidth={active ? 2.4 : 1.8}
                 />
-                <span className="leading-none">{label}</span>
+                <span className="w-full truncate text-center leading-none tracking-tight">
+                  {label}
+                </span>
                 {i < 0 && null}
               </Link>
             </li>

@@ -392,16 +392,94 @@ export class LoyaltyService {
     );
   }
 
+  // ── Referidos cliente→cliente ────────────────────────────────────────────
+
+  /** Alguien abrió el link de invitación. `points` lo decide el caller (general
+   *  vs por evento). Muy pocos puntos, 1 vez por visitante. */
+  async awardReferralVisit(opts: {
+    referrerId: string;
+    visitorId: string;
+    points: number;
+    /** Scope del link: undefined = general; un eventId = link por evento. La
+     *  idempotencia es por scope, así general y cada evento cuentan por separado. */
+    eventId?: string;
+  }): Promise<void> {
+    if (!opts.visitorId) return;
+    const scope = opts.eventId ?? 'gen';
+    await this.applyReward({
+      userId: opts.referrerId,
+      type: LoyaltyEventType.REFERRAL_VISIT,
+      basePoints: opts.points,
+      idempotencyKey: `ref_visit:${opts.referrerId}:${opts.visitorId}:${scope}`,
+      occurredAt: new Date(),
+      skipStreak: true,
+    });
+  }
+
+  /** Un invitado creó su cuenta vía el link. `points` lo decide el caller.
+   *  1 vez por invitado (idempotente). */
+  async awardReferralSignup(opts: {
+    referrerId: string;
+    referredUserId: string;
+    points: number;
+  }): Promise<void> {
+    await this.applyReward({
+      userId: opts.referrerId,
+      type: LoyaltyEventType.REFERRAL_SIGNUP,
+      basePoints: opts.points,
+      idempotencyKey: `ref_signup:${opts.referredUserId}`,
+      occurredAt: new Date(),
+      skipStreak: true,
+    });
+  }
+
+  // ── Canje (débito) ───────────────────────────────────────────────────────
+
+  /** Balance NPP gastable del usuario. */
+  async getBalance(userId: string): Promise<number> {
+    const total = await this.prisma.userLoyaltyTotal.findUnique({
+      where: { userId },
+      select: { totalPoints: true },
+    });
+    return total?.totalPoints ?? 0;
+  }
+
+  /**
+   * Resta NPP por un canje. `points` positivo (se registra negativo). Idempotente
+   * por `idempotencyKey` (usar `redeem:<redemptionId>`). Si el balance no alcanza,
+   * la transacción interna hace rollback y lanza BadRequest.
+   */
+  async debit(opts: {
+    userId: string;
+    points: number;
+    idempotencyKey: string;
+  }): Promise<void> {
+    if (opts.points <= 0) {
+      throw new BadRequestException('points debe ser mayor a 0');
+    }
+    await this.applyReward({
+      userId: opts.userId,
+      type: LoyaltyEventType.REDEEM,
+      basePoints: -opts.points,
+      idempotencyKey: opts.idempotencyKey,
+      occurredAt: new Date(),
+      skipStreak: true,
+    });
+  }
+
   // ── Internal ─────────────────────────────────────────────────────────────
 
   private async applyReward(
     opts: ApplyRewardOpts,
   ): Promise<ApplyRewardResult> {
     const multiplier = this.computeMultiplier(opts.occurredAt);
-    const effective =
-      opts.type === LoyaltyEventType.ADMIN_ADJUST
-        ? opts.basePoints
-        : Math.round(opts.basePoints * multiplier);
+    // ADMIN_ADJUST y REDEEM son montos exactos (no aplican multiplicador).
+    const exactType =
+      opts.type === LoyaltyEventType.ADMIN_ADJUST ||
+      opts.type === LoyaltyEventType.REDEEM;
+    const effective = exactType
+      ? opts.basePoints
+      : Math.round(opts.basePoints * multiplier);
 
     try {
       return await this.prisma.$transaction(async (tx) => {
@@ -451,6 +529,17 @@ export class LoyaltyService {
         const totalAwarded = effective + milestoneBonus;
 
         const newTier = await this.recomputeTotals(tx, opts.userId);
+
+        // Débito (REDEEM): si dejó el balance negativo, no alcanzaba → rollback.
+        if (opts.type === LoyaltyEventType.REDEEM) {
+          const after = await tx.userLoyaltyTotal.findUnique({
+            where: { userId: opts.userId },
+            select: { totalPoints: true },
+          });
+          if ((after?.totalPoints ?? 0) < 0) {
+            throw new BadRequestException('NPP insuficientes');
+          }
+        }
 
         return {
           awarded: totalAwarded,
@@ -606,12 +695,19 @@ export class LoyaltyService {
     const yearCutoff = new Date(Date.now() - 365 * 86_400_000);
 
     const [totalAgg, yearAgg] = await Promise.all([
+      // totalPoints = balance gastable (incluye los REDEEM negativos).
       tx.loyaltyEvent.aggregate({
         where: { userId },
         _sum: { points: true },
       }),
+      // yearPoints = base del tier: solo puntos GANADOS. Gastar (REDEEM) no
+      // debe degradar el tier del usuario.
       tx.loyaltyEvent.aggregate({
-        where: { userId, occurredAt: { gte: yearCutoff } },
+        where: {
+          userId,
+          occurredAt: { gte: yearCutoff },
+          type: { not: LoyaltyEventType.REDEEM },
+        },
         _sum: { points: true },
       }),
     ]);

@@ -2,6 +2,7 @@
 
 import {
   Flame,
+  Gift,
   MapPin,
   Sparkles,
   Ticket,
@@ -48,11 +49,29 @@ const TYPE_META: Record<
     icon: Users,
     label: () => 'Bonus por traer a un amigo',
   },
+  REFERRAL_VISIT: {
+    icon: Users,
+    label: () => 'Alguien abrió tu link de invitación',
+  },
+  REFERRAL_SIGNUP: {
+    icon: Users,
+    label: () => 'Un invitado creó su cuenta',
+  },
+  REDEEM: {
+    icon: Gift,
+    label: () => 'Canje de recompensa',
+  },
   ADMIN_ADJUST: {
     icon: Wrench,
     label: () => 'Ajuste manual',
   },
 };
+
+// Fallback defensivo: si el backend agrega un tipo nuevo, no rompemos el render.
+const FALLBACK_META = {
+  icon: Sparkles,
+  label: () => 'Movimiento de puntos',
+} as const;
 
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat('es-MX', {
@@ -87,10 +106,20 @@ export function HistoryList({ limit = 50 }: { limit?: number }) {
     );
   }
 
+  // Más de 6 movimientos: fijar alto a ~6 filas y dejar scroll interno para no
+  // pintar una lista infinita que empuje el resto de la página.
+  const scrolls = data.length > 6;
+
   return (
-    <ul className="overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05]">
+    <ul
+      className={cn(
+        'overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05]',
+        scrolls &&
+          'max-h-[26rem] overflow-y-auto overscroll-contain [scrollbar-width:thin]',
+      )}
+    >
       {data.map((entry, i) => {
-        const meta = TYPE_META[entry.type];
+        const meta = TYPE_META[entry.type] ?? FALLBACK_META;
         const Icon = meta.icon;
         const positive = entry.points >= 0;
         return (

@@ -22,6 +22,7 @@ export const paths = {
   miLocalPagos: '/mi-local/pagos',
   miLocalPases: '/mi-local/pases',
   miLocalStories: '/mi-local/stories',
+  miLocalRecompensas: '/mi-local/recompensas',
   adminStories: '/admin/stories',
   adminMaintenance: '/admin/mantenimiento',
   scanner: '/scanner',
