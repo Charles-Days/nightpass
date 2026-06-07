@@ -339,8 +339,10 @@ export class MetricsService {
         where: { status: 'COMPLETED', createdAt: { gte: since } },
         _count: { _all: true },
       }),
-      this.prisma.pass.count(),
-      this.prisma.pass.count({ where: { usedAt: { not: null } } }),
+      this.prisma.pass.count({ where: { createdAt: { gte: since } } }),
+      this.prisma.pass.count({
+        where: { createdAt: { gte: since }, usedAt: { not: null } },
+      }),
       // Audiencia activa por ventana.
       this.prisma.$queryRaw<{ c: bigint }[]>`
         SELECT COUNT(DISTINCT "visitorId")::bigint AS c FROM analytics_events WHERE "createdAt" >= ${dayAgo}
