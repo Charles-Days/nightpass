@@ -132,9 +132,17 @@ export function useEventTiers(eventId: string | null) {
     queryKey: ['catalog-event-tiers', eventId],
     enabled: !!eventId,
     queryFn: () =>
-      clientFetch<{ tiers: Array<{ id: string; name: string; priceCents: number; currency: string }> }>(
-        `/api/catalog/events/${eventId}`,
-      ),
+      clientFetch<{
+        tiers: Array<{
+          id: string;
+          name: string;
+          priceCents: number;
+          // Precio en efectivo (bruto − Stripe [− NP si exento]). El RP cobra en
+          // efectivo, así que el modal muestra este, no el online (priceCents).
+          cashPriceCents?: number | null;
+          currency: string;
+        }>;
+      }>(`/api/catalog/events/${eventId}`),
   });
 }
 

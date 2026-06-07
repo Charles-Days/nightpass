@@ -131,7 +131,9 @@ export function IssuePassDialog({ events }: Props) {
                     className="flex w-full items-center justify-between rounded-xl border border-white/14 bg-white/[0.05] px-4 py-3 text-left text-sm text-white transition hover:border-primary/40 hover:bg-white/[0.09] disabled:opacity-50"
                   >
                     <span className="font-semibold">{t.name}</span>
-                    <span className="font-display font-bold text-primary">{money(t.priceCents)}</span>
+                    <span className="font-display font-bold text-primary">
+                      {money(t.cashPriceCents ?? t.priceCents)}
+                    </span>
                   </button>
                 ))}
                 {issue.isPending && (

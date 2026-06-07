@@ -452,6 +452,8 @@ export class CatalogService {
             slug: true,
             name: true,
             city: true,
+            platformFeePct: true,
+            cashCommissionExempt: true,
             stripeAccount: { select: { chargesEnabled: true } },
           },
         },
@@ -461,6 +463,8 @@ export class CatalogService {
             slug: true,
             name: true,
             logoUrl: true,
+            platformFeePct: true,
+            cashCommissionExempt: true,
             stripeAccount: { select: { chargesEnabled: true } },
           },
         },
@@ -478,6 +482,16 @@ export class CatalogService {
     ]);
     const sold = soldPasses + pendingClaims;
 
+    // Precio en efectivo por tier (bruto − Stripe [− NP según modo/exención]).
+    // Mismo cálculo POR-TIER que getTierById, para que el modal RP "Emitir pase
+    // (efectivo)" muestre el precio de efectivo y no el online. Resolución del
+    // owner (venue → promoter) con fallback al fee de plataforma del config.
+    const owner = event.venue ?? event.promoter;
+    const ownerFeePct =
+      owner?.platformFeePct != null
+        ? owner.platformFeePct
+        : Number(this.config.get<string>('STRIPE_PLATFORM_FEE_PCT')) || 8;
+
     // Expone el precio vigente y la próxima subida; oculta el calendario interno.
     return {
       ...this._mapEvent({
@@ -485,9 +499,23 @@ export class CatalogService {
         tiers: event.tiers.map((t) => {
           const { prices, ...rest } = t;
           const r = resolveTierPrice(t.priceCents, prices, event.startsAt);
+          const cashFeePct = t.cashFeePctOverride ?? ownerFeePct;
+          const cashExempt =
+            t.cashExemptOverride ?? owner?.cashCommissionExempt ?? true;
+          const cashMode = t.cashFeeMode ?? 'SUBTRACT';
+          const cashPriceCents = event.allowCashPayment
+            ? computeCashUnitPrice(
+                r.currentCents,
+                cashFeePct,
+                cashExempt,
+                cashMode,
+                t.cashPriceCents,
+              )
+            : null;
           return {
             ...rest,
             priceCents: r.currentCents,
+            cashPriceCents,
             nextPrice: r.next
               ? { priceCents: r.next.priceCents, startsAt: r.next.startsAt }
               : null,

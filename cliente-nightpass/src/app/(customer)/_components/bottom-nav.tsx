@@ -12,14 +12,24 @@ const items = [
   { href: paths.eventos, label: 'Eventos', icon: CalendarDays },
   { href: paths.pases, label: 'Pases', icon: Ticket },
   { href: paths.recompensas, label: 'Recompensas', icon: Flame },
-  { href: paths.perfil, label: 'Perfil', icon: User },
+  // `aliases`: subpáginas que cuelgan del Perfil (ej. Ajustes) pero viven en otra
+  // ruta. Mantienen "Perfil" marcado en la nav mientras navegas dentro de su área.
+  { href: paths.perfil, label: 'Perfil', icon: User, aliases: [paths.ajustes] },
 ];
+
+function isActive(
+  pathname: string,
+  item: { href: string; exact?: boolean; aliases?: string[] },
+) {
+  const all = [item.href, ...(item.aliases ?? [])];
+  return all.some((p) =>
+    item.exact ? pathname === p : pathname === p || pathname.startsWith(`${p}/`),
+  );
+}
 
 function BottomNavImpl() {
   const pathname = usePathname();
-  const activeIndex = items.findIndex(({ href, exact }) =>
-    exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`),
-  );
+  const activeIndex = items.findIndex((item) => isActive(pathname, item));
 
   return (
     <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(env(safe-area-inset-bottom),12px)] md:hidden">
@@ -37,10 +47,9 @@ function BottomNavImpl() {
           }}
         />
 
-        {items.map(({ href, label, icon: Icon, exact }, i) => {
-          const active = exact
-            ? pathname === href
-            : pathname === href || pathname.startsWith(`${href}/`);
+        {items.map((item, i) => {
+          const { href, label, icon: Icon } = item;
+          const active = isActive(pathname, item);
           return (
             <li key={href} className="relative z-10">
               <Link
