@@ -310,35 +310,21 @@ export class LoyaltyService {
     opts: { windowDays?: number; limit?: number } = {},
   ): Promise<LeaderboardEntryDto[]> {
     const limit = Math.min(Math.max(opts.limit ?? 20, 1), 100);
-    const windowDays = Math.min(Math.max(opts.windowDays ?? 30, 1), 365);
-    const cutoff = new Date(Date.now() - windowDays * 86_400_000);
     const normalizedCity = city.trim();
 
-    const userIds = await this.prisma.loyaltyEvent.findMany({
-      where: {
-        occurredAt: { gte: cutoff },
-        venue: { city: { equals: normalizedCity, mode: 'insensitive' } },
-      },
-      select: { userId: true },
-      distinct: ['userId'],
-    });
-
-    if (userIds.length === 0) {
-      throw new NotFoundException(
-        'Aún no hay suficientes usuarios en esta ciudad',
-      );
-    }
-
-    const ids = userIds.map((u) => u.userId);
-
+    // Ranking por CIUDAD DE PERFIL del usuario (la que eligió en el opt-in), no
+    // por la ciudad del venue donde ganó puntos. Así un usuario que sumó NPP por
+    // referido/invitación (sin venue) sigue apareciendo en el ranking de su
+    // ciudad. yearPoints ya es la suma efectiva de los últimos 365 días.
     const totals = await this.prisma.userLoyaltyTotal.findMany({
-      // Incluye a quienes optaron sí (true) y a quienes aún no deciden (null);
-      // solo excluye a quien optó NO explícito (rankingOptIn=false). El toggle de
-      // la UI viene en ON por default, así que null = aún no lo apagó.
+      // Incluye opt-in sí (true) y sin decidir (null); solo excluye NO explícito
+      // (false). El toggle de la UI viene en ON por default.
       where: {
-        userId: { in: ids },
         yearPoints: { gt: 0 },
-        user: { rankingOptIn: { not: false } },
+        user: {
+          rankingOptIn: { not: false },
+          city: { equals: normalizedCity, mode: 'insensitive' },
+        },
       },
       orderBy: { yearPoints: 'desc' },
       take: limit,
