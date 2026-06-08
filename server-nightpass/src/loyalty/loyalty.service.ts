@@ -343,7 +343,7 @@ export class LoyaltyService {
       include: { user: { select: { id: true, name: true } } },
     });
 
-    if (totals.length < 5) {
+    if (totals.length < 1) {
       throw new NotFoundException(
         'Aún no hay suficientes usuarios en esta ciudad',
       );
