@@ -367,6 +367,8 @@ export interface PickupWindow {
   dow: number | null;
   start: string; // "HH:mm"
   end: string; // "HH:mm"
+  /** Solo "cualquier día" (dow null): días de la semana a excluir (0-6). */
+  excludeDows?: number[];
 }
 
 export interface PickupPoint {

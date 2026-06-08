@@ -498,45 +498,78 @@ function PickupPointDialog({ point, basePath, open, onClose }: DialogProps) {
                     {windows.map((w, i) => (
                       <div
                         key={i}
-                        className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-2.5"
+                        className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-2.5"
                       >
-                        <select
-                          value={w.dow === null ? 'any' : String(w.dow)}
-                          onChange={(e) =>
-                            patchWindow(i, {
-                              dow: e.target.value === 'any' ? null : Number(e.target.value),
-                            })
-                          }
-                          className="h-9 rounded-lg border border-white/14 bg-[#15121f] px-2 text-sm text-white"
-                        >
-                          <option value="any">Cualquier día</option>
-                          {DOW_LABELS.map((d, idx) => (
-                            <option key={idx} value={idx}>
-                              {d}
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          type="time"
-                          value={w.start}
-                          onChange={(e) => patchWindow(i, { start: e.target.value })}
-                          className="h-9 rounded-lg border border-white/14 bg-white/[0.05] px-2 text-sm text-white"
-                        />
-                        <span className="text-xs text-white/40">a</span>
-                        <input
-                          type="time"
-                          value={w.end}
-                          onChange={(e) => patchWindow(i, { end: e.target.value })}
-                          className="h-9 rounded-lg border border-white/14 bg-white/[0.05] px-2 text-sm text-white"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeWindow(i)}
-                          className="ml-auto grid size-8 place-items-center rounded-lg border border-red-500/20 bg-red-500/5 text-red-400 transition hover:bg-red-500/10"
-                          aria-label="Quitar horario"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <select
+                            value={w.dow === null ? 'any' : String(w.dow)}
+                            onChange={(e) =>
+                              patchWindow(i, {
+                                dow: e.target.value === 'any' ? null : Number(e.target.value),
+                              })
+                            }
+                            className="h-9 rounded-lg border border-white/14 bg-[#15121f] px-2 text-sm text-white"
+                          >
+                            <option value="any">Cualquier día</option>
+                            {DOW_LABELS.map((d, idx) => (
+                              <option key={idx} value={idx}>
+                                {d}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="time"
+                            value={w.start}
+                            onChange={(e) => patchWindow(i, { start: e.target.value })}
+                            className="h-9 rounded-lg border border-white/14 bg-white/[0.05] px-2 text-sm text-white"
+                          />
+                          <span className="text-xs text-white/40">a</span>
+                          <input
+                            type="time"
+                            value={w.end}
+                            onChange={(e) => patchWindow(i, { end: e.target.value })}
+                            className="h-9 rounded-lg border border-white/14 bg-white/[0.05] px-2 text-sm text-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeWindow(i)}
+                            className="ml-auto grid size-8 place-items-center rounded-lg border border-red-500/20 bg-red-500/5 text-red-400 transition hover:bg-red-500/10"
+                            aria-label="Quitar horario"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
+
+                        {/* "Cualquier día" → permite excluir días (ej. sáb/dom). */}
+                        {w.dow === null && (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[11px] text-white/45">Excluir:</span>
+                            {DOW_LABELS.map((d, idx) => {
+                              const excluded = (w.excludeDows ?? []).includes(idx);
+                              return (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => {
+                                    const cur = w.excludeDows ?? [];
+                                    patchWindow(i, {
+                                      excludeDows: excluded
+                                        ? cur.filter((x) => x !== idx)
+                                        : [...cur, idx],
+                                    });
+                                  }}
+                                  className={`rounded-full border px-2 py-0.5 text-[11px] font-medium transition ${
+                                    excluded
+                                      ? 'border-red-500/40 bg-red-500/15 text-red-300 line-through'
+                                      : 'border-white/12 bg-white/[0.04] text-white/60 hover:bg-white/[0.08]'
+                                  }`}
+                                >
+                                  {d}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

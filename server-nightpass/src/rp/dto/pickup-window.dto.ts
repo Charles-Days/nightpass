@@ -1,4 +1,14 @@
-import { IsInt, IsOptional, IsString, Matches, Max, Min, ValidateIf } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 
 /**
  * Ventana horaria de atención de un punto de cobro. `dow` (día de la semana,
@@ -23,4 +33,13 @@ export class PickupWindowDto {
   @IsString()
   @Matches(/^\d{2}:\d{2}$/)
   end!: string;
+
+  // Solo para "cualquier día" (dow null): días de la semana a EXCLUIR (0-6).
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(7)
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
+  excludeDows?: number[];
 }
