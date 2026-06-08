@@ -1,5 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListUsersQuery } from './dto/list-users.query';
 
@@ -77,5 +81,22 @@ export class UsersService {
     });
     if (!user) throw new NotFoundException('Usuario no encontrado');
     return user;
+  }
+
+  /** Cambia el rol de un usuario (solo admin). No permite cambiar el propio rol
+   *  (evita auto-bloqueo). El admin es responsable de las implicaciones del rol. */
+  async updateRole(adminId: string, id: string, role: Role) {
+    if (id === adminId) {
+      throw new BadRequestException('No puedes cambiar tu propio rol');
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, role: true },
+    });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    if (user.role !== role) {
+      await this.prisma.user.update({ where: { id }, data: { role } });
+    }
+    return this.getById(id);
   }
 }

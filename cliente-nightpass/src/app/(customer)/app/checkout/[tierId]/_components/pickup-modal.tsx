@@ -73,7 +73,10 @@ function localDateISO(d: Date): string {
 
 /** Próximos 7 días para elegir. Omite HOY si la hora de inicio del horario ya
  *  pasó (no tiene caso recoger hoy si la ventana ya terminó). */
-function weekDayOptions(startHHmm: string): { value: string; label: string }[] {
+function weekDayOptions(
+  startHHmm: string,
+  excludeDows?: number[],
+): { value: string; label: string }[] {
   const now = new Date();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -81,12 +84,14 @@ function weekDayOptions(startHHmm: string): { value: string; label: string }[] {
   const todayStart = new Date(today);
   todayStart.setHours(Number.isFinite(hh) ? hh : 0, Number.isFinite(mm) ? mm : 0, 0, 0);
   const skipToday = now.getTime() > todayStart.getTime();
+  const ex = excludeDows ?? [];
   const out: { value: string; label: string }[] = [];
   // Siempre 7 días seleccionables: si hoy ya no aplica, arrancamos en mañana.
   const start = skipToday ? 1 : 0;
   for (let i = start; i < start + 7; i += 1) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
+    if (ex.includes(d.getDay())) continue; // día excluido por el RP
     let label: string;
     if (i === 0) label = 'Hoy';
     else if (i === 1) label = 'Mañana';
@@ -99,8 +104,31 @@ function weekDayOptions(startHHmm: string): { value: string; label: string }[] {
   return out;
 }
 
-function computePickupAt(w: PickupWindow): string | null {
-  return nextDateForWindow(w)?.toISOString() ?? null;
+function rangeMinutes(w: PickupWindow): number {
+  const [sh, sm] = w.start.split(':').map((n) => parseInt(n, 10));
+  const [eh, em] = w.end.split(':').map((n) => parseInt(n, 10));
+  return eh * 60 + em - (sh * 60 + sm);
+}
+
+/** Horas de llegada dentro del rango (paso de 1h): 14:00–17:00 → 14, 15, 16. */
+function hourOptions(start: string, end: string): string[] {
+  const [sh, sm] = start.split(':').map((n) => parseInt(n, 10));
+  const [eh, em] = end.split(':').map((n) => parseInt(n, 10));
+  const startMin = sh * 60 + sm;
+  const endMin = eh * 60 + em;
+  const out: string[] = [];
+  for (let m = startMin; m < endMin; m += 60) {
+    out.push(
+      `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`,
+    );
+  }
+  return out.length ? out : [start];
+}
+
+/** ISO local a partir de una fecha YYYY-MM-DD y una hora HH:mm. */
+function buildPickupAt(dateISO: string, hhmm: string): string | null {
+  const d = new Date(`${dateISO}T${hhmm}:00`);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
 /** Etiqueta del chip con la FECHA concreta a la que resuelve (no solo el día),
@@ -132,6 +160,8 @@ export function PickupModal({
   const [selectedWindowIdx, setSelectedWindowIdx] = useState<number | null>(null);
   // Fecha concreta cuando el horario elegido es "cualquier día" (dow null).
   const [pickDate, setPickDate] = useState('');
+  // Hora concreta dentro del rango del horario (ej. de 14:00 a 17:00 → 14/15/16).
+  const [pickHour, setPickHour] = useState('');
   // El cliente debe leer/aceptar el aviso de seguridad antes de elegir punto.
   const [acknowledged, setAcknowledged] = useState(false);
 
@@ -160,6 +190,7 @@ export function PickupModal({
       setSelectedId(null);
       setSelectedWindowIdx(null);
       setPickDate('');
+      setPickHour('');
       setAcknowledged(false);
     }
   }, [open]);
@@ -181,6 +212,7 @@ export function PickupModal({
     setSelectedId((prev) => (prev === id ? prev : id));
     setSelectedWindowIdx(null);
     setPickDate('');
+    setPickHour('');
   };
 
   // Horario elegido (si hay) + si requiere fecha concreta ("cualquier día").
@@ -189,6 +221,12 @@ export function PickupModal({
       ? selectedPoint.windows[selectedWindowIdx]
       : null;
   const needsDate = !!selectedWindow && selectedWindow.dow == null && !pickDate;
+  // Horario con rango amplio (>1h) → dejamos elegir la hora exacta.
+  const hourChoices =
+    selectedWindow && rangeMinutes(selectedWindow) > 60
+      ? hourOptions(selectedWindow.start, selectedWindow.end)
+      : [];
+  const effectiveHour = pickHour || selectedWindow?.start || '';
 
   const handleConfirm = () => {
     if (points.length === 0) {
@@ -204,13 +242,16 @@ export function PickupModal({
         : undefined;
     let pickupAt: string | null = null;
     if (win) {
+      const time = pickHour || win.start;
+      // Día: el del weekday (dow) o el que eligió el cliente ("cualquier día").
+      let dateISO: string | null = null;
       if (win.dow != null) {
-        pickupAt = computePickupAt(win);
-      } else if (pickDate) {
-        // "Cualquier día" → la fecha que eligió el cliente + hora de inicio.
-        const d = new Date(`${pickDate}T${win.start}:00`);
-        pickupAt = Number.isNaN(d.getTime()) ? null : d.toISOString();
+        const d = nextDateForWindow(win);
+        dateISO = d ? localDateISO(d) : null;
+      } else {
+        dateISO = pickDate || null;
       }
+      pickupAt = dateISO ? buildPickupAt(dateISO, time) : null;
     }
     onConfirm({ pickupPointId: selectedPoint.id, pickupAt });
     onOpenChange(false);
@@ -391,6 +432,7 @@ export function PickupModal({
                                       prev === idx ? null : idx,
                                     );
                                     setPickDate('');
+                                    setPickHour('');
                                   }}
                                   className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                                     active
@@ -413,7 +455,10 @@ export function PickupModal({
                                 ¿Qué día vas a pasar?
                               </p>
                               <div className="mt-2 flex flex-wrap gap-2">
-                                {weekDayOptions(selectedWindow.start).map((opt) => {
+                                {weekDayOptions(
+                                  selectedWindow.start,
+                                  selectedWindow.excludeDows,
+                                ).map((opt) => {
                                   const on = pickDate === opt.value;
                                   return (
                                     <button
@@ -430,6 +475,37 @@ export function PickupModal({
                                       }`}
                                     >
                                       {opt.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Rango amplio → el cliente elige la hora exacta. */}
+                          {hourChoices.length > 0 && (
+                            <div className="mt-3 border-t border-white/10 pt-3">
+                              <p className="text-[11px] font-semibold text-white">
+                                ¿A qué hora llegas?
+                              </p>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {hourChoices.map((h) => {
+                                  const on = effectiveHour === h;
+                                  return (
+                                    <button
+                                      key={h}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPickHour(h);
+                                      }}
+                                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                                        on
+                                          ? 'border-primary bg-gradient-to-r from-[#9333ea] to-[#a855f7] text-white shadow-[0_4px_14px_-4px_rgba(168,85,247,0.6)]'
+                                          : 'border-white/15 bg-white/[0.04] text-white/80 hover:bg-white/[0.08]'
+                                      }`}
+                                    >
+                                      {h}
                                     </button>
                                   );
                                 })}

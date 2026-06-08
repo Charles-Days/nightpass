@@ -5,6 +5,7 @@ import { paths } from '@/core/config/paths';
 import type { UserDetail as UserDetailType } from '@/core/types/api';
 import { StatusBadge } from '@/features/venue-applications/components/status-badge';
 import { RoleBadge } from './role-badge';
+import { RoleChanger } from './role-changer';
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleString('es-PE', { dateStyle: 'medium', timeStyle: 'short' });
@@ -34,6 +35,18 @@ export function UserDetail({ user, hideHeader = false }: { user: UserDetailType;
           <Field label="Nombre" value={user.name ?? '—'} />
           <Field label="Rol" value={user.role} />
           <Field label="Creado" value={fmtDate(user.createdAt)} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Cambiar rol</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RoleChanger userId={user.id} currentRole={user.role} />
+          <p className="mt-2 text-xs text-muted-foreground">
+            Cambia el rol de acceso de este usuario. No puedes cambiar tu propio rol.
+          </p>
         </CardContent>
       </Card>
 
