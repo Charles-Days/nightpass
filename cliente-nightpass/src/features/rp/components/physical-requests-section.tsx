@@ -269,15 +269,15 @@ export function PhysicalRequestsSection() {
                   onClick={() => togglePlace(group.key)}
                   className="flex w-full items-center gap-2 text-left"
                 >
+                  <span className="grid size-6 shrink-0 place-items-center rounded-full border border-white/14 bg-white/[0.04] text-[11px] font-semibold text-white/70">
+                    {group.count}
+                  </span>
+                  <span className="text-primary min-w-0 flex-1 truncate text-[11px] font-semibold tracking-[0.18em] uppercase">
+                    {group.label}
+                  </span>
                   <ChevronDown
                     className={`text-primary size-4 shrink-0 transition-transform ${open ? '' : '-rotate-90'}`}
                   />
-                  <span className="text-primary text-[11px] font-semibold tracking-[0.18em] uppercase">
-                    {group.label}
-                  </span>
-                  <span className="rounded-full border border-white/14 bg-white/[0.04] px-2 py-0.5 text-[11px] font-semibold text-white/60">
-                    {group.count}
-                  </span>
                 </button>
 
                 {open &&
