@@ -787,9 +787,16 @@ export class PassesService {
       pass.event.startsAt.getUTCMonth() === now.getUTCMonth() &&
       pass.event.startsAt.getUTCDate() === now.getUTCDate();
     if (!sameDay) {
-      throw new ConflictException(
-        `Pase no es de hoy (evento: ${pass.event.startsAt.toISOString()})`,
-      );
+      const fecha = new Intl.DateTimeFormat('es-MX', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZone: 'America/Mexico_City',
+      }).format(pass.event.startsAt);
+      throw new ConflictException(`Pase no es de hoy. El evento es el ${fecha}.`);
     }
 
     // 5. Ya usado
