@@ -40,7 +40,7 @@ export class PassesController {
 
   @Post('scan')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF)
+  @Roles(Role.ADMIN, Role.VENUE_OWNER, Role.VENUE_STAFF, Role.RP)
   scan(@Body() dto: ScanPassDto, @CurrentUser() user: AuthUser) {
     return this.service.scan(dto.qrCode, user);
   }

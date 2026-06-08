@@ -84,6 +84,7 @@ const PROMOTER_NAV: NavItem[] = [
 
 const RP_NAV: NavItem[] = [
   { href: paths.rpDashboard, label: 'Mi Panel RP', icon: LayoutDashboard, enabled: true, roles: ['RP'] },
+  { href: paths.rpScanner, label: 'Escanear pase', icon: QrCode, enabled: true, roles: ['RP'] },
 ];
 
 function visibleFor(role: Role, group: NavItem[]): NavItem[] {

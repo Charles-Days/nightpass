@@ -28,6 +28,7 @@ export const paths = {
   scanner: '/scanner',
   adminRps: '/admin/rps',
   rpDashboard: '/rp-dashboard',
+  rpScanner: '/rp-dashboard/scanner',
   // Organizadores
   adminOrganizadores: '/admin/organizadores',
   adminEventos: '/admin/eventos',
