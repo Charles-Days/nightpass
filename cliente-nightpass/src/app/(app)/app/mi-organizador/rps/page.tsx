@@ -51,7 +51,7 @@ export default function MiOrganizadorRpsPage() {
       <header className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-            Relaciones Públicas
+            RP
           </p>
           <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl text-white">
             Mis RPs

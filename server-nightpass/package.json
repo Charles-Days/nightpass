@@ -19,7 +19,9 @@
     "prisma:studio": "prisma studio",
     "db:seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed.ts",
     "grant:passes": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/scripts/grant-passes.ts",
-    "seed:events": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/scripts/seed-demo-events.ts"
+    "seed:events": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/scripts/seed-demo-events.ts",
+    "seed:ranking": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/scripts/seed-ranking-cuernavaca.ts",
+    "seed:cobranza": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/scripts/seed-cobranza-rp.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed.ts"

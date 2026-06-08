@@ -24,7 +24,7 @@ const cspDirectives = [
   "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://js.stripe.com https://accounts.google.com/gsi/client https://unpkg.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
   "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: blob: https://*.r2.dev https://*.stripe.com https://images.unsplash.com https://*.googleusercontent.com http://127.0.0.1:7101 http://localhost:7101",
+  "img-src 'self' data: blob: https://*.r2.dev https://*.stripe.com https://images.unsplash.com https://*.googleusercontent.com https://*.tile.openstreetmap.org http://127.0.0.1:7101 http://localhost:7101",
   "media-src 'self' blob: https://*.r2.dev",
   "connect-src 'self' blob: https://api.nightpass.mx https://api.stripe.com https://js.stripe.com https://m.stripe.com https://m.stripe.network https://r.stripe.com https://q.stripe.com https://merchant-ui-api.stripe.com https://*.r2.dev https://*.r2.cloudflarestorage.com https://accounts.google.com https://unpkg.com http://127.0.0.1:7101 http://localhost:7101",
   "frame-src https://js.stripe.com https://hooks.stripe.com https://accounts.google.com",

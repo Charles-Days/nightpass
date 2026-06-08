@@ -14,7 +14,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CashFeeMode, LoyaltyTier } from '@prisma/client';
+import { CashFeeMode } from '@prisma/client';
 import { TierPricePhaseDto } from './tier-price-phase.dto';
 
 export class CreateTierDto {
@@ -23,7 +23,6 @@ export class CreateTierDto {
   @IsOptional() @IsString() @MaxLength(3) currency?: string;
   @IsOptional() @IsInt() @Min(1) capacity?: number;
   @IsOptional() @IsInt() @Min(0) position?: number;
-  @IsOptional() @IsEnum(LoyaltyTier) minLoyaltyTier?: LoyaltyTier;
   // ─── Config de pago en efectivo (físico) ────────────────────────────────────
   // Override por-tier de la comisión NightPass en efectivo. Todos opcionales:
   // omitir => hereda del owner (Venue/Promoter) o del global.

@@ -24,6 +24,9 @@ import { UpdateRpZoneDto } from './dto/update-rp-zone.dto';
 import { ListRpQuery } from './dto/list-rp.query';
 import { SetCommissionRuleDto } from './dto/set-commission-rule.dto';
 import { IssuePassDto } from './dto/issue-pass.dto';
+import { CreatePickupPointDto } from './dto/create-pickup-point.dto';
+import { UpdatePickupPointDto } from './dto/update-pickup-point.dto';
+import { ResolveMapsDto } from './dto/resolve-maps.dto';
 import { RpService } from './rp.service';
 
 @Controller('rp')
@@ -101,6 +104,64 @@ export class RpController {
     return this.service.cancelIssuedPass(user.id, claimId);
   }
 
+  // ── Puntos de cobro del RP ─────────────────────────────────────────────────
+  // Rutas estáticas ('pickup-points/...') priorizadas sobre el param `:id`.
+
+  @Get('pickup-points')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.RP)
+  listPickupPoints(@CurrentUser() user: AuthUser) {
+    return this.service.listPickupPoints(user.id);
+  }
+
+  @Post('pickup-points')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.RP)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @HttpCode(HttpStatus.CREATED)
+  createPickupPoint(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreatePickupPointDto,
+  ) {
+    return this.service.createPickupPoint(user.id, dto);
+  }
+
+  // Resuelve un link de Maps a coords para previsualizar en el mapa al pegarlo.
+  // Lo usan el RP, el admin y el organizador (no requiere scope de rp).
+  @Post('pickup-points/resolve')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.RP, Role.ADMIN, Role.PROMOTER)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @HttpCode(HttpStatus.OK)
+  resolvePickupLink(@Body() dto: ResolveMapsDto) {
+    return this.service.resolvePickupLink(dto.url);
+  }
+
+  @Patch('pickup-points/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.RP)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @HttpCode(HttpStatus.OK)
+  updatePickupPoint(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdatePickupPointDto,
+  ) {
+    return this.service.updatePickupPoint(user.id, id, dto);
+  }
+
+  @Delete('pickup-points/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.RP)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @HttpCode(HttpStatus.OK)
+  deletePickupPoint(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.service.deletePickupPoint(user.id, id);
+  }
+
   // ── RPs gestionados por el organizador (scoped a su propio promoter) ───────
   // Estas rutas son estáticas en su primer segmento ('promoter'), por lo que el
   // router de Fastify las prioriza sobre el param `:id` de abajo.
@@ -128,6 +189,57 @@ export class RpController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.service.getByIdForPromoter(user.id, id);
+  }
+
+  // Puntos de cobro de un RP de mi organización (organizador).
+  @Get('promoter/mine/:id/pickup-points')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER)
+  listMinePickupPoints(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.service.listPickupPointsForPromoter(user.id, id);
+  }
+
+  @Post('promoter/mine/:id/pickup-points')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @HttpCode(HttpStatus.CREATED)
+  createMinePickupPoint(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreatePickupPointDto,
+  ) {
+    return this.service.createPickupPointForPromoter(user.id, id, dto);
+  }
+
+  @Patch('promoter/mine/:id/pickup-points/:pointId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @HttpCode(HttpStatus.OK)
+  updateMinePickupPoint(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('pointId', ParseUUIDPipe) pointId: string,
+    @Body() dto: UpdatePickupPointDto,
+  ) {
+    return this.service.updatePickupPointForPromoter(user.id, id, pointId, dto);
+  }
+
+  @Delete('promoter/mine/:id/pickup-points/:pointId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @HttpCode(HttpStatus.OK)
+  deleteMinePickupPoint(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('pointId', ParseUUIDPipe) pointId: string,
+  ) {
+    return this.service.deletePickupPointForPromoter(user.id, id, pointId);
   }
 
   @Get('promoter/mine/:id/stats')
@@ -194,6 +306,51 @@ export class RpController {
   @HttpCode(HttpStatus.OK)
   toggleActive(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.toggleActive(id);
+  }
+
+  // Puntos de cobro de cualquier RP (admin general).
+  @Get(':id/pickup-points')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  listRpPickupPoints(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.listPickupPointsForAdmin(id);
+  }
+
+  @Post(':id/pickup-points')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @HttpCode(HttpStatus.CREATED)
+  createRpPickupPoint(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreatePickupPointDto,
+  ) {
+    return this.service.createPickupPointForAdmin(id, dto);
+  }
+
+  @Patch(':id/pickup-points/:pointId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @HttpCode(HttpStatus.OK)
+  updateRpPickupPoint(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('pointId', ParseUUIDPipe) pointId: string,
+    @Body() dto: UpdatePickupPointDto,
+  ) {
+    return this.service.updatePickupPointForAdmin(id, pointId, dto);
+  }
+
+  @Delete(':id/pickup-points/:pointId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @HttpCode(HttpStatus.OK)
+  deleteRpPickupPoint(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('pointId', ParseUUIDPipe) pointId: string,
+  ) {
+    return this.service.deletePickupPointForAdmin(id, pointId);
   }
 
   @Patch(':id/zone')

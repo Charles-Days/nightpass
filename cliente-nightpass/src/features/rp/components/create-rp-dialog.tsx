@@ -36,6 +36,7 @@ export function CreateRpDialog({
   const { mutate: createRp, isPending } = useCreateRp(basePath);
   const [email, setEmail] = React.useState('');
   const [displayName, setDisplayName] = React.useState('');
+  const [phone, setPhone] = React.useState('');
   const [state, setState] = React.useState('');
   const [city, setCity] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -57,6 +58,7 @@ export function CreateRpDialog({
     if (open) {
       setEmail('');
       setDisplayName('');
+      setPhone('');
       setState('');
       setCity('');
       setPassword('');
@@ -99,6 +101,7 @@ export function CreateRpDialog({
     const data: any = {
       email,
       displayName,
+      phone: phone.trim() || undefined,
       state: state.trim() || undefined,
       city: city.trim() || undefined,
       password: password || undefined,
@@ -148,6 +151,21 @@ export function CreateRpDialog({
               onChange={(e) => setDisplayName(e.target.value)}
               className="bg-white/[0.05] border-white/14 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
               required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="rp-create-phone" className="text-white/70 text-xs">
+              Teléfono / WhatsApp
+            </Label>
+            <Input
+              id="rp-create-phone"
+              type="tel"
+              inputMode="tel"
+              placeholder="Ej. 7771234567"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="bg-white/[0.05] border-white/14 text-white rounded-xl h-10 placeholder-white/30 text-sm focus:border-primary/50"
             />
           </div>
 

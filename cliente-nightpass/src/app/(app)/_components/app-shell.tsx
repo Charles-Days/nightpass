@@ -163,7 +163,7 @@ const ROLE_LABEL: Record<Role, string> = {
   VENUE_STAFF: 'Staff de local',
   PROMOTER: 'Organizador',
   PROMOTER_STAFF: 'Staff de organizador',
-  RP: 'Relaciones Públicas',
+  RP: 'RP',
   CUSTOMER: 'Cliente',
 };
 
@@ -231,7 +231,7 @@ function SidebarBody({
           onNavigate={onNavigate}
         />
         <NavSection
-          title="Relaciones Públicas"
+          title="RP"
           items={rpItems}
           pathname={pathname}
           onNavigate={onNavigate}

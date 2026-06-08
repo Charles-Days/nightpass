@@ -203,7 +203,6 @@ export class CatalogService {
                 priceCents: true,
                 currency: true,
                 capacity: true,
-                minLoyaltyTier: true,
               },
             },
           },
@@ -267,7 +266,6 @@ export class CatalogService {
                 priceCents: true,
                 currency: true,
                 capacity: true,
-                minLoyaltyTier: true,
               },
             },
           },
@@ -540,7 +538,6 @@ export class CatalogService {
         priceCents: true,
         currency: true,
         capacity: true,
-        minLoyaltyTier: true,
         // Overrides por-tier para el precio en efectivo (null = heredar del owner).
         cashFeeMode: true,
         cashFeePctOverride: true,
@@ -647,7 +644,6 @@ export class CatalogService {
       cashPriceCents,
       currency: tier.currency,
       capacity: tier.capacity,
-      minLoyaltyTier: tier.minLoyaltyTier,
       nextPrice: resolved.next
         ? { priceCents: resolved.next.priceCents, startsAt: resolved.next.startsAt }
         : null,

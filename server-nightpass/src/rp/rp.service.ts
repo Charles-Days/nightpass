@@ -6,14 +6,18 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { EventStatus, PassClaimStatus, Role, RpCommissionType } from '@prisma/client';
+import { EventStatus, PassClaimStatus, Prisma, Role, RpCommissionType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailerService } from '../mailer/mailer.service';
 import { resolveTierPrice } from '../events/tier-pricing';
+import { resolveMapsCoords } from '../common/maps';
 import { CreateRpDto } from './dto/create-rp.dto';
 import { IssuePassDto } from './dto/issue-pass.dto';
 import { ListRpQuery } from './dto/list-rp.query';
 import { SetCommissionRuleDto } from './dto/set-commission-rule.dto';
+import { CreatePickupPointDto } from './dto/create-pickup-point.dto';
+import { UpdatePickupPointDto } from './dto/update-pickup-point.dto';
+import { PickupWindowDto } from './dto/pickup-window.dto';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 
@@ -72,11 +76,12 @@ export class RpService {
     const rpProfile = await this.prisma.$transaction(async (tx) => {
       let userId: string;
 
+      const phone = dto.phone?.trim() || undefined;
       if (existingUser) {
         // Promote to Role.RP
         await tx.user.update({
           where: { id: existingUser.id },
-          data: { role: Role.RP },
+          data: { role: Role.RP, ...(phone ? { phone } : {}) },
         });
         userId = existingUser.id;
       } else {
@@ -86,6 +91,7 @@ export class RpService {
             email,
             name: displayName,
             role: Role.RP,
+            phone: phone ?? null,
             passwordHash: passwordHash!,
             mustChangePassword: true,
           },
@@ -303,6 +309,7 @@ export class RpService {
             email: true,
             name: true,
             role: true,
+            phone: true,
           },
         },
         promoter: {
@@ -335,6 +342,7 @@ export class RpService {
             email: true,
             name: true,
             role: true,
+            phone: true,
           },
         },
         promoter: {
@@ -358,12 +366,22 @@ export class RpService {
     return rp;
   }
 
-  async updateZone(id: string, dto: { state?: string; city?: string }) {
+  async updateZone(
+    id: string,
+    dto: { state?: string; city?: string; phone?: string },
+  ) {
     const rp = await this.prisma.rpProfile.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, userId: true },
     });
     if (!rp) throw new NotFoundException('Perfil de RP no encontrado');
+    // El teléfono vive en el User; zona en el RpProfile.
+    if (dto.phone !== undefined) {
+      await this.prisma.user.update({
+        where: { id: rp.userId },
+        data: { phone: dto.phone.trim() || null },
+      });
+    }
     return this.prisma.rpProfile.update({
       where: { id },
       data: {
@@ -623,12 +641,19 @@ export class RpService {
       });
     }
 
+    // ¿Tiene al menos un evento asignado con pago en efectivo activo? Si no,
+    // no tiene sentido mostrarle la maquinaria de cobranza/puntos de cobro.
+    const cashEventCount = await this.prisma.eventRp.count({
+      where: { rpProfileId: rpId, event: { allowCashPayment: true } },
+    });
+
     return {
       rpId,
       displayName: rp.displayName,
       rpCode: rp.rpCode,
       totalSales: orders.length,
       totalEarningsCents,
+      hasCashEvents: cashEventCount > 0,
       eventStats,
       sales: orders.map((o) => ({
         id: o.id,
@@ -768,5 +793,220 @@ export class RpService {
       throw new ConflictException('El vale ya fue reclamado o cancelado');
     }
     return { id: claimId, status: PassClaimStatus.CANCELLED };
+  }
+
+  // ── Puntos de cobro del RP ─────────────────────────────────────────────────
+  // Lugares fijos donde el RP entrega los boletos en efectivo. El cliente elige
+  // el más cercano al pedir. Soft delete (isActive=false) para no romper
+  // solicitudes históricas que ya apuntan al punto.
+
+  /** Mapea una fila de RpPickupPoint a la forma del contrato público. */
+  private toPickupPoint(row: {
+    id: string;
+    label: string;
+    reference: string | null;
+    latitude: number;
+    longitude: number;
+    mapsUrl: string | null;
+    windows: Prisma.JsonValue;
+    isVenueDoor: boolean;
+    isActive: boolean;
+  }) {
+    return {
+      id: row.id,
+      label: row.label,
+      reference: row.reference,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      mapsUrl: row.mapsUrl,
+      windows: (row.windows ?? []) as unknown as PickupWindowDto[],
+      isVenueDoor: row.isVenueDoor,
+      isActive: row.isActive,
+    };
+  }
+
+  /**
+   * Resuelve las coordenadas de un punto: usa lat/lng explícitas si vienen,
+   * si no las deriva del link de Google Maps. Lanza 400 si no logra ubicarlo.
+   */
+  private async resolveCoords(
+    latitude?: number,
+    longitude?: number,
+    mapsUrl?: string,
+  ): Promise<{ lat: number; lng: number }> {
+    if (latitude != null && longitude != null) {
+      return { lat: latitude, lng: longitude };
+    }
+    if (mapsUrl) {
+      const coords = await resolveMapsCoords(mapsUrl);
+      if (coords) return coords;
+    }
+    throw new BadRequestException(
+      'No pudimos ubicar el punto. Pega un link de Google Maps válido o las coordenadas.',
+    );
+  }
+
+  /** Resuelve un link de Google Maps a coordenadas (para previsualizar en el
+   *  mapa al pegar el link, antes de guardar). Lanza 400 si no se logra. */
+  async resolvePickupLink(url: string): Promise<{ lat: number; lng: number }> {
+    const coords = await resolveMapsCoords(url);
+    if (!coords) {
+      throw new BadRequestException(
+        'No pudimos leer ese link. Usa "Compartir → copiar vínculo" de Google Maps o pega las coordenadas.',
+      );
+    }
+    return coords;
+  }
+
+  // ── Puntos de cobro: core por rpId (reusado por RP self, admin y promoter) ──
+
+  private async listPickupPointsById(rpId: string) {
+    const points = await this.prisma.rpPickupPoint.findMany({
+      where: { rpProfileId: rpId, isActive: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    return points.map((p) => this.toPickupPoint(p));
+  }
+
+  private async createPickupPointById(rpId: string, dto: CreatePickupPointDto) {
+    const { lat, lng } = await this.resolveCoords(
+      dto.latitude,
+      dto.longitude,
+      dto.mapsUrl,
+    );
+    const point = await this.prisma.rpPickupPoint.create({
+      data: {
+        rpProfileId: rpId,
+        label: dto.label.trim(),
+        reference: dto.reference?.trim() || null,
+        latitude: lat,
+        longitude: lng,
+        mapsUrl: dto.mapsUrl?.trim() || null,
+        windows: (dto.windows ?? []) as unknown as Prisma.InputJsonValue,
+        isVenueDoor: dto.isVenueDoor ?? false,
+      },
+    });
+    return this.toPickupPoint(point);
+  }
+
+  private async updatePickupPointById(
+    rpId: string,
+    id: string,
+    dto: UpdatePickupPointDto,
+  ) {
+    const point = await this.prisma.rpPickupPoint.findUnique({
+      where: { id },
+      select: { id: true, rpProfileId: true, mapsUrl: true },
+    });
+    if (!point) throw new NotFoundException('Punto de cobro no encontrado');
+    if (point.rpProfileId !== rpId) {
+      throw new ForbiddenException('Este punto no pertenece a este RP');
+    }
+
+    const data: Prisma.RpPickupPointUpdateInput = {};
+    if (dto.label !== undefined) data.label = dto.label.trim();
+    if (dto.reference !== undefined) data.reference = dto.reference.trim() || null;
+    if (dto.mapsUrl !== undefined) data.mapsUrl = dto.mapsUrl.trim() || null;
+    if (dto.windows !== undefined) {
+      data.windows = dto.windows as unknown as Prisma.InputJsonValue;
+    }
+    if (dto.isVenueDoor !== undefined) data.isVenueDoor = dto.isVenueDoor;
+
+    const explicitCoords = dto.latitude != null && dto.longitude != null;
+    const mapsChanged =
+      dto.mapsUrl !== undefined && dto.mapsUrl?.trim() !== (point.mapsUrl ?? '');
+    if (explicitCoords) {
+      data.latitude = dto.latitude;
+      data.longitude = dto.longitude;
+    } else if (mapsChanged && dto.mapsUrl) {
+      const { lat, lng } = await this.resolveCoords(undefined, undefined, dto.mapsUrl);
+      data.latitude = lat;
+      data.longitude = lng;
+    }
+
+    const updated = await this.prisma.rpPickupPoint.update({ where: { id }, data });
+    return this.toPickupPoint(updated);
+  }
+
+  private async deletePickupPointById(rpId: string, id: string) {
+    const point = await this.prisma.rpPickupPoint.findUnique({
+      where: { id },
+      select: { id: true, rpProfileId: true },
+    });
+    if (!point) throw new NotFoundException('Punto de cobro no encontrado');
+    if (point.rpProfileId !== rpId) {
+      throw new ForbiddenException('Este punto no pertenece a este RP');
+    }
+    await this.prisma.rpPickupPoint.update({
+      where: { id },
+      data: { isActive: false },
+    });
+    return { ok: true };
+  }
+
+  // ── RP autenticado (self) ──────────────────────────────────────────────────
+
+  async listPickupPoints(userId: string) {
+    const rp = await this.getByUserId(userId);
+    return this.listPickupPointsById(rp.id);
+  }
+  async createPickupPoint(userId: string, dto: CreatePickupPointDto) {
+    const rp = await this.getByUserId(userId);
+    return this.createPickupPointById(rp.id, dto);
+  }
+  async updatePickupPoint(userId: string, id: string, dto: UpdatePickupPointDto) {
+    const rp = await this.getByUserId(userId);
+    return this.updatePickupPointById(rp.id, id, dto);
+  }
+  async deletePickupPoint(userId: string, id: string) {
+    const rp = await this.getByUserId(userId);
+    return this.deletePickupPointById(rp.id, id);
+  }
+
+  // ── Admin (cualquier rpId) ─────────────────────────────────────────────────
+
+  listPickupPointsForAdmin(rpId: string) {
+    return this.listPickupPointsById(rpId);
+  }
+  createPickupPointForAdmin(rpId: string, dto: CreatePickupPointDto) {
+    return this.createPickupPointById(rpId, dto);
+  }
+  updatePickupPointForAdmin(rpId: string, id: string, dto: UpdatePickupPointDto) {
+    return this.updatePickupPointById(rpId, id, dto);
+  }
+  deletePickupPointForAdmin(rpId: string, id: string) {
+    return this.deletePickupPointById(rpId, id);
+  }
+
+  // ── Promoter (solo RPs de su organización) ─────────────────────────────────
+
+  async listPickupPointsForPromoter(userId: string, rpId: string) {
+    const promoterId = await this.resolvePromoterId(userId);
+    await this.assertRpBelongsToPromoter(rpId, promoterId);
+    return this.listPickupPointsById(rpId);
+  }
+  async createPickupPointForPromoter(
+    userId: string,
+    rpId: string,
+    dto: CreatePickupPointDto,
+  ) {
+    const promoterId = await this.resolvePromoterId(userId);
+    await this.assertRpBelongsToPromoter(rpId, promoterId);
+    return this.createPickupPointById(rpId, dto);
+  }
+  async updatePickupPointForPromoter(
+    userId: string,
+    rpId: string,
+    id: string,
+    dto: UpdatePickupPointDto,
+  ) {
+    const promoterId = await this.resolvePromoterId(userId);
+    await this.assertRpBelongsToPromoter(rpId, promoterId);
+    return this.updatePickupPointById(rpId, id, dto);
+  }
+  async deletePickupPointForPromoter(userId: string, rpId: string, id: string) {
+    const promoterId = await this.resolvePromoterId(userId);
+    await this.assertRpBelongsToPromoter(rpId, promoterId);
+    return this.deletePickupPointById(rpId, id);
   }
 }

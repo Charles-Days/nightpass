@@ -44,7 +44,7 @@ export default function RpsAdminPage() {
       <header className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl text-white">
-            Relaciones Públicas (RPs)
+            RP
           </h1>
           <p className="text-sm text-muted-foreground">
             Gestiona los RPs, asigna comisiones por evento y consulta sus ganancias.

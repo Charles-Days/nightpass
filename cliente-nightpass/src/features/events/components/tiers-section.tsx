@@ -14,8 +14,7 @@ import {
 import { Input } from '@/core/components/ui/input';
 import { Field } from '@/core/components/ui/field';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/core/components/ui/tabs';
-import type { CashFeeMode, LoyaltyTier, TierPricePhase } from '@/core/types/api';
-import { TIER_STYLES } from '@/features/loyalty';
+import type { CashFeeMode, TierPricePhase } from '@/core/types/api';
 import { useEventDetail } from '../hooks/use-event-detail';
 import { useCreateTier } from '../hooks/use-create-tier';
 import { useUpdateTier } from '../hooks/use-update-tier';
@@ -29,14 +28,6 @@ import {
   STRIPE_FEE_PCT,
   STRIPE_FIXED_CENTS,
 } from '@/core/lib/utils/fees';
-
-const LOYALTY_TIER_OPTIONS: { value: '' | LoyaltyTier; label: string }[] = [
-  { value: '', label: 'Abierto a todos' },
-  { value: 'ROOKIE', label: 'Rookie y arriba' },
-  { value: 'REGULAR', label: 'Regular y arriba' },
-  { value: 'INSIDER', label: 'Insider y arriba' },
-  { value: 'VIP', label: 'Solo VIP' },
-];
 
 const DAY_MS = 86_400_000;
 
@@ -589,7 +580,6 @@ interface TierRowProps {
     priceCents: number;
     currency: string;
     capacity: number | null;
-    minLoyaltyTier?: LoyaltyTier | null;
     prices?: TierPricePhase[];
     cashFeeMode?: CashFeeMode | null;
     cashFeePctOverride?: number | null;
@@ -613,11 +603,6 @@ function TierRow({ eventId, eventStartsAt, ownerFeePct, tier }: TierRowProps) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="truncate font-medium">{tier.name}</p>
-            {tier.minLoyaltyTier ? (
-              <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-primary">
-                Min {TIER_STYLES[tier.minLoyaltyTier].label}
-              </span>
-            ) : null}
             {phases.length > 0 ? (
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-emerald-300">
                 <TrendingUp className="size-2.5" /> {phases.length} subida{phases.length === 1 ? '' : 's'}
@@ -709,7 +694,6 @@ export function TiersSection({ eventId }: Props) {
   const [priceMxn, setPriceMxn] = React.useState('');
   const [netMxn, setNetMxn] = React.useState('');
   const [capacity, setCapacity] = React.useState('');
-  const [minLoyaltyTier, setMinLoyaltyTier] = React.useState<'' | LoyaltyTier>('');
   const [phases, setPhases] = React.useState<PhaseDraft[]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -750,7 +734,6 @@ export function TiersSection({ eventId }: Props) {
     setNetMxn('');
     setPriceMode('gross');
     setCapacity('');
-    setMinLoyaltyTier('');
     setPhases([]);
     setCash(defaultCashDraft(platformFeePct ?? 0));
     setError(null);
@@ -815,7 +798,6 @@ export function TiersSection({ eventId }: Props) {
         currency: 'MXN',
         capacity: capacityInt,
         position: tiers.length,
-        minLoyaltyTier: minLoyaltyTier === '' ? null : minLoyaltyTier,
         prices: parsedPhases.length ? parsedPhases : undefined,
         ...cashPayload,
       });
@@ -964,29 +946,6 @@ export function TiersSection({ eventId }: Props) {
             ) : null}
           </Field>
         </div>
-
-        <Field
-          label="Tier mínimo (loyalty)"
-          htmlFor="tier-min-loyalty"
-          error={undefined}
-        >
-          <select
-            id="tier-min-loyalty"
-            value={minLoyaltyTier}
-            onChange={(e) => setMinLoyaltyTier(e.target.value as '' | LoyaltyTier)}
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          >
-            {LOYALTY_TIER_OPTIONS.map((opt) => (
-              <option key={opt.value || 'open'} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Restringe la compra a usuarios con este nivel de NightPass o
-            superior. Por defecto, abierto a todos.
-          </p>
-        </Field>
 
         {/* Subidas de precio programadas (opcional) */}
         <div className="rounded-lg border border-white/14 bg-white/[0.025] p-3">

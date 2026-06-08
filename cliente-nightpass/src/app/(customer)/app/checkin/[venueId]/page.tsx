@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, MapPin } from 'lucide-react';
 import { paths } from '@/core/config/paths';
 import { ClientApiError } from '@/core/lib/api/client-client';
-import { TIER_STYLES, TierBadge, useVenueCheckin } from '@/features/loyalty';
+import { useVenueCheckin } from '@/features/loyalty';
 import type { VenueCheckinResponse } from '@/core/types/api';
 
 type Phase =
@@ -210,14 +210,11 @@ function BadFormat() {
 }
 
 function Success({ data }: { data: VenueCheckinResponse }) {
-  const tierStyle = TIER_STYLES[data.tier];
   const already = data.awarded === 0 && data.alreadyCheckedInToday;
 
   return (
     <div className="np-pop-in relative w-full overflow-hidden rounded-[26px] border border-white/12 bg-white/[0.05] p-7 text-center">
-      <div
-        className={`absolute inset-x-8 -top-20 h-44 rounded-full bg-gradient-to-br ${tierStyle.gradient} opacity-30 blur-3xl`}
-      />
+      <div className="absolute inset-x-8 -top-20 h-44 rounded-full bg-gradient-to-br from-purple-700 to-purple-900 opacity-30 blur-3xl" />
       {!already ? (
         <div
           aria-hidden
@@ -245,7 +242,6 @@ function Success({ data }: { data: VenueCheckinResponse }) {
           </>
         )}
         <div className="mt-5 flex flex-col items-center gap-2">
-          <TierBadge tier={data.tier} />
           <p className="text-xs text-white/55">
             Racha: <span className="font-semibold text-white">{data.newStreakDays} días</span>
           </p>

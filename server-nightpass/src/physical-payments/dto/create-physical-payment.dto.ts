@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsInt,
+  IsISO8601,
   IsOptional,
   IsString,
   IsUUID,
@@ -41,4 +42,15 @@ export class CreatePhysicalPaymentDto {
   @IsString()
   @MaxLength(280)
   note?: string;
+
+  // Punto de cobro elegido por el cliente. Si viene, fuerza el RP dueño del punto
+  // como vendedor asignado (override del enrutamiento geográfico).
+  @IsOptional()
+  @IsUUID()
+  pickupPointId?: string;
+
+  // Momento acordado de recogida (ISO8601). Opcional.
+  @IsOptional()
+  @IsISO8601()
+  pickupAt?: string;
 }

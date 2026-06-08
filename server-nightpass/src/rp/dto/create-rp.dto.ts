@@ -12,6 +12,12 @@ export class CreateRpDto {
   @MaxLength(100)
   displayName!: string;
 
+  // Teléfono/WhatsApp del RP — el cliente lo usa para coordinar el cobro.
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  phone?: string;
+
   // Zona del RP — para enrutar solicitudes de pago en efectivo de su ciudad/estado.
   @IsOptional()
   @IsString()

@@ -1,5 +1,3 @@
-import { LoyaltyTier } from '@prisma/client';
-
 /**
  * Base point awards before multipliers.
  */
@@ -26,26 +24,6 @@ export const MULTIPLIERS = {
   BIRTHDAY: 3.0,
 } as const;
 
-/**
- * Year-points thresholds for each tier (sliding 365-day window).
- */
-export const TIER_THRESHOLDS: Record<LoyaltyTier, number> = {
-  ROOKIE: 0,
-  REGULAR: 500,
-  INSIDER: 2000,
-  VIP: 5000,
-};
-
-/**
- * Ordinal ranks used to compare tiers (e.g. user.tier >= eventTier.minLoyaltyTier).
- */
-export const TIER_RANK: Record<LoyaltyTier, number> = {
-  ROOKIE: 0,
-  REGULAR: 1,
-  INSIDER: 2,
-  VIP: 3,
-};
-
 export const STREAK = {
   FREEZES_PER_MONTH: 2,
   /** Geofence tolerance (m) added to venue radius for venue check-in. */
@@ -61,23 +39,3 @@ export const STREAK_MILESTONES: Array<{ days: number; bonus: number }> = [
   { days: 100, bonus: POINTS.STREAK_MILESTONE_100 },
   { days: 365, bonus: POINTS.STREAK_MILESTONE_365 },
 ];
-
-/**
- * Resolve the tier for a given yearPoints total.
- */
-export function tierFromYearPoints(yearPoints: number): LoyaltyTier {
-  if (yearPoints >= TIER_THRESHOLDS.VIP) return 'VIP';
-  if (yearPoints >= TIER_THRESHOLDS.INSIDER) return 'INSIDER';
-  if (yearPoints >= TIER_THRESHOLDS.REGULAR) return 'REGULAR';
-  return 'ROOKIE';
-}
-
-/**
- * Resolve the next tier above the given one, or null if already at the top.
- */
-export function nextTier(tier: LoyaltyTier): LoyaltyTier | null {
-  if (tier === 'ROOKIE') return 'REGULAR';
-  if (tier === 'REGULAR') return 'INSIDER';
-  if (tier === 'INSIDER') return 'VIP';
-  return null;
-}

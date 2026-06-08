@@ -24,7 +24,7 @@ export function RewardsTabs({ state, city, rankingOptIn, userId }: Props) {
 
   return (
     <div>
-      <div className="relative grid grid-cols-2 rounded-full border border-white/10 bg-white/[0.05] p-1">
+      <div className="relative isolate grid grid-cols-2 rounded-full border border-white/10 bg-white/[0.05] p-1">
         <span
           aria-hidden
           className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] shadow-[0_4px_16px_-4px_rgba(168,85,247,0.6)] transition-transform duration-300 ease-out will-change-transform"
