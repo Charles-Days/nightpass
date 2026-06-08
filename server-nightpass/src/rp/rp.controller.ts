@@ -53,6 +53,24 @@ export class RpController {
     return this.service.resolveCode(code);
   }
 
+  // Desglose por evento de comisiones/ventas/ganancias de cada RP (gestión).
+  @Get('events/:eventId/breakdown')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  eventBreakdown(@Param('eventId', ParseUUIDPipe) eventId: string) {
+    return this.service.getEventRpBreakdown(eventId);
+  }
+
+  @Get('promoter/events/:eventId/breakdown')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER)
+  eventBreakdownForPromoter(
+    @CurrentUser() user: AuthUser,
+    @Param('eventId', ParseUUIDPipe) eventId: string,
+  ) {
+    return this.service.getEventRpBreakdownForPromoter(user.id, eventId);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.RP)

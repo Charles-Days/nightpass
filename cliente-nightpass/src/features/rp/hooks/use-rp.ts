@@ -127,6 +127,49 @@ export function useRpMe() {
   });
 }
 
+// ── Desglose por evento: comisiones/ventas/ganancias de cada RP ──────────────
+
+export interface EventRpBreakdownRow {
+  rpProfileId: string;
+  displayName: string;
+  rpCode: string;
+  email: string;
+  isActive: boolean;
+  assigned: boolean;
+  commission: {
+    type: 'PER_N_TICKETS' | 'PERCENTAGE';
+    nTickets: number | null;
+    rewardCents: number | null;
+    percentage: number | null;
+    currency: string;
+    scope: 'event' | 'global';
+  } | null;
+  sales: number;
+  earningsCents: number;
+}
+
+export interface EventRpBreakdown {
+  event: { id: string; title: string };
+  rps: EventRpBreakdownRow[];
+  totals: { sales: number; earningsCents: number };
+}
+
+/** Comisiones/ventas/ganancias de los RPs de un evento. `promoter` usa la ruta
+ *  scoped del organizador; por defecto la de admin. */
+export function useEventRpBreakdown(
+  eventId: string,
+  opts?: { promoter?: boolean },
+) {
+  const promoter = opts?.promoter === true;
+  const url = promoter
+    ? `/api/rp/promoter/events/${eventId}/breakdown`
+    : `/api/rp/events/${eventId}/breakdown`;
+  return useQuery({
+    queryKey: ['rp-event-breakdown', eventId, promoter ? 'promoter' : 'admin'],
+    queryFn: () => clientFetch<EventRpBreakdown>(url),
+  });
+}
+
 export interface IssuedPass {
   id: string;
   token: string;

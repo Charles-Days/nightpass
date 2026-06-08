@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Calendar, Tag, Banknote, Flame } from 'lucide-react';
+import { Calendar, Tag, Banknote, Flame, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { clientFetch, ClientApiError } from '@/core/lib/api/client-client';
 import { CollapsibleCard } from '@/core/components/ui/collapsible-card';
@@ -12,6 +12,7 @@ import { EventForm } from './event-form';
 import { EventFormPromoter, toPromoterEventDefaults } from './event-form-promoter';
 import { TiersSection } from './tiers-section';
 import { CashPaymentSection } from './cash-payment-section';
+import { EventRpBreakdown } from '@/features/rp/components/event-rp-breakdown';
 import { EventNotifyCard } from './event-notify-card';
 
 function venueDefaults(event: Event) {
@@ -102,6 +103,13 @@ export function AdminEventEdit({ event, onDone }: { event: Event; onDone: () => 
         title="Pago en efectivo (RP)"
       >
         <CashPaymentSection eventId={event.id} />
+      </CollapsibleCard>
+
+      <CollapsibleCard
+        icon={<TrendingUp className="size-4 text-primary" />}
+        title="Comisiones y ventas de RPs"
+      >
+        <EventRpBreakdown eventId={event.id} />
       </CollapsibleCard>
 
       <CollapsibleCard
