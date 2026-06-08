@@ -700,28 +700,42 @@ export class PassesService {
     const venueId = pass.event.venueId;
     const passVenue = pass.event.venue;
 
-    if (scanner.role !== Role.ADMIN) {
-      if (scanner.role !== Role.VENUE_STAFF && scanner.role !== Role.VENUE_OWNER) {
-        throw new ForbiddenException('Solo staff/owner pueden escanear');
+    if (scanner.role === Role.VENUE_OWNER) {
+      const owner = await this.prisma.venueOwner.findUnique({
+        where: { userId_venueId: { userId: scanner.id, venueId } },
+        select: { userId: true },
+      });
+      if (!owner) {
+        throw new ForbiddenException('No perteneces a este local');
       }
-
-      if (scanner.role === Role.VENUE_OWNER) {
-        const owner = await this.prisma.venueOwner.findUnique({
-          where: { userId_venueId: { userId: scanner.id, venueId } },
-          select: { userId: true },
-        });
-        if (!owner) {
-          throw new ForbiddenException('No perteneces a este local');
-        }
-      } else {
-        const staff = await this.prisma.venueStaff.findUnique({
-          where: { venueId_userId: { venueId, userId: scanner.id } },
-          select: { status: true },
-        });
-        if (!staff || staff.status !== VenueStaffStatus.ACTIVE) {
-          throw new ForbiddenException('No perteneces a este local');
-        }
+    } else if (scanner.role === Role.VENUE_STAFF) {
+      const staff = await this.prisma.venueStaff.findUnique({
+        where: { venueId_userId: { venueId, userId: scanner.id } },
+        select: { status: true },
+      });
+      if (!staff || staff.status !== VenueStaffStatus.ACTIVE) {
+        throw new ForbiddenException('No perteneces a este local');
       }
+    } else if (scanner.role === Role.RP) {
+      // El RP solo escanea pases de los eventos a los que está asignado (EventRp).
+      const rp = await this.prisma.rpProfile.findUnique({
+        where: { userId: scanner.id },
+        select: { id: true, isActive: true },
+      });
+      if (!rp || !rp.isActive) {
+        throw new ForbiddenException('RP inactivo');
+      }
+      const assigned = await this.prisma.eventRp.findUnique({
+        where: {
+          eventId_rpProfileId: { eventId: pass.eventId, rpProfileId: rp.id },
+        },
+        select: { eventId: true },
+      });
+      if (!assigned) {
+        throw new ForbiddenException('No estás asignado a este evento');
+      }
+    } else if (scanner.role !== Role.ADMIN) {
+      throw new ForbiddenException('No autorizado para escanear');
     }
 
     // 4. Mismo día (UTC) — futuro: usar timezone del venue

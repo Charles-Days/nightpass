@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useToggleRpActive, type RpProfile } from '../hooks/use-rp';
 import { toast } from 'sonner';
+import { ClientApiError } from '@/core/lib/api/client-client';
 import { Button } from '@/core/components/ui/button';
 import { Badge } from '@/core/components/ui/badge';
 import {
@@ -28,8 +29,15 @@ export function RpTable({ rps, isLoading, onViewDetail, basePath = '/api/rp' }: 
       onSuccess: () => {
         toast.success('Estado del RP actualizado correctamente');
       },
-      onError: (err: any) => {
-        toast.error(err.payload?.message || 'Error al cambiar estado');
+      onError: (err) => {
+        const msg =
+          err instanceof ClientApiError &&
+          err.payload &&
+          typeof err.payload === 'object' &&
+          typeof (err.payload as { message?: unknown }).message === 'string'
+            ? (err.payload as { message: string }).message
+            : 'Error al cambiar estado';
+        toast.error(msg);
       },
     });
   };
@@ -52,7 +60,8 @@ export function RpTable({ rps, isLoading, onViewDetail, basePath = '/api/rp' }: 
 
   return (
     <div className="overflow-hidden rounded-2xl border border-white/12 bg-[#0c0c12] text-xs">
-      <div className="grid grid-cols-5 border-b border-white/12 bg-white/[0.035] p-4 font-semibold text-white/70">
+      {/* Header solo en desktop — en móvil cada fila es una card. */}
+      <div className="hidden border-b border-white/12 bg-white/[0.035] p-4 font-semibold text-white/70 md:grid md:grid-cols-5">
         <span>Código</span>
         <span>Nombre / Email</span>
         <span>Organizador</span>
@@ -64,68 +73,71 @@ export function RpTable({ rps, isLoading, onViewDetail, basePath = '/api/rp' }: 
           <div
             key={rp.id}
             onClick={() => onViewDetail(rp.id)}
-            className="grid grid-cols-5 p-4 items-center hover:bg-white/[0.02] transition-colors cursor-pointer"
+            className="flex cursor-pointer flex-col gap-3 p-4 transition-colors hover:bg-white/[0.02] md:grid md:grid-cols-5 md:items-center md:gap-0"
           >
             <div>
-              <span className="font-mono text-purple-300 font-bold bg-white/5 border border-white/14 px-2 py-0.5 rounded">
+              <span className="rounded border border-white/14 bg-white/5 px-2 py-0.5 font-mono font-bold text-purple-300">
                 {rp.rpCode}
               </span>
             </div>
 
-            <div className="space-y-0.5">
-              <span className="font-medium text-white text-sm block">
+            <div className="min-w-0 space-y-0.5">
+              <span className="block text-sm font-medium text-white">
                 {rp.displayName}
               </span>
-              <span className="text-muted-foreground block truncate">
+              <span className="block truncate text-muted-foreground">
                 {rp.user?.email}
               </span>
             </div>
 
             <div className="text-muted-foreground">
               {rp.promoter?.name ? (
-                <Badge variant="outline" className="text-white border-white/22">
+                <Badge variant="outline" className="border-white/22 text-white">
                   {rp.promoter.name}
                 </Badge>
               ) : (
-                <span className="text-muted-foreground italic">Global</span>
+                <span className="italic text-muted-foreground">Global</span>
               )}
             </div>
 
-            <div className="flex justify-center">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={(e) => handleToggle(rp.id, e)}
-                disabled={toggling}
-                className="h-8 hover:bg-transparent"
-              >
-                {rp.isActive ? (
-                  <div className="flex items-center gap-1 text-emerald-400">
-                    <ToggleRight className="size-6" />
-                    <span>Activo</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <ToggleLeft className="size-6" />
-                    <span>Inactivo</span>
-                  </div>
-                )}
-              </Button>
-            </div>
+            {/* Estado + acciones: fila en móvil, celdas del grid en desktop. */}
+            <div className="flex items-center justify-between gap-3 border-t border-white/8 pt-3 md:contents md:border-0 md:pt-0">
+              <div className="md:flex md:justify-center">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => handleToggle(rp.id, e)}
+                  disabled={toggling}
+                  className="h-8 px-0 hover:bg-transparent md:px-3"
+                >
+                  {rp.isActive ? (
+                    <div className="flex items-center gap-1 text-emerald-400">
+                      <ToggleRight className="size-6" />
+                      <span>Activo</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <ToggleLeft className="size-6" />
+                      <span>Inactivo</span>
+                    </div>
+                  )}
+                </Button>
+              </div>
 
-            <div className="flex justify-end gap-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewDetail(rp.id);
-                }}
-                className="h-8 px-3 hover:bg-white/5 text-white/80 rounded-lg flex items-center gap-1"
-              >
-                <Eye className="size-3.5" />
-                Detalles
-              </Button>
+              <div className="md:flex md:justify-end">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewDetail(rp.id);
+                  }}
+                  className="flex h-8 items-center gap-1 rounded-lg px-3 text-white/80 hover:bg-white/5"
+                >
+                  <Eye className="size-3.5" />
+                  Detalles
+                </Button>
+              </div>
             </div>
           </div>
         ))}
