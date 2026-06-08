@@ -257,7 +257,7 @@ export class RpService {
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
-    const [assignments, rules, orders] = await Promise.all([
+    const [assignments, rules, orders, cashReqs] = await Promise.all([
       this.prisma.eventRp.findMany({
         where: { eventId },
         select: { rpProfileId: true },
@@ -273,18 +273,34 @@ export class RpService {
         },
         select: { referredByRpId: true, totalCents: true },
       }),
+      // Solicitudes de pago en efectivo (físico) asignadas a un RP en el evento.
+      this.prisma.physicalPaymentRequest.findMany({
+        where: { eventId, assignedRpId: { not: null } },
+        select: { assignedRpId: true, status: true, amountCents: true },
+      }),
     ]);
 
-    // RPs relevantes: asignados al evento, con regla específica, o con ventas.
+    // RPs relevantes: asignados, con regla específica, con ventas, o con
+    // solicitudes de efectivo asignadas.
     const rpIds = new Set<string>();
     assignments.forEach((a) => rpIds.add(a.rpProfileId));
     rules
       .filter((r) => r.eventId === eventId)
       .forEach((r) => rpIds.add(r.rpProfileId));
     orders.forEach((o) => o.referredByRpId && rpIds.add(o.referredByRpId));
+    cashReqs.forEach((r) => r.assignedRpId && rpIds.add(r.assignedRpId));
 
     if (rpIds.size === 0) {
-      return { event, rps: [], totals: { sales: 0, earningsCents: 0 } };
+      return {
+        event,
+        rps: [],
+        totals: {
+          sales: 0,
+          earningsCents: 0,
+          cashConfirmedCents: 0,
+          cashPending: 0,
+        },
+      };
     }
 
     const profiles = await this.prisma.rpProfile.findMany({
@@ -302,6 +318,8 @@ export class RpService {
 
     let totalSales = 0;
     let totalEarningsCents = 0;
+    let totalCashConfirmedCents = 0;
+    let totalCashPending = 0;
 
     const rps = [...rpIds]
       .map((id) => {
@@ -328,8 +346,22 @@ export class RpService {
           }
         }
 
+        // Pagos en efectivo (físico) asignados a este RP, por estado.
+        const myCash = cashReqs.filter((r) => r.assignedRpId === id);
+        const cashConfirmedAmountCents = myCash
+          .filter((r) => r.status === 'CONFIRMED')
+          .reduce((s, r) => s + r.amountCents, 0);
+        const cash = {
+          pending: myCash.filter((r) => r.status === 'PENDING').length,
+          confirmed: myCash.filter((r) => r.status === 'CONFIRMED').length,
+          cancelled: myCash.filter((r) => r.status === 'CANCELLED').length,
+          confirmedAmountCents: cashConfirmedAmountCents,
+        };
+
         totalSales += sales;
         totalEarningsCents += earningsCents;
+        totalCashConfirmedCents += cashConfirmedAmountCents;
+        totalCashPending += cash.pending;
 
         return {
           rpProfileId: id,
@@ -350,6 +382,7 @@ export class RpService {
             : null,
           sales,
           earningsCents,
+          cash,
         };
       })
       .sort(
@@ -360,7 +393,12 @@ export class RpService {
     return {
       event,
       rps,
-      totals: { sales: totalSales, earningsCents: totalEarningsCents },
+      totals: {
+        sales: totalSales,
+        earningsCents: totalEarningsCents,
+        cashConfirmedCents: totalCashConfirmedCents,
+        cashPending: totalCashPending,
+      },
     };
   }
 

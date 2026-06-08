@@ -146,12 +146,24 @@ export interface EventRpBreakdownRow {
   } | null;
   sales: number;
   earningsCents: number;
+  /** Pagos en efectivo (físico) asignados a este RP, por estado. */
+  cash: {
+    pending: number;
+    confirmed: number;
+    cancelled: number;
+    confirmedAmountCents: number;
+  };
 }
 
 export interface EventRpBreakdown {
   event: { id: string; title: string };
   rps: EventRpBreakdownRow[];
-  totals: { sales: number; earningsCents: number };
+  totals: {
+    sales: number;
+    earningsCents: number;
+    cashConfirmedCents: number;
+    cashPending: number;
+  };
 }
 
 /** Comisiones/ventas/ganancias de los RPs de un evento. `promoter` usa la ruta
