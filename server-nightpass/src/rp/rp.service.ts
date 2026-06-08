@@ -245,6 +245,169 @@ export class RpService {
     return this.getStats(rpId, from, to);
   }
 
+  /**
+   * Desglose por evento de los RPs que venden ese evento: para cada RP, su regla
+   * de comisión vigente (del evento o global), sus ventas (orders COMPLETED
+   * atribuidas) y sus ganancias. Para gestión del organizador y del admin.
+   */
+  async getEventRpBreakdown(eventId: string) {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: { id: true, title: true },
+    });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+
+    const [assignments, rules, orders, cashReqs] = await Promise.all([
+      this.prisma.eventRp.findMany({
+        where: { eventId },
+        select: { rpProfileId: true },
+      }),
+      this.prisma.rpCommissionRule.findMany({
+        where: { isActive: true, OR: [{ eventId }, { eventId: null }] },
+      }),
+      this.prisma.order.findMany({
+        where: {
+          eventId,
+          status: 'COMPLETED',
+          referredByRpId: { not: null },
+        },
+        select: { referredByRpId: true, totalCents: true },
+      }),
+      // Solicitudes de pago en efectivo (físico) asignadas a un RP en el evento.
+      this.prisma.physicalPaymentRequest.findMany({
+        where: { eventId, assignedRpId: { not: null } },
+        select: { assignedRpId: true, status: true, amountCents: true },
+      }),
+    ]);
+
+    // RPs relevantes: asignados, con regla específica, con ventas, o con
+    // solicitudes de efectivo asignadas.
+    const rpIds = new Set<string>();
+    assignments.forEach((a) => rpIds.add(a.rpProfileId));
+    rules
+      .filter((r) => r.eventId === eventId)
+      .forEach((r) => rpIds.add(r.rpProfileId));
+    orders.forEach((o) => o.referredByRpId && rpIds.add(o.referredByRpId));
+    cashReqs.forEach((r) => r.assignedRpId && rpIds.add(r.assignedRpId));
+
+    if (rpIds.size === 0) {
+      return {
+        event,
+        rps: [],
+        totals: {
+          sales: 0,
+          earningsCents: 0,
+          cashConfirmedCents: 0,
+          cashPending: 0,
+        },
+      };
+    }
+
+    const profiles = await this.prisma.rpProfile.findMany({
+      where: { id: { in: [...rpIds] } },
+      select: {
+        id: true,
+        displayName: true,
+        rpCode: true,
+        isActive: true,
+        user: { select: { email: true } },
+      },
+    });
+    const profMap = new Map(profiles.map((p) => [p.id, p]));
+    const assignedSet = new Set(assignments.map((a) => a.rpProfileId));
+
+    let totalSales = 0;
+    let totalEarningsCents = 0;
+    let totalCashConfirmedCents = 0;
+    let totalCashPending = 0;
+
+    const rps = [...rpIds]
+      .map((id) => {
+        const p = profMap.get(id);
+        // Regla del evento; si no hay, la global de ese mismo RP.
+        const rule =
+          rules.find((r) => r.rpProfileId === id && r.eventId === eventId) ??
+          rules.find((r) => r.rpProfileId === id && r.eventId === null) ??
+          null;
+        const myOrders = orders.filter((o) => o.referredByRpId === id);
+        const sales = myOrders.length;
+
+        let earningsCents = 0;
+        if (rule) {
+          if (rule.type === RpCommissionType.PERCENTAGE && rule.percentage) {
+            const volume = myOrders.reduce((s, o) => s + o.totalCents, 0);
+            earningsCents = Math.round(volume * (rule.percentage / 100));
+          } else if (
+            rule.type === RpCommissionType.PER_N_TICKETS &&
+            rule.nTickets &&
+            rule.rewardCents
+          ) {
+            earningsCents = Math.floor(sales / rule.nTickets) * rule.rewardCents;
+          }
+        }
+
+        // Pagos en efectivo (físico) asignados a este RP, por estado.
+        const myCash = cashReqs.filter((r) => r.assignedRpId === id);
+        const cashConfirmedAmountCents = myCash
+          .filter((r) => r.status === 'CONFIRMED')
+          .reduce((s, r) => s + r.amountCents, 0);
+        const cash = {
+          pending: myCash.filter((r) => r.status === 'PENDING').length,
+          confirmed: myCash.filter((r) => r.status === 'CONFIRMED').length,
+          cancelled: myCash.filter((r) => r.status === 'CANCELLED').length,
+          confirmedAmountCents: cashConfirmedAmountCents,
+        };
+
+        totalSales += sales;
+        totalEarningsCents += earningsCents;
+        totalCashConfirmedCents += cashConfirmedAmountCents;
+        totalCashPending += cash.pending;
+
+        return {
+          rpProfileId: id,
+          displayName: p?.displayName ?? 'RP',
+          rpCode: p?.rpCode ?? '',
+          email: p?.user?.email ?? '',
+          isActive: p?.isActive ?? false,
+          assigned: assignedSet.has(id),
+          commission: rule
+            ? {
+                type: rule.type,
+                nTickets: rule.nTickets,
+                rewardCents: rule.rewardCents,
+                percentage: rule.percentage,
+                currency: rule.currency,
+                scope: rule.eventId === eventId ? 'event' : 'global',
+              }
+            : null,
+          sales,
+          earningsCents,
+          cash,
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.sales - a.sales || a.displayName.localeCompare(b.displayName),
+      );
+
+    return {
+      event,
+      rps,
+      totals: {
+        sales: totalSales,
+        earningsCents: totalEarningsCents,
+        cashConfirmedCents: totalCashConfirmedCents,
+        cashPending: totalCashPending,
+      },
+    };
+  }
+
+  async getEventRpBreakdownForPromoter(userId: string, eventId: string) {
+    const promoterId = await this.resolvePromoterId(userId);
+    await this.assertEventBelongsToPromoter(eventId, promoterId);
+    return this.getEventRpBreakdown(eventId);
+  }
+
   async toggleActiveForPromoter(userId: string, rpId: string) {
     const promoterId = await this.resolvePromoterId(userId);
     await this.assertRpBelongsToPromoter(rpId, promoterId);

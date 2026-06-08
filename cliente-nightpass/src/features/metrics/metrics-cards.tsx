@@ -65,7 +65,7 @@ export function VisitorsCard({ visitors }: { visitors: VisitorStats }) {
               <p className="font-display text-3xl font-bold tabular-nums text-emerald-400">
                 {fmt.format(visitors.totalAccounts)}
               </p>
-              <p className="text-[10px] text-muted-foreground">clientes en la BD</p>
+              <p className="text-[10px] text-muted-foreground">cuentas en la BD</p>
             </div>
           )}
 

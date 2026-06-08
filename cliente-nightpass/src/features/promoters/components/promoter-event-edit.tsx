@@ -13,7 +13,8 @@ import {
 } from '@/features/events';
 import { Button } from '@/core/components/ui/button';
 import { CollapsibleCard } from '@/core/components/ui/collapsible-card';
-import { Calendar, Loader2, Tag, Trash2 } from 'lucide-react';
+import { Calendar, Loader2, Tag, Trash2, TrendingUp } from 'lucide-react';
+import { EventRpBreakdown } from '@/features/rp/components/event-rp-breakdown';
 
 function readError(error: unknown): string {
   if (error instanceof ClientApiError) {
@@ -109,6 +110,13 @@ export function PromoterEventEdit({
         defaultOpen
       >
         <TiersSection eventId={eventId} />
+      </CollapsibleCard>
+
+      <CollapsibleCard
+        icon={<TrendingUp className="size-4 text-primary" />}
+        title="Comisiones y ventas de RPs"
+      >
+        <EventRpBreakdown eventId={eventId} promoter />
       </CollapsibleCard>
 
       <div className="flex justify-end border-t border-white/12 pt-4">
