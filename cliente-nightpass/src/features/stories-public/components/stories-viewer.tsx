@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
-import { X } from 'lucide-react';
+import { Volume2, VolumeX, X } from 'lucide-react';
 import type { VenueStoriesGroup } from '@/core/types/api';
 import { StoryProgressBars } from './story-progress-bars';
 import { StoryMedia } from './story-media';
@@ -41,6 +41,7 @@ export function StoriesViewer({
   const [storyIdx, setStoryIdx] = useState(initialStoryIndex);
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [muted, setMuted] = useState(true);
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -223,6 +224,7 @@ export function StoriesViewer({
           <StoryMedia
             story={currentStory}
             paused={paused}
+            muted={muted}
             onReady={() => setReady(true)}
             onEnded={goNext}
             onVideoTimeUpdate={(curMs, durMs) => {
@@ -263,6 +265,16 @@ export function StoriesViewer({
               </p>
               <p className="text-[11px] text-white/65">{timeAgo(currentStory.createdAt)}</p>
             </div>
+            {currentStory.mediaType === 'VIDEO' && (
+              <button
+                type="button"
+                onClick={() => setMuted((m) => !m)}
+                className="grid size-9 place-items-center rounded-full bg-white/10 text-white transition active:scale-95"
+                aria-label={muted ? 'Activar sonido' : 'Silenciar'}
+              >
+                {muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
+              </button>
+            )}
             <button
               type="button"
               onClick={requestClose}
