@@ -63,6 +63,23 @@ export class PhysicalPaymentsController {
     return this.service.listForAdmin(eventId);
   }
 
+  // Cliente: puntos de cobro cercanos para un tier (cualquier auth). Ruta
+  // estática — debe ir antes de los param `:id` para que Fastify la priorice.
+  @Get('pickup-points')
+  nearbyPickupPoints(
+    @CurrentUser() user: AuthUser,
+    @Query('tierId') tierId: string,
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
+  ) {
+    return this.service.nearbyPickupPoints(
+      user.id,
+      tierId,
+      Number(lat) || undefined,
+      Number(lng) || undefined,
+    );
+  }
+
   // RP: confirma cobro en efectivo → emite los pases al cliente.
   @Post(':id/confirm')
   @UseGuards(RolesGuard)

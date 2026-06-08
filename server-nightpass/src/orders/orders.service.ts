@@ -208,10 +208,6 @@ export class OrdersService {
       );
     }
 
-    // Loyalty gating: throws ForbiddenException (→ HTTP 403) si el user
-    // no alcanza el tier mínimo requerido por el EventTier.
-    await this.loyalty.assertTierRequirement(userId, tier.minLoyaltyTier);
-
     // Fee del dueño del evento si lo tiene configurado (>0); si no, cae al fee
     // global del servidor. Mismo orden de prioridad que resolveStripeAccount: el
     // payout va al venue si existe, si no al promoter — la comisión sigue al mismo

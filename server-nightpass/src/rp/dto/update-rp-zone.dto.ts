@@ -1,6 +1,6 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
-/** Actualiza la zona (estado/ciudad) de un RP para el enrutamiento de efectivo. */
+/** Actualiza zona (estado/ciudad) + teléfono de contacto de un RP. */
 export class UpdateRpZoneDto {
   @IsOptional()
   @IsString()
@@ -11,4 +11,9 @@ export class UpdateRpZoneDto {
   @IsString()
   @MaxLength(80)
   city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  phone?: string;
 }

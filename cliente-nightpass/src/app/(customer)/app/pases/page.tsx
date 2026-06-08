@@ -1,9 +1,30 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Calendar, CheckCircle2, MapPin, QrCode, Ticket } from 'lucide-react';
+import { Banknote, Calendar, CheckCircle2, Clock, MapPin, Phone, QrCode, Ticket } from 'lucide-react';
 import { serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
+import { WhatsappIcon } from '@/core/components/icons/whatsapp-icon';
 import type { Pass } from '@/core/types/api';
+
+/** Reserva de pago en efectivo (pendiente de recoger/pagar). */
+interface CashReservation {
+  id: string;
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED';
+  amountCents: number;
+  currency: string;
+  pickupAt: string | null;
+  pickupPoint: { id: string; label: string; reference: string | null } | null;
+  rp: { displayName: string; phone: string | null } | null;
+  event: { id: string; title: string; startsAt: string };
+  tier: { id: string; name: string };
+}
+
+/** Link de WhatsApp: deja solo dígitos; si son 10 (MX) antepone 52. */
+function waHref(phone: string, text: string) {
+  let d = phone.replace(/\D/g, '');
+  if (d.length === 10) d = `52${d}`;
+  return `https://wa.me/${d}?text=${encodeURIComponent(text)}`;
+}
 
 export const metadata = {
   title: 'Mis pases — NightPass',
@@ -20,6 +41,10 @@ function formatDate(iso: string) {
   }).format(new Date(iso));
 }
 
+function money(cents: number, currency: string) {
+  return `$${(cents / 100).toLocaleString('es-MX', { maximumFractionDigits: 2 })} ${currency.toUpperCase()}`;
+}
+
 export default async function PassesPage() {
   let passes: Pass[] = [];
   try {
@@ -27,6 +52,16 @@ export default async function PassesPage() {
     passes = Array.isArray(data) ? data : [];
   } catch {
     passes = [];
+  }
+
+  // Reservas de efectivo pendientes → "Por recoger": dónde y cuándo ir a pagar
+  // en persona para que el RP emita el pase.
+  let pendingPickups: CashReservation[] = [];
+  try {
+    const res = await serverFetch<{ items: CashReservation[] }>('/physical-payments/me');
+    pendingPickups = (res?.items ?? []).filter((r) => r.status === 'PENDING');
+  } catch {
+    pendingPickups = [];
   }
 
   // Agrupar por evento — si compraste varios boletos de un mismo evento aparecen
@@ -52,7 +87,80 @@ export default async function PassesPage() {
         Muestra el QR en la puerta y olvídate de las filas.
       </p>
 
-      {passes.length === 0 ? (
+      {pendingPickups.length > 0 && (
+        <section className="mt-8 np-rise" style={{ animationDelay: '150ms' }}>
+          <h2 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight">
+            <Clock className="size-4 text-amber-400" />
+            Por recoger
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Paga en efectivo en el punto. Tu pase aparece aquí cuando el vendedor confirma.
+          </p>
+          <div className="mt-3 space-y-3">
+            {pendingPickups.map((r) => (
+              <div
+                key={r.id}
+                className="rounded-[18px] border border-amber-400/25 bg-amber-400/[0.05] p-4"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 truncate font-display text-sm font-bold text-white">
+                    {r.event.title}
+                  </p>
+                  <span className="shrink-0 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-300">
+                    Pendiente
+                  </span>
+                </div>
+                <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Banknote className="size-3.5 shrink-0 text-emerald-400" />
+                  {r.tier.name} · {money(r.amountCents, r.currency)} en efectivo
+                </p>
+                {r.pickupPoint && (
+                  <p className="mt-2 flex items-center gap-1.5 text-xs text-white/80">
+                    <MapPin className="size-3.5 shrink-0 text-primary" />
+                    Recoge en <span className="font-semibold">{r.pickupPoint.label}</span>
+                  </p>
+                )}
+                {r.pickupPoint?.reference && (
+                  <p className="mt-1 pl-5 text-[11px] leading-snug text-white/55">
+                    {r.pickupPoint.reference}
+                  </p>
+                )}
+                {r.pickupAt && (
+                  <p className="mt-1 flex items-center gap-1.5 text-xs text-white/80">
+                    <Clock className="size-3.5 shrink-0 text-primary" />
+                    {formatDate(r.pickupAt)}
+                  </p>
+                )}
+                {r.rp?.phone && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <a
+                      href={`tel:${r.rp.phone}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-white/14 bg-white/[0.06] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-white/[0.1] active:scale-95"
+                    >
+                      <Phone className="size-3.5" />
+                      Llamar al vendedor
+                    </a>
+                    <a
+                      href={waHref(
+                        r.rp.phone,
+                        `Hola ${r.rp.displayName}, te escribo por mi boleto de ${r.event.title}. ¿Dónde nos vemos para pagarte en efectivo?`,
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-3.5 py-2 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/25 active:scale-95"
+                    >
+                      <WhatsappIcon className="size-3.5" />
+                      WhatsApp
+                    </a>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {passes.length === 0 && pendingPickups.length === 0 ? (
         <div className="mt-8 flex flex-col items-center rounded-[22px] border border-white/14 bg-white/[0.05] p-10 text-center np-rise" style={{ animationDelay: '180ms' }}>
           <div className="grid size-14 place-items-center rounded-full border border-white/14 bg-white/[0.07] np-pop-in">
             <Ticket className="size-6 text-primary" />

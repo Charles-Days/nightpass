@@ -32,6 +32,7 @@ export function RpZoneEditor({
 
   const [state, setState] = React.useState('');
   const [city, setCity] = React.useState('');
+  const [phone, setPhone] = React.useState('');
   const [ready, setReady] = React.useState(false);
 
   const cities = React.useMemo(
@@ -43,16 +44,22 @@ export function RpZoneEditor({
     if (data && !ready) {
       setState(data.state ?? '');
       setCity(data.city ?? '');
+      setPhone(data.user?.phone ?? '');
       setReady(true);
     }
   }, [data, ready]);
 
   const save = () => {
     update.mutate(
-      { id: rpId, state: state.trim() || undefined, city: city.trim() || undefined },
       {
-        onSuccess: () => toast.success('Zona del RP actualizada'),
-        onError: () => toast.error('No pudimos actualizar la zona'),
+        id: rpId,
+        state: state.trim() || undefined,
+        city: city.trim() || undefined,
+        phone: phone.trim(),
+      },
+      {
+        onSuccess: () => toast.success('Datos del RP actualizados'),
+        onError: () => toast.error('No pudimos actualizar los datos'),
       },
     );
   };
@@ -61,11 +68,11 @@ export function RpZoneEditor({
     <div className="rounded-[22px] border border-white/12 bg-white/[0.035] p-5">
       <h3 className="mb-1 flex items-center gap-2 font-display text-sm font-semibold tracking-tight">
         <MapPin className="size-4 text-primary" />
-        Zona (pago en efectivo)
+        Zona y contacto (pago en efectivo)
       </h3>
       <p className="mb-3 text-xs text-muted-foreground">
-        Las solicitudes de efectivo de clientes de esta ciudad/estado se enrutan a
-        este RP, repartidas equitativamente con otros de la misma zona.
+        La zona enruta las solicitudes de efectivo de esa ciudad/estado a este RP.
+        El teléfono lo usa el cliente para coordinar el cobro por llamada/WhatsApp.
       </p>
       {isLoading ? (
         <div className="flex justify-center py-4">
@@ -112,6 +119,20 @@ export function RpZoneEditor({
                 </option>
               ))}
             </select>
+          </div>
+          <div className="flex-1 space-y-1.5">
+            <Label htmlFor="rp-phone" className="text-white/70 text-xs">
+              Teléfono / WhatsApp
+            </Label>
+            <input
+              id="rp-phone"
+              type="tel"
+              inputMode="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Ej. 7771234567"
+              className={SELECT_CLASS}
+            />
           </div>
           <Button
             type="button"

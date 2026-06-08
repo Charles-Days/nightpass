@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useRpStats, useDeleteCommissionRule } from '../hooks/use-rp';
 import { CommissionRuleForm } from './commission-rule-form';
 import { RpZoneEditor } from './rp-zone-editor';
+import { PickupPointsManager } from './pickup-points-manager';
 import { toast } from 'sonner';
 import { Button } from '@/core/components/ui/button';
 import {
@@ -76,7 +77,7 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
       <SheetContent className="flex w-full flex-col overflow-hidden p-0 sm:max-w-2xl border-l border-white/14 bg-[#0c0c12] text-white">
         <SheetHeader className="shrink-0 border-b border-white/12 px-6 pb-4 pt-5">
           <SheetTitle className="font-display text-lg sm:text-xl font-bold tracking-tight text-white flex items-center justify-between gap-3">
-            <span className="min-w-0 truncate">Detalle de Relaciones Públicas</span>
+            <span className="min-w-0 truncate">Detalle de RP</span>
             {stats && (
               <span className="shrink-0 text-xs bg-white/5 border border-white/14 px-3 py-1 rounded-full font-mono text-purple-300">
                 {stats.rpCode}
@@ -135,6 +136,11 @@ export function RpDetailSheet({ rpId, open, onOpenChange, basePath = '/api/rp' }
 
             {/* Zona (enrutamiento de pago en efectivo) */}
             {rpId && <RpZoneEditor rpId={rpId} basePath={basePath} />}
+
+            {/* Puntos de cobro del RP (gestionables por admin/organizador) */}
+            {rpId && (
+              <PickupPointsManager basePath={`${basePath}/${rpId}`} />
+            )}
 
             {/* Commission Rules */}
             <div className="space-y-3">

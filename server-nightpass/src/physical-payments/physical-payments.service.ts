@@ -27,6 +27,7 @@ import {
 import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { resolveTierPrice } from '../events/tier-pricing';
 import { computeCashUnitPrice } from '../common/cash-pricing';
+import { haversineMeters } from '../common/geo';
 import { issuePasses } from '../passes/issue-passes';
 import { requirePassSecret } from '../common/pass-secret';
 import { PushService } from '../push/push.service';
@@ -219,6 +220,35 @@ export class PhysicalPaymentsService {
       effectiveCity,
     );
 
+    // Punto de cobro elegido por el cliente (opcional). Si viene, el RP dueño del
+    // punto pasa a ser el vendedor asignado — override del enrutamiento geográfico.
+    // El punto debe estar activo y pertenecer a un RP asignado al evento.
+    let routedRpId = assignedRp?.rpProfile.id ?? null;
+    let pickupRpUser: { email: string; name: string | null } | null = null;
+    let pickupRpDisplayName: string | null = null;
+    let pickupRpUserId: string | null = null;
+    if (dto.pickupPointId) {
+      const point = await this.prisma.rpPickupPoint.findUnique({
+        where: { id: dto.pickupPointId },
+        select: { id: true, rpProfileId: true, isActive: true },
+      });
+      if (!point || !point.isActive) {
+        throw new BadRequestException('El punto de cobro no está disponible');
+      }
+      const owner = assignedRps.find(
+        (a) => a.rpProfile.id === point.rpProfileId,
+      );
+      if (!owner) {
+        throw new ForbiddenException(
+          'El punto de cobro no pertenece a un vendedor de este evento',
+        );
+      }
+      routedRpId = point.rpProfileId;
+      pickupRpUser = owner.rpProfile.user;
+      pickupRpDisplayName = owner.rpProfile.displayName;
+      pickupRpUserId = owner.rpProfile.userId;
+    }
+
     const request = await this.prisma.physicalPaymentRequest.create({
       data: {
         userId,
@@ -230,7 +260,9 @@ export class PhysicalPaymentsService {
         currency: tier.currency,
         contactPhone: effectivePhone,
         note: dto.note?.trim() || null,
-        assignedRpId: assignedRp?.rpProfile.id ?? null,
+        assignedRpId: routedRpId,
+        pickupPointId: dto.pickupPointId ?? null,
+        pickupAt: dto.pickupAt ? new Date(dto.pickupAt) : null,
         expiresAt: event.startsAt,
       },
       include: { user: { select: { name: true, email: true } } },
@@ -251,14 +283,17 @@ export class PhysicalPaymentsService {
         );
     }
 
-    // Notifica SOLO al RP asignado (best-effort, no bloquea la respuesta).
+    // Notifica SOLO al RP asignado (best-effort, no bloquea la respuesta). Si el
+    // cliente eligió punto de cobro, el destinatario es el RP dueño del punto.
     const customerName = request.user.name || request.user.email;
     const amountFormatted = this.formatMoney(amountCents, tier.currency);
-    const rpUser = assignedRp?.rpProfile.user;
+    const rpUser = pickupRpUser ?? assignedRp?.rpProfile.user;
+    const rpDisplayName = pickupRpDisplayName ?? assignedRp?.rpProfile.displayName;
+    const rpUserId = pickupRpUserId ?? assignedRp?.rpProfile.userId;
     if (rpUser?.email) {
       this.mailer
         .sendPhysicalPaymentRequestToRp(rpUser.email, {
-          rpName: assignedRp!.rpProfile.displayName,
+          rpName: rpDisplayName!,
           eventTitle: event.title,
           tierName: tier.name,
           quantity,
@@ -276,9 +311,9 @@ export class PhysicalPaymentsService {
     }
 
     // Push al RP asignado (best-effort) — para que lo vea al instante en su panel.
-    if (assignedRp?.rpProfile.userId) {
+    if (rpUserId) {
       this.push
-        .sendToUser(assignedRp.rpProfile.userId, {
+        .sendToUser(rpUserId, {
           title: 'Nueva solicitud de boleto físico',
           body: `${customerName} pide ${quantity} ${quantity === 1 ? 'pase' : 'pases'} (${amountFormatted}) para ${event.title}`,
           url: '/rp-dashboard',
@@ -286,13 +321,13 @@ export class PhysicalPaymentsService {
         })
         .catch((err) =>
           this.logger.warn(
-            `Push a RP ${assignedRp.rpProfile.userId} falló: ${err instanceof Error ? err.message : err}`,
+            `Push a RP ${rpUserId} falló: ${err instanceof Error ? err.message : err}`,
           ),
         );
     }
 
     this.logger.log(
-      `Solicitud de pago en efectivo ${request.id} creada por ${userId} → RP asignado ${assignedRp?.rpProfile.id ?? 'ninguno'} (${effectiveCity}, ${effectiveState})`,
+      `Solicitud de pago en efectivo ${request.id} creada por ${userId} → RP asignado ${routedRpId ?? 'ninguno'} (${effectiveCity}, ${effectiveState})`,
     );
 
     return this.toSummary(request, { event, tier });
@@ -329,6 +364,7 @@ export class PhysicalPaymentsService {
         event: { select: { id: true, title: true, startsAt: true } },
         tier: { select: { id: true, name: true } },
         confirmedByRp: { select: { displayName: true, rpCode: true } },
+        pickupPoint: { select: { id: true, label: true, reference: true } },
       },
     });
 
@@ -502,6 +538,7 @@ export class PhysicalPaymentsService {
           event: { select: { id: true, title: true, startsAt: true } },
           tier: { select: { id: true, name: true } },
           confirmedByRp: { select: { displayName: true, rpCode: true } },
+          pickupPoint: { select: { id: true, label: true, reference: true } },
         },
       });
       return updated;
@@ -572,6 +609,10 @@ export class PhysicalPaymentsService {
         event: { select: { id: true, title: true, startsAt: true } },
         tier: { select: { id: true, name: true } },
         confirmedByRp: { select: { displayName: true, rpCode: true } },
+        assignedRp: {
+          select: { displayName: true, user: { select: { phone: true } } },
+        },
+        pickupPoint: { select: { id: true, label: true, reference: true } },
       },
     });
     return { items: items.map((r) => this.toDetail(r)) };
@@ -589,9 +630,95 @@ export class PhysicalPaymentsService {
         event: { select: { id: true, title: true, startsAt: true } },
         tier: { select: { id: true, name: true } },
         confirmedByRp: { select: { displayName: true, rpCode: true } },
+        pickupPoint: { select: { id: true, label: true, reference: true } },
       },
     });
     return { items: items.map((r) => this.toDetail(r)) };
+  }
+
+  // ── Cliente: puntos de cobro cercanos para un tier ────────────────────────
+
+  /**
+   * Lista los puntos de cobro de los RPs asignados al evento del tier, ordenados
+   * por cercanía a (lat,lng) si se proveen. La puerta del venue va siempre al
+   * final. `distanceM` es null si no hay ubicación del cliente.
+   */
+  async nearbyPickupPoints(
+    _userId: string,
+    tierId: string,
+    lat?: number,
+    lng?: number,
+  ) {
+    const tier = await this.prisma.eventTier.findUnique({
+      where: { id: tierId },
+      select: { eventId: true },
+    });
+    if (!tier) throw new NotFoundException('Tier no encontrado');
+
+    // RPs activos asignados al evento + sus puntos de cobro activos.
+    const assignedRps = await this.prisma.eventRp.findMany({
+      where: { eventId: tier.eventId, rpProfile: { isActive: true } },
+      include: {
+        rpProfile: {
+          select: {
+            id: true,
+            displayName: true,
+            pickupPoints: { where: { isActive: true } },
+          },
+        },
+      },
+    });
+
+    const hasGeo = lat != null && lng != null;
+    const points = assignedRps.flatMap((a) =>
+      a.rpProfile.pickupPoints.map((p) => ({
+        ...this.toPickupPointShape(p),
+        distanceM: hasGeo
+          ? Math.round(haversineMeters(lat!, lng!, p.latitude, p.longitude))
+          : null,
+        rpId: a.rpProfile.id,
+        rpDisplayName: a.rpProfile.displayName,
+      })),
+    );
+
+    points.sort((x, y) => {
+      // La puerta del venue siempre al final.
+      if (x.isVenueDoor !== y.isVenueDoor) return x.isVenueDoor ? 1 : -1;
+      // Luego por distancia ascendente; sin distancia (null) ordena por label.
+      if (x.distanceM != null && y.distanceM != null) {
+        return x.distanceM - y.distanceM;
+      }
+      if (x.distanceM != null) return -1;
+      if (y.distanceM != null) return 1;
+      return x.label.localeCompare(y.label);
+    });
+
+    return { points };
+  }
+
+  /** Mapea una fila de RpPickupPoint a la forma pública del contrato. */
+  private toPickupPointShape(row: {
+    id: string;
+    label: string;
+    reference: string | null;
+    latitude: number;
+    longitude: number;
+    mapsUrl: string | null;
+    windows: Prisma.JsonValue;
+    isVenueDoor: boolean;
+    isActive: boolean;
+  }) {
+    return {
+      id: row.id,
+      label: row.label,
+      reference: row.reference,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      mapsUrl: row.mapsUrl,
+      windows: (row.windows ?? []) as unknown as unknown[],
+      isVenueDoor: row.isVenueDoor,
+      isActive: row.isActive,
+    };
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -741,10 +868,16 @@ export class PhysicalPaymentsService {
     confirmedAt: Date | null;
     createdAt: Date;
     orderId: string | null;
+    pickupAt?: Date | null;
     event: { id: string; title: string; startsAt: Date };
     tier: { id: string; name: string };
     user?: { name: string | null; email: string } | null;
     confirmedByRp?: { displayName: string; rpCode: string } | null;
+    assignedRp?: {
+      displayName: string;
+      user: { phone: string | null } | null;
+    } | null;
+    pickupPoint?: { id: string; label: string; reference: string | null } | null;
   }) {
     return {
       id: r.id,
@@ -758,11 +891,23 @@ export class PhysicalPaymentsService {
       confirmedAt: r.confirmedAt,
       createdAt: r.createdAt,
       orderId: r.orderId,
+      pickupAt: r.pickupAt?.toISOString() ?? null,
       event: r.event,
       tier: r.tier,
       customer: r.user ? { name: r.user.name, email: r.user.email } : null,
       confirmedByRp: r.confirmedByRp
         ? { displayName: r.confirmedByRp.displayName, rpCode: r.confirmedByRp.rpCode }
+        : null,
+      // Vendedor asignado (para que el cliente lo contacte por llamada/WhatsApp).
+      rp: r.assignedRp
+        ? { displayName: r.assignedRp.displayName, phone: r.assignedRp.user?.phone ?? null }
+        : null,
+      pickupPoint: r.pickupPoint
+        ? {
+            id: r.pickupPoint.id,
+            label: r.pickupPoint.label,
+            reference: r.pickupPoint.reference,
+          }
         : null,
     };
   }

@@ -45,7 +45,7 @@ export function RpTable({ rps, isLoading, onViewDetail, basePath = '/api/rp' }: 
   if (rps.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-white/14 p-12 text-center text-sm text-muted-foreground bg-white/[0.02]">
-        No hay promotores de Relaciones Públicas registrados.
+        No hay RPs registrados.
       </div>
     );
   }

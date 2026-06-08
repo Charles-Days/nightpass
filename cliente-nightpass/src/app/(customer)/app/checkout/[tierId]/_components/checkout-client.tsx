@@ -19,6 +19,7 @@ import { paths } from '@/core/config/paths';
 import type { CatalogTierDetail, Order, OrderCreationResponse } from '@/core/types/api';
 import { saveRpRef, readRpRef, clearRpRef } from '@/features/rp-referral/rp-referral';
 import { MEXICO_GEO } from '@/core/data/mexico-geo';
+import { PickupModal } from './pickup-modal';
 
 type Phase =
   | 'select_quantity'
@@ -190,6 +191,14 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
     [stateName],
   );
 
+  // Punto de cobro elegido por el cliente (efectivo). Se abre un modal antes de
+  // enviar la solicitud para que escoja dónde y cuándo recoger.
+  const [pickupOpen, setPickupOpen] = useState(false);
+  const [pickup, setPickup] = useState<{
+    pickupPointId?: string;
+    pickupAt: string | null;
+  } | null>(null);
+
   const initRef = useRef(false);
 
   const createOrder = useCallback(async (customCode?: string, currentQty = quantity) => {
@@ -270,7 +279,12 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
 
   // Solicita pago en EFECTIVO: notifica por correo a los RPs asignados; uno
   // cobra en persona y confirma → el pase se emite a la cuenta del cliente.
-  const requestCash = useCallback(async (currentQty = quantity) => {
+  const requestCash = useCallback(async (
+    sel?: { pickupPointId?: string; pickupAt: string | null } | null,
+    currentQty = quantity,
+  ) => {
+    // Si no nos pasan la selección explícita, caemos al state actual.
+    const selection = sel !== undefined ? sel : pickup;
     setPhase('cash_submitting');
     setErrorMessage(null);
     try {
@@ -284,6 +298,8 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
           ...(phone.trim() ? { contactPhone: phone.trim() } : {}),
           ...(stateName.trim() ? { state: stateName.trim() } : {}),
           ...(city.trim() ? { city: city.trim() } : {}),
+          ...(selection?.pickupPointId ? { pickupPointId: selection.pickupPointId } : {}),
+          ...(selection?.pickupAt ? { pickupAt: selection.pickupAt } : {}),
         },
       });
       setPhase('cash_done');
@@ -293,7 +309,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
       setErrorMessage(info.message);
       toast.error(info.message);
     }
-  }, [tierId, quantity, searchParams, phone, stateName, city]);
+  }, [tierId, quantity, searchParams, phone, stateName, city, pickup]);
 
   // Carga el teléfono guardado del usuario (solo si el evento acepta efectivo).
   useEffect(() => {
@@ -691,7 +707,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                   stateName.trim() === '' ||
                   city.trim() === '')
               }
-              onClick={() => (method === 'cash' ? void requestCash() : void createOrder())}
+              onClick={() => (method === 'cash' ? setPickupOpen(true) : void createOrder())}
               className="w-full mt-2 h-11 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 font-semibold text-white shadow-[0_4px_18px_-4px_rgba(124,58,237,0.5)] transition-transform hover:brightness-110 active:scale-95 transform-gpu disabled:opacity-50 disabled:active:scale-100"
             >
               {method === 'cash'
@@ -764,10 +780,10 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
               </p>
             </div>
             <Link
-              href={backToEvent}
+              href={paths.pases}
               className="mt-1 inline-flex h-11 items-center justify-center rounded-md bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 text-sm font-semibold text-white shadow-[0_4px_24px_rgba(168,85,247,0.35)] transition hover:brightness-110 active:scale-95 transform-gpu"
             >
-              Entendido
+              Ver en Mis pases
             </Link>
           </div>
         )}
@@ -852,6 +868,19 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
         <ShieldCheck className="size-3" />
         Pago procesado de forma segura por Stripe.
       </p>
+
+      <PickupModal
+        open={pickupOpen}
+        onOpenChange={setPickupOpen}
+        tierId={tierId}
+        fallbackCity={city}
+        onConfirm={(sel) => {
+          setPickup(sel);
+          setPickupOpen(false);
+          // Pasamos la selección explícita para no depender del state recién seteado.
+          void requestCash(sel);
+        }}
+      />
     </div>
   );
 }

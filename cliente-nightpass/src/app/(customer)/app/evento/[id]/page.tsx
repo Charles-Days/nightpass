@@ -1,18 +1,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Calendar, Clock, Lock, MapPin, Navigation, TrendingUp, Users } from 'lucide-react';
-import { ServerApiError, publicFetch, serverFetch } from '@/core/lib/api/server-client';
+import { ArrowLeft, Calendar, Clock, MapPin, Navigation, TrendingUp, Users } from 'lucide-react';
+import { ServerApiError, publicFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import { absoluteUrl } from '@/core/config/env';
 import { JsonLd, eventLd, breadcrumbLd } from '@/core/seo/json-ld';
-import {
-  LOYALTY_TIER_RANK,
-  type CatalogEventDetail,
-  type LoyaltyStatus,
-  type LoyaltyTier,
-} from '@/core/types/api';
-import { TIER_STYLES } from '@/features/loyalty';
+import { type CatalogEventDetail } from '@/core/types/api';
 import { EventStoriesSection } from '@/app/(customer)/_components/event-stories-section';
 import { EventForumSection } from '@/app/(customer)/_components/event-forum-section';
 import { EventAforo } from '@/app/(customer)/_components/event-aforo';
@@ -38,12 +32,26 @@ export async function generateMetadata({ params }: Props) {
     const title = `${ev.title} — NightPass`;
     const description = ev.description ?? undefined;
     const path = `${paths.evento}/${id}`;
+    // Si el evento tiene portada, úsala como imagen del preview (WhatsApp, etc.)
+    // en vez de la card generada. `images` explícito gana sobre opengraph-image.tsx.
+    const images = ev.coverImageUrl ? [{ url: ev.coverImageUrl }] : undefined;
     return {
       title,
       description,
       alternates: { canonical: path },
-      openGraph: { title, description, url: absoluteUrl(path), type: 'article' as const },
-      twitter: { card: 'summary_large_image' as const, title, description },
+      openGraph: {
+        title,
+        description,
+        url: absoluteUrl(path),
+        type: 'article' as const,
+        ...(images ? { images } : {}),
+      },
+      twitter: {
+        card: 'summary_large_image' as const,
+        title,
+        description,
+        ...(images ? { images: images.map((i) => i.url) } : {}),
+      },
     };
   } catch {
     return { title: 'Evento — NightPass' };
@@ -94,17 +102,6 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 404) notFound();
     throw error;
-  }
-
-  // Try to fetch loyalty status to display tier-gate UX. If user is not
-  // signed in or backend is not ready yet, the tier check is skipped and
-  // the backend will still 403 on order creation.
-  let userTier: LoyaltyTier | null = null;
-  try {
-    const loyalty = await serverFetch<LoyaltyStatus>('/me/loyalty');
-    userTier = loyalty.tier;
-  } catch {
-    userTier = null;
   }
 
   const eventPath = `${paths.evento}/${id}`;
@@ -375,11 +372,6 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
         ) : (
           <ul className="space-y-3">
             {event.tiers.map((tier, i) => {
-              const requires = tier.minLoyaltyTier ?? null;
-              const userRank = userTier ? LOYALTY_TIER_RANK[userTier] : 0;
-              const requiredRank = requires ? LOYALTY_TIER_RANK[requires] : 0;
-              const locked = !!requires && userRank < requiredRank;
-              const requiredLabel = requires ? TIER_STYLES[requires].label : null;
               // Próximas subidas a mostrar (hasta 2). Fallback a nextPrice si el
               // backend aún no envía upcomingPrices.
               const bumps = tier.upcomingPrices?.length
@@ -398,19 +390,6 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
                       <p className="font-display text-base font-bold tracking-tight">
                         {tier.name}
                       </p>
-                      {requires ? (
-                        <span
-                          className={
-                            locked
-                              ? 'inline-flex items-center gap-1 rounded-full border border-amber-300/35 bg-amber-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200'
-                              : 'inline-flex items-center gap-1 rounded-full border border-white/18 bg-white/[0.07] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70'
-                          }
-                        >
-                          {locked ? <Lock className="size-2.5" /> : null}
-                          {locked ? 'Requiere' : 'Tier'} {requiredLabel}
-                          {!locked ? '+' : ''}
-                        </span>
-                      ) : null}
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {tier.capacity ? `${tier.capacity} lugares` : 'Sin límite'}
@@ -429,35 +408,18 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
                         ))}
                       </div>
                     ) : null}
-                    {locked ? (
-                      <Link
-                        href={paths.recompensas}
-                        className="mt-2 inline-flex items-center text-[11px] font-semibold text-primary transition active:scale-95 transform-gpu hover:underline"
-                      >
-                        ¿Cómo subo de tier? →
-                      </Link>
-                    ) : null}
                   </div>
                   <div className="flex items-center justify-between gap-3 sm:justify-end">
                     <span className="font-display text-lg font-bold tabular-nums">
                       {formatPrice(tier.priceCents, tier.currency)}
                     </span>
-                    {locked ? (
-                      <span
-                        aria-disabled
-                        className="shrink-0 cursor-not-allowed rounded-full border border-white/18 bg-white/[0.07] px-4 py-2 text-sm font-semibold text-white/45"
-                      >
-                        Bloqueado
-                      </span>
-                    ) : (
-                      <BuyTierButton
-                        href={`${paths.checkout}/${tier.id}${refQuery}`}
-                        eventId={event.id}
-                        className="np-glow-pulse shrink-0 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95 hover:brightness-110"
-                      >
-                        Comprar
-                      </BuyTierButton>
-                    )}
+                    <BuyTierButton
+                      href={`${paths.checkout}/${tier.id}${refQuery}`}
+                      eventId={event.id}
+                      className="np-glow-pulse shrink-0 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95 hover:brightness-110"
+                    >
+                      Comprar
+                    </BuyTierButton>
                   </div>
                 </li>
               );

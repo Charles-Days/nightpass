@@ -1,5 +1,5 @@
 import { randomBytes, createHmac } from 'crypto';
-import { type PrismaClient, LoyaltyEventType, LoyaltyTier } from '@prisma/client';
+import { type PrismaClient, LoyaltyEventType } from '@prisma/client';
 
 /**
  * Idempotent loyalty seed.
@@ -150,18 +150,15 @@ export async function seedLoyalty(prisma: PrismaClient): Promise<void> {
   });
   const totalPoints = totals._sum.points ?? 0;
   const yearPoints = totalPoints; // all events are within last year
-  const tier: LoyaltyTier =
-    yearPoints >= 5000 ? 'VIP' : yearPoints >= 2000 ? 'INSIDER' : yearPoints >= 500 ? 'REGULAR' : 'ROOKIE';
 
   await prisma.userLoyaltyTotal.upsert({
     where: { userId: customer.id },
-    update: { totalPoints, yearPoints, tier, tierUpdatedAt: new Date() },
-    create: { userId: customer.id, totalPoints, yearPoints, tier },
+    update: { totalPoints, yearPoints },
+    create: { userId: customer.id, totalPoints, yearPoints },
   });
 
   console.log(
     `🎮 Loyalty demo:  customer=${customer.email}\n` +
-      `   tier:     ${tier}\n` +
       `   total:    ${totalPoints} NPP (${created} eventos nuevos en este run)\n` +
       `   streak:   38 días\n` +
       `   qr payload (imprime / pega):\n   ${qrPayload}\n`,

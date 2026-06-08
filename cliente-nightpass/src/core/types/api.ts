@@ -275,7 +275,6 @@ export interface EventTier {
   currency: string;
   capacity: number | null;
   position: number;
-  minLoyaltyTier?: LoyaltyTier | null;
   /** Calendario de subidas (solo en lecturas del panel/owner). */
   prices?: TierPricePhase[];
   // ── Override de efectivo por-tier (todos nullable, null = heredar del owner) ──
@@ -547,7 +546,6 @@ export interface CatalogVenueDetail extends CatalogVenueSummary {
       name: string;
       priceCents: number;
       currency: string;
-      minLoyaltyTier?: LoyaltyTier | null;
     }>;
   }>;
 }
@@ -572,7 +570,6 @@ export interface CatalogEventDetail {
     currency: string;
     capacity: number | null;
     position: number;
-    minLoyaltyTier?: LoyaltyTier | null;
     nextPrice?: { priceCents: number; startsAt: string } | null;
     upcomingPrices?: { priceCents: number; startsAt: string }[];
   }>;
@@ -630,21 +627,11 @@ export interface CatalogPromoterDetail {
       priceCents: number;
       currency: string;
       capacity: number | null;
-      minLoyaltyTier?: LoyaltyTier | null;
     }>;
   }>;
 }
 
 // ─── Loyalty / Streak / Tier ───────────────────────────────────────────────
-
-export type LoyaltyTier = 'ROOKIE' | 'REGULAR' | 'INSIDER' | 'VIP';
-
-export const LOYALTY_TIER_RANK: Record<LoyaltyTier, number> = {
-  ROOKIE: 0,
-  REGULAR: 1,
-  INSIDER: 2,
-  VIP: 3,
-};
 
 export type LoyaltyEventType =
   | 'EVENT_CHECKIN'
@@ -668,9 +655,6 @@ export interface LoyaltyStreak {
 export interface LoyaltyStatus {
   totalPoints: number;
   yearPoints: number;
-  tier: LoyaltyTier;
-  nextTier: LoyaltyTier | null;
-  pointsToNext: number | null;
   streak: LoyaltyStreak;
 }
 
@@ -688,14 +672,12 @@ export interface LeaderboardEntry {
   rank: number;
   userId: string;
   name: string | null;
-  tier: LoyaltyTier;
   yearPoints: number;
 }
 
 export interface VenueCheckinResponse {
   awarded: number;
   newStreakDays: number;
-  tier: LoyaltyTier;
   alreadyCheckedInToday?: boolean;
 }
 

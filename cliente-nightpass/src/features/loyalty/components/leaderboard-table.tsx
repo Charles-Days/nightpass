@@ -3,7 +3,6 @@
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/core/lib/utils/cn';
 import { useLeaderboard } from '../hooks/use-leaderboard';
-import { TierBadge } from './tier-badge';
 
 interface LeaderboardTableProps {
   city: string | null;
@@ -35,7 +34,7 @@ export function LeaderboardTable({ city, currentUserId }: LeaderboardTableProps)
     return (
       <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-7 text-center">
         <p className="text-sm text-white/65">
-          Aún no hay suficientes Insiders en {city}.
+          Aún no hay suficiente gente activa en {city}.
         </p>
         <p className="mt-1 text-[11px] text-white/40">
           Vuelve cuando más gente esté activa por aquí.
@@ -50,8 +49,7 @@ export function LeaderboardTable({ city, currentUserId }: LeaderboardTableProps)
         <thead className="border-b border-white/12 bg-white/[0.035] text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">
           <tr>
             <th className="px-4 py-3 sm:px-5">#</th>
-            <th className="px-2 py-3">Insider</th>
-            <th className="px-2 py-3">Tier</th>
+            <th className="px-2 py-3">Usuario</th>
             <th className="px-4 py-3 sm:px-5 text-right">NPP año</th>
           </tr>
         </thead>
@@ -78,9 +76,6 @@ export function LeaderboardTable({ city, currentUserId }: LeaderboardTableProps)
                       Tú
                     </span>
                   ) : null}
-                </td>
-                <td className="px-2 py-3">
-                  <TierBadge tier={row.tier} size="sm" />
                 </td>
                 <td className="px-4 py-3 sm:px-5 text-right font-mono tabular-nums">
                   {row.yearPoints.toLocaleString('es-MX')}

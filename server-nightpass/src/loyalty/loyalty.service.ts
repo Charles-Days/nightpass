@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -9,7 +8,6 @@ import { randomBytes } from 'crypto';
 import {
   LocationPingSource,
   LoyaltyEventType,
-  LoyaltyTier,
   Prisma,
 } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
@@ -25,9 +23,6 @@ import {
   POINTS,
   STREAK,
   STREAK_MILESTONES,
-  TIER_RANK,
-  nextTier,
-  tierFromYearPoints,
 } from './loyalty.constants';
 import {
   LeaderboardEntryDto,
@@ -51,7 +46,6 @@ interface ApplyRewardOpts {
 interface ApplyRewardResult {
   awarded: number;
   newStreakDays: number;
-  tier: LoyaltyTier;
   alreadyAwarded?: boolean;
 }
 
@@ -103,7 +97,6 @@ export class LoyaltyService {
   }): Promise<{
     awarded: number;
     newStreakDays: number;
-    tier: LoyaltyTier;
     alreadyCheckedInToday?: boolean;
   }> {
     const { userId, venueId, qrPayload, latitude, longitude } = opts;
@@ -175,7 +168,6 @@ export class LoyaltyService {
     return {
       awarded: result.awarded,
       newStreakDays: result.newStreakDays,
-      tier: result.tier,
       alreadyCheckedInToday: result.alreadyAwarded === true ? true : undefined,
     };
   }
@@ -227,25 +219,6 @@ export class LoyaltyService {
     return { payload, scanUrl, issuedAt: venue.checkinQrIssuedAt };
   }
 
-  async assertTierRequirement(
-    userId: string,
-    requiredTier: LoyaltyTier | null,
-  ): Promise<void> {
-    if (!requiredTier) return;
-
-    const total = await this.prisma.userLoyaltyTotal.findUnique({
-      where: { userId },
-      select: { tier: true },
-    });
-    const userTier: LoyaltyTier = total?.tier ?? LoyaltyTier.ROOKIE;
-
-    if (TIER_RANK[userTier] < TIER_RANK[requiredTier]) {
-      throw new ForbiddenException(
-        `Este tier requiere status ${requiredTier}. Tu nivel: ${userTier}`,
-      );
-    }
-  }
-
   // ── Reads ────────────────────────────────────────────────────────────────
 
   async getMyStatus(userId: string): Promise<LoyaltyStatusDto> {
@@ -254,20 +227,9 @@ export class LoyaltyService {
       this.prisma.userStreak.findUnique({ where: { userId } }),
     ]);
 
-    const tier: LoyaltyTier = total?.tier ?? LoyaltyTier.ROOKIE;
-    const next = nextTier(tier);
-    const yearPoints = total?.yearPoints ?? 0;
-    const pointsToNext =
-      next === null
-        ? null
-        : Math.max(0, this.thresholdFor(next) - yearPoints);
-
     return {
       totalPoints: total?.totalPoints ?? 0,
-      yearPoints,
-      tier,
-      nextTier: next,
-      pointsToNext,
+      yearPoints: total?.yearPoints ?? 0,
       streak: {
         current: streak?.currentDays ?? 0,
         longest: streak?.longestDays ?? 0,
@@ -343,7 +305,7 @@ export class LoyaltyService {
       include: { user: { select: { id: true, name: true } } },
     });
 
-    if (totals.length < 5) {
+    if (totals.length < 1) {
       throw new NotFoundException(
         'Aún no hay suficientes usuarios en esta ciudad',
       );
@@ -353,7 +315,6 @@ export class LoyaltyService {
       rank: idx + 1,
       userId: t.userId,
       name: this.anonymizeName(t.user.name),
-      tier: t.tier,
       yearPoints: t.yearPoints,
     }));
   }
@@ -528,7 +489,7 @@ export class LoyaltyService {
 
         const totalAwarded = effective + milestoneBonus;
 
-        const newTier = await this.recomputeTotals(tx, opts.userId);
+        await this.recomputeTotals(tx, opts.userId);
 
         // Débito (REDEEM): si dejó el balance negativo, no alcanzaba → rollback.
         if (opts.type === LoyaltyEventType.REDEEM) {
@@ -544,7 +505,6 @@ export class LoyaltyService {
         return {
           awarded: totalAwarded,
           newStreakDays: streakDays,
-          tier: newTier,
         };
       });
     } catch (err) {
@@ -552,20 +512,13 @@ export class LoyaltyService {
       // rolled back, so read current state on a fresh connection (`this.prisma`,
       // NOT the poisoned `tx`) and report it as already-awarded.
       if (this.isUniqueViolation(err)) {
-        const [total, streak] = await Promise.all([
-          this.prisma.userLoyaltyTotal.findUnique({
-            where: { userId: opts.userId },
-            select: { tier: true },
-          }),
-          this.prisma.userStreak.findUnique({
-            where: { userId: opts.userId },
-            select: { currentDays: true },
-          }),
-        ]);
+        const streak = await this.prisma.userStreak.findUnique({
+          where: { userId: opts.userId },
+          select: { currentDays: true },
+        });
         return {
           awarded: 0,
           newStreakDays: streak?.currentDays ?? 0,
-          tier: total?.tier ?? LoyaltyTier.ROOKIE,
           alreadyAwarded: true,
         };
       }
@@ -691,7 +644,7 @@ export class LoyaltyService {
   private async recomputeTotals(
     tx: Prisma.TransactionClient,
     userId: string,
-  ): Promise<LoyaltyTier> {
+  ): Promise<void> {
     const yearCutoff = new Date(Date.now() - 365 * 86_400_000);
 
     const [totalAgg, yearAgg] = await Promise.all([
@@ -700,8 +653,8 @@ export class LoyaltyService {
         where: { userId },
         _sum: { points: true },
       }),
-      // yearPoints = base del tier: solo puntos GANADOS. Gastar (REDEEM) no
-      // debe degradar el tier del usuario.
+      // yearPoints = base del ranking de ciudad: solo puntos GANADOS. Gastar
+      // (REDEEM) no debe bajar la posición del usuario.
       tx.loyaltyEvent.aggregate({
         where: {
           userId,
@@ -714,32 +667,12 @@ export class LoyaltyService {
 
     const totalPoints = totalAgg._sum.points ?? 0;
     const yearPoints = yearAgg._sum.points ?? 0;
-    const tier = tierFromYearPoints(yearPoints);
-
-    const existing = await tx.userLoyaltyTotal.findUnique({
-      where: { userId },
-      select: { tier: true },
-    });
-    const tierChanged = !existing || existing.tier !== tier;
 
     await tx.userLoyaltyTotal.upsert({
       where: { userId },
-      create: {
-        userId,
-        totalPoints,
-        yearPoints,
-        tier,
-        tierUpdatedAt: new Date(),
-      },
-      update: {
-        totalPoints,
-        yearPoints,
-        tier,
-        ...(tierChanged ? { tierUpdatedAt: new Date() } : {}),
-      },
+      create: { userId, totalPoints, yearPoints },
+      update: { totalPoints, yearPoints },
     });
-
-    return tier;
   }
 
   private async maybeAwardFirstVenueBonus(
@@ -799,21 +732,6 @@ export class LoyaltyService {
     return (
       err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002'
     );
-  }
-
-  private thresholdFor(tier: LoyaltyTier): number {
-    // Keep in sync with TIER_THRESHOLDS in loyalty.constants.ts.
-    switch (tier) {
-      case LoyaltyTier.VIP:
-        return 5000;
-      case LoyaltyTier.INSIDER:
-        return 2000;
-      case LoyaltyTier.REGULAR:
-        return 500;
-      case LoyaltyTier.ROOKIE:
-      default:
-        return 0;
-    }
   }
 
   private anonymizeName(name: string | null): string {

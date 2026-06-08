@@ -520,7 +520,6 @@ export class EventsService {
         currency: dto.currency ?? 'EUR',
         capacity: dto.capacity ?? null,
         position: dto.position ?? 0,
-        minLoyaltyTier: dto.minLoyaltyTier ?? null,
         // Overrides de comisión en efectivo (físico). null = heredar del owner/global.
         cashFeeMode: dto.cashFeeMode ?? null,
         cashFeePctOverride: dto.cashFeePctOverride ?? null,
@@ -578,7 +577,6 @@ export class EventsService {
     if (dto.currency !== undefined) data.currency = dto.currency;
     if (dto.capacity !== undefined) data.capacity = dto.capacity;
     if (dto.position !== undefined) data.position = dto.position;
-    if (dto.minLoyaltyTier !== undefined) data.minLoyaltyTier = dto.minLoyaltyTier;
     // Overrides de comisión en efectivo. `undefined` = no tocar; `null` = limpiar
     // el override (vuelve a heredar del owner/global).
     if (dto.cashFeeMode !== undefined) data.cashFeeMode = dto.cashFeeMode;

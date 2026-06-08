@@ -4,32 +4,31 @@ import Link from 'next/link';
 import { ArrowRight, Loader2, Sparkles } from 'lucide-react';
 import { paths } from '@/core/config/paths';
 import { cn } from '@/core/lib/utils/cn';
-import { TIER_STYLES } from '../lib/tier-styles';
-import { TierBadge } from './tier-badge';
 import { StreakBadge } from './streak-badge';
-import { PointsProgress } from './points-progress';
 import { useLoyaltyStatus } from '../hooks/use-loyalty-status';
 
 interface LoyaltyCardProps {
   variant?: 'compact' | 'hero';
+  /** Conservado por compatibilidad con llamadas previas; ya no hay niveles. */
   hideTierNames?: boolean;
   className?: string;
 }
 
-export function LoyaltyCard({ variant = 'compact', hideTierNames = false, className }: LoyaltyCardProps) {
+export function LoyaltyCard({ variant = 'compact', className }: LoyaltyCardProps) {
   const { data, isLoading, isError } = useLoyaltyStatus();
+  const isHero = variant === 'hero';
 
   if (isLoading) {
     return (
       <div
         className={cn(
           'rounded-[22px] border border-white/14 bg-white/[0.05] p-6',
-          variant === 'hero' && 'p-8',
+          isHero && 'p-8',
           className,
         )}
       >
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" /> Cargando tu estado…
+          <Loader2 className="size-4 animate-spin" /> Cargando tus puntos…
         </div>
       </div>
     );
@@ -44,7 +43,7 @@ export function LoyaltyCard({ variant = 'compact', hideTierNames = false, classN
         )}
       >
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-          Tu estado
+          Tus puntos
         </p>
         <p className="mt-3 font-display text-xl font-bold tracking-tight">
           Aún sin actividad
@@ -62,9 +61,6 @@ export function LoyaltyCard({ variant = 'compact', hideTierNames = false, classN
     );
   }
 
-  const tierStyle = TIER_STYLES[data.tier];
-  const isHero = variant === 'hero';
-
   return (
     <div
       className={cn(
@@ -79,42 +75,23 @@ export function LoyaltyCard({ variant = 'compact', hideTierNames = false, classN
           'pointer-events-none absolute -top-24 -right-20 size-[280px] rounded-full opacity-25 blur-[80px]',
           isHero && 'size-[360px] opacity-35',
         )}
-        style={{
-          background: `radial-gradient(circle, ${tierStyle.gradient.includes('amber') ? '#f59e0b' : tierStyle.gradient.includes('purple') ? '#a855f7' : tierStyle.gradient.includes('emerald') ? '#10b981' : '#64748b'}, transparent 70%)`,
-        }}
+        style={{ background: 'radial-gradient(circle, #a855f7, transparent 70%)' }}
       />
 
       <div className="relative">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-              {hideTierNames ? 'Tus puntos' : 'Tu estado'}
-            </p>
-            {!hideTierNames && (
-              <>
-                <h2
-                  className={cn(
-                    'mt-2 font-display font-bold tracking-[-0.025em]',
-                    isHero
-                      ? 'text-3xl sm:text-[40px] leading-[1.05]'
-                      : 'text-2xl sm:text-[28px] leading-tight',
-                  )}
-                >
-                  {tierStyle.label}
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {tierStyle.description}
-                </p>
-              </>
-            )}
-          </div>
-          {!hideTierNames && <TierBadge tier={data.tier} />}
-        </div>
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+          Tus puntos
+        </p>
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
+        <div className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-2">
           <div className="flex items-baseline gap-1.5">
-            <Sparkles className="size-4 text-primary" />
-            <span className="font-display text-2xl font-bold tabular-nums tracking-tight">
+            <Sparkles className={cn('text-primary', isHero ? 'size-5' : 'size-4')} />
+            <span
+              className={cn(
+                'font-display font-bold tabular-nums tracking-[-0.02em]',
+                isHero ? 'text-4xl sm:text-5xl' : 'text-3xl',
+              )}
+            >
               {data.totalPoints.toLocaleString('es-MX')}
             </span>
             <span className="text-xs font-semibold uppercase tracking-[0.16em] text-white/45">
@@ -124,14 +101,14 @@ export function LoyaltyCard({ variant = 'compact', hideTierNames = false, classN
           <StreakBadge streak={data.streak} />
         </div>
 
-        <div className="mt-5">
-          <PointsProgress
-            yearPoints={data.yearPoints}
-            nextTier={data.nextTier}
-            pointsToNext={data.pointsToNext}
-            hideTierName={hideTierNames}
-          />
-        </div>
+        {data.yearPoints > 0 && (
+          <p className="mt-3 text-[12px] text-white/55">
+            <span className="font-semibold text-white/75">
+              {data.yearPoints.toLocaleString('es-MX')} NPP
+            </span>{' '}
+            ganados este año · cuentan para el ranking de tu ciudad.
+          </p>
+        )}
 
         {!isHero ? (
           <Link

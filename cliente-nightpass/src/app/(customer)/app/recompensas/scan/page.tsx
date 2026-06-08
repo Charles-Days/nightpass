@@ -16,11 +16,7 @@ import {
 import { toast } from 'sonner';
 import { paths } from '@/core/config/paths';
 import { ClientApiError } from '@/core/lib/api/client-client';
-import {
-  TIER_STYLES,
-  TierBadge,
-  useVenueCheckin,
-} from '@/features/loyalty';
+import { useVenueCheckin } from '@/features/loyalty';
 import type { VenueCheckinResponse } from '@/core/types/api';
 
 const COOLDOWN_MS = 2500;
@@ -174,7 +170,6 @@ export default function ScanCheckinPage() {
           icon={<AlertTriangle className="size-12 text-amber-300" />}
           title="Ya hiciste check-in hoy"
           subtitle="Vuelve mañana para sumar más puntos."
-          tier={data.tier}
           streakDays={data.newStreakDays}
           awarded={0}
         />
@@ -185,7 +180,6 @@ export default function ScanCheckinPage() {
         icon={<CheckCircle2 className="size-12 text-emerald-300" />}
         title="¡Check-in registrado!"
         subtitle="Sigue así para mantener tu racha."
-        tier={data.tier}
         streakDays={data.newStreakDays}
         awarded={data.awarded}
       />
@@ -343,18 +337,15 @@ function SuccessFrame({
   icon,
   title,
   subtitle,
-  tier,
   streakDays,
   awarded,
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle: string;
-  tier: VenueCheckinResponse['tier'];
   streakDays: number;
   awarded: number;
 }) {
-  const tierStyle = TIER_STYLES[tier];
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-160px)] w-full max-w-2xl flex-col items-center justify-center px-6 py-10 text-center">
       <div className="np-pop-in relative overflow-hidden rounded-[28px] border border-white/14 bg-white/[0.05] px-8 py-10 sm:px-12 sm:py-14">
@@ -392,13 +383,10 @@ function SuccessFrame({
           )}
 
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-            <TierBadge tier={tier} />
             <span className="rounded-full border border-white/14 bg-white/[0.07] px-2.5 py-1 text-[11px] font-semibold text-white/75">
               Racha: {streakDays} {streakDays === 1 ? 'día' : 'días'}
             </span>
           </div>
-
-          <p className="mt-2 text-[11px] text-white/40">{tierStyle.description}</p>
 
           <Link
             href={paths.recompensas}

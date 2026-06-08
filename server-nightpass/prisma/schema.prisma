@@ -94,13 +94,6 @@ enum TransferStatus {
   EXPIRED
 }
 
-enum LoyaltyTier {
-  ROOKIE
-  REGULAR
-  INSIDER
-  VIP
-}
-
 enum LoyaltyEventType {
   EVENT_CHECKIN
   VENUE_CHECKIN
@@ -554,8 +547,6 @@ model EventTier {
   currency           String       @default("MXN")
   capacity           Int?
   position           Int          @default(0)
-  // Loyalty gating: minimum LoyaltyTier required to purchase. Null = open to all.
-  minLoyaltyTier     LoyaltyTier?
   // Config de efectivo por-tier (override de los valores del owner). Todos
   // nullable: null = heredar.
   cashFeeMode        CashFeeMode? // null => SUBTRACT (comportamiento actual)
@@ -771,15 +762,12 @@ model UserStreak {
 /// Cached aggregates so we don't sum the ledger on every request.
 /// Recomputed inside applyReward() transaction.
 model UserLoyaltyTotal {
-  userId        String      @id @db.Uuid
-  /// All-time effective points.
-  totalPoints   Int         @default(0)
-  /// Effective points within last 365 days. Drives the tier.
-  yearPoints    Int         @default(0)
-  /// Tier derived from yearPoints + TIER_THRESHOLDS.
-  tier          LoyaltyTier @default(ROOKIE)
-  tierUpdatedAt DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  userId      String   @id @db.Uuid
+  /// All-time effective points (spendable balance).
+  totalPoints Int      @default(0)
+  /// Effective points within last 365 days. Drives the city ranking.
+  yearPoints  Int      @default(0)
+  updatedAt   DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -851,6 +839,7 @@ model RpProfile {
   eventAssignments          EventRp[]
   confirmedPhysicalRequests PhysicalPaymentRequest[] @relation("RpConfirmedRequests")
   assignedPhysicalRequests  PhysicalPaymentRequest[] @relation("RpAssignedRequests")
+  pickupPoints              RpPickupPoint[]
 
   @@index([rpCode])
   @@index([promoterId])
@@ -932,22 +921,60 @@ model PhysicalPaymentRequest {
   confirmedByRpId String?                      @db.Uuid
   confirmedAt     DateTime?
   orderId         String?                      @unique @db.Uuid
+  // Punto de cobro elegido por el cliente + slot (día/hora) que eligió. Null en
+  // solicitudes viejas (pre-puntos) o cuando se ruteó sin punto explícito.
+  pickupPointId   String?                      @db.Uuid
+  pickupAt        DateTime?
   expiresAt       DateTime
   createdAt       DateTime                     @default(now())
   updatedAt       DateTime                     @updatedAt
 
-  user          User       @relation("UserPhysicalRequests", fields: [userId], references: [id], onDelete: Cascade)
-  event         Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  tier          EventTier  @relation(fields: [tierId], references: [id], onDelete: Cascade)
-  assignedRp    RpProfile? @relation("RpAssignedRequests", fields: [assignedRpId], references: [id], onDelete: SetNull)
-  confirmedByRp RpProfile? @relation("RpConfirmedRequests", fields: [confirmedByRpId], references: [id], onDelete: SetNull)
-  order         Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  user          User           @relation("UserPhysicalRequests", fields: [userId], references: [id], onDelete: Cascade)
+  event         Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tier          EventTier      @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  assignedRp    RpProfile?     @relation("RpAssignedRequests", fields: [assignedRpId], references: [id], onDelete: SetNull)
+  confirmedByRp RpProfile?     @relation("RpConfirmedRequests", fields: [confirmedByRpId], references: [id], onDelete: SetNull)
+  order         Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  pickupPoint   RpPickupPoint? @relation(fields: [pickupPointId], references: [id], onDelete: SetNull)
 
   @@index([eventId, status])
   @@index([userId, status])
   @@index([confirmedByRpId, status])
   @@index([assignedRpId, status])
+  @@index([pickupPointId, status])
   @@map("physical_payment_requests")
+}
+
+// Punto físico donde un RP cobra efectivo y entrega boletos: lugar + coordenadas
+// + horarios. El cliente, al pagar en efectivo, elige el que le queda más cerca
+// (orden por Haversine) y reserva en su cola. Coords vienen de un link de Google
+// Maps (parseado) o de un pin en mapa OSM. Ver docs/RP_PUNTOS_COBRO.md.
+model RpPickupPoint {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  rpProfileId String   @db.Uuid
+  label       String
+  // Referencia en texto de dónde estará exactamente el RP (el pin es aproximado):
+  // "Enfrente de la plaza, junto al Oxxo azul". Lo ve el cliente.
+  reference   String?
+  latitude    Float
+  longitude   Float
+  // Link de Google Maps para el botón "cómo llegar" del cliente (opcional).
+  mapsUrl     String?
+  // Ventanas horarias: array JSON de { dow, start, end }. dow: 0-6 (Dom-Sáb) o
+  // null = cualquier día. start/end: "HH:mm" 24h.
+  windows     Json     @default("[]")
+  // Punto especial "puerta del evento": siempre se muestra al final como red de
+  // seguridad (no se pierde la venta del que está lejos).
+  isVenueDoor Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rpProfile RpProfile                @relation(fields: [rpProfileId], references: [id], onDelete: Cascade)
+  requests  PhysicalPaymentRequest[]
+
+  @@index([rpProfileId, isActive])
+  @@map("rp_pickup_points")
 }
 
 // Saldo PREPAGADO del organizador (venue o promoter) para cubrir la comisión de
