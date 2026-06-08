@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type Redis from 'ioredis';
-import { Role } from '@prisma/client';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { FUNNEL_STEPS, type FunnelStep } from './dto/track-event.dto';
@@ -177,7 +176,8 @@ export class MetricsService {
     pipeline.pfcount(CONV_ALL_KEY);
     const [res, totalAccounts] = await Promise.all([
       pipeline.exec(),
-      this.prisma.user.count({ where: { role: Role.CUSTOMER } }),
+      // Todas las cuentas registradas (clientes, RPs, dueños, organizadores…).
+      this.prisma.user.count(),
     ]);
 
     const counts = (res ?? []).map(([, v]) => Number(v) || 0);
