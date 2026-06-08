@@ -41,8 +41,8 @@ export default function RpsAdminPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
+      <header className="flex items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
           <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl text-white">
             RP
           </h1>
@@ -52,10 +52,11 @@ export default function RpsAdminPage() {
         </div>
         <Button
           onClick={() => setCreateDialogOpen(true)}
-          className="rounded-xl bg-gradient-to-r from-[#9333ea] to-[#a855f7] hover:brightness-110 text-white font-semibold flex items-center gap-1.5 h-10"
+          className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#9333ea] to-[#a855f7] font-semibold text-white hover:brightness-110"
         >
           <Plus className="size-4" />
-          Nuevo RP
+          <span className="hidden sm:inline">Nuevo RP</span>
+          <span className="sm:hidden">Nuevo</span>
         </Button>
       </header>
 
