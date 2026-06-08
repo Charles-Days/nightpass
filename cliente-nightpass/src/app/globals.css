@@ -960,3 +960,17 @@
     display: none !important;
   }
 }
+
+/*
+ * iOS Safari hace auto-zoom al enfocar un input con font-size < 16px. Varios
+ * inputs/selects usan `text-sm` (14px) y disparan ese zoom molesto en móvil.
+ * Forzamos 16px en form controls solo en móvil (gana a las clases utilitarias);
+ * en desktop conservan su tamaño. No afecta el pinch-zoom del usuario.
+ */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

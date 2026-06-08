@@ -105,7 +105,11 @@ export async function validateAndPrepare(file: File): Promise<ValidatedMedia> {
     throw new Error('El video supera el máximo de 15 segundos.');
   }
 
-  const needsTranscode = !playable || file.size > TRANSCODE_SIZE_THRESHOLD_BYTES;
+  // Transcodificamos SOLO por compatibilidad (códec que el navegador no puede
+  // reproducir, ej. HEVC de iPhone). Comprimir por tamaño con ffmpeg.wasm
+  // single-thread es demasiado lento y se cuelga en 0% con videos grandes, así
+  // que un video reproducible sube tal cual (los caps de 200 MB / 15 s lo acotan).
+  const needsTranscode = !playable;
 
   return {
     file,
