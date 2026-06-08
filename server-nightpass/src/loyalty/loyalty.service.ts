@@ -68,7 +68,8 @@ export class LoyaltyService {
     userId: string;
     passId: string;
     eventId: string;
-    venueId: string;
+    // null para eventos de organizador con sede externa (sin local).
+    venueId?: string | null;
     scannedAt: Date;
   }): Promise<void> {
     const { userId, passId, eventId, venueId, scannedAt } = opts;
@@ -78,14 +79,17 @@ export class LoyaltyService {
       type: LoyaltyEventType.EVENT_CHECKIN,
       basePoints: POINTS.EVENT_CHECKIN,
       idempotencyKey: `scan:${passId}`,
-      venueId,
+      venueId: venueId ?? undefined,
       eventId,
       passId,
       occurredAt: scannedAt,
       skipStreak: true,
     });
 
-    await this.maybeAwardFirstVenueBonus(userId, venueId, scannedAt);
+    // El bonus de "primer venue" solo aplica a eventos con local.
+    if (venueId) {
+      await this.maybeAwardFirstVenueBonus(userId, venueId, scannedAt);
+    }
   }
 
   async checkinVenue(opts: {

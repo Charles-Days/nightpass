@@ -693,29 +693,35 @@ export class PassesService {
       );
     }
 
-    // 3. Permisos: ADMIN siempre; STAFF solo si pertenece al venue
-    if (!pass.event.venueId || !pass.event.venue) {
-      throw new ConflictException('Pase sin local asociado — no se puede escanear');
-    }
-    const venueId = pass.event.venueId;
-    const passVenue = pass.event.venue;
+    // 3. Sede del evento: local (Venue) o sede externa del organizador (coords
+    //    propias del evento). Ambas son válidas para escanear en puerta.
+    const venueId = pass.event.venueId ?? null;
+    const passVenue = pass.event.venue ?? null;
+    const promoterId = pass.event.promoterId ?? null;
+    const loc = passVenue
+      ? {
+          name: passVenue.name as string | null,
+          latitude: passVenue.latitude,
+          longitude: passVenue.longitude,
+          radius: passVenue.geofenceRadiusM,
+        }
+      : {
+          name: pass.event.externalVenueName,
+          latitude: pass.event.externalVenueLat,
+          longitude: pass.event.externalVenueLng,
+          // Las sedes externas no tienen radio de geofence configurable → off.
+          radius: 0,
+        };
 
-    if (scanner.role === Role.VENUE_OWNER) {
-      const owner = await this.prisma.venueOwner.findUnique({
-        where: { userId_venueId: { userId: scanner.id, venueId } },
-        select: { userId: true },
-      });
-      if (!owner) {
-        throw new ForbiddenException('No perteneces a este local');
-      }
-    } else if (scanner.role === Role.VENUE_STAFF) {
-      const staff = await this.prisma.venueStaff.findUnique({
-        where: { venueId_userId: { venueId, userId: scanner.id } },
-        select: { status: true },
-      });
-      if (!staff || staff.status !== VenueStaffStatus.ACTIVE) {
-        throw new ForbiddenException('No perteneces a este local');
-      }
+    if (!venueId && !promoterId) {
+      throw new ConflictException(
+        'Pase sin sede asociada — no se puede escanear',
+      );
+    }
+
+    // 4. Permisos por tipo de evento.
+    if (scanner.role === Role.ADMIN) {
+      // ADMIN siempre puede.
     } else if (scanner.role === Role.RP) {
       // El RP solo escanea pases de los eventos a los que está asignado (EventRp).
       const rp = await this.prisma.rpProfile.findUnique({
@@ -734,8 +740,44 @@ export class PassesService {
       if (!assigned) {
         throw new ForbiddenException('No estás asignado a este evento');
       }
-    } else if (scanner.role !== Role.ADMIN) {
-      throw new ForbiddenException('No autorizado para escanear');
+    } else if (venueId) {
+      // Evento con local → owner/staff del local.
+      if (scanner.role === Role.VENUE_OWNER) {
+        const owner = await this.prisma.venueOwner.findUnique({
+          where: { userId_venueId: { userId: scanner.id, venueId } },
+          select: { userId: true },
+        });
+        if (!owner) {
+          throw new ForbiddenException('No perteneces a este local');
+        }
+      } else if (scanner.role === Role.VENUE_STAFF) {
+        const staff = await this.prisma.venueStaff.findUnique({
+          where: { venueId_userId: { venueId, userId: scanner.id } },
+          select: { status: true },
+        });
+        if (!staff || staff.status !== VenueStaffStatus.ACTIVE) {
+          throw new ForbiddenException('No perteneces a este local');
+        }
+      } else {
+        throw new ForbiddenException('No autorizado para escanear este evento');
+      }
+    } else {
+      // Evento de organizador (sede externa) → miembro del organizador.
+      if (
+        scanner.role !== Role.PROMOTER &&
+        scanner.role !== Role.PROMOTER_STAFF
+      ) {
+        throw new ForbiddenException('No autorizado para escanear este evento');
+      }
+      const member = await this.prisma.promoterMember.findUnique({
+        where: {
+          userId_promoterId: { userId: scanner.id, promoterId: promoterId! },
+        },
+        select: { userId: true },
+      });
+      if (!member) {
+        throw new ForbiddenException('No perteneces a este organizador');
+      }
     }
 
     // 4. Mismo día (UTC) — futuro: usar timezone del venue
@@ -766,15 +808,11 @@ export class PassesService {
     //    exigir un ping reciente del CLIENTE (no del staff) dentro del radio.
     //    Esto bloquea reventa remota — el QR no se canjea si el holder no
     //    está físicamente cerca del local.
-    const radius = passVenue.geofenceRadiusM;
+    const radius = loc.radius;
     let redeemedDistanceM: number | null = null;
     let redeemedAccuracyM: number | null = null;
 
-    if (
-      radius > 0 &&
-      passVenue.latitude != null &&
-      passVenue.longitude != null
-    ) {
+    if (radius > 0 && loc.latitude != null && loc.longitude != null) {
       const ping = await this.locations.findRecentForUser(pass.userId, 10);
       if (!ping) {
         throw new ConflictException({
@@ -786,8 +824,8 @@ export class PassesService {
       const meters = haversineMeters(
         ping.latitude,
         ping.longitude,
-        passVenue.latitude,
-        passVenue.longitude,
+        loc.latitude,
+        loc.longitude,
       );
       if (meters > radius) {
         throw new ConflictException({
@@ -831,11 +869,11 @@ export class PassesService {
         ),
       );
 
-    if (passVenue.latitude != null && passVenue.longitude != null) {
+    if (loc.latitude != null && loc.longitude != null) {
       void this.locations
         .record(pass.userId, {
-          latitude: passVenue.latitude,
-          longitude: passVenue.longitude,
+          latitude: loc.latitude,
+          longitude: loc.longitude,
           source: LocationPingSource.SCAN_REDEEM,
           accuracyM: undefined,
         })
@@ -846,10 +884,6 @@ export class PassesService {
             }`,
           ),
         );
-    } else {
-      this.logger.warn(
-        `Skipping server-side ping for pass ${pass.id}: venue ${venueId} has no coordinates`,
-      );
     }
 
     return {
@@ -860,7 +894,7 @@ export class PassesService {
       event: {
         id: pass.event.id,
         title: pass.event.title,
-        venue: passVenue.name,
+        venue: loc.name,
       },
     };
   }
