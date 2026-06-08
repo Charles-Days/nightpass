@@ -30,8 +30,15 @@ export function QrScanner() {
     try {
       const { BrowserMultiFormatReader } = await import('@zxing/browser');
       const reader = new BrowserMultiFormatReader();
-      const controls = await reader.decodeFromVideoDevice(
-        undefined,
+      // Cámara trasera + resolución alta → QR más nítido y lectura más rápida.
+      const controls = await reader.decodeFromConstraints(
+        {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1920 },
+          },
+        },
         videoRef.current!,
         (result) => {
           if (!result) return;
@@ -84,9 +91,9 @@ export function QrScanner() {
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      {/* Cámara */}
+      {/* Cámara — viewport cuadrado grande (el QR es cuadrado). */}
       <div className="overflow-hidden rounded-[22px] border border-white/14 bg-black/50">
-        <div className="relative aspect-video md:aspect-square">
+        <div className="relative aspect-square">
           <video
             ref={videoRef}
             className="h-full w-full object-cover"
@@ -105,10 +112,15 @@ export function QrScanner() {
               <Button onClick={start}>Iniciar cámara</Button>
             </div>
           ) : null}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-12 rounded-2xl border-2 border-primary/60 shadow-[0_0_40px_rgba(168,85,247,0.4)]"
-          />
+          {/* Reticle cuadrado centrado para alinear el QR. */}
+          {phase.kind !== 'idle' ? (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 grid place-items-center"
+            >
+              <div className="aspect-square w-[70%] rounded-2xl border-2 border-primary/70 shadow-[0_0_40px_rgba(168,85,247,0.45)]" />
+            </div>
+          ) : null}
         </div>
       </div>
 
