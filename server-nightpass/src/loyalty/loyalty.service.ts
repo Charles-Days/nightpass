@@ -332,11 +332,13 @@ export class LoyaltyService {
     const ids = userIds.map((u) => u.userId);
 
     const totals = await this.prisma.userLoyaltyTotal.findMany({
-      // Solo usuarios que dieron consentimiento explícito (rankingOptIn=true).
+      // Incluye a quienes optaron sí (true) y a quienes aún no deciden (null);
+      // solo excluye a quien optó NO explícito (rankingOptIn=false). El toggle de
+      // la UI viene en ON por default, así que null = aún no lo apagó.
       where: {
         userId: { in: ids },
         yearPoints: { gt: 0 },
-        user: { rankingOptIn: true },
+        user: { rankingOptIn: { not: false } },
       },
       orderBy: { yearPoints: 'desc' },
       take: limit,
