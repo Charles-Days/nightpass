@@ -136,6 +136,24 @@ export default function RpDashboardPage() {
           )}
         </>
       )}
+
+      {/* Sin eventos de efectivo: la cobranza/puntos no aplican aún. Lo
+          explicamos para que el panel no se vea vacío/roto. */}
+      {stats && !showCash && (
+        <div className="rounded-[18px] border border-dashed border-white/14 bg-white/[0.02] p-8 text-center">
+          <span className="bg-primary/12 text-primary mx-auto grid size-12 place-items-center rounded-2xl">
+            <Banknote className="size-6" />
+          </span>
+          <p className="font-display mt-4 text-base font-bold text-white">
+            Aún no tienes cobranza
+          </p>
+          <p className="text-muted-foreground mx-auto mt-1.5 max-w-sm text-sm">
+            Cuando un organizador o el admin te asigne a un evento con pago en
+            efectivo, aquí aparecerán tu cobranza y tus puntos de cobro. Mientras,
+            puedes vender con tu link o generando pases.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

@@ -155,6 +155,18 @@ export class RpService {
             isActive: true,
           },
         });
+        // Asignarlo también como vendedor de efectivo del evento (EventRp), para
+        // que su panel de cobranza funcione sin tener que marcarlo a mano aparte.
+        await tx.eventRp.upsert({
+          where: {
+            eventId_rpProfileId: {
+              eventId: dto.eventId,
+              rpProfileId: profile.id,
+            },
+          },
+          update: {},
+          create: { eventId: dto.eventId, rpProfileId: profile.id },
+        });
       }
 
       return profile;
