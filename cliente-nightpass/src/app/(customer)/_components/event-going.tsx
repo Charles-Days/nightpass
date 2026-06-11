@@ -101,7 +101,7 @@ export function EventGoing({ eventId, count, compact, className, style }: Props)
       >
         {going ? (
           <>
-            <Check className="size-4" /> Vas a ir
+            <Check className="size-4" /> Asistirás
           </>
         ) : (
           <>
