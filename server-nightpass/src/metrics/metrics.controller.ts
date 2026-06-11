@@ -15,6 +15,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { MetricsService } from './metrics.service';
 import { RecordVisitDto } from './dto/record-visit.dto';
 import { TrackEventDto } from './dto/track-event.dto';
+import { EventGoingDto } from './dto/event-going.dto';
 
 @Controller('metrics')
 export class MetricsController {
@@ -44,6 +45,17 @@ export class MetricsController {
   @Throttle({ default: { ttl: 60_000, limit: 120 } })
   async track(@Body() dto: TrackEventDto): Promise<void> {
     await this.service.recordEvent(dto);
+  }
+
+  // Público: "voy a ir" anónimo a un evento (sin cuenta). Dedup por SET en
+  // Redis con el visitorId. Devuelve el total actualizado para que el front lo
+  // pinte. Throttle moderado: es un beacon de un clic.
+  @Post('event-going')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  async eventGoing(@Body() dto: EventGoingDto): Promise<{ count: number }> {
+    const count = await this.service.recordGoing(dto.eventId, dto.visitorId);
+    return { count };
   }
 
   // Solo ADMIN: visitantes únicos de hoy, all-time y últimos 7 días.

@@ -10,6 +10,7 @@ import { ListCatalogEventsQuery } from './dto/list-catalog-events.query';
 import { resolveTierPrice } from '../events/tier-pricing';
 import { computeCashUnitPrice } from '../common/cash-pricing';
 import { isDevBypassEnabled } from '../common/dev-bypass';
+import { MetricsService } from '../metrics/metrics.service';
 
 export type OccupancyBucket = 'low' | 'medium' | 'high';
 
@@ -54,6 +55,7 @@ export class CatalogService {
     private readonly locations: LocationsService,
     private readonly config: ConfigService,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly metrics: MetricsService,
   ) {
     this.uploadsUrl = this.config.get<string>('LOCAL_UPLOADS_URL') || '';
   }
@@ -392,7 +394,12 @@ export class CatalogService {
     }));
 
     // Pases emitidos por evento (aforo vendido) en una sola consulta agrupada.
-    const soldByEvent = await this._soldCountByEvent(items.map((e) => e.id));
+    // En paralelo: "voy a ir" anónimo por evento (SET en Redis).
+    const ids = items.map((e) => e.id);
+    const [soldByEvent, goingByEvent] = await Promise.all([
+      this._soldCountByEvent(ids),
+      this.metrics.getGoingCountsByEvent(ids),
+    ]);
 
     return {
       items: mapped.map((e) => ({
@@ -401,6 +408,8 @@ export class CatalogService {
         capacity: e.capacity ?? null,
         // Mismo boost visual FOMO que el detalle, para que el % cuadre en ambos.
         aforoBoostPct: e.aforoBoostPct ?? 0,
+        // Asistentes ("voy a ir") anónimos — reemplaza el aforo en las cards.
+        goingCount: goingByEvent.get(e.id) ?? 0,
       })),
       total,
       page: query.page,
@@ -472,11 +481,13 @@ export class CatalogService {
 
     // Aforo vendido (pases emitidos: Stripe + efectivo + vales pendientes).
     // Los dos counts en paralelo — no encadenados — para no doblar latencia.
-    const [soldPasses, pendingClaims] = await Promise.all([
+    // En el mismo lote, los "voy a ir" anónimos (SET en Redis).
+    const [soldPasses, pendingClaims, goingCount] = await Promise.all([
       this.prisma.pass.count({ where: { eventId: event.id } }),
       this.prisma.passClaim.count({
         where: { eventId: event.id, status: PassClaimStatus.PENDING },
       }),
+      this.metrics.getGoingCount(event.id),
     ]);
     const sold = soldPasses + pendingClaims;
 
@@ -525,6 +536,8 @@ export class CatalogService {
       sold,
       capacity: event.capacity ?? null,
       aforoBoostPct: event.aforoBoostPct ?? 0,
+      // Asistentes ("voy a ir") anónimos — reemplaza el aforo en el detalle.
+      goingCount,
     };
     });
   }

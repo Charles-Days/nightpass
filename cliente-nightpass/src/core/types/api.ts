@@ -312,6 +312,8 @@ export interface Event {
   capacity: number | null;
   /** Boost de aforo visual (FOMO), 0–100. Solo lo ajusta el ADMIN. */
   aforoBoostPct?: number;
+  /** "Voy a ir" anónimos del evento (interesados). Reemplaza el aforo. */
+  goingCount?: number;
   createdAt: string;
   updatedAt: string;
   tiers?: EventTier[];
@@ -563,6 +565,8 @@ export interface CatalogEventDetail {
   sold?: number | null;
   /** Boost de aforo solo visual (FOMO), 0–100. Se suma al % "lleno" mostrado. */
   aforoBoostPct?: number;
+  /** "Voy a ir" anónimos del evento (interesados). Reemplaza el aforo. */
+  goingCount?: number;
   tiers: Array<{
     id: string;
     name: string;
