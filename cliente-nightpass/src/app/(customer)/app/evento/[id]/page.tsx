@@ -193,6 +193,15 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
                 ? `${event.externalVenueName}${event.externalVenueCity ? ` · ${event.externalVenueCity}` : ''}`
                 : event.promoter?.name ?? ''}
           </p>
+
+          {/* Primer CTA, sin scroll: "voy a ir" anónimo (un clic, sin cuenta). */}
+          <EventGoing
+            eventId={event.id}
+            count={event.goingCount}
+            className="np-rise mt-4"
+            style={{ animationDelay: '300ms' }}
+          />
+
           {event.whatsappGroups && event.whatsappGroups.length > 0 && (
             <div className="np-rise mt-3 flex flex-wrap gap-2" style={{ animationDelay: '300ms' }}>
               {event.whatsappGroups.map((group, i) => (
@@ -313,14 +322,6 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
               </div>
             </div>
           )}
-
-          <div className="flex items-start gap-3">
-            <Users className="mt-0.5 size-4 shrink-0 text-primary" />
-            <div className="min-w-0 flex-1">
-              <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Asistencia</dt>
-              <EventGoing eventId={event.id} count={event.goingCount} className="mt-1.5 max-w-[280px]" />
-            </div>
-          </div>
 
           {cheapestTier && (
             <div className="flex items-start gap-3">
