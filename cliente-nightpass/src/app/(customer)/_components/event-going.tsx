@@ -11,6 +11,7 @@ interface Props {
   /** Variante read-only chica para las cards (sin botón). */
   compact?: boolean;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 // Flag local: recuerda que este navegador ya tocó "voy a ir" para pintar el
@@ -26,7 +27,7 @@ function goingLabel(n: number) {
 // "Voy a ir" anónimo: un clic, sin cuenta. Reemplaza la barra de aforo. El número
 // es prueba social (la gente lee "X asistirán" como asistencia confirmada),
 // aunque por dentro solo es un interesado deduplicado por dispositivo.
-export function EventGoing({ eventId, count, compact, className }: Props) {
+export function EventGoing({ eventId, count, compact, className, style }: Props) {
   const [total, setTotal] = useState(count ?? 0);
   const [going, setGoing] = useState(false);
   const [pending, setPending] = useState(false);
@@ -45,6 +46,7 @@ export function EventGoing({ eventId, count, compact, className }: Props) {
     if (total <= 0) return null;
     return (
       <span
+        style={style}
         className={cn(
           'inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary',
           className,
@@ -81,27 +83,17 @@ export function EventGoing({ eventId, count, compact, className }: Props) {
   }
 
   return (
-    <div className={cn('flex flex-col gap-2.5', className)}>
-      <p className="flex items-center gap-1.5 text-sm">
-        <Users className="size-4 shrink-0 text-primary" />
-        {total > 0 ? (
-          <>
-            <span className="font-bold tabular-nums text-primary">{total}</span>
-            <span className="text-muted-foreground">
-              {total === 1 ? 'persona asistirá' : 'personas asistirán'}
-            </span>
-          </>
-        ) : (
-          <span className="text-muted-foreground">Sé el primero en confirmar asistencia</span>
-        )}
-      </p>
+    <div
+      style={style}
+      className={cn('flex flex-wrap items-center gap-x-3 gap-y-1.5', className)}
+    >
       <button
         type="button"
         onClick={handleGoing}
         disabled={going || pending}
         aria-pressed={going}
         className={cn(
-          'inline-flex w-fit items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition active:scale-95 disabled:cursor-default',
+          'inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition active:scale-95 disabled:cursor-default',
           going
             ? 'border border-emerald-400/30 bg-emerald-400/10 text-emerald-200'
             : 'bg-gradient-to-r from-[#9333ea] to-[#a855f7] text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] hover:brightness-110',
@@ -117,6 +109,14 @@ export function EventGoing({ eventId, count, compact, className }: Props) {
           </>
         )}
       </button>
+      {total > 0 ? (
+        <span className="flex items-center gap-1 text-sm text-white/70">
+          <span className="font-bold tabular-nums text-primary">{total}</span>
+          {total === 1 ? 'asistirá' : 'asistirán'}
+        </span>
+      ) : (
+        <span className="text-sm text-muted-foreground">Sé el primero en ir</span>
+      )}
     </div>
   );
 }
