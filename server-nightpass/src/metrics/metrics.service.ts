@@ -86,6 +86,13 @@ const CONV_ALL_KEY = 'convert:uniq:all';
 const convDayKey = (d: string) => `convert:uniq:${d}`;
 const DAILY_TTL_SECONDS = 60 * 60 * 24 * 90; // retener 90 días de claves diarias
 
+// "Voy a ir" anónimo por evento. SET de visitorIds (no HLL): necesitamos contar
+// exacto y poder dedupar por miembro. SADD es idempotente → tocar el botón dos
+// veces no recuenta. SCARD da el total. TTL generoso para que eventos viejos se
+// limpien solos sin tocar el botón de borrar nada.
+const goingKey = (eventId: string) => `event:going:${eventId}`;
+const GOING_TTL_SECONDS = 60 * 60 * 24 * 120; // 120 días: cubre el evento + colchón
+
 export interface DailyCount {
   date: string;
   count: number;
@@ -160,6 +167,41 @@ export class MetricsService {
       .expire(key, DAILY_TTL_SECONDS)
       .pfadd(CONV_ALL_KEY, visitorId)
       .exec();
+  }
+
+  /**
+   * Registra que un visitante "va a ir" a un evento y devuelve el total de
+   * asistentes (interesados) tras añadirlo. Dedup por SET → el mismo visitorId
+   * no infla el conteo aunque toque el botón varias veces.
+   */
+  async recordGoing(eventId: string, visitorId: string): Promise<number> {
+    if (!eventId || !visitorId) return 0;
+    const key = goingKey(eventId);
+    const res = await this.redis
+      .multi()
+      .sadd(key, visitorId)
+      .expire(key, GOING_TTL_SECONDS)
+      .scard(key)
+      .exec();
+    // Layout del multi: [[err, sadd], [err, expire], [err, scard]].
+    return Number(res?.[2]?.[1]) || 0;
+  }
+
+  /** Total de "voy a ir" de un evento. */
+  async getGoingCount(eventId: string): Promise<number> {
+    if (!eventId) return 0;
+    return (await this.redis.scard(goingKey(eventId))) || 0;
+  }
+
+  /** Mapa eventId → total de "voy a ir", en un solo round-trip a Redis. */
+  async getGoingCountsByEvent(eventIds: string[]): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    if (eventIds.length === 0) return map;
+    const pipeline = this.redis.multi();
+    eventIds.forEach((id) => pipeline.scard(goingKey(id)));
+    const res = await pipeline.exec();
+    eventIds.forEach((id, i) => map.set(id, Number(res?.[i]?.[1]) || 0));
+    return map;
   }
 
   async getStats(): Promise<VisitorStats> {

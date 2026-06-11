@@ -9,7 +9,7 @@ import { JsonLd, eventLd, breadcrumbLd } from '@/core/seo/json-ld';
 import { type CatalogEventDetail } from '@/core/types/api';
 import { EventStoriesSection } from '@/app/(customer)/_components/event-stories-section';
 import { EventForumSection } from '@/app/(customer)/_components/event-forum-section';
-import { EventAforo } from '@/app/(customer)/_components/event-aforo';
+import { EventGoing } from '@/app/(customer)/_components/event-going';
 import { EventHeroFx } from '@/app/(customer)/_components/event-hero-fx';
 import { EventCountdown } from '@/app/(customer)/_components/event-countdown';
 import { BuyCta } from '@/app/(customer)/_components/buy-cta';
@@ -314,16 +314,13 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
             </div>
           )}
 
-          {event.capacity != null && (
-            <div className="flex items-start gap-3">
-              <Users className="mt-0.5 size-4 shrink-0 text-primary" />
-              <div className="min-w-0 flex-1">
-                <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Aforo</dt>
-                <dd className="mt-0.5 text-sm text-foreground">{event.capacity} lugares</dd>
-                <EventAforo sold={event.sold} capacity={event.capacity} boostPct={event.aforoBoostPct} className="mt-2 max-w-[260px]" />
-              </div>
+          <div className="flex items-start gap-3">
+            <Users className="mt-0.5 size-4 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Asistencia</dt>
+              <EventGoing eventId={event.id} count={event.goingCount} className="mt-1.5 max-w-[280px]" />
             </div>
-          )}
+          </div>
 
           {cheapestTier && (
             <div className="flex items-start gap-3">

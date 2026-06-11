@@ -8,7 +8,7 @@ import { clientFetch } from '@/core/lib/api/client-client';
 import { Input } from '@/core/components/ui/input';
 import { paths } from '@/core/config/paths';
 import { VenueCard } from '../../../_components/venue-card';
-import { EventAforo } from '../../../_components/event-aforo';
+import { EventGoing } from '../../../_components/event-going';
 import type { CatalogVenueSummary } from '@/core/types/api';
 
 interface CatalogResponse {
@@ -31,6 +31,7 @@ interface EventFeed {
   sold?: number | null;
   capacity?: number | null;
   aforoBoostPct?: number | null;
+  goingCount?: number | null;
 }
 
 interface EventsResponse {
@@ -202,7 +203,7 @@ function FeaturedEventCard({ ev }: { ev: EventFeed }) {
             {where}
           </p>
         )}
-        <EventAforo sold={ev.sold} capacity={ev.capacity} boostPct={ev.aforoBoostPct} className="max-w-[240px]" />
+        <EventGoing eventId={ev.id} count={ev.goingCount} compact />
         <span className="np-shimmer mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(168,85,247,0.6)] transition group-hover:brightness-110">
           Conseguir pase{' '}
           <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -471,7 +472,7 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
                       <MapPin className="size-3 shrink-0" />
                       {where}
                     </p>
-                    <EventAforo sold={ev.sold} capacity={ev.capacity} boostPct={ev.aforoBoostPct} compact className="pt-0.5" />
+                    <EventGoing eventId={ev.id} count={ev.goingCount} compact className="pt-0.5" />
                   </div>
                 </Link>
               );
