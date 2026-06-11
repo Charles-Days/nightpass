@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check, Users } from 'lucide-react';
+import { Flame, Users } from 'lucide-react';
 import { cn } from '@/core/lib/utils/cn';
 
 interface Props {
@@ -24,6 +24,28 @@ function goingLabel(n: number) {
   return n === 1 ? '1 asistirá' : `${n} asistirán`;
 }
 
+// No hay aforo/tope real, así que la barra se llena hacia un "hito" redondo que
+// sube en escalones. Al acercarse al hito el siguiente se desbloquea y la barra
+// vuelve a bajar — sensación de momentum continuo (FOMO) sin un número visible.
+const MILESTONES = [20, 50, 100, 200, 300, 500, 750, 1000, 1500, 2000];
+function softGoal(n: number): number {
+  for (const m of MILESTONES) if (n < m) return m;
+  return Math.ceil((n + 1) / 1000) * 1000;
+}
+
+// Porcentaje de llenado hacia el hito, con un piso para que nunca se vea vacía.
+function fillPct(n: number): number {
+  if (n <= 0) return 0;
+  return Math.min(100, Math.max(8, Math.round((n / softGoal(n)) * 100)));
+}
+
+// Etiqueta de vibra según qué tan llena va (sustituye al número).
+function hypeLabel(pct: number): string {
+  if (pct >= 80) return 'Casi lleno';
+  if (pct >= 45) return 'En tendencia';
+  return 'Se está llenando';
+}
+
 // "Voy a ir" anónimo: un clic, sin cuenta. Reemplaza la barra de aforo. El número
 // es prueba social (la gente lee "X asistirán" como asistencia confirmada),
 // aunque por dentro solo es un interesado deduplicado por dispositivo.
@@ -31,8 +53,22 @@ export function EventGoing({ eventId, count, compact, className, style }: Props)
   const [total, setTotal] = useState(count ?? 0);
   const [going, setGoing] = useState(false);
   const [pending, setPending] = useState(false);
+  // Ancho de la barra: arranca en 0 y anima hacia el % objetivo al confirmar.
+  const [barW, setBarW] = useState(0);
 
   useEffect(() => setTotal(count ?? 0), [count]);
+
+  // Cuando ya va a ir, anima la barra hasta su % (un frame después para que la
+  // transición CSS corra desde 0).
+  useEffect(() => {
+    if (!going) {
+      setBarW(0);
+      return;
+    }
+    const target = fillPct(total);
+    const raf = requestAnimationFrame(() => setBarW(target));
+    return () => cancelAnimationFrame(raf);
+  }, [going, total]);
   useEffect(() => {
     try {
       if (localStorage.getItem(goneKey(eventId))) setGoing(true);
@@ -82,6 +118,26 @@ export function EventGoing({ eventId, count, compact, className, style }: Props)
     }
   }
 
+  // Ya va a ir: nada de pastilla verde ni número. Una barra que se llena hacia
+  // el hito + etiqueta de vibra, para dar sensación de evento llenándose.
+  if (going) {
+    const pct = fillPct(total);
+    return (
+      <div style={style} className={cn('flex flex-col gap-1.5', className)}>
+        <span className="flex items-center gap-1.5 text-[13px] font-semibold text-primary">
+          <Flame className="size-3.5 shrink-0 animate-pulse" />
+          {hypeLabel(pct)}
+        </span>
+        <div className="h-2 w-full max-w-[280px] overflow-hidden rounded-full bg-white/10">
+          <div
+            className="np-shimmer h-full rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] shadow-[0_0_12px_-1px_rgba(168,85,247,0.7)] transition-[width] duration-1000 ease-out"
+            style={{ width: `${barW}%` }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       style={style}
@@ -90,24 +146,10 @@ export function EventGoing({ eventId, count, compact, className, style }: Props)
       <button
         type="button"
         onClick={handleGoing}
-        disabled={going || pending}
-        aria-pressed={going}
-        className={cn(
-          'inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition active:scale-95 disabled:cursor-default',
-          going
-            ? 'border border-emerald-400/30 bg-emerald-400/10 text-emerald-200'
-            : 'bg-gradient-to-r from-[#9333ea] to-[#a855f7] text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] hover:brightness-110',
-        )}
+        disabled={pending}
+        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transition active:scale-95 hover:brightness-110 disabled:opacity-70"
       >
-        {going ? (
-          <>
-            <Check className="size-4" /> Asistirás
-          </>
-        ) : (
-          <>
-            <Users className="size-4" /> Voy a ir
-          </>
-        )}
+        <Users className="size-4" /> Voy a ir
       </button>
       {total > 0 ? (
         <span className="flex items-center gap-1 text-sm text-white/70">
