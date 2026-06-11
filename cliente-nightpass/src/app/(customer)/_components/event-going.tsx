@@ -20,10 +20,6 @@ interface Props {
 // tocar de nuevo no recuenta.
 const goneKey = (id: string) => `np_going_${id}`;
 
-function goingLabel(n: number) {
-  return n === 1 ? '1 asistirá' : `${n} asistirán`;
-}
-
 // No hay aforo/tope real, así que la barra se llena hacia un "hito" redondo que
 // sube en escalones. Al acercarse al hito el siguiente se desbloquea y la barra
 // vuelve a bajar — sensación de momentum continuo (FOMO) sin un número visible.
@@ -77,20 +73,18 @@ export function EventGoing({ eventId, count, compact, className, style }: Props)
     }
   }, [eventId]);
 
-  // Card read-only: solo el número, y solo si hay ≥1 (evita "0 asistirán").
+  // Card read-only: solo la barra de llenado, nunca el número.
   if (compact) {
-    if (total <= 0) return null;
+    const pct = fillPct(total);
     return (
-      <span
-        style={style}
-        className={cn(
-          'inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary',
-          className,
-        )}
-      >
-        <Users className="size-3 shrink-0" />
-        <span className="tabular-nums">{goingLabel(total)}</span>
-      </span>
+      <div style={style} className={cn('w-full max-w-[240px]', className)}>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+          <div
+            className="np-shimmer h-full rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] shadow-[0_0_10px_-2px_rgba(168,85,247,0.6)]"
+            style={{ width: `${Math.max(pct, total > 0 ? 8 : 4)}%` }}
+          />
+        </div>
+      </div>
     );
   }
 
@@ -138,11 +132,9 @@ export function EventGoing({ eventId, count, compact, className, style }: Props)
     );
   }
 
+  // Antes de confirmar: solo el botón, sin barra ni número.
   return (
-    <div
-      style={style}
-      className={cn('flex flex-wrap items-center gap-x-3 gap-y-1.5', className)}
-    >
+    <div style={style} className={cn('flex', className)}>
       <button
         type="button"
         onClick={handleGoing}
@@ -151,14 +143,6 @@ export function EventGoing({ eventId, count, compact, className, style }: Props)
       >
         <Users className="size-4" /> Voy a ir
       </button>
-      {total > 0 ? (
-        <span className="flex items-center gap-1 text-sm text-white/70">
-          <span className="font-bold tabular-nums text-primary">{total}</span>
-          {total === 1 ? 'asistirá' : 'asistirán'}
-        </span>
-      ) : (
-        <span className="text-sm text-muted-foreground">Sé el primero en ir</span>
-      )}
     </div>
   );
 }
