@@ -74,6 +74,11 @@ export const envSchema = z.object({
     .min(32, 'PASS_HMAC_SECRET must be at least 32 chars')
     .optional(),
 
+  // Firma HMAC de la imagen de historia de Instagram (story card). El front
+  // arma el PNG; el back solo firma el payload del link. Opcional al boot:
+  // si falta, buildStoryCardUrl cae a JWT_ACCESS_SECRET.
+  STORY_CARD_SECRET: z.string().optional(),
+
   // Google OAuth (Sign in with Google). Sin GOOGLE_CLIENT_ID el endpoint /auth/google devuelve 503.
   GOOGLE_CLIENT_ID: z.string().optional(),
 

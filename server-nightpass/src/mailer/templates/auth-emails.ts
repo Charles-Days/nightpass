@@ -69,7 +69,7 @@ Acceso con: ${email}
 
 Abre la app: ${ctaUrl}
 
-¿Dudas? Escríbenos a hola@nightpass.mx
+¿Dudas? Escríbenos a no-reply@nightpass.mx
 
 — Equipo NightPass`,
   };
@@ -137,7 +137,7 @@ export interface PasswordChangedInput {
 }
 
 export function passwordChanged(input: PasswordChangedInput) {
-  const { name, supportEmail = 'hola@nightpass.mx' } = input;
+  const { name, supportEmail = 'no-reply@nightpass.mx' } = input;
   const safeSupportEmail = escapeHtml(supportEmail);
 
   return {
@@ -237,7 +237,7 @@ export interface EmailChangedInput {
 }
 
 export function emailChanged(input: EmailChangedInput) {
-  const { name, newEmail, supportEmail = 'hola@nightpass.mx' } = input;
+  const { name, newEmail, supportEmail = 'no-reply@nightpass.mx' } = input;
   const safeSupportEmail = escapeHtml(supportEmail);
   const safeNewEmail = escapeHtml(newEmail);
 

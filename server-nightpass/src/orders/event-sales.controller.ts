@@ -1,8 +1,11 @@
 import {
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
@@ -27,5 +30,24 @@ export class EventSalesController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.orders.eventSales(eventId, user);
+  }
+
+  @Post(':eventId/orders/:orderId/thank-you')
+  @HttpCode(HttpStatus.OK)
+  sendThankYou(
+    @Param('eventId', ParseUUIDPipe) eventId: string,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.orders.sendThankYouEmail(eventId, orderId, user);
+  }
+
+  @Get(':eventId/orders/:orderId/thank-you/preview')
+  previewThankYou(
+    @Param('eventId', ParseUUIDPipe) eventId: string,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.orders.previewThankYouEmail(eventId, orderId, user);
   }
 }

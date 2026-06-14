@@ -21,7 +21,7 @@ export interface VenueSuspendedInput {
 }
 
 export function venueSuspended(input: VenueSuspendedInput) {
-  const { ownerName, venueName, reason, supportEmail = 'hola@nightpass.mx' } = input;
+  const { ownerName, venueName, reason, supportEmail = 'no-reply@nightpass.mx' } = input;
 
   const reasonHtml = reason
     ? renderInfoBox({ tone: 'danger', title: 'Motivo', bodyHtml: escapeHtml(reason) })
@@ -92,7 +92,7 @@ export interface StaffRevokedInput {
 }
 
 export function staffRevoked(input: StaffRevokedInput) {
-  const { staffName, venueName, supportEmail = 'hola@nightpass.mx' } = input;
+  const { staffName, venueName, supportEmail = 'no-reply@nightpass.mx' } = input;
 
   return {
     subject: `Ya no formas parte del equipo de ${venueName}`,

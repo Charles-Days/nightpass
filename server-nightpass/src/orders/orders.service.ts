@@ -1,4 +1,6 @@
+import * as crypto from 'crypto';
 import {
+  BadRequestException,
   ForbiddenException,
   HttpException,
   HttpStatus,
@@ -16,6 +18,11 @@ import { resolveTierPrice } from '../events/tier-pricing';
 import { issuePasses } from '../passes/issue-passes';
 import { isDevBypassEnabled } from '../common/dev-bypass';
 import { requirePassSecret } from '../common/pass-secret';
+import { MailerService } from '../mailer/mailer.service';
+import {
+  buyerThankYouEmail,
+  type BuyerThankYouInput,
+} from '../mailer/templates/buyer-thank-you-email';
 
 const ORDER_LIMBO_MINUTES = 30;
 
@@ -28,6 +35,7 @@ export class OrdersService {
     private readonly stripe: StripeService,
     private readonly config: ConfigService,
     private readonly loyalty: LoyaltyService,
+    private readonly mailer: MailerService,
   ) {}
 
   // ── Helpers ──────────────────────────────────────────────────────────────
@@ -444,6 +452,175 @@ export class OrdersService {
         user: o.user,
         passUsed: o.passes.some((p) => p.usedAt != null),
       })),
+    };
+  }
+
+  /**
+   * Carga la orden, corre las comprobaciones de 404/400/propiedad (mismas que
+   * `eventSales`) y arma el `BuyerThankYouInput` del correo de agradecimiento.
+   * Compartido por `sendThankYouEmail` (envía) y `previewThankYouEmail` (no
+   * envía, solo renderiza) para no duplicar la carga ni las validaciones.
+   */
+  private async buildThankYouInput(
+    eventId: string,
+    orderId: string,
+    user: AuthUser,
+  ): Promise<{ input: BuyerThankYouInput; email: string }> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        user: { select: { name: true, email: true } },
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startsAt: true,
+            venue: { include: { owners: { select: { userId: true } } } },
+            promoter: { include: { members: { select: { userId: true } } } },
+          },
+        },
+        tier: { select: { name: true } },
+      },
+    });
+    if (!order) throw new NotFoundException('Orden no encontrada');
+
+    if (order.event.id !== eventId) {
+      throw new BadRequestException('La orden no pertenece a este evento');
+    }
+
+    // Misma comprobación de propiedad que eventSales.
+    if (user.role !== Role.ADMIN) {
+      const isVenueOwner =
+        order.event.venue?.owners.some((o) => o.userId === user.id) ?? false;
+      const isPromoterMember =
+        order.event.promoter?.members.some((m) => m.userId === user.id) ?? false;
+      if (!isVenueOwner && !isPromoterMember) {
+        throw new ForbiddenException('No tienes acceso a este evento');
+      }
+    }
+
+    if (order.status !== OrderStatus.COMPLETED) {
+      throw new BadRequestException(
+        'Solo se puede enviar el agradecimiento de órdenes completadas',
+      );
+    }
+
+    const appUrl =
+      this.config.get<string>('ADMIN_WEB_URL') ?? 'http://localhost:7100';
+    const totalFormatted = `$${(order.totalCents / 100).toLocaleString('es-MX', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} ${order.currency}`;
+
+    const firstName = (order.user.name ?? '').trim().split(/\s+/)[0] ?? '';
+    const eventDateLabel = new Intl.DateTimeFormat('es-MX', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'America/Mexico_City',
+    }).format(order.event.startsAt);
+
+    // Imagen tipo invitación/flex (FOMO), no recibo: nombre + evento + tier.
+    const methodLabel =
+      order.paymentMethod === 'STRIPE' ? 'Tarjeta' : 'Efectivo';
+    const storyCardUrl = this.buildStoryCardUrl({
+      n: firstName,
+      e: order.event.title,
+      d: eventDateLabel,
+      t: order.tier.name,
+      m: methodLabel,
+    });
+
+    const input: BuyerThankYouInput = {
+      buyerName: order.user.name ?? 'cliente',
+      eventTitle: order.event.title,
+      tierName: order.tier.name,
+      quantity: order.quantity,
+      totalFormatted,
+      appUrl,
+      storyCardUrl,
+      eventDateLabel,
+    };
+
+    return { input, email: order.user.email };
+  }
+
+  /**
+   * Arma el link firmado del email que descarga el PNG de historia de Instagram.
+   * El front construye la imagen; aquí solo se codifica y firma el payload.
+   *
+   *   ${ADMIN_WEB_URL}/api/historia?d=<payloadB64>&s=<sig>
+   *
+   * - payloadB64 = base64url de JSON.stringify(payload).
+   * - sig = HMAC-SHA256 hex del EXACTO payloadB64, con key = STORY_CARD_SECRET
+   *   (o JWT_ACCESS_SECRET como fallback si no está configurada).
+   */
+  private buildStoryCardUrl(payload: {
+    n: string;
+    e: string;
+    d: string;
+    t: string;
+    m: string;
+  }): string {
+    const appUrl =
+      this.config.get<string>('ADMIN_WEB_URL') ?? 'http://localhost:7100';
+    const secret =
+      this.config.get<string>('STORY_CARD_SECRET') ??
+      this.config.get<string>('JWT_ACCESS_SECRET') ??
+      '';
+
+    const payloadB64 = Buffer.from(JSON.stringify(payload), 'utf8')
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    const sig = crypto
+      .createHmac('sha256', secret)
+      .update(payloadB64)
+      .digest('hex');
+
+    // v: cache-bust. Sube este número si cambia el diseño de la imagen para
+    // invalidar copias viejas que el navegador haya cacheado.
+    return `${appUrl}/api/historia?d=${payloadB64}&s=${sig}&v=5`;
+  }
+
+  /**
+   * Envía al comprador un correo de agradecimiento por su compra.
+   * Misma autorización que `eventSales`: ADMIN o dueño del local / miembro
+   * del promoter al que pertenece el evento.
+   */
+  async sendThankYouEmail(eventId: string, orderId: string, user: AuthUser) {
+    const { input, email } = await this.buildThankYouInput(
+      eventId,
+      orderId,
+      user,
+    );
+
+    await this.mailer.sendBuyerThankYou(email, input);
+
+    return { status: 'sent' as const, email };
+  }
+
+  /**
+   * Renderiza el correo de agradecimiento SIN enviarlo, para que el frontend
+   * muestre una vista previa antes de confirmar. Misma autorización y
+   * validaciones que `sendThankYouEmail`.
+   */
+  async previewThankYouEmail(eventId: string, orderId: string, user: AuthUser) {
+    const { input, email } = await this.buildThankYouInput(
+      eventId,
+      orderId,
+      user,
+    );
+
+    const tpl = buyerThankYouEmail(input);
+
+    return {
+      subject: tpl.subject,
+      html: tpl.html,
+      email,
+      storyCardUrl: input.storyCardUrl,
     };
   }
 
