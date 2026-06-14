@@ -28,6 +28,10 @@ import {
   staffRevoked,
 } from './templates/venue-lifecycle-emails';
 import { physicalPaymentRequestToRp } from './templates/physical-payment-emails';
+import {
+  buyerThankYouEmail,
+  type BuyerThankYouInput,
+} from './templates/buyer-thank-you-email';
 
 @Injectable()
 export class MailerService {
@@ -322,6 +326,12 @@ export class MailerService {
   ): Promise<void> {
     const panelUrl = `${this.adminWebUrl.replace(/\/$/, '')}/rp-dashboard`;
     const tpl = physicalPaymentRequestToRp({ ...input, panelUrl });
+    await this.send(to, tpl);
+  }
+
+  /** Agradecimiento al comprador tras una compra completada. */
+  async sendBuyerThankYou(to: string, input: BuyerThankYouInput): Promise<void> {
+    const tpl = buyerThankYouEmail(input);
     await this.send(to, tpl);
   }
 

@@ -97,10 +97,10 @@ ${preheaderHtml}
         <tr>
           <td style="background:${COLOR.bg};border-top:1px solid ${COLOR.hairline};padding:28px 56px 36px;">
             <p style="margin:0 0 10px;font-size:13px;color:${COLOR.textDim};line-height:1.6;">
-              ¿Necesitas ayuda? Escríbenos a <a href="mailto:hola@nightpass.mx" style="color:${COLOR.hero};text-decoration:none;font-weight:500;">hola@nightpass.mx</a>
+              ¿Necesitas ayuda? Escríbenos a <a href="mailto:no-reply@nightpass.mx" style="color:${COLOR.hero};text-decoration:none;font-weight:500;">no-reply@nightpass.mx</a>
             </p>
             <p style="margin:0;font-size:11px;color:${COLOR.textFaint};letter-spacing:0.02em;line-height:1.6;">
-              NightPass · Ciudad de México · &copy; 2026 · Todos los derechos reservados<br>
+              NightPass · Ciudad de Cuernavaca · &copy; 2026 · Todos los derechos reservados<br>
               Este es un correo automático — no respondas a esta dirección.
             </p>
           </td>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Calendar, Tag, Banknote, Flame, TrendingUp } from 'lucide-react';
+import { Calendar, Tag, Banknote, Flame, TrendingUp, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { clientFetch, ClientApiError } from '@/core/lib/api/client-client';
 import { CollapsibleCard } from '@/core/components/ui/collapsible-card';
@@ -14,6 +14,7 @@ import { TiersSection } from './tiers-section';
 import { CashPaymentSection } from './cash-payment-section';
 import { EventRpBreakdown } from '@/features/rp/components/event-rp-breakdown';
 import { EventNotifyCard } from './event-notify-card';
+import { EventPurchasesSection } from './event-purchases-section';
 
 function venueDefaults(event: Event) {
   return {
@@ -64,7 +65,6 @@ export function AdminEventEdit({ event, onDone }: { event: Event; onDone: () => 
       <CollapsibleCard
         icon={<Calendar className="size-4 text-primary" />}
         title="Información del evento"
-        defaultOpen
       >
         {isPromoter ? (
           <EventFormPromoter
@@ -93,7 +93,6 @@ export function AdminEventEdit({ event, onDone }: { event: Event; onDone: () => 
       <CollapsibleCard
         icon={<Tag className="size-4 text-primary" />}
         title="Tiers de precio"
-        defaultOpen
       >
         <TiersSection eventId={event.id} />
       </CollapsibleCard>
@@ -110,6 +109,13 @@ export function AdminEventEdit({ event, onDone }: { event: Event; onDone: () => 
         title="Comisiones y ventas de RPs"
       >
         <EventRpBreakdown eventId={event.id} />
+      </CollapsibleCard>
+
+      <CollapsibleCard
+        icon={<ShoppingBag className="size-4 text-primary" />}
+        title="Compras de boletos"
+      >
+        <EventPurchasesSection eventId={event.id} />
       </CollapsibleCard>
 
       <CollapsibleCard

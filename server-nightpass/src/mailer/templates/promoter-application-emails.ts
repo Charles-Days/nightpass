@@ -203,11 +203,11 @@ export function promoterApplicationRejected(input: PromoterRejectedInput) {
           },
           {
             title: 'Ajusta tu propuesta',
-            body: 'Si crees que hubo un error o quieres clarificar algo, escríbenos a hola@nightpass.mx.',
+            body: 'Si crees que hubo un error o quieres clarificar algo, escríbenos a no-reply@nightpass.mx.',
           },
         ])}
       `,
     }),
-    text: `Hola ${applicantName},\n\nGracias por tu interés. Lamentamos informarte que tu solicitud para operar como organizador con "${promoterName}" no fue aprobada en esta ocasión.${reasonText}\n\n01. Vuelve a aplicar en 30 días — podrás enviar una nueva solicitud transcurrido el periodo de espera.\n02. Ajusta tu propuesta — si crees que hubo un error o quieres clarificar algo, escríbenos a hola@nightpass.mx.\n\n— Equipo NightPass`,
+    text: `Hola ${applicantName},\n\nGracias por tu interés. Lamentamos informarte que tu solicitud para operar como organizador con "${promoterName}" no fue aprobada en esta ocasión.${reasonText}\n\n01. Vuelve a aplicar en 30 días — podrás enviar una nueva solicitud transcurrido el periodo de espera.\n02. Ajusta tu propuesta — si crees que hubo un error o quieres clarificar algo, escríbenos a no-reply@nightpass.mx.\n\n— Equipo NightPass`,
   };
 }

@@ -448,8 +448,8 @@ export function EventDetailDialog({
                                     Canjeado
                                   </span>
                                 ) : (
-                                  <span className="rounded-full bg-white/[0.09] px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                                    Pendiente
+                                  <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] font-medium text-sky-300">
+                                    Pagado
                                   </span>
                                 )}
                               </td>
