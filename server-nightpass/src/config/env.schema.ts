@@ -41,6 +41,7 @@ export const envSchema = z.object({
   SMTP_USER: z.string().email().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
+  SMTP_FROM_NAME: z.string().optional(),
   ADMIN_NOTIFICATION_EMAIL: z.string().email().optional(),
   ADMIN_WEB_URL: z.string().url().default('http://localhost:7100'),
 

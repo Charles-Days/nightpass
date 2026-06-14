@@ -33,11 +33,26 @@ import {
   type BuyerThankYouInput,
 } from './templates/buyer-thank-you-email';
 
+/**
+ * Saca el nombre visible de un SMTP_FROM tipo `NightPass <correo>` o
+ * `"NightPass <correo>"`. Devuelve undefined si no hay nombre utilizable.
+ */
+function extractFromName(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  const cleaned = raw.trim().replace(/^"(.*)"$/, '$1');
+  const name = cleaned.includes('<')
+    ? cleaned.slice(0, cleaned.indexOf('<'))
+    : cleaned.includes('@')
+      ? ''
+      : cleaned;
+  return name.trim() || undefined;
+}
+
 @Injectable()
 export class MailerService {
   private readonly logger = new Logger(MailerService.name);
   private readonly transporter: Transporter | null;
-  private readonly from: string;
+  private readonly from: string | { name: string; address: string };
   private readonly adminNotificationEmail: string | null;
   private readonly adminWebUrl: string;
 
@@ -48,13 +63,20 @@ export class MailerService {
     const smtpPort = Number(config.get<string>('SMTP_PORT') ?? 587);
     const smtpSecure = config.get<string>('SMTP_SECURE') === 'true' || smtpPort === 465;
     const smtpFrom = config.get<string>('SMTP_FROM');
+    const smtpFromName = config.get<string>('SMTP_FROM_NAME');
     this.adminNotificationEmail =
       config.get<string>('ADMIN_NOTIFICATION_EMAIL') ?? null;
     this.adminWebUrl =
       config.get<string>('ADMIN_WEB_URL') ?? 'http://localhost:7100';
 
+    // Nombre visible del remitente. Se arma el `from` como objeto {name,address}
+    // para evitar que el parseo del string `"Nombre <correo>"` meta backslashes
+    // o comillas raras en el header From.
+    const displayName =
+      smtpFromName?.trim() || extractFromName(smtpFrom) || 'NightPass';
+
     if (smtpUser && smtpPass) {
-      this.from = smtpFrom ?? `NightPass <${smtpUser}>`;
+      this.from = { name: displayName, address: smtpUser };
       this.transporter = nodemailer.createTransport({
         host: smtpHost,
         port: smtpPort,
@@ -63,7 +85,7 @@ export class MailerService {
       });
       this.logger.log(`Mailer configurado con SMTP ${smtpHost}:${smtpPort} (${smtpUser})`);
     } else {
-      this.from = 'NightPass <noreply@nightpass.mx>';
+      this.from = { name: displayName, address: 'no-reply@nightpass.mx' };
       this.transporter = null;
       this.logger.warn(
         'Mailer en modo no-op: define SMTP_USER y SMTP_PASS para enviar correos reales.',
