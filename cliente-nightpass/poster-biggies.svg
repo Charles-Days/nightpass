@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="62%">
+      <stop offset="0%" stop-color="#1a0b33"/>
+      <stop offset="55%" stop-color="#0c0518"/>
+      <stop offset="100%" stop-color="#050208"/>
+    </radialGradient>
+    <radialGradient id="ringGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0"/>
+      <stop offset="72%" stop-color="#a855f7" stop-opacity="0"/>
+      <stop offset="85%" stop-color="#c084fc" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bottleBody" cx="42%" cy="34%" r="72%">
+      <stop offset="0%" stop-color="#b794f6"/>
+      <stop offset="32%" stop-color="#7c3aed"/>
+      <stop offset="72%" stop-color="#4c1d95"/>
+      <stop offset="100%" stop-color="#2a0e4f"/>
+    </radialGradient>
+    <linearGradient id="cap" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c4b5fd"/>
+      <stop offset="50%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#5b21b6"/>
+    </linearGradient>
+    <linearGradient id="biggies" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ede9fe"/>
+      <stop offset="100%" stop-color="#c4b5fd"/>
+    </linearGradient>
+    <radialGradient id="floor" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glowSoft" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+    <filter id="bottleShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="18" stdDeviation="26" flood-color="#000000" flood-opacity="0.7"/>
+    </filter>
+  </defs>
+
+  <!-- background -->
+  <rect width="1080" height="1920" fill="url(#bg)"/>
+
+  <!-- ===== HEADER LOGO ===== -->
+  <g transform="translate(355,150)">
+    <!-- ticket -->
+    <g>
+      <rect x="0" y="-6" width="118" height="128" rx="22" fill="#7c3aed"/>
+      <circle cx="0" cy="58" r="13" fill="#0c0518"/>
+      <circle cx="118" cy="58" r="13" fill="#0c0518"/>
+      <!-- moon -->
+      <path d="M82 30 a34 34 0 1 0 0 64 a26 26 0 1 1 0 -64 Z" fill="#ede9fe"/>
+    </g>
+    <text x="148" y="46" font-family="Arial, Helvetica, sans-serif" font-size="68" font-weight="800" letter-spacing="2" fill="#ffffff">NIGHT</text>
+    <text x="148" y="116" font-family="Arial, Helvetica, sans-serif" font-size="68" font-weight="800" letter-spacing="2" fill="#ffffff">PASS</text>
+  </g>
+
+  <!-- ===== HEADLINE ===== -->
+  <g filter="url(#glow)">
+    <text x="540" y="380" text-anchor="middle" font-family="'Snell Roundhand','Apple Chancery','Brush Script MT',cursive" font-style="italic" font-size="150" font-weight="700" fill="#c4b5fd">¿Te lo vas</text>
+    <text x="540" y="510" text-anchor="middle" font-family="'Snell Roundhand','Apple Chancery','Brush Script MT',cursive" font-style="italic" font-size="150" font-weight="700" fill="#d8b4fe">a perder?</text>
+  </g>
+  <rect x="360" y="540" width="200" height="5" rx="2" fill="#c084fc" opacity="0.8"/>
+
+  <!-- ===== NEON RING behind bottle top ===== -->
+  <circle cx="540" cy="760" r="270" fill="url(#ringGlow)"/>
+  <circle cx="540" cy="760" r="262" fill="none" stroke="#c084fc" stroke-width="5" opacity="0.85" filter="url(#glow)"/>
+
+  <!-- ===== BOTTLE ===== -->
+  <g filter="url(#bottleShadow)">
+    <!-- cap -->
+    <rect x="476" y="556" width="128" height="74" rx="14" fill="url(#cap)"/>
+    <rect x="476" y="556" width="128" height="20" rx="10" fill="#ddd6fe" opacity="0.6"/>
+    <!-- neck -->
+    <rect x="496" y="624" width="88" height="40" fill="#5b21b6"/>
+    <!-- round body -->
+    <circle cx="540" cy="1000" r="328" fill="url(#bottleBody)"/>
+    <!-- glass highlight -->
+    <ellipse cx="430" cy="850" rx="70" ry="150" fill="#ffffff" opacity="0.14"/>
+    <ellipse cx="660" cy="1170" rx="90" ry="60" fill="#ffffff" opacity="0.06"/>
+  </g>
+
+  <!-- ===== LABEL TEXT (crisp, flat) ===== -->
+  <text x="540" y="900" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="64" font-weight="700" fill="#ede9fe">BuzzBallz</text>
+  <text x="540" y="940" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="600" letter-spacing="10" fill="#c4b5fd">COCKTAILS</text>
+  <text x="540" y="1052" text-anchor="middle" font-family="'Arial Black', Arial, sans-serif" font-size="118" font-weight="900" letter-spacing="2" fill="url(#biggies)">BIGGIES</text>
+
+  <!-- grapes pill -->
+  <g transform="translate(540,1100)">
+    <rect x="-205" y="-30" width="410" height="58" rx="29" fill="#2a0e4f" stroke="#a855f7" stroke-width="2"/>
+    <text x="0" y="11" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" letter-spacing="3" fill="#ddd6fe">GRAPES GONE WILD</text>
+  </g>
+
+  <text x="540" y="1168" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="600" letter-spacing="1" fill="#a78bca">VODKA WITH NATURAL FLAVORS</text>
+  <text x="540" y="1196" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="600" letter-spacing="1" fill="#a78bca">AND CERTIFIED COLORS</text>
+  <text x="540" y="1244" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" letter-spacing="2" fill="#c4b5fd">ALC 15% · 4 JULY · VOL 1.75L</text>
+
+  <!-- CTA (clean, no cursor) -->
+  <text x="540" y="1304" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" fill="#ede9fe">Consigue tu boleto en:</text>
+  <g transform="translate(540,1356)">
+    <rect x="-200" y="-34" width="400" height="68" rx="34" fill="#3b1d6e" stroke="#c084fc" stroke-width="2" filter="url(#glow)"/>
+    <text x="0" y="11" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" letter-spacing="1" fill="#ffffff">nightpass.mx</text>
+  </g>
+
+  <!-- floor reflection -->
+  <ellipse cx="540" cy="1360" rx="360" ry="60" fill="url(#floor)"/>
+
+  <!-- ===== VIP BAR ===== -->
+  <g transform="translate(540,1560)">
+    <rect x="-420" y="-52" width="840" height="104" rx="24" fill="none" stroke="#7c3aed" stroke-width="3" opacity="0.7"/>
+    <text x="0" y="20" text-anchor="middle" font-family="'Arial Black', Arial, sans-serif" font-size="62" font-weight="900" letter-spacing="1" fill="#ffffff">VIP + ETIQUETA = <tspan font-style="italic" fill="#c084fc">BIGGIES</tspan></text>
+  </g>
+
+  <!-- ===== FOOTER LOGO ===== -->
+  <g transform="translate(305,1740)">
+    <rect x="0" y="0" width="72" height="80" rx="14" fill="#7c3aed"/>
+    <circle cx="0" cy="40" r="9" fill="#0c0518"/>
+    <circle cx="72" cy="40" r="9" fill="#0c0518"/>
+    <path d="M52 22 a22 22 0 1 0 0 42 a17 17 0 1 1 0 -42 Z" fill="#ede9fe"/>
+    <text x="92" y="34" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="800" fill="#ffffff">NIGHT</text>
+    <text x="92" y="74" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="800" fill="#ffffff">PASS</text>
+    <line x1="270" y1="6" x2="270" y2="76" stroke="#5b21b6" stroke-width="2"/>
+    <text x="296" y="34" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="500" fill="#c4b5fd">Tu acceso a</text>
+    <text x="296" y="72" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="500" fill="#c4b5fd">la mejor noche.</text>
+  </g>
+</svg>

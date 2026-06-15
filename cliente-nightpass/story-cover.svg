@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="np-n" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="55%" stop-color="#e9d5ff"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="npp-text" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e9d5ff"/>
+      <stop offset="50%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#9333EA"/>
+    </linearGradient>
+    <radialGradient id="glow-top" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-bottom" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7e22ce" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#7e22ce" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+
+  <!-- background -->
+  <rect width="1080" height="1920" fill="#0a0a0f"/>
+  <ellipse cx="540" cy="640" rx="720" ry="640" fill="url(#glow-top)"/>
+  <ellipse cx="540" cy="1820" rx="800" ry="520" fill="url(#glow-bottom)"/>
+
+  <!-- subtle particles -->
+  <g fill="#a855f7" opacity="0.5">
+    <circle cx="170" cy="430" r="4"/>
+    <circle cx="910" cy="520" r="5"/>
+    <circle cx="250" cy="1500" r="4"/>
+    <circle cx="880" cy="1420" r="5"/>
+    <circle cx="140" cy="980" r="3"/>
+    <circle cx="950" cy="1080" r="3"/>
+  </g>
+  <g fill="#e9d5ff" opacity="0.35">
+    <circle cx="780" cy="380" r="3"/>
+    <circle cx="320" cy="600" r="3"/>
+    <circle cx="760" cy="1560" r="4"/>
+  </g>
+
+  <!-- logo badge -->
+  <g transform="translate(540,440)">
+    <rect x="-110" y="-110" width="220" height="220" rx="52" fill="#101018" stroke="#2a1840" stroke-width="2"/>
+    <circle cx="0" cy="0" r="100" fill="url(#glow-top)"/>
+    <path d="M-60 84 V-56 H-30 L40 40 V-56 H70 V84 H40 L-30 -12 V84 Z" fill="url(#np-n)"/>
+  </g>
+
+  <!-- brand name -->
+  <text x="540" y="640" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="58" font-weight="600" letter-spacing="6" fill="#ffffff">NightPass</text>
+
+  <!-- pill -->
+  <g transform="translate(540,740)">
+    <rect x="-180" y="-34" width="360" height="68" rx="34" fill="#1a0f29" stroke="#9333EA" stroke-width="2"/>
+    <text x="0" y="11" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="4" fill="#e9d5ff">RECOMPENSAS</text>
+  </g>
+
+  <!-- headline -->
+  <text x="540" y="970" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="118" font-weight="800" letter-spacing="2" fill="#ffffff">CÓMO GANAR</text>
+  <text x="540" y="1100" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="118" font-weight="800" letter-spacing="2" fill="#ffffff">PUNTOS <tspan fill="url(#npp-text)">NPP</tspan></text>
+
+  <!-- subtitle -->
+  <text x="540" y="1210" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="44" font-weight="400" fill="#b9a8d6">Sin gastar nada · solo saliendo</text>
+
+  <!-- icons row -->
+  <g transform="translate(540,1430)" fill="none" stroke="#c084fc" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- QR -->
+    <g transform="translate(-260,-60)">
+      <rect x="0" y="0" width="44" height="44" rx="8"/>
+      <rect x="76" y="0" width="44" height="44" rx="8"/>
+      <rect x="0" y="76" width="44" height="44" rx="8"/>
+      <rect x="84" y="84" width="36" height="36" rx="6"/>
+    </g>
+    <!-- gift -->
+    <g transform="translate(-60,-60)">
+      <rect x="0" y="40" width="120" height="80" rx="10"/>
+      <path d="M0 64 H120"/>
+      <path d="M60 40 V120"/>
+      <path d="M60 40 C40 10 8 18 22 40"/>
+      <path d="M60 40 C80 10 112 18 98 40"/>
+    </g>
+    <!-- flame (streak) -->
+    <g transform="translate(160,-60)">
+      <path d="M60 8 C30 44 22 62 22 86 a38 38 0 0 0 76 0 C98 60 78 44 72 26 C66 44 50 50 60 8 Z"/>
+    </g>
+  </g>
+  <text x="280" y="1530" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="30" font-weight="600" fill="#8a7aa6">Escanea</text>
+  <text x="540" y="1530" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="30" font-weight="600" fill="#8a7aa6">Invita</text>
+  <text x="800" y="1530" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="30" font-weight="600" fill="#8a7aa6">Racha</text>
+
+  <!-- bottom cue -->
+  <text x="540" y="1740" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="38" font-weight="700" letter-spacing="2" fill="#ffffff">DALE PLAY ▶</text>
+  <rect x="390" y="1772" width="300" height="6" rx="3" fill="#9333EA"/>
+</svg>
