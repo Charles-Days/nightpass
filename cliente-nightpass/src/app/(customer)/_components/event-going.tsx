@@ -35,11 +35,12 @@ function fillPct(n: number): number {
   return Math.min(100, Math.max(8, Math.round((n / softGoal(n)) * 100)));
 }
 
-// Etiqueta de vibra según qué tan llena va (sustituye al número).
+// Etiqueta de interés según cuánta gente ya marcó "voy a ir".
+// No implica aforo real ni confirmación de asistencia.
 function hypeLabel(pct: number): string {
-  if (pct >= 80) return 'Casi lleno';
-  if (pct >= 45) return 'En tendencia';
-  return 'Se está llenando';
+  if (pct >= 80) return 'Muchos interesados';
+  if (pct >= 45) return 'Ganando popularidad';
+  return 'Va creciendo';
 }
 
 // "Voy a ir" anónimo: un clic, sin cuenta. Reemplaza la barra de aforo. El número
@@ -73,12 +74,19 @@ export function EventGoing({ eventId, count, compact, className, style }: Props)
     }
   }, [eventId]);
 
-  // Card read-only: solo la barra de llenado, nunca el número.
+  // Card read-only: solo la barra de interés, nunca el número.
   if (compact) {
     const pct = fillPct(total);
     return (
       <div style={style} className={cn('w-full max-w-[240px]', className)}>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+        <div
+          role="progressbar"
+          aria-label="Personas interesadas"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          className="h-1.5 w-full overflow-hidden rounded-full bg-white/10"
+        >
           <div
             className="np-shimmer h-full rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] shadow-[0_0_10px_-2px_rgba(168,85,247,0.6)]"
             style={{ width: `${Math.max(pct, total > 0 ? 8 : 4)}%` }}
@@ -112,8 +120,7 @@ export function EventGoing({ eventId, count, compact, className, style }: Props)
     }
   }
 
-  // Ya va a ir: nada de pastilla verde ni número. Una barra que se llena hacia
-  // el hito + etiqueta de vibra, para dar sensación de evento llenándose.
+  // Ya marcó interés: barra de popularidad + etiqueta sin implicar aforo real.
   if (going) {
     const pct = fillPct(total);
     return (
@@ -122,7 +129,14 @@ export function EventGoing({ eventId, count, compact, className, style }: Props)
           <Flame className="size-3.5 shrink-0 animate-pulse" />
           {hypeLabel(pct)}
         </span>
-        <div className="h-2 w-full max-w-[280px] overflow-hidden rounded-full bg-white/10">
+        <div
+          role="progressbar"
+          aria-label="Popularidad del evento"
+          aria-valuenow={barW}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          className="h-2 w-full max-w-[280px] overflow-hidden rounded-full bg-white/10"
+        >
           <div
             className="np-shimmer h-full rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] shadow-[0_0_12px_-1px_rgba(168,85,247,0.7)] transition-[width] duration-1000 ease-out"
             style={{ width: `${barW}%` }}

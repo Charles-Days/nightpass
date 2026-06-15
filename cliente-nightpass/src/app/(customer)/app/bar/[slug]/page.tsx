@@ -111,7 +111,7 @@ export default async function VenueDetailPage({ params }: Props) {
           {venue.coverImageUrl ? (
             <Image
               src={venue.coverImageUrl}
-              alt={venue.name}
+              alt=""
               fill
               priority
               sizes="(max-width: 1024px) 100vw, 1024px"
@@ -291,7 +291,7 @@ export default async function VenueDetailPage({ params }: Props) {
               >
                 <Image
                   src={p.url}
-                  alt={`${venue.name} foto`}
+                  alt=""
                   fill
                   sizes="(max-width: 640px) 50vw, 33vw"
                   loading="lazy"
