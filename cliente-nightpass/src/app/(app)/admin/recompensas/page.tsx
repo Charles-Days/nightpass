@@ -16,7 +16,7 @@ function usePromotersList() {
   return useQuery({
     queryKey: ['admin-recompensas-promoters'],
     queryFn: () =>
-      clientFetch<PaginatedPromoters>('/api/promoters?status=ACTIVE&limit=200'),
+      clientFetch<PaginatedPromoters>('/api/promoters?status=ACTIVE&limit=50'),
   });
 }
 
@@ -24,7 +24,7 @@ function useVenuesList() {
   return useQuery({
     queryKey: ['admin-recompensas-venues'],
     queryFn: () =>
-      clientFetch<PaginatedVenues>('/api/venues?status=ACTIVE&limit=200'),
+      clientFetch<PaginatedVenues>('/api/venues?status=ACTIVE&limit=50'),
   });
 }
 
