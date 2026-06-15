@@ -19,7 +19,12 @@ import { paths } from '@/core/config/paths';
 import type { CatalogTierDetail, Order, OrderCreationResponse } from '@/core/types/api';
 import { saveRpRef, readRpRef, clearRpRef } from '@/features/rp-referral/rp-referral';
 import { MEXICO_GEO } from '@/core/data/mexico-geo';
-import { BulkChooseDialog, type BulkPendingItem, type BulkPendingResponse } from '@/features/rewards';
+import {
+  BulkChooseDialog,
+  useAvailableRewards,
+  type BulkPendingItem,
+  type BulkPendingResponse,
+} from '@/features/rewards';
 import { PickupModal } from './pickup-modal';
 
 type Phase =
@@ -480,10 +485,37 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
   const cashTotalCents =
     cashSingle != null ? cashSingle * summary.quantity : null;
   const showCashPrice = method === 'cash' && cashTotalCents != null;
+
+  // Preview del descuento ANTES de crear la orden: busca el reward del ?reward=
+  // y calcula el descuento sobre el subtotal, para mostrarlo en verde de una.
+  const availableRewards = useAvailableRewards();
+  const previewReward = rewardId
+    ? (availableRewards.data?.rewards ?? []).find((r) => r.id === rewardId)
+    : undefined;
+  const unitCents =
+    order?.eventTier?.priceCents ?? initialTier?.priceCents ?? 0;
+  const subtotalCents =
+    discountCents > 0 ? summary.totalCents + discountCents : unitCents * quantity;
+  const previewDiscountCents = (() => {
+    if (showCashPrice || !previewReward) return 0;
+    if (previewReward.discountType === 'PERCENT') {
+      return Math.min(
+        subtotalCents,
+        Math.floor((subtotalCents * previewReward.discountValue) / 100),
+      );
+    }
+    if (previewReward.discountType === 'FIXED') {
+      return Math.min(subtotalCents, previewReward.discountValue);
+    }
+    return 0;
+  })();
+  // El descuento real (orden ya creada) manda; si no, el preview.
+  const effDiscountCents = discountCents > 0 ? discountCents : previewDiscountCents;
   // El descuento de recompensa aplica solo al pago en línea (Stripe). En efectivo
   // el precio ya viene optimizado por el backend.
-  const showDiscount = !showCashPrice && discountCents > 0;
-  const displayTotalCents = showCashPrice ? cashTotalCents! : summary.totalCents;
+  const showDiscount = !showCashPrice && effDiscountCents > 0;
+  const onlineTotalCents = Math.max(0, subtotalCents - effDiscountCents);
+  const displayTotalCents = showCashPrice ? cashTotalCents! : onlineTotalCents;
   const cashSavingsCents = summary.totalCents - (cashTotalCents ?? summary.totalCents);
 
   const backToEvent = initialTier
@@ -538,7 +570,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                 {formatMoney(summary.totalCents, summary.currency)}
               </span>
             )}
-            {formatMoney(showDiscount ? summary.totalCents + discountCents : displayTotalCents, summary.currency)}
+            {formatMoney(showDiscount ? subtotalCents : displayTotalCents, summary.currency)}
           </span>
         </div>
 
@@ -546,7 +578,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
           <div className="flex items-center justify-between py-1.5">
             <span className="text-sm text-emerald-300">Descuento recompensa</span>
             <span className="font-display text-sm font-medium tabular-nums text-emerald-300">
-              −{formatMoney(discountCents, summary.currency)}
+              −{formatMoney(effDiscountCents, summary.currency)}
             </span>
           </div>
         )}
@@ -765,7 +797,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
             >
               {method === 'cash'
                 ? `Solicitar pago en efectivo (${formatMoney(displayTotalCents, summary.currency)})`
-                : `Continuar al pago (${formatMoney(summary.totalCents, summary.currency)})`}
+                : `Continuar al pago (${formatMoney(displayTotalCents, summary.currency)})`}
             </Button>
           </div>
         )}
