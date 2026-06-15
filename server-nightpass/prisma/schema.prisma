@@ -513,6 +513,7 @@ model Event {
   passClaims        PassClaim[]
   cashRps           EventRp[]
   physicalRequests  PhysicalPaymentRequest[]
+  rewards           Reward[]                 @relation("EventRewards")
 
   @@unique([venueId, slug])
   @@unique([promoterId, slug])
@@ -561,6 +562,7 @@ model EventTier {
   prices           EventTierPrice[]
   passClaims       PassClaim[]
   physicalRequests PhysicalPaymentRequest[]
+  rewards          Reward[]                 @relation("EventTierRewards")
 
   @@index([eventId])
   @@map("event_tiers")
@@ -1088,6 +1090,8 @@ model AnalyticsEvent {
 enum RewardKind {
   VENUE_PERK // lo valida el staff en barra/puerta (scanner), no toca Stripe
   TICKET_DISCOUNT // se aplica en el checkout online (Fase 2)
+  BULK_PROMO // GRATIS: por comprar minQuantity boletos, el cliente elige 1 opción
+  PHYSICAL_BONUS_NPP // NPP extra cuando un RP confirma un pago físico (por evento)
 }
 
 enum RewardFunder {
@@ -1125,16 +1129,43 @@ model Reward {
   active           Boolean            @default(true)
   perUserLimit     Int? // canjes por usuario (null = sin límite)
   expiresInH       Int                @default(72) // vigencia del cupón tras canjear
+  // Alcance por evento (BULK_PROMO / PHYSICAL_BONUS_NPP). null = no atado a evento.
+  eventId          String?            @db.Uuid
+  // BULK_PROMO: tier que dispara la promo (null = cualquiera del evento).
+  tierId           String?            @db.Uuid
+  // BULK_PROMO: boletos a comprar para desbloquear (>=2).
+  minQuantity      Int?
+  // PHYSICAL_BONUS_NPP: NPP a otorgar al confirmar el pago físico (>=1).
+  bonusNpp         Int?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
   venue       Venue?             @relation(fields: [venueId], references: [id], onDelete: Cascade)
   promoter    Promoter?          @relation(fields: [promoterId], references: [id], onDelete: Cascade)
+  event       Event?             @relation("EventRewards", fields: [eventId], references: [id], onDelete: Cascade)
+  tier        EventTier?         @relation("EventTierRewards", fields: [tierId], references: [id], onDelete: SetNull)
   redemptions RewardRedemption[]
+  options     RewardOption[]
 
   @@index([venueId, active])
   @@index([promoterId, active])
+  @@index([eventId])
   @@map("rewards")
+}
+
+model RewardOption {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  rewardId    String   @db.Uuid
+  label       String // ej. "Botella Jose Cuervo"
+  description String?
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  reward      Reward             @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  redemptions RewardRedemption[]
+
+  @@index([rewardId])
+  @@map("reward_options")
 }
 
 model RewardRedemption {
@@ -1147,12 +1178,15 @@ model RewardRedemption {
   // Solo TICKET_DISCOUNT: a qué orden se aplicó y cuánto descontó de verdad.
   orderId      String?          @db.Uuid
   appliedCents Int?
+  // Solo BULK_PROMO: opción elegida por el cliente (botella, etc.).
+  selectedOptionId String?       @db.Uuid
   redeemedAt   DateTime         @default(now())
   usedAt       DateTime?
   expiresAt    DateTime
 
-  reward Reward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reward         Reward        @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  selectedOption RewardOption? @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
 
   @@index([userId, status])
   @@index([rewardId])

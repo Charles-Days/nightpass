@@ -2,12 +2,26 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { clientFetch } from '@/core/lib/api/client-client';
+import type { EventTier, PaginatedEvents } from '@/core/types/api';
+
+export type RewardKind =
+  | 'VENUE_PERK'
+  | 'TICKET_DISCOUNT'
+  | 'BULK_PROMO'
+  | 'PHYSICAL_BONUS_NPP';
+
+export interface RewardOption {
+  id: string;
+  label: string;
+  description: string | null;
+  position: number;
+}
 
 export interface OwnerReward {
   id: string;
   venueId: string | null;
   promoterId: string | null;
-  kind: 'VENUE_PERK' | 'TICKET_DISCOUNT';
+  kind: RewardKind;
   title: string;
   description: string | null;
   costNpp: number;
@@ -16,12 +30,17 @@ export interface OwnerReward {
   active: boolean;
   perUserLimit: number | null;
   expiresInH: number;
+  eventId: string | null;
+  tierId: string | null;
+  minQuantity: number | null;
+  bonusNpp: number | null;
+  options: RewardOption[];
 }
 
 export interface CreateRewardBody {
   venueId?: string;
   promoterId?: string;
-  kind: 'VENUE_PERK' | 'TICKET_DISCOUNT';
+  kind: RewardKind;
   title: string;
   description?: string;
   costNpp: number;
@@ -30,6 +49,11 @@ export interface CreateRewardBody {
   perUserLimit?: number;
   expiresInH?: number;
   active?: boolean;
+  eventId?: string;
+  tierId?: string;
+  minQuantity?: number;
+  bonusNpp?: number;
+  options?: { label: string; description?: string }[];
 }
 
 export interface ValidateResult {
@@ -82,5 +106,39 @@ export function useValidateCoupon() {
         method: 'POST',
         body: { code },
       }),
+  });
+}
+
+export interface RewardEventOption {
+  id: string;
+  title: string;
+}
+
+/**
+ * Eventos del dueño para los selects de BULK_PROMO / PHYSICAL_BONUS_NPP.
+ * Venue: filtra por `?venueId=`. Organizador: sin filtro — el backend
+ * los scopea por el JWT (mismo patrón que PromoterEventsList).
+ */
+export function useRewardEvents(venueId?: string, promoterId?: string) {
+  const qs = venueId ? `?venueId=${venueId}&limit=100` : '?limit=100';
+  return useQuery({
+    queryKey: ['reward-events', venueId ?? promoterId ?? 'me'],
+    enabled: !!(venueId || promoterId),
+    queryFn: async () => {
+      const res = await clientFetch<PaginatedEvents>(`/api/events${qs}`);
+      return res.items.map((e): RewardEventOption => ({ id: e.id, title: e.title }));
+    },
+  });
+}
+
+/** Tiers de un evento concreto (lazy: solo cuando hay eventId seleccionado). */
+export function useRewardEventTiers(eventId?: string) {
+  return useQuery({
+    queryKey: ['reward-event-tiers', eventId],
+    enabled: !!eventId,
+    queryFn: async () => {
+      const res = await clientFetch<{ tiers?: EventTier[] }>(`/api/events/${eventId}`);
+      return res.tiers ?? [];
+    },
   });
 }
