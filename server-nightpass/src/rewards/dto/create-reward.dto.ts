@@ -1,5 +1,10 @@
+import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
   IsBoolean,
+  IsDateString,
   IsEnum,
   IsInt,
   IsOptional,
@@ -8,8 +13,21 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
 import { RewardDiscountType, RewardKind } from '@prisma/client';
+
+// BULK_PROMO: cada opción que el cliente puede elegir (botella, etc.).
+export class RewardOptionInput {
+  @IsString()
+  @MaxLength(80)
+  label!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  description?: string;
+}
 
 export class CreateRewardDto {
   // Exactamente uno: la recompensa pertenece a un venue o a un organizador.
@@ -33,10 +51,13 @@ export class CreateRewardDto {
   @MaxLength(280)
   description?: string;
 
+  // Opcional: BULK_PROMO y PHYSICAL_BONUS_NPP son gratis (0). El servicio
+  // exige >=1 para VENUE_PERK y TICKET_DISCOUNT.
+  @IsOptional()
   @IsInt()
-  @Min(1)
+  @Min(0)
   @Max(1_000_000)
-  costNpp!: number;
+  costNpp?: number;
 
   @IsOptional()
   @IsEnum(RewardDiscountType)
@@ -67,4 +88,51 @@ export class CreateRewardDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+
+  // ── Alcance por evento (BULK_PROMO / PHYSICAL_BONUS_NPP) ───────────────────
+  @IsOptional()
+  @IsUUID()
+  eventId?: string;
+
+  // BULK_PROMO: tier que dispara la promo (opcional).
+  @IsOptional()
+  @IsUUID()
+  tierId?: string;
+
+  // BULK_PROMO: boletos a comprar para desbloquear.
+  @IsOptional()
+  @IsInt()
+  @Min(2)
+  minQuantity?: number;
+
+  // PHYSICAL_BONUS_NPP: NPP a otorgar.
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  bonusNpp?: number;
+
+  // BULK_PROMO: opciones a elegir (1-6).
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(6)
+  @ValidateNested({ each: true })
+  @Type(() => RewardOptionInput)
+  options?: RewardOptionInput[];
+
+  // ── Banner + ventana de validez (aplica a cualquier tipo; sobre todo BULK) ──
+  // URL o path del banner de la promo.
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  imageUrl?: string;
+
+  // Válida desde / hasta (ISO 8601). null/omitido = sin inicio / sin fin.
+  @IsOptional()
+  @IsDateString()
+  startsAt?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endsAt?: string;
 }

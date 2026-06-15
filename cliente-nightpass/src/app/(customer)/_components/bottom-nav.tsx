@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation';
 import { CalendarDays, Flame, GlassWater, Ticket, User } from 'lucide-react';
 import { paths } from '@/core/config/paths';
 import { cn } from '@/core/lib/utils/cn';
+import { useSession } from '@/features/auth';
+import { useRewardsBadge } from '@/features/rewards';
 
 const items = [
   { href: paths.appHome, label: 'Antros', icon: GlassWater, exact: true },
@@ -30,6 +32,8 @@ function isActive(
 function BottomNavImpl() {
   const pathname = usePathname();
   const activeIndex = items.findIndex((item) => isActive(pathname, item));
+  const { data: user } = useSession();
+  const showRewardsDot = useRewardsBadge(!!user);
 
   return (
     <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(env(safe-area-inset-bottom),12px)] md:hidden">
@@ -47,9 +51,10 @@ function BottomNavImpl() {
           }}
         />
 
-        {items.map((item, i) => {
+        {items.map((item) => {
           const { href, label, icon: Icon } = item;
           const active = isActive(pathname, item);
+          const showDot = href === paths.recompensas && showRewardsDot;
           return (
             <li key={href} className="relative z-10 min-w-0">
               <Link
@@ -60,17 +65,24 @@ function BottomNavImpl() {
                 )}
                 aria-current={active ? 'page' : undefined}
               >
-                <Icon
-                  className={cn(
-                    'size-5 shrink-0 transform-gpu transition-transform duration-200',
-                    active && 'scale-110 drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]',
-                  )}
-                  strokeWidth={active ? 2.4 : 1.8}
-                />
+                <span className="relative">
+                  <Icon
+                    className={cn(
+                      'size-5 shrink-0 transform-gpu transition-transform duration-200',
+                      active && 'scale-110 drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]',
+                    )}
+                    strokeWidth={active ? 2.4 : 1.8}
+                  />
+                  {showDot ? (
+                    <span
+                      aria-label="Tienes algo por canjear"
+                      className="absolute -right-1 -top-0.5 size-2.5 rounded-full bg-fuchsia-400 ring-2 ring-[#0d0b13] shadow-[0_0_8px_rgba(232,121,249,0.8)]"
+                    />
+                  ) : null}
+                </span>
                 <span className="w-full truncate text-center leading-none tracking-tight">
                   {label}
                 </span>
-                {i < 0 && null}
               </Link>
             </li>
           );

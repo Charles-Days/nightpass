@@ -2,12 +2,26 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { clientFetch } from '@/core/lib/api/client-client';
+import type { EventTier, PaginatedEvents } from '@/core/types/api';
+
+export type RewardKind =
+  | 'VENUE_PERK'
+  | 'TICKET_DISCOUNT'
+  | 'BULK_PROMO'
+  | 'PHYSICAL_BONUS_NPP';
+
+export interface RewardOption {
+  id: string;
+  label: string;
+  description: string | null;
+  position: number;
+}
 
 export interface OwnerReward {
   id: string;
   venueId: string | null;
   promoterId: string | null;
-  kind: 'VENUE_PERK' | 'TICKET_DISCOUNT';
+  kind: RewardKind;
   title: string;
   description: string | null;
   costNpp: number;
@@ -16,12 +30,21 @@ export interface OwnerReward {
   active: boolean;
   perUserLimit: number | null;
   expiresInH: number;
+  eventId: string | null;
+  tierId: string | null;
+  minQuantity: number | null;
+  bonusNpp: number | null;
+  options: RewardOption[];
+  imageUrl: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
+  event: { id: string; title: string } | null;
 }
 
 export interface CreateRewardBody {
   venueId?: string;
   promoterId?: string;
-  kind: 'VENUE_PERK' | 'TICKET_DISCOUNT';
+  kind: RewardKind;
   title: string;
   description?: string;
   costNpp: number;
@@ -30,12 +53,42 @@ export interface CreateRewardBody {
   perUserLimit?: number;
   expiresInH?: number;
   active?: boolean;
+  eventId?: string;
+  tierId?: string;
+  minQuantity?: number;
+  bonusNpp?: number;
+  options?: { label: string; description?: string }[];
+  imageUrl?: string;
+  startsAt?: string;
+  endsAt?: string;
+}
+
+// PATCH /rewards/:id — el dueño, el kind y el evento no se editan tras crear.
+// imageUrl/startsAt/endsAt aceptan null para limpiar el campo.
+export interface UpdateRewardBody {
+  title?: string;
+  description?: string;
+  costNpp?: number;
+  discountType?: 'NONE' | 'PERCENT' | 'FIXED';
+  discountValue?: number;
+  perUserLimit?: number;
+  expiresInH?: number;
+  active?: boolean;
+  options?: { label: string; description?: string }[];
+  minQuantity?: number;
+  bonusNpp?: number;
+  imageUrl?: string | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
 }
 
 export interface ValidateResult {
   ok: boolean;
   title: string;
   customer: string;
+  eventTitle: string | null;
+  eventStartsAt: string | null;
+  optionLabel: string | null;
   usedAt: string;
 }
 
@@ -60,7 +113,7 @@ export function useCreateReward() {
 export function useUpdateReward() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<CreateRewardBody> }) =>
+    mutationFn: ({ id, body }: { id: string; body: UpdateRewardBody }) =>
       clientFetch<OwnerReward>(`/api/rewards/${id}`, { method: 'PATCH', body }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['owner-rewards'] }),
   });
@@ -82,5 +135,44 @@ export function useValidateCoupon() {
         method: 'POST',
         body: { code },
       }),
+  });
+}
+
+export interface RewardEventOption {
+  id: string;
+  title: string;
+}
+
+/**
+ * Eventos del dueño para los selects de BULK_PROMO / PHYSICAL_BONUS_NPP.
+ * Venue: filtra por `?venueId=`. Organizador: filtra por `?promoterId=`.
+ * Ambos ids se pasan explícitos para que ADMIN pueda gestionar cualquier
+ * dueño (el backend acepta ambos filtros para ADMIN/OWNER/PROMOTER).
+ */
+export function useRewardEvents(venueId?: string, promoterId?: string) {
+  const qs = venueId
+    ? `?venueId=${venueId}&limit=100`
+    : promoterId
+      ? `?promoterId=${promoterId}&limit=100`
+      : '?limit=100';
+  return useQuery({
+    queryKey: ['reward-events', venueId ?? null, promoterId ?? null],
+    enabled: !!(venueId || promoterId),
+    queryFn: async () => {
+      const res = await clientFetch<PaginatedEvents>(`/api/events${qs}`);
+      return res.items.map((e): RewardEventOption => ({ id: e.id, title: e.title }));
+    },
+  });
+}
+
+/** Tiers de un evento concreto (lazy: solo cuando hay eventId seleccionado). */
+export function useRewardEventTiers(eventId?: string) {
+  return useQuery({
+    queryKey: ['reward-event-tiers', eventId],
+    enabled: !!eventId,
+    queryFn: async () => {
+      const res = await clientFetch<{ tiers?: EventTier[] }>(`/api/events/${eventId}`);
+      return res.tiers ?? [];
+    },
   });
 }

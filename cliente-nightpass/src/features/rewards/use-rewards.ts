@@ -9,6 +9,9 @@ export type RewardDiscountType = 'NONE' | 'PERCENT' | 'FIXED';
 export interface AvailableReward {
   id: string;
   kind: RewardKind;
+  /** Evento al que aplica el descuento (solo TICKET_DISCOUNT). */
+  eventId: string | null;
+  eventTitle: string | null;
   title: string;
   description: string | null;
   costNpp: number;
@@ -33,11 +36,13 @@ export interface Redemption {
   redeemedAt: string;
   usedAt: string | null;
   expiresAt: string;
+  selectedOption: { label: string } | null;
   reward: {
     title: string;
-    kind: RewardKind;
+    kind: RewardKind | 'BULK_PROMO' | 'PHYSICAL_BONUS_NPP';
     venue: { name: string } | null;
     promoter: { name: string } | null;
+    event: { id: string; title: string; startsAt: string } | null;
   };
 }
 
@@ -75,6 +80,84 @@ export function useRedeemReward() {
       qc.invalidateQueries({ queryKey: ['rewards-available'] });
       qc.invalidateQueries({ queryKey: ['my-redemptions'] });
       qc.invalidateQueries({ queryKey: ['loyalty', 'status'] });
+    },
+  });
+}
+
+// ── Promos BULK (regalo por comprar N boletos) ────────────────────────────────
+
+export interface BulkOption {
+  id: string;
+  label: string;
+  description: string | null;
+}
+
+export interface BulkPendingItem {
+  redemptionId: string;
+  orderId: string | null;
+  code: string;
+  expiresAt: string;
+  reward: {
+    title: string;
+    eventTitle: string | null;
+    eventStartsAt: string | null;
+    options: BulkOption[];
+  };
+}
+
+export interface BulkPendingResponse {
+  items: BulkPendingItem[];
+}
+
+export interface ChooseBulkResult {
+  code: string;
+  title: string;
+  optionLabel: string;
+  expiresAt: string;
+}
+
+export function useBulkPending() {
+  return useQuery({
+    queryKey: ['rewards-bulk-pending'],
+    queryFn: () => clientFetch<BulkPendingResponse>('/api/rewards/bulk/pending'),
+    staleTime: 15_000,
+  });
+}
+
+/**
+ * Indica si el usuario tiene algo pendiente en Recompensas (cupón sin usar o
+ * promo de volumen por elegir) — para el punto de notificación en la nav.
+ * `enabled` debe ser false para invitados (evita 401 en cada página).
+ */
+export function useRewardsBadge(enabled: boolean) {
+  const bulk = useQuery({
+    queryKey: ['rewards-bulk-pending'],
+    queryFn: () => clientFetch<BulkPendingResponse>('/api/rewards/bulk/pending'),
+    staleTime: 15_000,
+    enabled,
+  });
+  const reds = useQuery({
+    queryKey: ['my-redemptions'],
+    queryFn: () => clientFetch<Redemption[]>('/api/me/redemptions'),
+    staleTime: 15_000,
+    enabled,
+  });
+  const hasBulk = (bulk.data?.items?.length ?? 0) > 0;
+  const hasPendingCoupon = (reds.data ?? []).some((r) => r.status === 'PENDING');
+  return hasBulk || hasPendingCoupon;
+}
+
+export function useChooseBulk() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ redemptionId, optionId }: { redemptionId: string; optionId: string }) =>
+      clientFetch<ChooseBulkResult>(`/api/rewards/redemptions/${redemptionId}/choose`, {
+        method: 'POST',
+        body: { optionId },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['rewards-bulk-pending'] });
+      qc.invalidateQueries({ queryKey: ['my-redemptions'] });
     },
   });
 }

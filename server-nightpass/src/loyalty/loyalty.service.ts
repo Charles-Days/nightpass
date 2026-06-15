@@ -386,6 +386,32 @@ export class LoyaltyService {
     });
   }
 
+  // ── Bono por pago físico (PHYSICAL_BONUS_NPP) ──────────────────────────────
+
+  /**
+   * Otorga NPP extra cuando un RP confirma un pago físico. `points` es el monto
+   * exacto a acreditar (ya calculado: bonusNpp × cantidad). Idempotente por
+   * orden (`physbonus:<orderId>`) — un segundo intento sobre la misma orden no
+   * duplica. No avanza la racha (skipStreak).
+   */
+  async awardPhysicalBonus(opts: {
+    userId: string;
+    points: number;
+    orderId: string;
+    eventId?: string;
+  }): Promise<void> {
+    if (opts.points <= 0) return;
+    await this.applyReward({
+      userId: opts.userId,
+      type: LoyaltyEventType.PHYSICAL_BONUS,
+      basePoints: opts.points,
+      idempotencyKey: `physbonus:${opts.orderId}`,
+      eventId: opts.eventId,
+      occurredAt: new Date(),
+      skipStreak: true,
+    });
+  }
+
   // ── Canje (débito) ───────────────────────────────────────────────────────
 
   /** Balance NPP gastable del usuario. */
@@ -426,10 +452,12 @@ export class LoyaltyService {
     opts: ApplyRewardOpts,
   ): Promise<ApplyRewardResult> {
     const multiplier = this.computeMultiplier(opts.occurredAt);
-    // ADMIN_ADJUST y REDEEM son montos exactos (no aplican multiplicador).
+    // ADMIN_ADJUST, REDEEM y PHYSICAL_BONUS son montos exactos (no aplican
+    // multiplicador): el bono físico ya es un monto deliberado (bonusNpp×qty).
     const exactType =
       opts.type === LoyaltyEventType.ADMIN_ADJUST ||
-      opts.type === LoyaltyEventType.REDEEM;
+      opts.type === LoyaltyEventType.REDEEM ||
+      opts.type === LoyaltyEventType.PHYSICAL_BONUS;
     const effective = exactType
       ? opts.basePoints
       : Math.round(opts.basePoints * multiplier);

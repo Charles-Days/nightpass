@@ -6,11 +6,13 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { OrderStatus, Prisma } from '@prisma/client';
+import { OrderStatus, Prisma, RedemptionStatus, RewardKind } from '@prisma/client';
 import type { Stripe } from 'stripe/cjs/stripe.core';
 import { PrismaService } from '../prisma/prisma.service';
 import { issuePasses } from '../passes/issue-passes';
 import { CashWalletService } from '../cash-wallet/cash-wallet.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
+import { RewardsService } from '../rewards/rewards.service';
 import { StripeService } from './stripe.service';
 
 @Injectable()
@@ -23,6 +25,8 @@ export class StripeWebhookService {
     private readonly config: ConfigService,
     @Inject(forwardRef(() => CashWalletService))
     private readonly cashWallet: CashWalletService,
+    private readonly loyalty: LoyaltyService,
+    private readonly rewards: RewardsService,
   ) {}
 
   /**
@@ -119,11 +123,62 @@ export class StripeWebhookService {
       });
 
       await issuePasses(tx, updated, passSecret);
+
+      // Promo por volumen: usa el MISMO tx que el completado (lectura/escritura
+      // de RewardRedemption). Va en try/catch para que un error de recompensa
+      // NUNCA tumbe el cierre de una orden ya pagada ni la emisión de pases.
+      try {
+        await this.rewards.maybeUnlockBulkPromo(tx, updated);
+      } catch (err) {
+        this.logger.error(
+          `maybeUnlockBulkPromo falló para Order ${order.id}: ${err instanceof Error ? err.message : err}`,
+        );
+      }
     });
+
+    // Descuento de boleto: el débito de NPP corre FUERA de la tx de completado
+    // (loyalty.debit abre su propia transacción) y SIEMPRE en try/catch — si el
+    // débito falla, la orden ya está COMPLETED y los pases emitidos: el error de
+    // recompensa no revierte un pago. La idempotencia (`redeem:<id>`) evita doble
+    // cobro si el webhook se reintenta.
+    await this.applyTicketDiscount(order.id).catch((err) =>
+      this.logger.error(
+        `applyTicketDiscount falló para Order ${order.id}: ${err instanceof Error ? err.message : err}`,
+      ),
+    );
 
     this.logger.log(
       `Pago confirmado — Order ${order.id} COMPLETED, ${order.quantity} pases emitidos`,
     );
+  }
+
+  /**
+   * Cobra el descuento de boleto de una orden ya completada: busca el cupón
+   * TICKET_DISCOUNT PENDING atado a la orden, debita los NPP (idempotente) y lo
+   * marca USED. Se llama desde el webhook tras completar la orden, siempre
+   * envuelto en catch — un fallo aquí no revierte el pago.
+   */
+  private async applyTicketDiscount(orderId: string): Promise<void> {
+    const redemption = await this.prisma.rewardRedemption.findFirst({
+      where: {
+        orderId,
+        status: RedemptionStatus.PENDING,
+        reward: { kind: RewardKind.TICKET_DISCOUNT },
+      },
+      include: { reward: { select: { kind: true } } },
+    });
+    if (!redemption) return;
+
+    await this.loyalty.debit({
+      userId: redemption.userId,
+      points: redemption.costNpp,
+      idempotencyKey: `redeem:${redemption.id}`,
+    });
+
+    await this.prisma.rewardRedemption.update({
+      where: { id: redemption.id },
+      data: { status: RedemptionStatus.USED, usedAt: new Date() },
+    });
   }
 
   private async onPaymentIntentFinal(

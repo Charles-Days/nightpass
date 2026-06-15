@@ -24,7 +24,13 @@ export class OrdersController {
 
   @Post()
   create(@Body() dto: CreateOrderDto, @CurrentUser() user: AuthUser) {
-    return this.service.create(user.id, dto.tierId, dto.referralCode, dto.quantity);
+    return this.service.create(
+      user.id,
+      dto.tierId,
+      dto.referralCode,
+      dto.quantity,
+      dto.rewardId,
+    );
   }
 
   @Get('me')

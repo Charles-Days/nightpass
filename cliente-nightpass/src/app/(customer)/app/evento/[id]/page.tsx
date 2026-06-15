@@ -6,20 +6,21 @@ import { ServerApiError, publicFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import { absoluteUrl } from '@/core/config/env';
 import { JsonLd, eventLd, breadcrumbLd } from '@/core/seo/json-ld';
-import { type CatalogEventDetail } from '@/core/types/api';
+import { type CatalogEventDetail, type CatalogEventPromosResponse } from '@/core/types/api';
 import { EventStoriesSection } from '@/app/(customer)/_components/event-stories-section';
 import { EventForumSection } from '@/app/(customer)/_components/event-forum-section';
 import { EventGoing } from '@/app/(customer)/_components/event-going';
 import { EventHeroFx } from '@/app/(customer)/_components/event-hero-fx';
 import { EventCountdown } from '@/app/(customer)/_components/event-countdown';
 import { BuyCta } from '@/app/(customer)/_components/buy-cta';
+import { EventPromoBanner } from '@/app/(customer)/_components/event-promo-banner';
 import { BuyTierButton } from '@/app/(customer)/_components/buy-tier-button';
 import { WhatsappJoinLink } from '@/app/(customer)/_components/whatsapp-join-link';
 import { EventDescription } from '@/core/components/event-description';
 
 interface Props {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ref?: string }>;
+  searchParams: Promise<{ ref?: string; reward?: string }>;
 }
 
 export async function generateMetadata({ params }: Props) {
@@ -87,12 +88,18 @@ function formatTime(iso: string) {
 
 export default async function EventDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
-  const { ref } = await searchParams;
+  const { ref, reward } = await searchParams;
   // El código RP viaja por la URL hasta el checkout. Así, aunque el usuario no
   // tenga sesión, el middleware lo conserva en el `from` al mandar a login y el
   // checkout lo recibe de vuelta — sin depender de localStorage (que Safari/ITP
   // o incógnito pueden borrar). RefTracker igual lo guarda como respaldo.
-  const refQuery = ref ? `?ref=${encodeURIComponent(ref)}` : '';
+  // `reward` (id de un TICKET_DISCOUNT) viaja igual hasta el checkout para aplicar
+  // el descuento al crear la orden.
+  const checkoutParams = new URLSearchParams();
+  if (ref) checkoutParams.set('ref', ref);
+  if (reward) checkoutParams.set('reward', reward);
+  const checkoutQuery = checkoutParams.toString();
+  const refQuery = checkoutQuery ? `?${checkoutQuery}` : '';
   let event: CatalogEventDetail;
   try {
     event = await publicFetch<CatalogEventDetail>(`/catalog/events/${id}`, {
@@ -102,6 +109,19 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 404) notFound();
     throw error;
+  }
+
+  // Promos por volumen (BULK_PROMO) activas — banner opcional. Si falla la
+  // llamada (red/backend), no rompemos la página: simplemente no hay banner.
+  let promos: CatalogEventPromosResponse['promos'] = [];
+  try {
+    const res = await publicFetch<CatalogEventPromosResponse>(
+      `/catalog/events/${id}/promos`,
+      { revalidate: 300, tags: [`event:${id}:promos`] },
+    );
+    promos = res.promos ?? [];
+  } catch {
+    promos = [];
   }
 
   const eventPath = `${paths.evento}/${id}`;
@@ -238,6 +258,12 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
           )}
         </div>
       </section>
+
+      <EventPromoBanner
+        promos={promos}
+        className="mt-5"
+        style={{ animationDelay: '110ms' }}
+      />
 
       <EventCountdown
         startsAt={event.startsAt}

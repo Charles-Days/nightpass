@@ -395,6 +395,8 @@ export interface OrderCreationResponse {
   publishableKey?: string;
   totalCents: number;
   currency: string;
+  /** Descuento aplicado por una recompensa TICKET_DISCOUNT (en centavos). */
+  discountCents?: number;
 }
 
 export interface CatalogTierDetail {
@@ -597,6 +599,20 @@ export interface CatalogEventDetail {
   externalVenueLat?: number | null;
   externalVenueLng?: number | null;
   whatsappGroups?: WhatsappGroup[] | null;
+}
+
+/** Promo por volumen (BULK_PROMO) activa de un evento — banner público. */
+export interface CatalogEventPromo {
+  id: string;
+  title: string;
+  description: string | null;
+  imageUrl: string | null;
+  minQuantity: number;
+  options: Array<{ label: string; description: string | null }>;
+}
+
+export interface CatalogEventPromosResponse {
+  promos: CatalogEventPromo[];
 }
 
 export interface CatalogPromoterDetail {
