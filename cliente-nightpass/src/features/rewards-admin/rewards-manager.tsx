@@ -8,6 +8,7 @@ import {
   Coins,
   Gift,
   Loader2,
+  Pencil,
   Plus,
   Ticket,
   Trash2,
@@ -29,6 +30,7 @@ import {
   type CreateRewardBody,
   type OwnerReward,
   type RewardKind,
+  type UpdateRewardBody,
   useCreateReward,
   useDeleteReward,
   useOwnerRewards,
@@ -85,6 +87,7 @@ export function RewardsManager({
   const del = useDeleteReward();
   const [open, setOpen] = React.useState(false);
   const [toDelete, setToDelete] = React.useState<OwnerReward | null>(null);
+  const [toEdit, setToEdit] = React.useState<OwnerReward | null>(null);
 
   const toggleActive = (r: OwnerReward) =>
     update.mutate(
@@ -107,7 +110,7 @@ export function RewardsManager({
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Recompensas que tus clientes canjean con sus NPP. Las fondeas tú.
+          Recompensas (se canjean con NPP) y promos por evento. Las fondeas tú.
         </p>
         <Button onClick={() => setOpen(true)} className="shrink-0 gap-1.5">
           <Plus className="size-4" />
@@ -124,65 +127,12 @@ export function RewardsManager({
           Aún no tienes recompensas. Crea una con el botón “Nueva”.
         </div>
       ) : (
-        <ul className="space-y-2">
-          {rewards!.map((r) => {
-            const meta = KIND_META[r.kind];
-            const Icon = meta?.Icon ?? Gift;
-            return (
-              <li
-                key={r.id}
-                className="flex items-center gap-3 rounded-[14px] border border-white/12 bg-white/[0.04] px-4 py-3"
-              >
-                {r.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={r.imageUrl}
-                    alt={r.title}
-                    className="size-9 shrink-0 rounded-[10px] border border-white/12 object-cover"
-                  />
-                ) : (
-                  <span className="grid size-9 place-items-center rounded-[10px] bg-primary/15 text-primary">
-                    <Icon className="size-4" />
-                  </span>
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate text-sm font-semibold">{r.title}</p>
-                    <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/70">
-                      {meta?.short ?? r.kind}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    {rewardSubtitle(r)}
-                  </p>
-                  {r.endsAt ? (
-                    <p className="text-[10px] text-amber-300/80">
-                      Vigente hasta {formatValidityDate(r.endsAt)}
-                    </p>
-                  ) : null}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => toggleActive(r)}
-                  className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide transition ${
-                    r.active
-                      ? 'bg-emerald-500/15 text-emerald-300'
-                      : 'bg-white/10 text-white/50'
-                  }`}
-                >
-                  {r.active ? 'Activa' : 'Inactiva'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setToDelete(r)}
-                  className="text-white/40 transition hover:text-rose-300"
-                >
-                  <Trash2 className="size-4" />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <RewardsGroupedList
+          rewards={rewards!}
+          onToggle={toggleActive}
+          onDelete={setToDelete}
+          onEdit={setToEdit}
+        />
       )}
 
       <CouponValidator />
@@ -217,7 +167,213 @@ export function RewardsManager({
           })
         }
       />
+
+      <CreateRewardDialog
+        open={!!toEdit}
+        onClose={() => setToEdit(null)}
+        venueId={venueId}
+        promoterId={promoterId}
+        editing={toEdit}
+        creating={update.isPending}
+        onUpdate={(body) => {
+          if (!toEdit) return;
+          update.mutate(
+            { id: toEdit.id, body },
+            {
+              onSuccess: () => {
+                toast.success('Recompensa actualizada');
+                setToEdit(null);
+              },
+              onError: (e) =>
+                toast.error(
+                  e instanceof Error ? e.message : 'No se pudo actualizar',
+                ),
+            },
+          );
+        }}
+      />
     </div>
+  );
+}
+
+// BULK_PROMO = "promoción"; el resto son recompensas que se canjean con NPP.
+function isPromo(r: OwnerReward): boolean {
+  return r.kind === 'BULK_PROMO';
+}
+
+const NO_EVENT_KEY = '__no_event__';
+
+/** Agrupa por evento manteniendo el orden de llegada (createdAt desc). */
+function groupByEvent(rewards: OwnerReward[]) {
+  const map = new Map<string, { title: string | null; items: OwnerReward[] }>();
+  for (const r of rewards) {
+    const key = r.event?.id ?? NO_EVENT_KEY;
+    if (!map.has(key)) {
+      map.set(key, { title: r.event?.title ?? null, items: [] });
+    }
+    map.get(key)!.items.push(r);
+  }
+  // El bucket "sin evento" siempre al final.
+  return [...map.entries()].sort((a, b) => {
+    if (a[0] === NO_EVENT_KEY) return 1;
+    if (b[0] === NO_EVENT_KEY) return -1;
+    return 0;
+  });
+}
+
+function RewardsGroupedList({
+  rewards,
+  onToggle,
+  onDelete,
+  onEdit,
+}: {
+  rewards: OwnerReward[];
+  onToggle: (r: OwnerReward) => void;
+  onDelete: (r: OwnerReward) => void;
+  onEdit: (r: OwnerReward) => void;
+}) {
+  const promos = rewards.filter(isPromo);
+  const perks = rewards.filter((r) => !isPromo(r));
+
+  return (
+    <div className="space-y-7">
+      <RewardClassSection
+        label="Recompensas"
+        hint="Se canjean con NPP."
+        groups={groupByEvent(perks)}
+        onToggle={onToggle}
+        onDelete={onDelete}
+        onEdit={onEdit}
+      />
+      <RewardClassSection
+        label="Promociones"
+        hint="Gratis al comprar N boletos. Se anuncian en el evento."
+        groups={groupByEvent(promos)}
+        onToggle={onToggle}
+        onDelete={onDelete}
+        onEdit={onEdit}
+      />
+    </div>
+  );
+}
+
+function RewardClassSection({
+  label,
+  hint,
+  groups,
+  onToggle,
+  onDelete,
+  onEdit,
+}: {
+  label: string;
+  hint: string;
+  groups: [string, { title: string | null; items: OwnerReward[] }][];
+  onToggle: (r: OwnerReward) => void;
+  onDelete: (r: OwnerReward) => void;
+  onEdit: (r: OwnerReward) => void;
+}) {
+  if (groups.length === 0) return null;
+  return (
+    <section className="space-y-3">
+      <div className="flex items-baseline gap-2">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+          {label}
+        </h3>
+        <span className="text-[11px] text-muted-foreground">{hint}</span>
+      </div>
+      <div className="space-y-4">
+        {groups.map(([key, group]) => (
+          <div key={key} className="space-y-2">
+            <p className="text-[11px] font-medium text-white/55">
+              {group.title ?? 'Sin evento (general)'}
+            </p>
+            <ul className="space-y-2">
+              {group.items.map((r) => (
+                <RewardRow
+                  key={r.id}
+                  r={r}
+                  onToggle={onToggle}
+                  onDelete={onDelete}
+                  onEdit={onEdit}
+                />
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RewardRow({
+  r,
+  onToggle,
+  onDelete,
+  onEdit,
+}: {
+  r: OwnerReward;
+  onToggle: (r: OwnerReward) => void;
+  onDelete: (r: OwnerReward) => void;
+  onEdit: (r: OwnerReward) => void;
+}) {
+  const meta = KIND_META[r.kind];
+  const Icon = meta?.Icon ?? Gift;
+  return (
+    <li className="flex items-center gap-3 rounded-[14px] border border-white/12 bg-white/[0.04] px-4 py-3">
+      {r.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={r.imageUrl}
+          alt={r.title}
+          className="size-9 shrink-0 rounded-[10px] border border-white/12 object-cover"
+        />
+      ) : (
+        <span className="grid size-9 place-items-center rounded-[10px] bg-primary/15 text-primary">
+          <Icon className="size-4" />
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="truncate text-sm font-semibold">{r.title}</p>
+          <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/70">
+            {meta?.short ?? r.kind}
+          </span>
+        </div>
+        <p className="text-[11px] text-muted-foreground">{rewardSubtitle(r)}</p>
+        {r.endsAt ? (
+          <p className="text-[10px] text-amber-300/80">
+            Vigente hasta {formatValidityDate(r.endsAt)}
+          </p>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        onClick={() => onToggle(r)}
+        className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide transition ${
+          r.active
+            ? 'bg-emerald-500/15 text-emerald-300'
+            : 'bg-white/10 text-white/50'
+        }`}
+      >
+        {r.active ? 'Activa' : 'Inactiva'}
+      </button>
+      <button
+        type="button"
+        onClick={() => onEdit(r)}
+        className="text-white/40 transition hover:text-primary"
+        aria-label="Editar"
+      >
+        <Pencil className="size-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => onDelete(r)}
+        className="text-white/40 transition hover:text-rose-300"
+        aria-label="Eliminar"
+      >
+        <Trash2 className="size-4" />
+      </button>
+    </li>
   );
 }
 
@@ -243,6 +399,15 @@ function rewardSubtitle(r: OwnerReward): string {
   }
 }
 
+/** ISO → "YYYY-MM-DDTHH:mm" en hora local para inputs datetime-local. */
+function toDatetimeLocal(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 /** "12 jun" — fecha corta en español para el hint de vigencia. */
 function formatValidityDate(iso: string): string {
   const d = new Date(iso);
@@ -250,7 +415,8 @@ function formatValidityDate(iso: string): string {
   return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
 }
 
-// ─── Dialog de creación ──────────────────────────────────────────────────────
+// ─── Dialog de creación / edición ────────────────────────────────────────────
+// Sin `editing` crea; con `editing` precarga y llama `onUpdate` con un parcial.
 function CreateRewardDialog({
   open,
   onClose,
@@ -258,14 +424,19 @@ function CreateRewardDialog({
   promoterId,
   creating,
   onCreate,
+  editing,
+  onUpdate,
 }: {
   open: boolean;
   onClose: () => void;
   venueId?: string;
   promoterId?: string;
   creating: boolean;
-  onCreate: (body: CreateRewardBody) => void;
+  onCreate?: (body: CreateRewardBody) => void;
+  editing?: OwnerReward | null;
+  onUpdate?: (body: UpdateRewardBody) => void;
 }) {
+  const isEdit = !!editing;
   const [kind, setKind] = React.useState<RewardKind | null>(null);
 
   // Campos comunes
@@ -287,6 +458,27 @@ function CreateRewardDialog({
 
   const events = useRewardEvents(venueId, promoterId);
   const tiers = useRewardEventTiers(eventId || undefined);
+
+  // Precarga al abrir en modo edición.
+  React.useEffect(() => {
+    if (!open || !editing) return;
+    setKind(editing.kind);
+    setTitle(editing.title);
+    setDescription(editing.description ?? '');
+    setCostNpp(editing.costNpp || 500);
+    setDiscountType(editing.discountType === 'FIXED' ? 'FIXED' : 'PERCENT');
+    setDiscountValue(editing.discountValue || 10);
+    setEventId(editing.eventId ?? '');
+    setTierId(editing.tierId ?? '');
+    setMinQuantity(editing.minQuantity ?? 2);
+    setBonusNpp(editing.bonusNpp ?? 100);
+    setOptions(
+      editing.options?.length ? editing.options.map((o) => o.label) : [''],
+    );
+    setImageUrl(editing.imageUrl ?? undefined);
+    setStartsAt(toDatetimeLocal(editing.startsAt));
+    setEndsAt(toDatetimeLocal(editing.endsAt));
+  }, [open, editing]);
 
   const reset = React.useCallback(() => {
     setKind(null);
@@ -353,16 +545,15 @@ function CreateRewardDialog({
       endsAt: endsAtISO,
     };
 
+    let payload: CreateRewardBody;
+
     if (kind === 'VENUE_PERK') {
       if (costNpp < 1) {
         toast.error('El costo debe ser al menos 1 NPP');
         return;
       }
-      onCreate({ ...base, costNpp });
-      return;
-    }
-
-    if (kind === 'TICKET_DISCOUNT') {
+      payload = { ...base, costNpp };
+    } else if (kind === 'TICKET_DISCOUNT') {
       if (costNpp < 1) {
         toast.error('El costo debe ser al menos 1 NPP');
         return;
@@ -379,17 +570,8 @@ function CreateRewardDialog({
         toast.error('Selecciona el evento del descuento');
         return;
       }
-      onCreate({
-        ...base,
-        costNpp,
-        discountType,
-        discountValue,
-        eventId,
-      });
-      return;
-    }
-
-    if (kind === 'BULK_PROMO') {
+      payload = { ...base, costNpp, discountType, discountValue, eventId };
+    } else if (kind === 'BULK_PROMO') {
       if (!eventId) {
         toast.error('Selecciona un evento');
         return;
@@ -407,18 +589,15 @@ function CreateRewardDialog({
         toast.error('Máximo 6 opciones');
         return;
       }
-      onCreate({
+      payload = {
         ...base,
         costNpp: 0,
         eventId,
         tierId: tierId || undefined,
         minQuantity,
         options: cleanOptions.map((label) => ({ label })),
-      });
-      return;
-    }
-
-    if (kind === 'PHYSICAL_BONUS_NPP') {
+      };
+    } else if (kind === 'PHYSICAL_BONUS_NPP') {
       if (!eventId) {
         toast.error('Selecciona un evento');
         return;
@@ -427,9 +606,33 @@ function CreateRewardDialog({
         toast.error('Los NPP extra deben ser al menos 1');
         return;
       }
-      onCreate({ ...base, costNpp: 0, eventId, bonusNpp });
+      payload = { ...base, costNpp: 0, eventId, bonusNpp };
+    } else {
       return;
     }
+
+    if (isEdit) {
+      // En edición: dueño, kind y evento son inmutables (el backend los ignora).
+      // imageUrl/startsAt/endsAt usan null para limpiar.
+      const isFree = kind === 'BULK_PROMO' || kind === 'PHYSICAL_BONUS_NPP';
+      const editBody: UpdateRewardBody = {
+        title: payload.title,
+        description: payload.description ?? '',
+        discountType: payload.discountType,
+        discountValue: payload.discountValue,
+        minQuantity: payload.minQuantity,
+        bonusNpp: payload.bonusNpp,
+        options: payload.options,
+        imageUrl: imageUrl || null,
+        startsAt: startsAtISO ?? null,
+        endsAt: endsAtISO ?? null,
+      };
+      if (!isFree) editBody.costNpp = payload.costNpp;
+      onUpdate?.(editBody);
+      return;
+    }
+
+    onCreate?.(payload);
   };
 
   const updateOption = (i: number, value: string) =>
@@ -444,7 +647,7 @@ function CreateRewardDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {kind && (
+            {kind && !isEdit && (
               <button
                 type="button"
                 onClick={() => setKind(null)}
@@ -453,7 +656,9 @@ function CreateRewardDialog({
                 <ArrowLeft className="size-4" />
               </button>
             )}
-            {kind ? KIND_META[kind].label : 'Nueva recompensa'}
+            {kind
+              ? `${isEdit ? 'Editar' : ''} ${KIND_META[kind].label}`.trim()
+              : 'Nueva recompensa'}
           </DialogTitle>
         </DialogHeader>
 
@@ -575,6 +780,7 @@ function CreateRewardDialog({
                     loading={events.isLoading}
                     options={events.data ?? []}
                     placeholder="Selecciona un evento"
+                    disabled={isEdit}
                   />
                 </div>
               </>
@@ -595,6 +801,7 @@ function CreateRewardDialog({
                     loading={events.isLoading}
                     options={events.data ?? []}
                     placeholder="Selecciona un evento"
+                    disabled={isEdit}
                   />
                 </div>
                 {eventId && (
@@ -606,7 +813,7 @@ function CreateRewardDialog({
                       className={SELECT_CLASS}
                       value={tierId}
                       onChange={(e) => setTierId(e.target.value)}
-                      disabled={tiers.isLoading}
+                      disabled={tiers.isLoading || isEdit}
                     >
                       <option value="">Cualquier tier</option>
                       {(tiers.data ?? []).map((t) => (
@@ -676,6 +883,7 @@ function CreateRewardDialog({
                     loading={events.isLoading}
                     options={events.data ?? []}
                     placeholder="Selecciona un evento"
+                    disabled={isEdit}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -702,8 +910,8 @@ function CreateRewardDialog({
                 onChange={setImageUrl}
                 kind="event"
                 label="Banner (opcional)"
-                hint="Imagen que verá el cliente. Déjalo vacío si no aplica."
-                aspect="video"
+                hint="Imagen que verá el cliente (cualquier orientación). Déjalo vacío si no aplica."
+                aspect="auto"
               />
 
               <div className="space-y-2">
@@ -751,7 +959,7 @@ function CreateRewardDialog({
             </Button>
             <Button onClick={submit} disabled={creating} className="gap-1.5">
               {creating && <Loader2 className="size-4 animate-spin" />}
-              Crear
+              {isEdit ? 'Guardar' : 'Crear'}
             </Button>
           </DialogFooter>
         )}
@@ -766,19 +974,21 @@ function EventSelect({
   loading,
   options,
   placeholder,
+  disabled,
 }: {
   value: string;
   onChange: (v: string) => void;
   loading: boolean;
   options: { id: string; title: string }[];
   placeholder: string;
+  disabled?: boolean;
 }) {
   return (
     <select
       className={SELECT_CLASS}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      disabled={loading}
+      disabled={loading || disabled}
     >
       <option value="">{loading ? 'Cargando eventos…' : placeholder}</option>
       {options.map((e) => (

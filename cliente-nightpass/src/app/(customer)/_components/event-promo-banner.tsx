@@ -51,16 +51,15 @@ export function EventPromoBanner({ promos, className, style }: Props) {
               key={promo.id}
               className="overflow-hidden rounded-[22px] border border-white/14 bg-gradient-to-br from-purple-900/40 to-purple-600/10"
             >
-              <div className="relative max-h-72 w-full overflow-hidden">
-                <Image
-                  src={promo.imageUrl}
-                  alt={promo.title}
-                  width={1080}
-                  height={540}
-                  sizes="(max-width: 768px) 100vw, 768px"
-                  className="h-auto max-h-72 w-full object-cover"
-                />
-              </div>
+              {/* Flyer completo a todo el ancho (como el flyer del evento). */}
+              <Image
+                src={promo.imageUrl}
+                alt={promo.title}
+                width={1080}
+                height={1920}
+                sizes="(max-width: 768px) 100vw, 768px"
+                className="h-auto w-full object-contain"
+              />
               <div className="p-5 sm:p-6">
                 {eyebrow}
                 <h2 className="mt-2 font-display text-lg font-bold leading-tight tracking-tight text-white">

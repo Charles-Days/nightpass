@@ -12,15 +12,16 @@ interface ImageUploaderProps {
   label?: string;
   /** Texto guía bajo el label (ej. medida recomendada). */
   hint?: string;
-  /** Proporción del preview/dropzone. 'video' = 16:9 landscape, 'portrait' = 9:16 vertical, 'circle' = avatar redondo. */
-  aspect?: 'video' | 'portrait' | 'circle';
+  /** Proporción del preview/dropzone. 'video' = 16:9 landscape, 'portrait' = 9:16 vertical, 'circle' = avatar redondo, 'auto' = muestra la imagen completa sin recortar. */
+  aspect?: 'video' | 'portrait' | 'circle' | 'auto';
 }
 
 // Tamaño del preview según la proporción — refleja cómo se renderiza en la UI real.
-const ASPECT_BOX: Record<'video' | 'portrait' | 'circle', string> = {
+const ASPECT_BOX: Record<'video' | 'portrait' | 'circle' | 'auto', string> = {
   video: 'h-32 w-56', // 16:9 aprox
   portrait: 'h-56 w-32', // 9:16 aprox
   circle: 'size-28', // avatar 1:1
+  auto: 'h-32 w-56', // dropzone landscape; el preview se adapta a la imagen
 };
 
 export function ImageUploader({
@@ -53,7 +54,12 @@ export function ImageUploader({
 
   const box = ASPECT_BOX[aspect];
   const isCircle = aspect === 'circle';
+  const isAuto = aspect === 'auto';
   const radius = isCircle ? 'rounded-full' : 'rounded-lg';
+  // 'auto': preview a tamaño natural (sin recorte), cap de alto. Resto: caja fija recortada.
+  const previewClass = isAuto
+    ? 'max-h-56 w-auto max-w-full object-contain'
+    : `${box} object-cover`;
 
   return (
     <div className="space-y-2">
@@ -65,7 +71,7 @@ export function ImageUploader({
       </div>
       {value ? (
         <div className="relative inline-block">
-          <Image src={value} alt="preview" width={224} height={224} unoptimized className={`${box} ${radius} object-cover border border-white/15 ${isCircle ? 'bg-gradient-to-br from-purple-700/40 to-fuchsia-600/30 shadow-[0_8px_24px_-6px_rgba(168,85,247,0.45)]' : ''}`} />
+          <Image src={value} alt="preview" width={224} height={224} unoptimized className={`${previewClass} ${radius} border border-white/15 ${isCircle ? 'bg-gradient-to-br from-purple-700/40 to-fuchsia-600/30 shadow-[0_8px_24px_-6px_rgba(168,85,247,0.45)]' : ''}`} />
           <button
             type="button"
             onClick={() => onChange(undefined)}

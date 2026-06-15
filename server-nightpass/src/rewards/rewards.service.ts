@@ -115,7 +115,10 @@ export class RewardsService {
     return this.prisma.reward.findMany({
       where: { venueId: query.venueId ?? undefined, promoterId: query.promoterId ?? undefined },
       orderBy: { createdAt: 'desc' },
-      include: { options: { orderBy: { position: 'asc' } } },
+      include: {
+        options: { orderBy: { position: 'asc' } },
+        event: { select: { id: true, title: true } },
+      },
     });
   }
 

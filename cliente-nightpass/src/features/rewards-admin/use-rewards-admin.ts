@@ -38,6 +38,7 @@ export interface OwnerReward {
   imageUrl: string | null;
   startsAt: string | null;
   endsAt: string | null;
+  event: { id: string; title: string } | null;
 }
 
 export interface CreateRewardBody {
@@ -60,6 +61,25 @@ export interface CreateRewardBody {
   imageUrl?: string;
   startsAt?: string;
   endsAt?: string;
+}
+
+// PATCH /rewards/:id — el dueño, el kind y el evento no se editan tras crear.
+// imageUrl/startsAt/endsAt aceptan null para limpiar el campo.
+export interface UpdateRewardBody {
+  title?: string;
+  description?: string;
+  costNpp?: number;
+  discountType?: 'NONE' | 'PERCENT' | 'FIXED';
+  discountValue?: number;
+  perUserLimit?: number;
+  expiresInH?: number;
+  active?: boolean;
+  options?: { label: string; description?: string }[];
+  minQuantity?: number;
+  bonusNpp?: number;
+  imageUrl?: string | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
 }
 
 export interface ValidateResult {
@@ -93,7 +113,7 @@ export function useCreateReward() {
 export function useUpdateReward() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<CreateRewardBody> }) =>
+    mutationFn: ({ id, body }: { id: string; body: UpdateRewardBody }) =>
       clientFetch<OwnerReward>(`/api/rewards/${id}`, { method: 'PATCH', body }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['owner-rewards'] }),
   });
