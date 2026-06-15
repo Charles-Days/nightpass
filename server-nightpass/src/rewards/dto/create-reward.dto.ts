@@ -50,10 +50,13 @@ export class CreateRewardDto {
   @MaxLength(280)
   description?: string;
 
+  // Opcional: BULK_PROMO y PHYSICAL_BONUS_NPP son gratis (0). El servicio
+  // exige >=1 para VENUE_PERK y TICKET_DISCOUNT.
+  @IsOptional()
   @IsInt()
-  @Min(1)
+  @Min(0)
   @Max(1_000_000)
-  costNpp!: number;
+  costNpp?: number;
 
   @IsOptional()
   @IsEnum(RewardDiscountType)
