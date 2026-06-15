@@ -24,7 +24,7 @@ export function LogoutButton() {
           ) : (
             <LogOut className="size-4" />
           )}
-          {isPending ? 'Cerrando sesion...' : 'Si, cerrar sesion'}
+          {isPending ? 'Cerrando sesión…' : 'Sí, cerrar sesión'}
         </Button>
         <Button
           type="button"
@@ -48,7 +48,7 @@ export function LogoutButton() {
       className="w-full justify-start gap-3 rounded-[14px] px-4 py-6 text-sm font-medium text-destructive transition-all hover:bg-destructive/10 hover:text-destructive active:scale-[0.98] transform-gpu"
     >
       <LogOut className="size-4" />
-      <span>Cerrar sesion</span>
+      <span>Cerrar sesión</span>
     </Button>
   );
 }

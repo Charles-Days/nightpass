@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { IScannerControls } from '@zxing/browser';
 import {
@@ -24,6 +23,21 @@ const QR_RE = /^np_checkin_([0-9a-f-]{36})_([0-9a-f]+)$/i;
 /** URL variant emitted by `rotateVenueCheckinSecret.scanUrl`. */
 const URL_RE = /\/app\/checkin\/([0-9a-f-]{36})\?(?:.*&)?t=([0-9a-f]+)/i;
 
+/** Mapea errores de cámara del navegador a mensajes amigables en español. */
+function mapCameraError(err: unknown): string {
+  const name = (err as { name?: string })?.name ?? '';
+  switch (name) {
+    case 'NotAllowedError':
+      return 'Permite el acceso a la cámara en los ajustes de tu navegador.';
+    case 'NotFoundError':
+      return 'No encontramos una cámara en este dispositivo.';
+    case 'NotReadableError':
+      return 'Tu cámara está en uso por otra app.';
+    default:
+      return 'No se pudo acceder a la cámara. Inténtalo de nuevo.';
+  }
+}
+
 type Phase =
   | { kind: 'idle' }
   | { kind: 'requesting-camera' }
@@ -45,7 +59,6 @@ function parseCheckinQr(input: string): { venueId: string; payload: string } | n
 }
 
 export default function ScanCheckinPage() {
-  const router = useRouter();
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const controlsRef = React.useRef<IScannerControls | null>(null);
   const lastScanRef = React.useRef<{ qr: string; at: number } | null>(null);
@@ -107,11 +120,6 @@ export default function ScanCheckinPage() {
         });
         stop();
         setPhase({ kind: 'success', data: result });
-        if (!result.alreadyCheckedInToday && result.awarded > 0) {
-          window.setTimeout(() => {
-            router.push(paths.recompensas);
-          }, 2500);
-        }
       } catch (err) {
         const message =
           err instanceof ClientApiError && err.payload
@@ -121,7 +129,7 @@ export default function ScanCheckinPage() {
         setPhase({ kind: 'scanning' });
       }
     },
-    [checkin, router, stop],
+    [checkin, stop],
   );
 
   const start = React.useCallback(async () => {
@@ -151,7 +159,7 @@ export default function ScanCheckinPage() {
       controlsRef.current = controls;
       setPhase({ kind: 'scanning' });
     } catch (err) {
-      const msg = (err as Error).message ?? 'No se pudo acceder a la cámara';
+      const msg = mapCameraError(err);
       setCameraError(msg);
       setPhase({ kind: 'idle' });
     }
@@ -254,7 +262,7 @@ export default function ScanCheckinPage() {
               ) : null}
               <button
                 onClick={start}
-                className="np-glow-pulse mt-1 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95 hover:brightness-110"
+                className="np-glow-pulse mt-1 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-6 py-3 text-sm font-semibold text-white shadow-[0_4px_18px_-4px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95 hover:brightness-110"
               >
                 Iniciar cámara
               </button>

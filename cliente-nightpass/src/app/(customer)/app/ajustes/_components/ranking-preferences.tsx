@@ -90,23 +90,28 @@ export function RankingPreferences({
             ciudad. Puedes desactivarlo cuando quieras.
           </p>
         </div>
+        {/* Wrap en área tocable ≥44px sin cambiar el tamaño visual del track */}
         <button
           type="button"
           role="switch"
           aria-checked={optIn}
           onClick={toggleOptIn}
           disabled={isPending}
-          className={cn(
-            'relative mt-1 h-7 w-12 shrink-0 rounded-full transition disabled:opacity-50',
-            optIn ? 'bg-primary' : 'bg-white/15',
-          )}
+          className="mt-1 shrink-0 flex items-center justify-center min-h-[44px] min-w-[44px] rounded-full disabled:opacity-50"
         >
           <span
             className={cn(
-              'absolute top-1 size-5 rounded-full bg-white transition-all',
-              optIn ? 'left-6' : 'left-1',
+              'relative h-7 w-12 rounded-full transition',
+              optIn ? 'bg-primary' : 'bg-white/15',
             )}
-          />
+          >
+            <span
+              className={cn(
+                'absolute top-1 size-5 rounded-full bg-white transition-all',
+                optIn ? 'left-6' : 'left-1',
+              )}
+            />
+          </span>
         </button>
       </div>
 
@@ -149,7 +154,7 @@ export function RankingPreferences({
                 type="button"
                 onClick={saveCity}
                 disabled={isPending || !estado || !ciudad}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-sm font-semibold text-white transition active:scale-95 hover:brightness-110 disabled:opacity-50"
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-5 py-2.5 text-sm font-semibold text-white transition active:scale-95 hover:brightness-110 disabled:opacity-50"
               >
                 {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                 Guardar
@@ -162,7 +167,7 @@ export function RankingPreferences({
                   setEditingCity(false);
                 }}
                 disabled={isPending}
-                className="rounded-full px-4 py-2 text-sm font-medium text-white/55 transition hover:text-white"
+                className="inline-flex min-h-[44px] items-center rounded-full px-4 text-sm font-medium text-white/55 transition hover:text-white"
               >
                 Cancelar
               </button>
@@ -177,7 +182,7 @@ export function RankingPreferences({
             <button
               type="button"
               onClick={() => setEditingCity(true)}
-              className="text-xs font-medium text-white/55 transition hover:text-white"
+              className="inline-flex min-h-[44px] items-center px-2 text-xs font-medium text-white/55 transition hover:text-white"
             >
               {city ? 'Cambiar' : 'Elegir ciudad'}
             </button>

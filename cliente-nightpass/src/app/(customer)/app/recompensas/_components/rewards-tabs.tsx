@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { CityRanking, HistoryList } from '@/features/loyalty';
 import { RewardsSection } from '@/features/rewards';
 
@@ -18,13 +19,31 @@ const TABS = [
 
 type TabKey = (typeof TABS)[number]['key'];
 
-/** Divide la zona en dos: canje/actividad (Recompensas) y el ranking de la ciudad. */
+function isTabKey(v: string | null): v is TabKey {
+  return v === 'rewards' || v === 'ranking';
+}
+
+/** Divide la zona en dos: canje/actividad (Recompensas) y el ranking de la ciudad.
+ *  El tab activo se sincroniza con el search param `?tab=` para que los links funcionen. */
 export function RewardsTabs({ state, city, rankingOptIn, userId }: Props) {
-  const [tab, setTab] = React.useState<TabKey>('rewards');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const paramTab = searchParams.get('tab');
+  const tab: TabKey = isTabKey(paramTab) ? paramTab : 'rewards';
+
+  const setTab = (next: TabKey) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', next);
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
 
   return (
     <div>
-      <div className="relative isolate grid grid-cols-2 rounded-full border border-white/10 bg-white/[0.05] p-1">
+      <div
+        role="tablist"
+        aria-label="Secciones de recompensas"
+        className="relative isolate grid grid-cols-2 rounded-full border border-white/10 bg-white/[0.05] p-1"
+      >
         <span
           aria-hidden
           className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] shadow-[0_4px_16px_-4px_rgba(168,85,247,0.6)] transition-transform duration-300 ease-out will-change-transform"
@@ -36,6 +55,8 @@ export function RewardsTabs({ state, city, rankingOptIn, userId }: Props) {
             <button
               key={t.key}
               type="button"
+              role="tab"
+              aria-selected={active}
               onClick={() => setTab(t.key)}
               className={`relative z-10 rounded-full py-2.5 text-sm font-semibold transition-colors duration-200 ${
                 active ? 'text-white' : 'text-muted-foreground hover:text-foreground'
@@ -48,7 +69,7 @@ export function RewardsTabs({ state, city, rankingOptIn, userId }: Props) {
       </div>
 
       {tab === 'rewards' ? (
-        <div key="rewards" className="np-fade-in mt-6 space-y-10">
+        <div key="rewards" role="tabpanel" aria-label="Recompensas" className="np-fade-in mt-6 space-y-10">
           <RewardsSection />
 
           <div>
@@ -72,7 +93,7 @@ export function RewardsTabs({ state, city, rankingOptIn, userId }: Props) {
           </div>
         </div>
       ) : (
-        <div key="ranking" className="np-fade-in mt-6">
+        <div key="ranking" role="tabpanel" aria-label="Ranking" className="np-fade-in mt-6">
           <CityRanking
             initialState={state}
             initialCity={city}
