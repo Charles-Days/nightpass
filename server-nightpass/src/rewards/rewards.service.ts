@@ -43,12 +43,6 @@ export class RewardsService {
       user,
     );
 
-    // Un venue solo da perks (no procesa Stripe). Los descuentos de boleto son
-    // del organizador (los fondea él en esta fase).
-    if (dto.venueId && dto.kind !== RewardKind.VENUE_PERK) {
-      throw new BadRequestException('Un local solo puede ofrecer perks de bar');
-    }
-
     const funder: RewardFunder = dto.venueId
       ? RewardFunder.VENUE
       : RewardFunder.PROMOTER;
@@ -62,7 +56,8 @@ export class RewardsService {
 
     const isEventScoped =
       dto.kind === RewardKind.BULK_PROMO ||
-      dto.kind === RewardKind.PHYSICAL_BONUS_NPP;
+      dto.kind === RewardKind.PHYSICAL_BONUS_NPP ||
+      dto.kind === RewardKind.TICKET_DISCOUNT;
 
     return this.prisma.reward.create({
       data: {
@@ -640,6 +635,10 @@ export class RewardsService {
           );
         }
         this.validateDiscount(dto.kind, dto.discountType, dto.discountValue);
+        // eventId es opcional; si se indica, debe pertenecer al dueño.
+        if (dto.eventId) {
+          await this.ensureEventScope(dto.eventId, undefined, owner);
+        }
         return dto.costNpp;
       }
 
