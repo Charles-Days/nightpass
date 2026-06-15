@@ -635,10 +635,13 @@ export class RewardsService {
           );
         }
         this.validateDiscount(dto.kind, dto.discountType, dto.discountValue);
-        // eventId es opcional; si se indica, debe pertenecer al dueño.
-        if (dto.eventId) {
-          await this.ensureEventScope(dto.eventId, undefined, owner);
+        // Un descuento de entrada SIEMPRE es de un evento (lleva a comprarlo).
+        if (!dto.eventId) {
+          throw new BadRequestException(
+            'Un descuento de entrada requiere eventId',
+          );
         }
+        await this.ensureEventScope(dto.eventId, undefined, owner);
         return dto.costNpp;
       }
 

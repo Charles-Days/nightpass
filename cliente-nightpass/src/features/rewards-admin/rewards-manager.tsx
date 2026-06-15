@@ -318,12 +318,16 @@ function CreateRewardDialog({
         toast.error('El porcentaje no puede superar 100');
         return;
       }
+      if (!eventId) {
+        toast.error('Selecciona el evento del descuento');
+        return;
+      }
       onCreate({
         ...base,
         costNpp,
         discountType,
         discountValue,
-        eventId: eventId || undefined,
+        eventId,
       });
       return;
     }
@@ -506,14 +510,14 @@ function CreateRewardDialog({
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">
-                    Evento (opcional)
+                    Evento
                   </label>
                   <EventSelect
                     value={eventId}
                     onChange={setEventId}
                     loading={events.isLoading}
                     options={events.data ?? []}
-                    placeholder="Todos los eventos"
+                    placeholder="Selecciona un evento"
                   />
                 </div>
               </>
