@@ -23,6 +23,7 @@ import {
 } from '@/core/components/ui/dialog';
 import { Button } from '@/core/components/ui/button';
 import { Input } from '@/core/components/ui/input';
+import { ConfirmDialog } from '@/core/components/ui/confirm-dialog';
 import {
   type CreateRewardBody,
   type OwnerReward,
@@ -82,6 +83,7 @@ export function RewardsManager({
   const update = useUpdateReward();
   const del = useDeleteReward();
   const [open, setOpen] = React.useState(false);
+  const [toDelete, setToDelete] = React.useState<OwnerReward | null>(null);
 
   const toggleActive = (r: OwnerReward) =>
     update.mutate(
@@ -89,10 +91,13 @@ export function RewardsManager({
       { onError: () => toast.error('No se pudo actualizar') },
     );
 
-  const remove = (r: OwnerReward) => {
-    if (!confirm(`¿Eliminar "${r.title}"?`)) return;
-    del.mutate(r.id, {
-      onSuccess: () => toast.success('Recompensa eliminada'),
+  const confirmDelete = () => {
+    if (!toDelete) return;
+    del.mutate(toDelete.id, {
+      onSuccess: () => {
+        toast.success('Recompensa eliminada');
+        setToDelete(null);
+      },
       onError: () => toast.error('No se pudo eliminar'),
     });
   };
@@ -154,7 +159,7 @@ export function RewardsManager({
                 </button>
                 <button
                   type="button"
-                  onClick={() => remove(r)}
+                  onClick={() => setToDelete(r)}
                   className="text-white/40 transition hover:text-rose-300"
                 >
                   <Trash2 className="size-4" />
@@ -166,6 +171,19 @@ export function RewardsManager({
       )}
 
       <CouponValidator />
+
+      <ConfirmDialog
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title="Eliminar recompensa"
+        description={
+          toDelete ? `¿Eliminar "${toDelete.title}"? No se puede deshacer.` : ''
+        }
+        confirmLabel="Eliminar"
+        variant="destructive"
+        loading={del.isPending}
+        onConfirm={confirmDelete}
+      />
 
       <CreateRewardDialog
         open={open}
