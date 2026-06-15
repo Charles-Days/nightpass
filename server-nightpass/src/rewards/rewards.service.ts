@@ -194,7 +194,12 @@ export class RewardsService {
     userId: string,
     query: { venueId?: string; city?: string },
   ) {
-    const where: Prisma.RewardWhereInput = { active: true };
+    // Solo tipos canjeables con NPP por el cliente. BULK_PROMO y
+    // PHYSICAL_BONUS_NPP se otorgan automáticamente por compra, no se canjean.
+    const where: Prisma.RewardWhereInput = {
+      active: true,
+      kind: { in: [RewardKind.VENUE_PERK, RewardKind.TICKET_DISCOUNT] },
+    };
     if (query.venueId) where.venueId = query.venueId;
     if (query.city) {
       where.OR = [
@@ -235,6 +240,7 @@ export class RewardsService {
         return {
           id: r.id,
           kind: r.kind,
+          eventId: r.eventId,
           title: r.title,
           description: r.description,
           costNpp: r.costNpp,
@@ -332,6 +338,159 @@ export class RewardsService {
     });
   }
 
+  // ── Promo por volumen (BULK_PROMO) ──────────────────────────────────────────
+
+  /**
+   * Al completarse una orden (online o en efectivo) intenta desbloquear una
+   * promo por volumen: busca un BULK_PROMO activo del evento (y tier si aplica)
+   * cuyo minQuantity cubra la cantidad comprada. Si lo encuentra y aún no hay un
+   * canje para (reward, orden), crea un RewardRedemption PENDING con
+   * selectedOptionId null (el cliente elige la opción después). Corre DENTRO de
+   * la tx de completado — el caller la envuelve en try/catch para que un error
+   * aquí NUNCA tumbe el cierre de una orden ya pagada.
+   */
+  async maybeUnlockBulkPromo(
+    tx: Prisma.TransactionClient,
+    order: {
+      id: string;
+      userId: string;
+      eventId: string;
+      tierId: string;
+      quantity: number;
+    },
+  ): Promise<void> {
+    // Candidatos activos del evento cuyo minQuantity cubre la compra y cuyo tier
+    // coincide (o es null = cualquier tier). Tomamos el de mayor minQuantity.
+    const candidates = await tx.reward.findMany({
+      where: {
+        active: true,
+        kind: RewardKind.BULK_PROMO,
+        eventId: order.eventId,
+        minQuantity: { lte: order.quantity },
+        OR: [{ tierId: null }, { tierId: order.tierId }],
+      },
+      orderBy: { minQuantity: 'desc' },
+    });
+    const reward = candidates[0];
+    if (!reward) return;
+
+    // Idempotencia: un solo canje por (reward, orden).
+    const existing = await tx.rewardRedemption.findFirst({
+      where: { rewardId: reward.id, orderId: order.id },
+      select: { id: true },
+    });
+    if (existing) return;
+
+    const expiresAt = new Date(Date.now() + reward.expiresInH * 3_600_000);
+    const code = await this.uniqueCode(tx);
+
+    await tx.rewardRedemption.create({
+      data: {
+        rewardId: reward.id,
+        userId: order.userId,
+        orderId: order.id,
+        costNpp: 0,
+        status: RedemptionStatus.PENDING,
+        selectedOptionId: null,
+        code,
+        expiresAt,
+      },
+    });
+  }
+
+  /**
+   * Canjes BULK del usuario pendientes de elegir opción (selectedOptionId null)
+   * y no expirados. Alimenta el modal "elige tu promo" del cliente.
+   */
+  async listBulkPending(userId: string) {
+    const now = new Date();
+    const items = await this.prisma.rewardRedemption.findMany({
+      where: {
+        userId,
+        selectedOptionId: null,
+        status: RedemptionStatus.PENDING,
+        expiresAt: { gt: now },
+        reward: { kind: RewardKind.BULK_PROMO },
+      },
+      orderBy: { redeemedAt: 'desc' },
+      include: {
+        reward: {
+          select: {
+            title: true,
+            options: {
+              orderBy: { position: 'asc' },
+              select: { id: true, label: true, description: true },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      items: items.map((r) => ({
+        redemptionId: r.id,
+        orderId: r.orderId,
+        code: r.code,
+        expiresAt: r.expiresAt,
+        reward: {
+          title: r.reward.title,
+          options: r.reward.options,
+        },
+      })),
+    };
+  }
+
+  /**
+   * El cliente elige la opción de su promo por volumen. Marca selectedOptionId.
+   * El cupón resultante se valida luego en puerta por `useByCode`.
+   */
+  async chooseBulkOption(userId: string, redemptionId: string, optionId: string) {
+    const redemption = await this.prisma.rewardRedemption.findUnique({
+      where: { id: redemptionId },
+      include: { reward: { select: { kind: true, title: true } } },
+    });
+    if (!redemption) throw new NotFoundException('Canje no encontrado');
+    if (redemption.userId !== userId) {
+      throw new ForbiddenException('Este canje no te pertenece');
+    }
+    if (redemption.reward.kind !== RewardKind.BULK_PROMO) {
+      throw new BadRequestException('Este canje no es una promo por volumen');
+    }
+    if (redemption.selectedOptionId !== null) {
+      throw new BadRequestException('Ya elegiste una opción para esta promo');
+    }
+    if (redemption.status !== RedemptionStatus.PENDING) {
+      throw new BadRequestException('Esta promo ya no está disponible');
+    }
+    if (redemption.expiresAt.getTime() < Date.now()) {
+      await this.prisma.rewardRedemption.update({
+        where: { id: redemption.id },
+        data: { status: RedemptionStatus.EXPIRED },
+      });
+      throw new BadRequestException('Esta promo expiró');
+    }
+
+    const option = await this.prisma.rewardOption.findUnique({
+      where: { id: optionId },
+      select: { id: true, rewardId: true, label: true },
+    });
+    if (!option || option.rewardId !== redemption.rewardId) {
+      throw new BadRequestException('La opción no pertenece a esta promo');
+    }
+
+    const updated = await this.prisma.rewardRedemption.update({
+      where: { id: redemption.id },
+      data: { selectedOptionId: option.id },
+    });
+
+    return {
+      code: updated.code,
+      title: redemption.reward.title,
+      optionLabel: option.label,
+      expiresAt: updated.expiresAt,
+    };
+  }
+
   // ── Validación en puerta/barra (staff) ──────────────────────────────────────
 
   async useByCode(code: string, user: AuthUser) {
@@ -349,6 +508,14 @@ export class RewardsService {
       },
       user,
     );
+
+    // Promo por volumen: el cliente debe haber elegido su opción primero.
+    if (
+      redemption.reward.kind === RewardKind.BULK_PROMO &&
+      redemption.selectedOptionId === null
+    ) {
+      throw new BadRequestException('Elige tu promo primero');
+    }
 
     if (redemption.status === RedemptionStatus.USED) {
       throw new BadRequestException('Este cupón ya fue usado');
@@ -375,6 +542,17 @@ export class RewardsService {
       customer: redemption.user.name ?? redemption.user.email,
       usedAt: updated.usedAt,
     };
+  }
+
+  /**
+   * Genera un código de cupón único (mismo formato que el resto de canjes).
+   * Público para que otros módulos (orders) creen RewardRedemption con un code
+   * consistente. Acepta un cliente de tx opcional.
+   */
+  async generateUniqueCode(
+    db: Prisma.TransactionClient = this.prisma,
+  ): Promise<string> {
+    return this.uniqueCode(db);
   }
 
   // ── Internos ────────────────────────────────────────────────────────────────
@@ -566,10 +744,12 @@ export class RewardsService {
     return out;
   }
 
-  private async uniqueCode(): Promise<string> {
+  private async uniqueCode(
+    db: Prisma.TransactionClient = this.prisma,
+  ): Promise<string> {
     for (let attempt = 0; attempt < 8; attempt += 1) {
       const code = this.generateCode();
-      const exists = await this.prisma.rewardRedemption.findUnique({
+      const exists = await db.rewardRedemption.findUnique({
         where: { code },
         select: { id: true },
       });

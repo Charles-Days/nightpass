@@ -9,6 +9,8 @@ export type RewardDiscountType = 'NONE' | 'PERCENT' | 'FIXED';
 export interface AvailableReward {
   id: string;
   kind: RewardKind;
+  /** Evento al que aplica el descuento (solo TICKET_DISCOUNT). */
+  eventId: string | null;
   title: string;
   description: string | null;
   costNpp: number;
@@ -75,6 +77,59 @@ export function useRedeemReward() {
       qc.invalidateQueries({ queryKey: ['rewards-available'] });
       qc.invalidateQueries({ queryKey: ['my-redemptions'] });
       qc.invalidateQueries({ queryKey: ['loyalty', 'status'] });
+    },
+  });
+}
+
+// ── Promos BULK (regalo por comprar N boletos) ────────────────────────────────
+
+export interface BulkOption {
+  id: string;
+  label: string;
+  description: string | null;
+}
+
+export interface BulkPendingItem {
+  redemptionId: string;
+  orderId: string | null;
+  code: string;
+  expiresAt: string;
+  reward: {
+    title: string;
+    options: BulkOption[];
+  };
+}
+
+export interface BulkPendingResponse {
+  items: BulkPendingItem[];
+}
+
+export interface ChooseBulkResult {
+  code: string;
+  title: string;
+  optionLabel: string;
+  expiresAt: string;
+}
+
+export function useBulkPending() {
+  return useQuery({
+    queryKey: ['rewards-bulk-pending'],
+    queryFn: () => clientFetch<BulkPendingResponse>('/api/rewards/bulk/pending'),
+    staleTime: 15_000,
+  });
+}
+
+export function useChooseBulk() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ redemptionId, optionId }: { redemptionId: string; optionId: string }) =>
+      clientFetch<ChooseBulkResult>(`/api/rewards/redemptions/${redemptionId}/choose`, {
+        method: 'POST',
+        body: { optionId },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['rewards-bulk-pending'] });
+      qc.invalidateQueries({ queryKey: ['my-redemptions'] });
     },
   });
 }

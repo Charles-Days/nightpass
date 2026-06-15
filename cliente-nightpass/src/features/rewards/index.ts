@@ -1,8 +1,11 @@
 export { RewardsSection } from './rewards-section';
+export { BulkChooseDialog } from './bulk-choose-dialog';
 export {
   useAvailableRewards,
   useMyRedemptions,
   useRedeemReward,
+  useBulkPending,
+  useChooseBulk,
 } from './use-rewards';
 export type {
   AvailableReward,
@@ -11,4 +14,8 @@ export type {
   RedeemResult,
   RewardKind,
   RewardDiscountType,
+  BulkOption,
+  BulkPendingItem,
+  BulkPendingResponse,
+  ChooseBulkResult,
 } from './use-rewards';

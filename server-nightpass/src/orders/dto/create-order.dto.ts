@@ -13,4 +13,9 @@ export class CreateOrderDto {
   @Min(1)
   @Max(6)
   quantity?: number;
+
+  // Descuento de boleto (TICKET_DISCOUNT) a aplicar en el checkout. Opcional.
+  @IsOptional()
+  @IsUUID('all')
+  rewardId?: string;
 }

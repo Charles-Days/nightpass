@@ -395,6 +395,8 @@ export interface OrderCreationResponse {
   publishableKey?: string;
   totalCents: number;
   currency: string;
+  /** Descuento aplicado por una recompensa TICKET_DISCOUNT (en centavos). */
+  discountCents?: number;
 }
 
 export interface CatalogTierDetail {

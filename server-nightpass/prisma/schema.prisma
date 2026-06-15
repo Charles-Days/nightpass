@@ -105,6 +105,7 @@ enum LoyaltyEventType {
   REFERRAL_SIGNUP
   REDEEM
   ADMIN_ADJUST
+  PHYSICAL_BONUS
 }
 
 enum OAuthProvider {

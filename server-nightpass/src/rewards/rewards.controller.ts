@@ -23,6 +23,7 @@ import { RewardsService } from './rewards.service';
 import { CreateRewardDto } from './dto/create-reward.dto';
 import { UpdateRewardDto } from './dto/update-reward.dto';
 import { UseRedemptionDto } from './dto/use-redemption.dto';
+import { ChooseBulkOptionDto } from './dto/choose-bulk-option.dto';
 import {
   AvailableRewardsQuery,
   OwnerRewardsQuery,
@@ -96,6 +97,25 @@ export class RewardsController {
   @UseGuards(JwtAuthGuard)
   myRedemptions(@CurrentUser() user: AuthUser) {
     return this.rewards.myRedemptions(user.id);
+  }
+
+  // ── Promo por volumen (BULK_PROMO) ──────────────────────────────────────────
+
+  @Get('rewards/bulk/pending')
+  @UseGuards(JwtAuthGuard)
+  bulkPending(@CurrentUser() user: AuthUser) {
+    return this.rewards.listBulkPending(user.id);
+  }
+
+  @Post('rewards/redemptions/:id/choose')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  chooseBulk(
+    @Param('id') id: string,
+    @Body() dto: ChooseBulkOptionDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.rewards.chooseBulkOption(user.id, id, dto.optionId);
   }
 
   // ── Validación en puerta/barra (staff) ──────────────────────────────────────

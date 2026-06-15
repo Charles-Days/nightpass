@@ -19,6 +19,7 @@ import { paths } from '@/core/config/paths';
 import type { CatalogTierDetail, Order, OrderCreationResponse } from '@/core/types/api';
 import { saveRpRef, readRpRef, clearRpRef } from '@/features/rp-referral/rp-referral';
 import { MEXICO_GEO } from '@/core/data/mexico-geo';
+import { BulkChooseDialog, type BulkPendingItem, type BulkPendingResponse } from '@/features/rewards';
 import { PickupModal } from './pickup-modal';
 
 type Phase =
@@ -138,6 +139,8 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
   const router = useRouter();
   const searchParams = useSearchParams();
   const existingOrderId = searchParams.get('orderId');
+  // Recompensa TICKET_DISCOUNT a aplicar (id), llega desde la página del evento.
+  const rewardId = searchParams.get('reward');
 
   // Cuántos pases más puede comprar antes de tocar el límite por cuenta.
   const maxQuantity = Math.max(0, MAX_PER_ACCOUNT - alreadyOwned);
@@ -175,7 +178,16 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
   const [stripeInit, setStripeInit] = useState<StripeInitState | null>(null);
   const [manualRpCode, setManualRpCode] = useState('');
   const [appliedCode, setAppliedCode] = useState<string | null>(null);
+  // Descuento aplicado por la recompensa (centavos), lo devuelve POST /orders.
+  const [discountCents, setDiscountCents] = useState(0);
   const [quantity, setQuantity] = useState(1);
+
+  // Promo BULK (regalo por comprar N boletos) detectada tras completar la orden.
+  // Se elige antes del redirect final a "Mis pases".
+  const [bulkPromo, setBulkPromo] = useState<BulkPendingItem | null>(null);
+  // Destino del redirect post-compra, retenido mientras el modal de promo está
+  // abierto. Cuando el usuario cierra el cupón, navegamos aquí.
+  const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
   // Teléfono/WhatsApp para pago en efectivo. Si el usuario ya tiene uno
   // guardado lo reusamos; si no, se lo pedimos esta primera vez.
   const [phone, setPhone] = useState('');
@@ -217,12 +229,19 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
 
       const res = await clientFetch<OrderCreationResponse>('/api/orders', {
         method: 'POST',
-        body: { tierId, referralCode: resolvedCode, quantity: currentQty },
+        body: {
+          tierId,
+          referralCode: resolvedCode,
+          quantity: currentQty,
+          ...(rewardId ? { rewardId } : {}),
+        },
       });
 
       if (resolvedCode) {
         setAppliedCode(resolvedCode);
       }
+
+      setDiscountCents(res.discountCents ?? 0);
 
       // ── Dev bypass: el backend ya completó la orden sin Stripe ──────────
       const isDevBypass = res.clientSecret.includes('devbypasssecret');
@@ -275,7 +294,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
       if (info.passId) setDuplicatePassId(info.passId);
       if (nextPhase === 'error') toast.error(info.message);
     }
-  }, [initialTier, tierId, quantity]);
+  }, [initialTier, tierId, quantity, rewardId, searchParams]);
 
   // Solicita pago en EFECTIVO: notifica por correo a los RPs asignados; uno
   // cobra en persona y confirma → el pase se emite a la cuenta del cliente.
@@ -375,7 +394,29 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
             const target = fresh.passes.length === 1
               ? `${paths.pases}/${fresh.passes[0].id}`
               : paths.pases;
-            router.replace(target);
+
+            // Antes del redirect, revisa si esta compra desbloqueó una promo BULK
+            // (regalo por comprar N boletos) que el usuario debe elegir. Si hay,
+            // abrimos el modal y retenemos el redirect hasta que cierre el cupón.
+            let promo: BulkPendingItem | null = null;
+            if (orderId) {
+              try {
+                const pending = await clientFetch<BulkPendingResponse>(
+                  '/api/rewards/bulk/pending',
+                );
+                promo = pending.items.find((it) => it.orderId === orderId) ?? null;
+              } catch {
+                // sin promo / error de red → seguimos con el flujo normal
+              }
+            }
+
+            if (cancelled) return;
+            if (promo) {
+              setBulkPromo(promo);
+              setPendingRedirect(target);
+            } else {
+              router.replace(target);
+            }
             return;
           }
 
@@ -439,6 +480,9 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
   const cashTotalCents =
     cashSingle != null ? cashSingle * summary.quantity : null;
   const showCashPrice = method === 'cash' && cashTotalCents != null;
+  // El descuento de recompensa aplica solo al pago en línea (Stripe). En efectivo
+  // el precio ya viene optimizado por el backend.
+  const showDiscount = !showCashPrice && discountCents > 0;
   const displayTotalCents = showCashPrice ? cashTotalCents! : summary.totalCents;
   const cashSavingsCents = summary.totalCents - (cashTotalCents ?? summary.totalCents);
 
@@ -494,9 +538,18 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                 {formatMoney(summary.totalCents, summary.currency)}
               </span>
             )}
-            {formatMoney(displayTotalCents, summary.currency)}
+            {formatMoney(showDiscount ? summary.totalCents + discountCents : displayTotalCents, summary.currency)}
           </span>
         </div>
+
+        {showDiscount && (
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-sm text-emerald-300">Descuento recompensa</span>
+            <span className="font-display text-sm font-medium tabular-nums text-emerald-300">
+              −{formatMoney(discountCents, summary.currency)}
+            </span>
+          </div>
+        )}
 
         <div className="my-4 h-px bg-white/8" />
 
@@ -868,6 +921,20 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
         <ShieldCheck className="size-3" />
         Pago procesado de forma segura por Stripe.
       </p>
+
+      <BulkChooseDialog
+        item={bulkPromo}
+        onClose={() => {
+          // Cerró sin elegir (o tras elegir). En ambos casos continuamos al pase;
+          // las promos sin elegir quedan visibles en Recompensas.
+          setBulkPromo(null);
+          if (pendingRedirect) {
+            const target = pendingRedirect;
+            setPendingRedirect(null);
+            router.replace(target as never);
+          }
+        }}
+      />
 
       <PickupModal
         open={pickupOpen}

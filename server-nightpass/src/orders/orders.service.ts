@@ -9,11 +9,19 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { OrderStatus, Role, PassClaimStatus } from '@prisma/client';
+import {
+  OrderStatus,
+  Role,
+  PassClaimStatus,
+  RewardKind,
+  RewardDiscountType,
+  RedemptionStatus,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { StripeService } from '../stripe/stripe.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
+import { RewardsService } from '../rewards/rewards.service';
 import { resolveTierPrice } from '../events/tier-pricing';
 import { issuePasses } from '../passes/issue-passes';
 import { isDevBypassEnabled } from '../common/dev-bypass';
@@ -36,6 +44,7 @@ export class OrdersService {
     private readonly config: ConfigService,
     private readonly loyalty: LoyaltyService,
     private readonly mailer: MailerService,
+    private readonly rewards: RewardsService,
   ) {}
 
   // ── Helpers ──────────────────────────────────────────────────────────────
@@ -62,12 +71,14 @@ export class OrdersService {
     tierId: string,
     referralCode?: string,
     quantity = 1,
+    rewardId?: string,
   ): Promise<{
     orderId: string;
     clientSecret: string;
     publishableKey: string | undefined;
     totalCents: number;
     currency: string;
+    discountCents?: number;
   }> {
     if (quantity < 1 || quantity > 6) {
       throw new HttpException(
@@ -109,7 +120,7 @@ export class OrdersService {
       tier.prices,
       event.startsAt,
     ).currentCents;
-    const priceCents = singlePriceCents * quantity;
+    let priceCents = singlePriceCents * quantity;
 
     if (priceCents <= 0) {
       throw new HttpException(
@@ -216,11 +227,108 @@ export class OrdersService {
       );
     }
 
+    // ── Descuento de boleto (TICKET_DISCOUNT) ──────────────────────────────
+    // Si el cliente pasó un rewardId, validamos el descuento y reducimos el
+    // precio ANTES de calcular la comisión (que se cobra sobre el monto ya
+    // descontado). El cobro real de NPP se hace al confirmar el pago (webhook):
+    // aquí solo se reserva el cupón PENDING. priceCents nunca baja de 0.
+    let discountCents = 0;
+    let discountReward: { id: string; costNpp: number; expiresInH: number } | null =
+      null;
+    if (rewardId) {
+      const reward = await this.prisma.reward.findUnique({
+        where: { id: rewardId },
+      });
+      if (!reward || !reward.active) {
+        throw new HttpException(
+          { message: 'Recompensa no disponible', errorCode: 'REWARD_UNAVAILABLE' },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (reward.kind !== RewardKind.TICKET_DISCOUNT) {
+        throw new HttpException(
+          {
+            message: 'Esta recompensa no es un descuento de boleto',
+            errorCode: 'REWARD_WRONG_KIND',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (reward.eventId != null && reward.eventId !== event.id) {
+        throw new HttpException(
+          {
+            message: 'Este descuento no aplica a este evento',
+            errorCode: 'REWARD_EVENT_MISMATCH',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const balance = await this.loyalty.getBalance(userId);
+      if (balance < reward.costNpp) {
+        throw new HttpException(
+          { message: 'No tienes NPP suficientes', errorCode: 'INSUFFICIENT_NPP' },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      if (reward.perUserLimit != null) {
+        const used = await this.prisma.rewardRedemption.count({
+          where: {
+            userId,
+            rewardId: reward.id,
+            status: RedemptionStatus.USED,
+          },
+        });
+        if (used >= reward.perUserLimit) {
+          throw new HttpException(
+            {
+              message: 'Ya alcanzaste el límite de esta recompensa',
+              errorCode: 'REWARD_LIMIT_REACHED',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+
+      if (reward.discountType === RewardDiscountType.PERCENT) {
+        const raw = Math.floor((priceCents * reward.discountValue) / 100);
+        discountCents =
+          reward.maxDiscountCents != null
+            ? Math.min(raw, reward.maxDiscountCents)
+            : raw;
+      } else if (reward.discountType === RewardDiscountType.FIXED) {
+        discountCents = Math.min(reward.discountValue, priceCents);
+      }
+      discountCents = Math.max(0, Math.min(discountCents, priceCents));
+
+      priceCents = Math.max(0, priceCents - discountCents);
+      // Un descuento que deja la orden en 0 no puede cobrarse por Stripe
+      // (PaymentIntent mínimo > 0). Se rechaza con mensaje claro en vez de
+      // romper el checkout.
+      if (priceCents <= 0) {
+        throw new HttpException(
+          {
+            message:
+              'El descuento cubre el total — no se puede procesar un pago de $0',
+            errorCode: 'DISCOUNT_COVERS_TOTAL',
+          },
+          HttpStatus.CONFLICT,
+        );
+      }
+      discountReward = {
+        id: reward.id,
+        costNpp: reward.costNpp,
+        expiresInH: reward.expiresInH,
+      };
+    }
+
     // Fee del dueño del evento si lo tiene configurado (>0); si no, cae al fee
     // global del servidor. Mismo orden de prioridad que resolveStripeAccount: el
     // payout va al venue si existe, si no al promoter — la comisión sigue al mismo
     // dueño. platformFeePct: null = sin configurar → usa la comisión global;
     // un número (incluido 0) es explícito (0 = NightPass no cobra comisión).
+    // La comisión se calcula sobre el precio YA descontado.
     const ownerFeePct = event.venue
       ? event.venue.platformFeePct
       : event.promoter
@@ -262,6 +370,51 @@ export class OrdersService {
 
       await issuePasses(this.prisma, order, passSecret);
 
+      // Descuento de boleto: en el bypass la orden se completa al instante, así
+      // que creamos el cupón, debitamos los NPP y lo marcamos USED en el acto
+      // (espejo del webhook). Best-effort: un error aquí NO rompe la compra.
+      if (discountReward) {
+        try {
+          const code = await this.rewards.generateUniqueCode();
+          const redemption = await this.prisma.rewardRedemption.create({
+            data: {
+              rewardId: discountReward.id,
+              userId,
+              orderId: order.id,
+              costNpp: discountReward.costNpp,
+              status: RedemptionStatus.PENDING,
+              code,
+              appliedCents: discountCents,
+              expiresAt: new Date(
+                Date.now() + discountReward.expiresInH * 3_600_000,
+              ),
+            },
+          });
+          await this.loyalty.debit({
+            userId,
+            points: discountReward.costNpp,
+            idempotencyKey: `redeem:${redemption.id}`,
+          });
+          await this.prisma.rewardRedemption.update({
+            where: { id: redemption.id },
+            data: { status: RedemptionStatus.USED, usedAt: new Date() },
+          });
+        } catch (err) {
+          this.logger.error(
+            `[DEV BYPASS] Descuento de boleto falló para Order ${order.id}: ${(err as Error).message}`,
+          );
+        }
+      }
+
+      // Promo por volumen: cash/bypass también la desbloquea (best-effort).
+      try {
+        await this.rewards.maybeUnlockBulkPromo(this.prisma, order);
+      } catch (err) {
+        this.logger.error(
+          `[DEV BYPASS] maybeUnlockBulkPromo falló para Order ${order.id}: ${(err as Error).message}`,
+        );
+      }
+
       this.logger.log(`[DEV BYPASS] Simulación de pago exitosa. ${quantity} pases generados.`);
 
       return {
@@ -270,6 +423,7 @@ export class OrdersService {
         publishableKey: this.stripe.getPublishableKey(),
         totalCents: priceCents,
         currency: tier.currency,
+        discountCents: discountReward ? discountCents : undefined,
       };
     }
 
@@ -288,6 +442,36 @@ export class OrdersService {
       },
     });
 
+    // 1b. Descuento de boleto: reserva el cupón PENDING atado a esta orden. El
+    // débito de NPP y el paso a USED ocurren al confirmarse el pago (webhook).
+    // Best-effort: un fallo aquí no debe romper el checkout — el precio ya se
+    // descontó y el pago puede proceder; si el cupón no se creó, no se cobran NPP.
+    let redemptionId: string | undefined;
+    if (discountReward) {
+      try {
+        const code = await this.rewards.generateUniqueCode();
+        const redemption = await this.prisma.rewardRedemption.create({
+          data: {
+            rewardId: discountReward.id,
+            userId,
+            orderId: order.id,
+            costNpp: discountReward.costNpp,
+            status: RedemptionStatus.PENDING,
+            code,
+            appliedCents: discountCents,
+            expiresAt: new Date(
+              Date.now() + discountReward.expiresInH * 3_600_000,
+            ),
+          },
+        });
+        redemptionId = redemption.id;
+      } catch (err) {
+        this.logger.error(
+          `No se pudo reservar el cupón de descuento para Order ${order.id}: ${(err as Error).message}`,
+        );
+      }
+    }
+
     // 2. Crear PaymentIntent en Stripe (idempotency = orderId)
     const pi = await this.stripe.createPaymentIntent({
       amountCents: priceCents,
@@ -300,6 +484,8 @@ export class OrdersService {
         userId,
         tierId: tier.id,
         quantity: String(quantity),
+        ...(discountReward ? { rewardId: discountReward.id } : {}),
+        ...(redemptionId ? { redemptionId } : {}),
       },
       idempotencyKey: `order-${order.id}`,
     });
@@ -326,6 +512,7 @@ export class OrdersService {
       publishableKey: this.stripe.getPublishableKey(),
       totalCents: priceCents,
       currency: tier.currency,
+      discountCents: discountReward ? discountCents : undefined,
     };
   }
 

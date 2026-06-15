@@ -1,9 +1,11 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { QRCodeSVG } from 'qrcode.react';
-import { Gift, Loader2, Lock, Ticket } from 'lucide-react';
+import { Gift, Loader2, Lock, Sparkles, Ticket } from 'lucide-react';
 import { toast } from 'sonner';
+import { paths } from '@/core/config/paths';
 import {
   Dialog,
   DialogContent,
@@ -13,12 +15,15 @@ import {
 } from '@/core/components/ui/dialog';
 import {
   type AvailableReward,
+  type BulkPendingItem,
   type RedeemResult,
   type Redemption,
   useAvailableRewards,
+  useBulkPending,
   useMyRedemptions,
   useRedeemReward,
 } from './use-rewards';
+import { BulkChooseDialog } from './bulk-choose-dialog';
 
 function discountLabel(r: AvailableReward): string | null {
   if (r.discountType === 'PERCENT') return `${r.discountValue}% off`;
@@ -58,6 +63,10 @@ export function RewardsSection() {
 
   return (
     <div>
+      {/* Promos por elegir (regalo por comprar N boletos) van arriba del todo:
+          el usuario tiene que tomar una decisión para reclamar su regalo. */}
+      <PendingBulkPromos />
+
       {/* Cupones canjeados van primero: son lo más urgente (mostrarlos al staff
           en el bar) y no deben quedar enterrados bajo el catálogo. */}
       <MyCoupons />
@@ -136,26 +145,45 @@ export function RewardsSection() {
                     </div>
                   )}
                   <div className="mt-auto flex items-center justify-between gap-2 pt-3">
-                    <span className="font-display text-primary text-base font-bold">
-                      {r.costNpp} NPP
-                    </span>
-                    <button
-                      type="button"
-                      disabled={!r.redeemable || pending}
-                      onClick={() => onRedeem(r.id)}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-xs font-semibold text-white transition hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      {pending ? (
-                        <Loader2 className="size-3.5 animate-spin" />
-                      ) : !r.redeemable ? (
-                        <Lock className="size-3.5" />
-                      ) : null}
-                      {r.limitReached
-                        ? 'Límite'
-                        : !r.redeemable
-                          ? `Faltan ${missing} NPP`
-                          : 'Canjear'}
-                    </button>
+                    {r.kind === 'TICKET_DISCOUNT' && r.eventId ? (
+                      <>
+                        {disc && (
+                          <span className="font-display text-primary text-base font-bold">
+                            {disc}
+                          </span>
+                        )}
+                        <Link
+                          href={`${paths.evento}/${r.eventId}?reward=${r.id}` as never}
+                          className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-xs font-semibold text-white transition hover:brightness-110 active:scale-95"
+                        >
+                          <Ticket className="size-3.5" />
+                          Comprar con descuento
+                        </Link>
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-display text-primary text-base font-bold">
+                          {r.costNpp} NPP
+                        </span>
+                        <button
+                          type="button"
+                          disabled={!r.redeemable || pending}
+                          onClick={() => onRedeem(r.id)}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-xs font-semibold text-white transition hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {pending ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : !r.redeemable ? (
+                            <Lock className="size-3.5" />
+                          ) : null}
+                          {r.limitReached
+                            ? 'Límite'
+                            : !r.redeemable
+                              ? `Faltan ${missing} NPP`
+                              : 'Canjear'}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               );
@@ -165,6 +193,59 @@ export function RewardsSection() {
       )}
 
       <CouponDialog coupon={coupon} onClose={() => setCoupon(null)} />
+    </div>
+  );
+}
+
+function PendingBulkPromos() {
+  const { data } = useBulkPending();
+  const [active, setActive] = React.useState<BulkPendingItem | null>(null);
+  const items = data?.items ?? [];
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mb-6">
+      <div className="border-primary/25 from-primary/[0.12] relative overflow-hidden rounded-[18px] border bg-gradient-to-br to-white/[0.02] p-4">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-10 -right-8 size-32 rounded-full opacity-40 blur-[55px]"
+          style={{ background: 'radial-gradient(circle, #a855f7, transparent 70%)' }}
+        />
+        <div className="relative flex items-start gap-3">
+          <span className="bg-primary/15 text-primary ring-primary/25 grid size-9 shrink-0 place-items-center rounded-[10px] ring-1">
+            <Sparkles className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-sm font-bold">
+              Tienes {items.length} promo{items.length > 1 ? 's' : ''} por elegir
+            </p>
+            <p className="text-muted-foreground mt-0.5 text-[11px] leading-relaxed">
+              Elige tu regalo por tu compra antes de que venza.
+            </p>
+          </div>
+        </div>
+        <div className="relative mt-3 space-y-2">
+          {items.map((it) => (
+            <button
+              key={it.redemptionId}
+              type="button"
+              onClick={() => setActive(it)}
+              className="flex w-full items-center justify-between gap-3 rounded-[12px] border border-white/12 bg-white/[0.04] px-3.5 py-2.5 text-left transition hover:bg-white/[0.07] active:scale-[0.99]"
+            >
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                {it.reward.title}
+              </span>
+              <span className="bg-primary/15 text-primary inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold">
+                <Gift className="size-3" />
+                Elegir
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <BulkChooseDialog item={active} onClose={() => setActive(null)} />
     </div>
   );
 }

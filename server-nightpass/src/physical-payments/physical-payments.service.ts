@@ -14,6 +14,7 @@ import {
   PaymentMethod,
   PhysicalPaymentRequestStatus,
   Prisma,
+  RewardKind,
   Role,
 } from '@prisma/client';
 import { runSerializable } from '../common/serializable-tx';
@@ -24,6 +25,8 @@ import {
   CashWalletService,
   OwnerRef,
 } from '../cash-wallet/cash-wallet.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
+import { RewardsService } from '../rewards/rewards.service';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { resolveTierPrice } from '../events/tier-pricing';
 import { computeCashUnitPrice } from '../common/cash-pricing';
@@ -44,6 +47,8 @@ export class PhysicalPaymentsService {
     private readonly stripe: StripeService,
     private readonly cashWallet: CashWalletService,
     private readonly push: PushService,
+    private readonly loyalty: LoyaltyService,
+    private readonly rewards: RewardsService,
   ) {}
 
   private formatMoney(cents: number, currency: string): string {
@@ -530,6 +535,17 @@ export class PhysicalPaymentsService {
 
       await issuePasses(tx, order, passSecret);
 
+      // Promo por volumen: la compra en efectivo también la desbloquea. Usa el
+      // MISMO tx (Serializable). try/catch: un error de recompensa nunca debe
+      // tumbar la confirmación de un pago ya cobrado en efectivo.
+      try {
+        await this.rewards.maybeUnlockBulkPromo(tx, order);
+      } catch (err) {
+        this.logger.error(
+          `maybeUnlockBulkPromo falló para Order ${order.id}: ${err instanceof Error ? err.message : err}`,
+        );
+      }
+
       const updated = await tx.physicalPaymentRequest.update({
         where: { id: request.id },
         data: { orderId: order.id },
@@ -541,14 +557,42 @@ export class PhysicalPaymentsService {
           pickupPoint: { select: { id: true, label: true, reference: true } },
         },
       });
-      return updated;
+      return { request: updated, orderId: order.id };
     });
+
+    // Bono de NPP por pago físico (PHYSICAL_BONUS_NPP). Corre FUERA de la tx
+    // Serializable (awardPhysicalBonus abre su propia transacción) y SIEMPRE en
+    // try/catch — la confirmación ya cuajó; un fallo del bono no la revierte.
+    // Idempotente por orden (`physbonus:<orderId>`) si la confirmación se reintenta.
+    try {
+      const bonusReward = await this.prisma.reward.findFirst({
+        where: {
+          active: true,
+          kind: RewardKind.PHYSICAL_BONUS_NPP,
+          eventId: request.eventId,
+        },
+        orderBy: { bonusNpp: 'desc' },
+        select: { bonusNpp: true },
+      });
+      if (bonusReward?.bonusNpp && bonusReward.bonusNpp > 0) {
+        await this.loyalty.awardPhysicalBonus({
+          userId: request.userId,
+          points: bonusReward.bonusNpp * request.quantity,
+          orderId: result.orderId,
+          eventId: request.eventId,
+        });
+      }
+    } catch (err) {
+      this.logger.error(
+        `awardPhysicalBonus falló para Order ${result.orderId}: ${err instanceof Error ? err.message : err}`,
+      );
+    }
 
     this.logger.log(
       `Solicitud ${request.id} confirmada por RP ${rp.id} → ${request.quantity} pase(s) emitido(s)`,
     );
 
-    return this.toDetail(result);
+    return this.toDetail(result.request);
   }
 
   // ── Cancelar (cliente dueño o RP asignado) ────────────────────────────────
