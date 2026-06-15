@@ -14,7 +14,7 @@ import { EventHeroFx } from '@/app/(customer)/_components/event-hero-fx';
 import { EventCountdown } from '@/app/(customer)/_components/event-countdown';
 import { BuyCta } from '@/app/(customer)/_components/buy-cta';
 import { BuyTierButton } from '@/app/(customer)/_components/buy-tier-button';
-import { WhatsappIcon } from '@/core/components/icons/whatsapp-icon';
+import { WhatsappJoinLink } from '@/app/(customer)/_components/whatsapp-join-link';
 import { EventDescription } from '@/core/components/event-description';
 
 interface Props {
@@ -205,18 +205,17 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
           {event.whatsappGroups && event.whatsappGroups.length > 0 && (
             <div className="np-rise mt-3 flex flex-wrap gap-2" style={{ animationDelay: '300ms' }}>
               {event.whatsappGroups.map((group, i) => (
-                <a
+                <WhatsappJoinLink
                   key={`hdr-${group.url}-${i}`}
                   href={group.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  eventId={event.id}
+                  label={
+                    event.whatsappGroups!.length === 1
+                      ? 'Unirse al grupo de WhatsApp'
+                      : group.label?.trim() || `Grupo ${i + 1}`
+                  }
                   className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/[0.1] px-3 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-400/20 active:scale-95"
-                >
-                  <WhatsappIcon className="size-3.5 shrink-0" />
-                  {event.whatsappGroups!.length === 1
-                    ? 'Unirse al grupo de WhatsApp'
-                    : group.label?.trim() || `Grupo ${i + 1}`}
-                </a>
+                />
               ))}
             </div>
           )}

@@ -8,6 +8,7 @@ import {
   VenueStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { MetricsService } from '../metrics/metrics.service';
 import { FinanceQueryDto } from './dto/finance-query.dto';
 
 const DEFAULT_RANGE_DAYS = 30;
@@ -26,6 +27,7 @@ export class AdminFinanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly metrics: MetricsService,
   ) {}
 
   private resolveRange(query: FinanceQueryDto): ResolvedRange {
@@ -420,7 +422,7 @@ export class AdminFinanceService {
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
-    const [completedOrders, claims] = await Promise.all([
+    const [completedOrders, claims, whatsappClicks] = await Promise.all([
       this.prisma.order.findMany({
         where: { eventId, status: OrderStatus.COMPLETED },
         select: {
@@ -447,6 +449,8 @@ export class AdminFinanceService {
           },
         },
       }),
+      // Personas únicas que tocaron "Unirse al grupo de WhatsApp" (Redis SET).
+      this.metrics.getWhatsappCount(eventId),
     ]);
 
     const isCard = (m: PaymentMethod) => m === PaymentMethod.STRIPE;
@@ -607,6 +611,7 @@ export class AdminFinanceService {
         pendingCashCents,
         ordersCount: completedOrders.length,
         fillRate: event.capacity ? soldTotal / event.capacity : null,
+        whatsappClicks,
       },
       byTier,
       byMethod,

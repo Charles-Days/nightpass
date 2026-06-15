@@ -5,6 +5,7 @@ import {
   Coins,
   CreditCard,
   MapPin,
+  MessageCircle,
   ScanLine,
   Ticket,
   Users,
@@ -259,6 +260,13 @@ export function EventDetailDialog({
                         : 'Sin límite'
                     }
                     icon={Users}
+                  />
+                  <Stat
+                    label="Clics WhatsApp"
+                    value={data.summary.whatsappClicks}
+                    hint="personas únicas"
+                    icon={MessageCircle}
+                    accent="text-[#25D366]"
                   />
                 </div>
 

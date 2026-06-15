@@ -839,6 +839,8 @@ export interface AdminEventDetail {
     ordersCount: number;
     /** 0..1 or null si no hay capacidad */
     fillRate: number | null;
+    /** Personas únicas que tocaron "Unirse al grupo de WhatsApp". */
+    whatsappClicks: number;
   };
   byTier: Array<{
     tierId: string;
