@@ -1,12 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Loader2, MapPin, MapPinOff } from 'lucide-react';
 import { pingLocation } from '@/features/geolocation';
 import { PassQR } from './pass-qr';
 
-type GeoState = 'idle' | 'requesting' | 'verified' | 'denied' | 'error' | 'unsupported';
+type GeoState =
+  | 'idle'
+  | 'requesting'
+  | 'verified'
+  | 'denied'
+  | 'error'
+  | 'unsupported';
 
 interface Props {
   value: string;
@@ -16,49 +22,57 @@ interface Props {
 export function PassQRWithGeoPing({ value, usedAt }: Props) {
   const [state, setState] = useState<GeoState>('idle');
 
-  useEffect(() => {
-    if (usedAt) return; // already used, skip ping
+  const requestGeo = useCallback(() => {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
       setState('unsupported');
       return;
     }
-
-    let cancelled = false;
     setState('requesting');
-
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        if (cancelled) return;
         await pingLocation({
           latitude: pos.coords.latitude,
           longitude: pos.coords.longitude,
           accuracyM: pos.coords.accuracy,
           source: 'PASS_VIEW',
         });
-        if (!cancelled) setState('verified');
+        setState('verified');
       },
       (err) => {
-        if (cancelled) return;
-        if (err.code === err.PERMISSION_DENIED) {
-          setState('denied');
-        } else {
-          setState('error');
-        }
+        setState(err.code === err.PERMISSION_DENIED ? 'denied' : 'error');
       },
       { enableHighAccuracy: true, maximumAge: 30_000, timeout: 6_000 },
     );
-
-    return () => {
-      cancelled = true;
-    };
-  }, [usedAt]);
+  }, []);
 
   return (
     <div className="flex w-full flex-col items-center gap-3">
-      {!usedAt && state !== 'idle' && (
-        <GeoChip key={state} state={state} />
-      )}
+      {!usedAt &&
+        (state === 'idle' ? (
+          <GeoPrime onConfirm={requestGeo} />
+        ) : (
+          <GeoChip key={state} state={state} />
+        ))}
       <PassQR value={value} usedAt={usedAt} />
+    </div>
+  );
+}
+
+function GeoPrime({ onConfirm }: { onConfirm: () => void }) {
+  return (
+    <div className="w-full max-w-[280px] rounded-2xl border border-white/12 bg-white/[0.05] px-4 py-3 text-center np-fade-in">
+      <p className="text-[12px] leading-relaxed text-white/65">
+        En la puerta confirmamos que estás en el local. Tocá para verificar tu
+        ubicación — no guardamos tu historial.
+      </p>
+      <button
+        type="button"
+        onClick={onConfirm}
+        className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-4 py-2 text-[12px] font-semibold text-white transition active:scale-95 transform-gpu"
+      >
+        <MapPin className="size-3.5" />
+        Verificar mi ubicación
+      </button>
     </div>
   );
 }

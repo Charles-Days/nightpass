@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, MapPin } from 'lucide-react';
 import { paths } from '@/core/config/paths';
@@ -21,13 +21,11 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const HMAC_RE = /^[0-9a-f]+$/i;
 
 export default function CheckinFromUrlPage() {
-  const router = useRouter();
   const params = useParams<{ venueId: string }>();
   const search = useSearchParams();
   const venueId = params.venueId;
   const token = search.get('t');
   const checkin = useVenueCheckin();
-  const firedRef = React.useRef(false);
   const [phase, setPhase] = React.useState<Phase>({ kind: 'idle' });
 
   const validFormat =
@@ -36,57 +34,48 @@ export default function CheckinFromUrlPage() {
     typeof token === 'string' &&
     HMAC_RE.test(token);
 
-  React.useEffect(() => {
-    if (firedRef.current) return;
-    if (!validFormat) return;
-    firedRef.current = true;
+  const run = React.useCallback(async () => {
+    setPhase({ kind: 'requesting-geo' });
 
-    const run = async () => {
-      setPhase({ kind: 'requesting-geo' });
+    let coords: { latitude: number; longitude: number };
+    try {
+      coords = await new Promise((resolve, reject) => {
+        if (!('geolocation' in navigator)) {
+          reject(new Error('GEO_UNSUPPORTED'));
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) =>
+            resolve({
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+            }),
+          (err) => reject(err),
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 30_000 },
+        );
+      });
+    } catch {
+      setPhase({ kind: 'geo-denied' });
+      return;
+    }
 
-      let coords: { latitude: number; longitude: number };
-      try {
-        coords = await new Promise((resolve, reject) => {
-          if (!('geolocation' in navigator)) {
-            reject(new Error('GEO_UNSUPPORTED'));
-            return;
-          }
-          navigator.geolocation.getCurrentPosition(
-            (pos) =>
-              resolve({
-                latitude: pos.coords.latitude,
-                longitude: pos.coords.longitude,
-              }),
-            (err) => reject(err),
-            { enableHighAccuracy: true, timeout: 8000, maximumAge: 30_000 },
-          );
-        });
-      } catch {
-        setPhase({ kind: 'geo-denied' });
-        return;
-      }
-
-      setPhase({ kind: 'submitting' });
-      try {
-        const result = await checkin.mutateAsync({
-          venueId: venueId!,
-          qrPayload: `np_checkin_${venueId}_${token}`,
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-        });
-        setPhase({ kind: 'success', data: result });
-        setTimeout(() => router.push(paths.recompensas as never), 2800);
-      } catch (err) {
-        const message =
-          err instanceof ClientApiError
-            ? err.message
-            : 'No pudimos procesar el check-in. Inténtalo de nuevo.';
-        setPhase({ kind: 'error', message });
-      }
-    };
-
-    void run();
-  }, [validFormat, venueId, token, checkin, router]);
+    setPhase({ kind: 'submitting' });
+    try {
+      const result = await checkin.mutateAsync({
+        venueId: venueId!,
+        qrPayload: `np_checkin_${venueId}_${token}`,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      });
+      setPhase({ kind: 'success', data: result });
+    } catch (err) {
+      const message =
+        err instanceof ClientApiError
+          ? err.message
+          : 'No pudimos procesar el check-in. Inténtalo de nuevo.';
+      setPhase({ kind: 'error', message });
+    }
+  }, [venueId, token, checkin]);
 
   if (!validFormat) {
     return (
@@ -98,7 +87,9 @@ export default function CheckinFromUrlPage() {
 
   return (
     <Wrapper>
-      {phase.kind === 'idle' || phase.kind === 'requesting-geo' ? (
+      {phase.kind === 'idle' ? (
+        <Priming onStart={() => void run()} />
+      ) : phase.kind === 'requesting-geo' ? (
         <Status
           icon={<MapPin className="size-7 animate-pulse text-primary" />}
           title="Validando que estás en el bar…"
@@ -111,9 +102,9 @@ export default function CheckinFromUrlPage() {
           message="Te estamos sumando los puntos NightPass."
         />
       ) : phase.kind === 'geo-denied' ? (
-        <GeoDenied onRetry={() => window.location.reload()} />
+        <GeoDenied onRetry={() => void run()} />
       ) : phase.kind === 'error' ? (
-        <ErrorView message={phase.message} onRetry={() => window.location.reload()} />
+        <ErrorView message={phase.message} onRetry={() => void run()} />
       ) : (
         <Success data={phase.data} />
       )}
@@ -125,6 +116,29 @@ function Wrapper({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto flex min-h-[80dvh] w-full max-w-md flex-col items-center justify-center px-5 py-8 sm:px-8">
       {children}
+    </div>
+  );
+}
+
+function Priming({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="np-pop-in w-full rounded-[26px] border border-white/14 bg-white/[0.05] p-7 text-center">
+      <div className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-primary/12">
+        <MapPin className="size-7 text-primary" />
+      </div>
+      <h1 className="font-display text-2xl font-bold tracking-[-0.015em]">
+        Confirma que estás en el bar
+      </h1>
+      <p className="mt-2 text-sm text-white/65">
+        Para sumar tus puntos confirmamos tu ubicación una sola vez. Tu navegador
+        pedirá permiso de GPS — no guardamos histórico de dónde estuviste.
+      </p>
+      <button
+        onClick={onStart}
+        className="np-glow-pulse mt-5 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-6 py-3 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95"
+      >
+        Confirmar que estoy aquí
+      </button>
     </div>
   );
 }
@@ -246,9 +260,12 @@ function Success({ data }: { data: VenueCheckinResponse }) {
             Racha: <span className="font-semibold text-white">{data.newStreakDays} días</span>
           </p>
         </div>
-        <p className="mt-6 text-xs text-white/40">
-          Redirigiendo a Recompensas…
-        </p>
+        <Link
+          href={paths.recompensas as never}
+          className="np-glow-pulse mt-6 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] px-6 py-3 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(168,85,247,0.55)] transform-gpu transition active:scale-95"
+        >
+          Ver mis recompensas
+        </Link>
       </div>
     </div>
   );

@@ -59,6 +59,7 @@ export function PassTransferActions({ passId, initialTransfer }: Props) {
   const [error, setError] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
+  const [cancelConfirming, setCancelConfirming] = React.useState(false);
 
   const create = useMutation<PassTransferCreated, ClientApiError>({
     mutationFn: () =>
@@ -84,6 +85,7 @@ export function PassTransferActions({ passId, initialTransfer }: Props) {
       setError(null);
       setTransfer(null);
       setCopied(false);
+      setCancelConfirming(false);
       router.refresh();
     },
     onError: (err) =>
@@ -226,29 +228,63 @@ export function PassTransferActions({ passId, initialTransfer }: Props) {
             </button>
           </div>
 
-          <div className="mt-3 flex gap-2">
-            <Button
-              onClick={onShare}
-              disabled={busy}
-              className="flex-1 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] py-5 text-sm font-semibold"
-            >
-              <Share2 className="mr-1.5 size-4" />
-              Compartir
-            </Button>
-            <Button
-              onClick={() => cancel.mutate()}
-              disabled={busy}
-              variant="outline"
-              className="rounded-full border-white/18 bg-transparent py-5 text-sm font-semibold text-white/80 hover:bg-white/[0.09]"
-            >
-              {cancel.isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
+          {cancelConfirming ? (
+            <div className="mt-3 space-y-3 rounded-[16px] border border-amber-400/30 bg-amber-400/10 p-4">
+              <p className="flex items-start gap-2 text-xs leading-relaxed text-amber-100">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-300" />
+                <span>
+                  Si cancelas, el link que compartiste{' '}
+                  <strong className="font-semibold">dejará de funcionar</strong> y tu
+                  QR se reactiva. ¿Cancelar la transferencia?
+                </span>
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => cancel.mutate()}
+                  disabled={busy}
+                  variant="outline"
+                  className="flex-1 rounded-full border-rose-400/40 bg-rose-500/10 py-5 text-sm font-semibold text-rose-100 hover:bg-rose-500/20"
+                >
+                  {cancel.isPending ? (
+                    <Loader2 className="mr-1.5 size-4 animate-spin" />
+                  ) : (
+                    <X className="mr-1.5 size-4" />
+                  )}
+                  Sí, cancelar
+                </Button>
+                <Button
+                  onClick={() => setCancelConfirming(false)}
+                  disabled={busy}
+                  className="flex-1 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] py-5 text-sm font-semibold"
+                >
+                  No, mantenerla
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-3 flex gap-2">
+              <Button
+                onClick={onShare}
+                disabled={busy}
+                className="flex-1 rounded-full bg-gradient-to-r from-[#9333ea] to-[#a855f7] py-5 text-sm font-semibold"
+              >
+                <Share2 className="mr-1.5 size-4" />
+                Compartir
+              </Button>
+              <Button
+                onClick={() => {
+                  setError(null);
+                  setCancelConfirming(true);
+                }}
+                disabled={busy}
+                variant="outline"
+                className="rounded-full border-white/18 bg-transparent py-5 text-sm font-semibold text-white/80 hover:bg-white/[0.09]"
+              >
                 <X className="size-4" />
-              )}
-              Cancelar
-            </Button>
-          </div>
+                Cancelar
+              </Button>
+            </div>
+          )}
         </>
       )}
 

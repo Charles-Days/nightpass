@@ -268,7 +268,6 @@ export function PickupModal({
       <DialogContent
         className="flex max-h-[88vh] flex-col gap-0 overflow-hidden rounded-[22px] border-white/14 bg-[#0c0c12]/95 p-0 sm:max-w-md"
         onInteractOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader className="shrink-0 space-y-1 border-b border-white/8 px-5 pb-4 pt-5 text-left">
           <DialogTitle className="font-display text-lg font-semibold">
