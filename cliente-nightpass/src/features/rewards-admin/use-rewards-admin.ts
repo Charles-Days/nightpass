@@ -60,6 +60,9 @@ export interface ValidateResult {
   ok: boolean;
   title: string;
   customer: string;
+  eventTitle: string | null;
+  eventStartsAt: string | null;
+  optionLabel: string | null;
   usedAt: string;
 }
 

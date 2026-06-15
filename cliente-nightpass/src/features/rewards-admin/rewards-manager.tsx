@@ -699,7 +699,10 @@ function CouponValidator() {
     }
     validate.mutate(c, {
       onSuccess: (res) => {
-        toast.success(`✓ ${res.title} — ${res.customer}`);
+        const detail = [res.optionLabel, res.eventTitle].filter(Boolean).join(' · ');
+        toast.success(`✓ ${res.title} — ${res.customer}`, {
+          description: detail || undefined,
+        });
         setCode('');
       },
       onError: (e) =>

@@ -35,11 +35,13 @@ export interface Redemption {
   redeemedAt: string;
   usedAt: string | null;
   expiresAt: string;
+  selectedOption: { label: string } | null;
   reward: {
     title: string;
-    kind: RewardKind;
+    kind: RewardKind | 'BULK_PROMO' | 'PHYSICAL_BONUS_NPP';
     venue: { name: string } | null;
     promoter: { name: string } | null;
+    event: { id: string; title: string; startsAt: string } | null;
   };
 }
 
@@ -96,6 +98,8 @@ export interface BulkPendingItem {
   expiresAt: string;
   reward: {
     title: string;
+    eventTitle: string | null;
+    eventStartsAt: string | null;
     options: BulkOption[];
   };
 }

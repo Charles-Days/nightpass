@@ -99,7 +99,11 @@ export function BulkChooseDialog({ item, onClose, onDone }: BulkChooseDialogProp
                 <Gift className="text-primary size-5" />
                 Elige tu regalo
               </DialogTitle>
-              <DialogDescription>{item?.reward.title}</DialogDescription>
+              <DialogDescription>
+                {[item?.reward.title, item?.reward.eventTitle]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-2 py-1">
               {(item?.reward.options ?? []).map((opt) => {

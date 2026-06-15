@@ -327,8 +327,10 @@ export class RewardsService {
             kind: true,
             venue: { select: { name: true } },
             promoter: { select: { name: true } },
+            event: { select: { id: true, title: true, startsAt: true } },
           },
         },
+        selectedOption: { select: { label: true } },
       },
     });
   }
@@ -412,6 +414,7 @@ export class RewardsService {
         reward: {
           select: {
             title: true,
+            event: { select: { title: true, startsAt: true } },
             options: {
               orderBy: { position: 'asc' },
               select: { id: true, label: true, description: true },
@@ -429,6 +432,8 @@ export class RewardsService {
         expiresAt: r.expiresAt,
         reward: {
           title: r.reward.title,
+          eventTitle: r.reward.event?.title ?? null,
+          eventStartsAt: r.reward.event?.startsAt ?? null,
           options: r.reward.options,
         },
       })),
@@ -491,7 +496,11 @@ export class RewardsService {
   async useByCode(code: string, user: AuthUser) {
     const redemption = await this.prisma.rewardRedemption.findUnique({
       where: { code },
-      include: { reward: true, user: { select: { name: true, email: true } } },
+      include: {
+        reward: { include: { event: { select: { title: true, startsAt: true } } } },
+        selectedOption: { select: { label: true } },
+        user: { select: { name: true, email: true } },
+      },
     });
     if (!redemption) throw new NotFoundException('Cupón no encontrado');
 
@@ -535,6 +544,9 @@ export class RewardsService {
       ok: true,
       title: redemption.reward.title,
       customer: redemption.user.name ?? redemption.user.email,
+      eventTitle: redemption.reward.event?.title ?? null,
+      eventStartsAt: redemption.reward.event?.startsAt ?? null,
+      optionLabel: redemption.selectedOption?.label ?? null,
       usedAt: updated.usedAt,
     };
   }

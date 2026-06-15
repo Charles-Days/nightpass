@@ -233,8 +233,15 @@ function PendingBulkPromos() {
               onClick={() => setActive(it)}
               className="flex w-full items-center justify-between gap-3 rounded-[12px] border border-white/12 bg-white/[0.04] px-3.5 py-2.5 text-left transition hover:bg-white/[0.07] active:scale-[0.99]"
             >
-              <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-                {it.reward.title}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">
+                  {it.reward.title}
+                </span>
+                {it.reward.eventTitle && (
+                  <span className="text-muted-foreground block truncate text-[11px]">
+                    {it.reward.eventTitle}
+                  </span>
+                )}
               </span>
               <span className="bg-primary/15 text-primary inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold">
                 <Gift className="size-3" />
@@ -276,7 +283,11 @@ function MyCoupons() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">{c.reward.title}</p>
-              <p className="text-muted-foreground text-[11px]">Toca para mostrar el cupón</p>
+              <p className="text-muted-foreground truncate text-[11px]">
+                {[c.reward.event?.title, c.selectedOption?.label]
+                  .filter(Boolean)
+                  .join(' · ') || 'Toca para mostrar el cupón'}
+              </p>
             </div>
             <span className="text-primary font-mono text-[11px] tracking-widest">{c.code}</span>
           </button>
@@ -290,9 +301,11 @@ function MyCoupons() {
                 id: active.id,
                 code: active.code,
                 title: active.reward.title,
-                kind: active.reward.kind,
+                kind: active.reward.kind as RedeemResult['kind'],
                 expiresAt: active.expiresAt,
                 costNpp: active.costNpp,
+                eventTitle: active.reward.event?.title ?? null,
+                optionLabel: active.selectedOption?.label ?? null,
               }
             : null
         }
@@ -302,7 +315,12 @@ function MyCoupons() {
   );
 }
 
-function CouponDialog({ coupon, onClose }: { coupon: RedeemResult | null; onClose: () => void }) {
+type CouponView = RedeemResult & {
+  eventTitle?: string | null;
+  optionLabel?: string | null;
+};
+
+function CouponDialog({ coupon, onClose }: { coupon: CouponView | null; onClose: () => void }) {
   return (
     <Dialog open={!!coupon} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-sm">
@@ -315,7 +333,14 @@ function CouponDialog({ coupon, onClose }: { coupon: RedeemResult | null; onClos
         </DialogHeader>
         {coupon && (
           <div className="flex flex-col items-center gap-4 py-2">
-            <p className="font-display text-center text-lg font-bold">{coupon.title}</p>
+            <div className="text-center">
+              <p className="font-display text-lg font-bold">{coupon.title}</p>
+              {(coupon.eventTitle || coupon.optionLabel) && (
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  {[coupon.eventTitle, coupon.optionLabel].filter(Boolean).join(' · ')}
+                </p>
+              )}
+            </div>
             <div className="rounded-2xl bg-white p-4">
               <QRCodeSVG value={coupon.code} size={200} />
             </div>
