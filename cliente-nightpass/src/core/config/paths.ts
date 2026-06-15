@@ -32,6 +32,7 @@ export const paths = {
   // Organizadores
   adminOrganizadores: '/admin/organizadores',
   adminEventos: '/admin/eventos',
+  adminRecompensas: '/admin/recompensas',
   miOrganizador: '/app/mi-organizador',
   miOrganizadorEditar: '/app/mi-organizador/editar',
   miOrganizadorEventos: '/app/mi-organizador/eventos',

@@ -116,13 +116,18 @@ export interface RewardEventOption {
 
 /**
  * Eventos del dueño para los selects de BULK_PROMO / PHYSICAL_BONUS_NPP.
- * Venue: filtra por `?venueId=`. Organizador: sin filtro — el backend
- * los scopea por el JWT (mismo patrón que PromoterEventsList).
+ * Venue: filtra por `?venueId=`. Organizador: filtra por `?promoterId=`.
+ * Ambos ids se pasan explícitos para que ADMIN pueda gestionar cualquier
+ * dueño (el backend acepta ambos filtros para ADMIN/OWNER/PROMOTER).
  */
 export function useRewardEvents(venueId?: string, promoterId?: string) {
-  const qs = venueId ? `?venueId=${venueId}&limit=100` : '?limit=100';
+  const qs = venueId
+    ? `?venueId=${venueId}&limit=100`
+    : promoterId
+      ? `?promoterId=${promoterId}&limit=100`
+      : '?limit=100';
   return useQuery({
-    queryKey: ['reward-events', venueId ?? promoterId ?? 'me'],
+    queryKey: ['reward-events', venueId ?? null, promoterId ?? null],
     enabled: !!(venueId || promoterId),
     queryFn: async () => {
       const res = await clientFetch<PaginatedEvents>(`/api/events${qs}`);
