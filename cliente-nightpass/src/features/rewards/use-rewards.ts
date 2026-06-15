@@ -119,6 +119,29 @@ export function useBulkPending() {
   });
 }
 
+/**
+ * Indica si el usuario tiene algo pendiente en Recompensas (cupón sin usar o
+ * promo de volumen por elegir) — para el punto de notificación en la nav.
+ * `enabled` debe ser false para invitados (evita 401 en cada página).
+ */
+export function useRewardsBadge(enabled: boolean) {
+  const bulk = useQuery({
+    queryKey: ['rewards-bulk-pending'],
+    queryFn: () => clientFetch<BulkPendingResponse>('/api/rewards/bulk/pending'),
+    staleTime: 15_000,
+    enabled,
+  });
+  const reds = useQuery({
+    queryKey: ['my-redemptions'],
+    queryFn: () => clientFetch<Redemption[]>('/api/me/redemptions'),
+    staleTime: 15_000,
+    enabled,
+  });
+  const hasBulk = (bulk.data?.items?.length ?? 0) > 0;
+  const hasPendingCoupon = (reds.data ?? []).some((r) => r.status === 'PENDING');
+  return hasBulk || hasPendingCoupon;
+}
+
 export function useChooseBulk() {
   const qc = useQueryClient();
   return useMutation({

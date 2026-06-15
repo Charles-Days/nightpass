@@ -6,6 +6,7 @@ export {
   useRedeemReward,
   useBulkPending,
   useChooseBulk,
+  useRewardsBadge,
 } from './use-rewards';
 export type {
   AvailableReward,
