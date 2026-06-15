@@ -93,6 +93,11 @@ const DAILY_TTL_SECONDS = 60 * 60 * 24 * 90; // retener 90 días de claves diari
 const goingKey = (eventId: string) => `event:going:${eventId}`;
 const GOING_TTL_SECONDS = 60 * 60 * 24 * 120; // 120 días: cubre el evento + colchón
 
+// Clics al botón "Unirse al grupo de WhatsApp" por evento. Mismo patrón que
+// "voy a ir": SET de visitorIds → SADD idempotente (tocar dos veces no recuenta),
+// SCARD da el total de personas únicas. Reusa el mismo TTL generoso.
+const whatsappKey = (eventId: string) => `event:wa-click:${eventId}`;
+
 export interface DailyCount {
   date: string;
   count: number;
@@ -191,6 +196,30 @@ export class MetricsService {
   async getGoingCount(eventId: string): Promise<number> {
     if (!eventId) return 0;
     return (await this.redis.scard(goingKey(eventId))) || 0;
+  }
+
+  /**
+   * Registra un clic al botón "Unirse al grupo de WhatsApp" de un evento y
+   * devuelve el total de personas únicas que lo han tocado. Dedup por SET → el
+   * mismo visitorId no infla el conteo aunque toque el botón varias veces.
+   */
+  async recordWhatsappClick(eventId: string, visitorId: string): Promise<number> {
+    if (!eventId || !visitorId) return 0;
+    const key = whatsappKey(eventId);
+    const res = await this.redis
+      .multi()
+      .sadd(key, visitorId)
+      .expire(key, GOING_TTL_SECONDS)
+      .scard(key)
+      .exec();
+    // Layout del multi: [[err, sadd], [err, expire], [err, scard]].
+    return Number(res?.[2]?.[1]) || 0;
+  }
+
+  /** Total de personas únicas que tocaron "Unirse al grupo de WhatsApp". */
+  async getWhatsappCount(eventId: string): Promise<number> {
+    if (!eventId) return 0;
+    return (await this.redis.scard(whatsappKey(eventId))) || 0;
   }
 
   /** Mapa eventId → total de "voy a ir", en un solo round-trip a Redis. */

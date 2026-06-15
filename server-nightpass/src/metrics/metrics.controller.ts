@@ -16,6 +16,7 @@ import { MetricsService } from './metrics.service';
 import { RecordVisitDto } from './dto/record-visit.dto';
 import { TrackEventDto } from './dto/track-event.dto';
 import { EventGoingDto } from './dto/event-going.dto';
+import { WhatsappClickDto } from './dto/whatsapp-click.dto';
 
 @Controller('metrics')
 export class MetricsController {
@@ -55,6 +56,18 @@ export class MetricsController {
   @Throttle({ default: { ttl: 60_000, limit: 30 } })
   async eventGoing(@Body() dto: EventGoingDto): Promise<{ count: number }> {
     const count = await this.service.recordGoing(dto.eventId, dto.visitorId);
+    return { count };
+  }
+
+  // Público: clic anónimo al botón "Unirse al grupo de WhatsApp" de un evento.
+  // Dedup por SET en Redis con el visitorId. Devuelve el total de personas
+  // únicas para que el front lo pinte si quiere. Throttle moderado: es un beacon
+  // de un clic.
+  @Post('whatsapp-click')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  async whatsappClick(@Body() dto: WhatsappClickDto): Promise<{ count: number }> {
+    const count = await this.service.recordWhatsappClick(dto.eventId, dto.visitorId);
     return { count };
   }
 

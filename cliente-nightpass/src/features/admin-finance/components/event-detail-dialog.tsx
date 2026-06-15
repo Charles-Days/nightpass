@@ -4,7 +4,9 @@ import {
   Banknote,
   Coins,
   CreditCard,
+  Flame,
   MapPin,
+  MessageCircle,
   ScanLine,
   Ticket,
   Users,
@@ -259,6 +261,20 @@ export function EventDetailDialog({
                         : 'Sin límite'
                     }
                     icon={Users}
+                  />
+                  <Stat
+                    label="Clics WhatsApp"
+                    value={data.summary.whatsappClicks}
+                    hint="personas únicas"
+                    icon={MessageCircle}
+                    accent="text-[#25D366]"
+                  />
+                  <Stat
+                    label="En tendencia"
+                    value={data.summary.goingCount}
+                    hint="confirmaron asistencia"
+                    icon={Flame}
+                    accent="text-primary"
                   />
                 </div>
 
