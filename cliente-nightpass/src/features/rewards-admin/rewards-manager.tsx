@@ -37,8 +37,14 @@ const TEMPLATES: Template[] = [
   { title: '10% en tu cuenta', description: '10% de descuento en tu consumo.', costNpp: 1000, discountType: 'PERCENT', discountValue: 10 },
 ];
 
-export function RewardsManager({ venueId }: { venueId: string }) {
-  const { data: rewards, isLoading } = useOwnerRewards(venueId);
+export function RewardsManager({
+  venueId,
+  promoterId,
+}: {
+  venueId?: string;
+  promoterId?: string;
+}) {
+  const { data: rewards, isLoading } = useOwnerRewards(venueId, promoterId);
   const create = useCreateReward();
   const update = useUpdateReward();
   const del = useDeleteReward();
@@ -62,7 +68,7 @@ export function RewardsManager({ venueId }: { venueId: string }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Recompensas que tus clientes canjean con sus NPP. Las fondea tu local.
+          Recompensas que tus clientes canjean con sus NPP. Las fondeas tú.
         </p>
         <Button onClick={() => setOpen(true)} className="shrink-0 gap-1.5">
           <Plus className="size-4" />
@@ -123,6 +129,7 @@ export function RewardsManager({ venueId }: { venueId: string }) {
         open={open}
         onClose={() => setOpen(false)}
         venueId={venueId}
+        promoterId={promoterId}
         creating={create.isPending}
         onCreate={(body) =>
           create.mutate(body, {
@@ -143,12 +150,14 @@ function CreateRewardDialog({
   open,
   onClose,
   venueId,
+  promoterId,
   creating,
   onCreate,
 }: {
   open: boolean;
   onClose: () => void;
-  venueId: string;
+  venueId?: string;
+  promoterId?: string;
   creating: boolean;
   onCreate: (body: CreateRewardBody) => void;
 }) {
@@ -173,6 +182,7 @@ function CreateRewardDialog({
     }
     onCreate({
       venueId,
+      promoterId,
       kind: 'VENUE_PERK',
       title: title.trim(),
       description: description.trim() || undefined,
