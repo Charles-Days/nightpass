@@ -11,6 +11,7 @@ export interface AvailableReward {
   kind: RewardKind;
   /** Evento al que aplica el descuento (solo TICKET_DISCOUNT). */
   eventId: string | null;
+  eventTitle: string | null;
   title: string;
   description: string | null;
   costNpp: number;

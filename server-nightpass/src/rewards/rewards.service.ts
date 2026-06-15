@@ -210,6 +210,7 @@ export class RewardsService {
         include: {
           venue: { select: { name: true, city: true } },
           promoter: { select: { name: true, city: true } },
+          event: { select: { title: true } },
         },
       }),
       this.loyalty.getBalance(userId),
@@ -236,6 +237,7 @@ export class RewardsService {
           id: r.id,
           kind: r.kind,
           eventId: r.eventId,
+          eventTitle: r.event?.title ?? null,
           title: r.title,
           description: r.description,
           costNpp: r.costNpp,

@@ -124,7 +124,7 @@ export function RewardsSection() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm leading-tight font-semibold">{r.title}</p>
                       <p className="text-muted-foreground truncate text-[11px]">
-                        {r.ownerName}
+                        {r.eventTitle ?? r.ownerName}
                         {disc ? ` · ${disc}` : ''}
                       </p>
                     </div>
