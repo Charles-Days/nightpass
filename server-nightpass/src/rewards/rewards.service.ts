@@ -82,6 +82,10 @@ export class RewardsService {
           dto.kind === RewardKind.PHYSICAL_BONUS_NPP
             ? (dto.bonusNpp ?? null)
             : null,
+        // Banner + ventana de validez: aplican a cualquier tipo (sobre todo BULK).
+        imageUrl: dto.imageUrl ?? null,
+        startsAt: dto.startsAt ? new Date(dto.startsAt) : null,
+        endsAt: dto.endsAt ? new Date(dto.endsAt) : null,
         options:
           dto.kind === RewardKind.BULK_PROMO && dto.options
             ? {
@@ -171,6 +175,22 @@ export class RewardsService {
         active: dto.active ?? undefined,
         minQuantity: nextMinQuantity,
         bonusNpp: nextBonusNpp,
+        // Banner + ventana: solo se tocan si vienen en el DTO. Para fechas, una
+        // cadena vacía no es válida (IsDateString la rechaza), así que cualquier
+        // valor presente es un ISO parseable.
+        imageUrl: dto.imageUrl !== undefined ? (dto.imageUrl || null) : undefined,
+        startsAt:
+          dto.startsAt !== undefined
+            ? dto.startsAt
+              ? new Date(dto.startsAt)
+              : null
+            : undefined,
+        endsAt:
+          dto.endsAt !== undefined
+            ? dto.endsAt
+              ? new Date(dto.endsAt)
+              : null
+            : undefined,
         options: optionsOp,
       },
       include: { options: { orderBy: { position: 'asc' } } },
@@ -194,6 +214,8 @@ export class RewardsService {
     const where: Prisma.RewardWhereInput = {
       active: true,
       kind: { in: [RewardKind.VENUE_PERK, RewardKind.TICKET_DISCOUNT] },
+      // Excluye promos expiradas o aún no iniciadas.
+      ...this.withinWindowWhere(),
     };
     if (query.venueId) where.venueId = query.venueId;
     if (query.city) {
@@ -360,6 +382,7 @@ export class RewardsService {
   ): Promise<void> {
     // Candidatos activos del evento cuyo minQuantity cubre la compra y cuyo tier
     // coincide (o es null = cualquier tier). Tomamos el de mayor minQuantity.
+    const now = new Date();
     const candidates = await tx.reward.findMany({
       where: {
         active: true,
@@ -367,6 +390,8 @@ export class RewardsService {
         eventId: order.eventId,
         minQuantity: { lte: order.quantity },
         OR: [{ tierId: null }, { tierId: order.tierId }],
+        // Solo promos dentro de su ventana de validez.
+        ...this.withinWindowWhere(now),
       },
       orderBy: { minQuantity: 'desc' },
     });
@@ -438,6 +463,50 @@ export class RewardsService {
           eventStartsAt: r.reward.event?.startsAt ?? null,
           options: r.reward.options,
         },
+      })),
+    };
+  }
+
+  /**
+   * PÚBLICO (sin auth): promos por volumen (BULK_PROMO) ACTIVAS y dentro de su
+   * ventana de validez de un evento, para mostrarlas en su página. Solo expone
+   * campos de marketing (sin costNpp ni internos). Opciones ordenadas por
+   * posición. Lo consume el catálogo en GET /catalog/events/:id/promos.
+   */
+  async listEventPromos(eventId: string) {
+    const now = new Date();
+    const promos = await this.prisma.reward.findMany({
+      where: {
+        eventId,
+        active: true,
+        kind: RewardKind.BULK_PROMO,
+        ...this.withinWindowWhere(now),
+      },
+      orderBy: { minQuantity: 'asc' },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        imageUrl: true,
+        minQuantity: true,
+        options: {
+          orderBy: { position: 'asc' },
+          select: { label: true, description: true },
+        },
+      },
+    });
+
+    return {
+      promos: promos.map((p) => ({
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        imageUrl: p.imageUrl,
+        minQuantity: p.minQuantity,
+        options: p.options.map((o) => ({
+          label: o.label,
+          description: o.description,
+        })),
       })),
     };
   }
@@ -562,6 +631,35 @@ export class RewardsService {
     db: Prisma.TransactionClient = this.prisma,
   ): Promise<string> {
     return this.uniqueCode(db);
+  }
+
+  // ── Ventana de validez ──────────────────────────────────────────────────────
+
+  /**
+   * True si la recompensa está dentro de su ventana de validez:
+   * (startsAt == null || startsAt <= now) && (endsAt == null || endsAt >= now).
+   * Una promo sin fechas siempre está vigente.
+   */
+  isWithinWindow(
+    r: { startsAt: Date | null; endsAt: Date | null },
+    now: Date = new Date(),
+  ): boolean {
+    if (r.startsAt && r.startsAt > now) return false;
+    if (r.endsAt && r.endsAt < now) return false;
+    return true;
+  }
+
+  /**
+   * Fragmento de `where` Prisma que limita a recompensas dentro de su ventana:
+   * sin inicio (null) o ya iniciada, y sin fin (null) o aún no vencida.
+   */
+  private withinWindowWhere(now: Date = new Date()): Prisma.RewardWhereInput {
+    return {
+      AND: [
+        { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+        { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
+      ],
+    };
   }
 
   // ── Internos ────────────────────────────────────────────────────────────────

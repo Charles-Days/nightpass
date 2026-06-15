@@ -6,13 +6,14 @@ import { ServerApiError, publicFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import { absoluteUrl } from '@/core/config/env';
 import { JsonLd, eventLd, breadcrumbLd } from '@/core/seo/json-ld';
-import { type CatalogEventDetail } from '@/core/types/api';
+import { type CatalogEventDetail, type CatalogEventPromosResponse } from '@/core/types/api';
 import { EventStoriesSection } from '@/app/(customer)/_components/event-stories-section';
 import { EventForumSection } from '@/app/(customer)/_components/event-forum-section';
 import { EventGoing } from '@/app/(customer)/_components/event-going';
 import { EventHeroFx } from '@/app/(customer)/_components/event-hero-fx';
 import { EventCountdown } from '@/app/(customer)/_components/event-countdown';
 import { BuyCta } from '@/app/(customer)/_components/buy-cta';
+import { EventPromoBanner } from '@/app/(customer)/_components/event-promo-banner';
 import { BuyTierButton } from '@/app/(customer)/_components/buy-tier-button';
 import { WhatsappJoinLink } from '@/app/(customer)/_components/whatsapp-join-link';
 import { EventDescription } from '@/core/components/event-description';
@@ -108,6 +109,19 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 404) notFound();
     throw error;
+  }
+
+  // Promos por volumen (BULK_PROMO) activas — banner opcional. Si falla la
+  // llamada (red/backend), no rompemos la página: simplemente no hay banner.
+  let promos: CatalogEventPromosResponse['promos'] = [];
+  try {
+    const res = await publicFetch<CatalogEventPromosResponse>(
+      `/catalog/events/${id}/promos`,
+      { revalidate: 300, tags: [`event:${id}:promos`] },
+    );
+    promos = res.promos ?? [];
+  } catch {
+    promos = [];
   }
 
   const eventPath = `${paths.evento}/${id}`;
@@ -244,6 +258,12 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
           )}
         </div>
       </section>
+
+      <EventPromoBanner
+        promos={promos}
+        className="mt-5"
+        style={{ animationDelay: '110ms' }}
+      />
 
       <EventCountdown
         startsAt={event.startsAt}

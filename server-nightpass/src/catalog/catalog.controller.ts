@@ -74,6 +74,12 @@ export class CatalogController {
     return this.service.getEventById(id);
   }
 
+  @Get('events/:id/promos')
+  @Header('Cache-Control', 'public, max-age=30, s-maxage=120, stale-while-revalidate=60')
+  getEventPromos(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.getEventPromos(id);
+  }
+
   @Get('tiers/:tierId')
   @Header('Cache-Control', 'public, max-age=30, s-maxage=60')
   getTier(@Param('tierId', ParseUUIDPipe) tierId: string) {

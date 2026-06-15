@@ -4,6 +4,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsBoolean,
+  IsDateString,
   IsEnum,
   IsInt,
   IsOptional,
@@ -83,4 +84,20 @@ export class UpdateRewardDto {
   @IsInt()
   @Min(1)
   bonusNpp?: number;
+
+  // ── Banner + ventana de validez (aplica a cualquier tipo; sobre todo BULK) ──
+  // URL o path del banner de la promo.
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  imageUrl?: string;
+
+  // Válida desde / hasta (ISO 8601). null/omitido = sin inicio / sin fin.
+  @IsOptional()
+  @IsDateString()
+  startsAt?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endsAt?: string;
 }

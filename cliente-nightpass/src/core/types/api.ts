@@ -601,6 +601,20 @@ export interface CatalogEventDetail {
   whatsappGroups?: WhatsappGroup[] | null;
 }
 
+/** Promo por volumen (BULK_PROMO) activa de un evento — banner público. */
+export interface CatalogEventPromo {
+  id: string;
+  title: string;
+  description: string | null;
+  imageUrl: string | null;
+  minQuantity: number;
+  options: Array<{ label: string; description: string | null }>;
+}
+
+export interface CatalogEventPromosResponse {
+  promos: CatalogEventPromo[];
+}
+
 export interface CatalogPromoterDetail {
   id: string;
   slug: string;

@@ -24,6 +24,7 @@ import {
 import { Button } from '@/core/components/ui/button';
 import { Input } from '@/core/components/ui/input';
 import { ConfirmDialog } from '@/core/components/ui/confirm-dialog';
+import { ImageUploader } from '@/core/components/image-uploader';
 import {
   type CreateRewardBody,
   type OwnerReward,
@@ -132,9 +133,18 @@ export function RewardsManager({
                 key={r.id}
                 className="flex items-center gap-3 rounded-[14px] border border-white/12 bg-white/[0.04] px-4 py-3"
               >
-                <span className="grid size-9 place-items-center rounded-[10px] bg-primary/15 text-primary">
-                  <Icon className="size-4" />
-                </span>
+                {r.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={r.imageUrl}
+                    alt={r.title}
+                    className="size-9 shrink-0 rounded-[10px] border border-white/12 object-cover"
+                  />
+                ) : (
+                  <span className="grid size-9 place-items-center rounded-[10px] bg-primary/15 text-primary">
+                    <Icon className="size-4" />
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-semibold">{r.title}</p>
@@ -145,6 +155,11 @@ export function RewardsManager({
                   <p className="text-[11px] text-muted-foreground">
                     {rewardSubtitle(r)}
                   </p>
+                  {r.endsAt ? (
+                    <p className="text-[10px] text-amber-300/80">
+                      Vigente hasta {formatValidityDate(r.endsAt)}
+                    </p>
+                  ) : null}
                 </div>
                 <button
                   type="button"
@@ -228,6 +243,13 @@ function rewardSubtitle(r: OwnerReward): string {
   }
 }
 
+/** "12 jun" — fecha corta en español para el hint de vigencia. */
+function formatValidityDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+}
+
 // ─── Dialog de creación ──────────────────────────────────────────────────────
 function CreateRewardDialog({
   open,
@@ -258,6 +280,11 @@ function CreateRewardDialog({
   const [bonusNpp, setBonusNpp] = React.useState(100);
   const [options, setOptions] = React.useState<string[]>(['']);
 
+  // Campos opcionales comunes a todos los tipos
+  const [imageUrl, setImageUrl] = React.useState<string | undefined>(undefined);
+  const [startsAt, setStartsAt] = React.useState('');
+  const [endsAt, setEndsAt] = React.useState('');
+
   const events = useRewardEvents(venueId, promoterId);
   const tiers = useRewardEventTiers(eventId || undefined);
 
@@ -273,6 +300,9 @@ function CreateRewardDialog({
     setMinQuantity(2);
     setBonusNpp(100);
     setOptions(['']);
+    setImageUrl(undefined);
+    setStartsAt('');
+    setEndsAt('');
   }, []);
 
   const close = () => {
@@ -287,6 +317,30 @@ function CreateRewardDialog({
       return;
     }
 
+    // Vigencia opcional: convertir datetime-local a ISO, omitir si vacío.
+    let startsAtISO: string | undefined;
+    let endsAtISO: string | undefined;
+    if (startsAt) {
+      const d = new Date(startsAt);
+      if (Number.isNaN(d.getTime())) {
+        toast.error('La fecha "Desde" no es válida');
+        return;
+      }
+      startsAtISO = d.toISOString();
+    }
+    if (endsAt) {
+      const d = new Date(endsAt);
+      if (Number.isNaN(d.getTime())) {
+        toast.error('La fecha "Hasta" no es válida');
+        return;
+      }
+      endsAtISO = d.toISOString();
+    }
+    if (startsAtISO && endsAtISO && new Date(endsAtISO) <= new Date(startsAtISO)) {
+      toast.error('La fecha "Hasta" debe ser posterior a "Desde"');
+      return;
+    }
+
     const base: CreateRewardBody = {
       venueId,
       promoterId,
@@ -294,6 +348,9 @@ function CreateRewardDialog({
       title: title.trim(),
       description: description.trim() || undefined,
       costNpp: 0,
+      imageUrl: imageUrl || undefined,
+      startsAt: startsAtISO,
+      endsAt: endsAtISO,
     };
 
     if (kind === 'VENUE_PERK') {
@@ -637,6 +694,53 @@ function CreateRewardDialog({
                 </div>
               </>
             )}
+
+            {/* ─── Opcionales comunes a todos los tipos ─── */}
+            <div className="space-y-4 border-t border-white/10 pt-4">
+              <ImageUploader
+                value={imageUrl}
+                onChange={setImageUrl}
+                kind="event"
+                label="Banner (opcional)"
+                hint="Imagen que verá el cliente. Déjalo vacío si no aplica."
+                aspect="video"
+              />
+
+              <div className="space-y-2">
+                <div className="space-y-0.5">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Vigencia (opcional)
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/70">
+                    Opcional. Déjalo vacío para que no caduque.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-medium text-muted-foreground">
+                      Desde
+                    </label>
+                    <input
+                      type="datetime-local"
+                      className={SELECT_CLASS}
+                      value={startsAt}
+                      onChange={(e) => setStartsAt(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-medium text-muted-foreground">
+                      Hasta
+                    </label>
+                    <input
+                      type="datetime-local"
+                      className={SELECT_CLASS}
+                      value={endsAt}
+                      onChange={(e) => setEndsAt(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

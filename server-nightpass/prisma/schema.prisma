@@ -1138,6 +1138,11 @@ model Reward {
   minQuantity      Int?
   // PHYSICAL_BONUS_NPP: NPP a otorgar al confirmar el pago físico (>=1).
   bonusNpp         Int?
+  // Banner de la promo (imagen). null = sin banner.
+  imageUrl         String?
+  // Ventana de validez de la promo. null = sin inicio / sin fin.
+  startsAt         DateTime?
+  endsAt           DateTime?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 

@@ -35,6 +35,9 @@ export interface OwnerReward {
   minQuantity: number | null;
   bonusNpp: number | null;
   options: RewardOption[];
+  imageUrl: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
 }
 
 export interface CreateRewardBody {
@@ -54,6 +57,9 @@ export interface CreateRewardBody {
   minQuantity?: number;
   bonusNpp?: number;
   options?: { label: string; description?: string }[];
+  imageUrl?: string;
+  startsAt?: string;
+  endsAt?: string;
 }
 
 export interface ValidateResult {

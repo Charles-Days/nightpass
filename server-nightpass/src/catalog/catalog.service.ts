@@ -11,6 +11,7 @@ import { resolveTierPrice } from '../events/tier-pricing';
 import { computeCashUnitPrice } from '../common/cash-pricing';
 import { isDevBypassEnabled } from '../common/dev-bypass';
 import { MetricsService } from '../metrics/metrics.service';
+import { RewardsService } from '../rewards/rewards.service';
 
 export type OccupancyBucket = 'low' | 'medium' | 'high';
 
@@ -56,6 +57,7 @@ export class CatalogService {
     private readonly config: ConfigService,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
     private readonly metrics: MetricsService,
+    private readonly rewards: RewardsService,
   ) {
     this.uploadsUrl = this.config.get<string>('LOCAL_UPLOADS_URL') || '';
   }
@@ -539,6 +541,23 @@ export class CatalogService {
       // Asistentes ("voy a ir") anónimos — reemplaza el aforo en el detalle.
       goingCount,
     };
+    });
+  }
+
+  /**
+   * Promos públicas (BULK_PROMO activas y dentro de su ventana) de un evento,
+   * para mostrarlas en su página. Delega en RewardsService y solo mapea el
+   * imageUrl del banner a la URL pública servible (igual que el resto de medios).
+   */
+  async getEventPromos(eventId: string) {
+    return this.cached(`catalog:event:${eventId}:promos`, 30, async () => {
+      const { promos } = await this.rewards.listEventPromos(eventId);
+      return {
+        promos: promos.map((p) => ({
+          ...p,
+          imageUrl: this._mapUrl(p.imageUrl),
+        })),
+      };
     });
   }
 
