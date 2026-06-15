@@ -841,6 +841,8 @@ export interface AdminEventDetail {
     fillRate: number | null;
     /** Personas únicas que tocaron "Unirse al grupo de WhatsApp". */
     whatsappClicks: number;
+    /** Personas únicas que confirmaron asistencia (barra "En tendencia"). */
+    goingCount: number;
   };
   byTier: Array<{
     tierId: string;

@@ -422,7 +422,8 @@ export class AdminFinanceService {
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
-    const [completedOrders, claims, whatsappClicks] = await Promise.all([
+    const [completedOrders, claims, whatsappClicks, goingCount] =
+      await Promise.all([
       this.prisma.order.findMany({
         where: { eventId, status: OrderStatus.COMPLETED },
         select: {
@@ -451,6 +452,8 @@ export class AdminFinanceService {
       }),
       // Personas únicas que tocaron "Unirse al grupo de WhatsApp" (Redis SET).
       this.metrics.getWhatsappCount(eventId),
+      // Personas únicas que confirmaron asistencia (barra "En tendencia").
+      this.metrics.getGoingCount(eventId),
     ]);
 
     const isCard = (m: PaymentMethod) => m === PaymentMethod.STRIPE;
@@ -612,6 +615,7 @@ export class AdminFinanceService {
         ordersCount: completedOrders.length,
         fillRate: event.capacity ? soldTotal / event.capacity : null,
         whatsappClicks,
+        goingCount,
       },
       byTier,
       byMethod,
