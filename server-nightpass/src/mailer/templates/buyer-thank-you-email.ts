@@ -33,7 +33,7 @@ export function buyerThankYouEmail(
     ${renderEyebrow('📲 Sube tu historia')}
     ${renderHeading(`¡Gracias, ${firstName}!`)}
     ${renderParagraph(`Tu compra de <strong>${input.totalFormatted}</strong> en ${escapeHtml(input.eventTitle)} quedó confirmada 🖤`)}
-    ${renderParagraph('Descarga tu imagen, súbela a tu historia y etiqueta <strong>@nightpass_mx</strong>. Si la subes el día del evento, hay recompensa en la entrada.')}
+    ${renderParagraph('Descarga tu imagen y súbela a tu historia <strong>lo antes posible</strong>, etiqueta <strong>@nightpass_mx</strong>. Entre más pronto la subas, mejor — hay recompensa en la entrada.')}
     ${renderButton(input.storyCardUrl, 'Descargar imagen para mi historia')}
     ${renderDivider()}
     ${renderButton(input.appUrl, 'Ver mis pases')}
@@ -44,7 +44,7 @@ export function buyerThankYouEmail(
 Tu compra de ${input.totalFormatted} en ${input.eventTitle} quedó confirmada.
 
 📲 Sube tu historia
-Descarga tu imagen, súbela a tu historia y etiqueta @nightpass_mx. Si la subes el día del evento, hay recompensa en la entrada.
+Descarga tu imagen y súbela a tu historia lo antes posible, etiqueta @nightpass_mx. Entre más pronto la subas, mejor — hay recompensa en la entrada.
 
 Descarga tu imagen:
 ${input.storyCardUrl}
