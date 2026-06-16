@@ -48,23 +48,50 @@ export function EventPromoBanner({ promos, className, style }: Props) {
 
         if (promo.imageUrl) {
           return (
+            // Card con forma de BOLETO: stub (miniatura) + perforación + muescas
+            // laterales, con un brillo foil holográfico que la barre en loop.
             <div
               key={promo.id}
-              className="flex items-start gap-4 rounded-[22px] border border-white/14 bg-gradient-to-br from-purple-900/40 to-purple-600/10 p-4 sm:p-5"
+              className="relative overflow-hidden rounded-[22px] border border-white/14 bg-gradient-to-br from-purple-900/40 to-purple-600/10"
             >
-              {/* Miniatura del flyer a la izquierda; tap → lightbox a pantalla completa. */}
-              <PromoFlyerThumb src={promo.imageUrl} alt={promo.title} />
-              <div className="min-w-0 flex-1">
-                {eyebrow}
-                <h2 className="mt-2 font-display text-lg font-bold leading-tight tracking-tight text-white">
-                  {promo.title}
-                </h2>
-                {promo.description ? (
-                  <p className="mt-1 text-sm text-white/70">{promo.description}</p>
-                ) : null}
-                {headline}
-                {optionChips}
+              <div className="flex items-stretch">
+                {/* Stub: miniatura del flyer; tap → lightbox a pantalla completa. */}
+                <div className="flex w-28 shrink-0 items-center justify-center p-2 sm:w-32">
+                  <PromoFlyerThumb src={promo.imageUrl} alt={promo.title} />
+                </div>
+                {/* Cuerpo del boleto. */}
+                <div className="min-w-0 flex-1 p-4 pl-5 sm:p-5">
+                  {eyebrow}
+                  <h2 className="mt-2 font-display text-lg font-bold leading-tight tracking-tight text-white">
+                    {promo.title}
+                  </h2>
+                  {promo.description ? (
+                    <p className="mt-1 text-sm text-white/70">{promo.description}</p>
+                  ) : null}
+                  {headline}
+                  {optionChips}
+                </div>
               </div>
+
+              {/* Perforación vertical entre el stub y el cuerpo. */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-3 left-28 w-px border-l border-dashed border-white/25 sm:left-32"
+              />
+              {/* Muescas tipo boleto en los extremos de la perforación. */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -top-2 left-[6.5rem] size-4 rounded-full bg-background sm:left-[7.5rem]"
+              />
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -bottom-2 left-[6.5rem] size-4 rounded-full bg-background sm:left-[7.5rem]"
+              />
+              {/* Brillo foil holográfico (rota por el ::after en globals.css). */}
+              <span
+                aria-hidden
+                className="np-foil pointer-events-none absolute inset-0 rounded-[22px]"
+              />
             </div>
           );
         }
