@@ -8,7 +8,12 @@ import { StarfieldAmbient } from '@/app/(customer)/_components/starfield-ambient
 interface Props {
   /** Título del evento, para personalizar el boleto. */
   eventTitle?: string;
-  /** Se llama cuando termina la animación (momento de navegar a Pases). */
+  /**
+   * Tono del sello: `paid` (online confirmado → PAGADO) o `reserved` (efectivo,
+   * aún por cobrar → RESERVADO).
+   */
+  tone?: 'paid' | 'reserved';
+  /** Se llama cuando termina la animación (momento de navegar / continuar). */
   onComplete: () => void;
 }
 
@@ -22,10 +27,22 @@ const STAMP_MS = 2200;
  *
  * Respeta `prefers-reduced-motion`: el CSS acorta todo y navega rápido.
  */
-export function TicketStampOverlay({ eventTitle, onComplete }: Props) {
+export function TicketStampOverlay({ eventTitle, tone = 'paid', onComplete }: Props) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
+
+  const reserved = tone === 'reserved';
+  const stampLabel = reserved ? 'RESERVADO' : 'PAGADO';
+  const subtitle = reserved ? 'Lugar apartado' : 'Acceso confirmado';
+  const successText = reserved
+    ? 'Listo · un vendedor te contactará'
+    : 'Listo · vamos a tus pases…';
+  // Tono de color del sello: ámbar (reserva) / esmeralda (pagado).
+  const ringColor = reserved ? 'border-amber-300/50' : 'border-emerald-300/50';
+  const stampColor = reserved
+    ? 'border-amber-300/80 bg-amber-400/10 text-amber-200 shadow-[0_0_30px_-4px_rgba(251,191,36,0.7)]'
+    : 'border-emerald-300/80 bg-emerald-400/10 text-emerald-200 shadow-[0_0_30px_-4px_rgba(52,211,153,0.7)]';
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -58,7 +75,7 @@ export function TicketStampOverlay({ eventTitle, onComplete }: Props) {
               NightPass
             </p>
             <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
-              Acceso confirmado
+              {subtitle}
             </p>
             {eventTitle ? (
               <p className="mt-2 line-clamp-2 text-sm text-white/75">{eventTitle}</p>
@@ -78,16 +95,18 @@ export function TicketStampOverlay({ eventTitle, onComplete }: Props) {
 
           {/* Sello PAGADO. */}
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span className="np-stamp-ring absolute size-28 rounded-2xl border-2 border-emerald-300/50" />
-            <span className="np-stamp flex items-center gap-1.5 rounded-2xl border-[3px] border-emerald-300/80 bg-emerald-400/10 px-4 py-2 font-display text-2xl font-extrabold tracking-wider text-emerald-200 shadow-[0_0_30px_-4px_rgba(52,211,153,0.7)] backdrop-blur-[1px]">
+            <span className={`np-stamp-ring absolute size-28 rounded-2xl border-2 ${ringColor}`} />
+            <span
+              className={`np-stamp flex items-center gap-1.5 rounded-2xl border-[3px] px-4 py-2 font-display text-2xl font-extrabold tracking-wider backdrop-blur-[1px] ${stampColor}`}
+            >
               <Check className="size-6" strokeWidth={3} />
-              PAGADO
+              {stampLabel}
             </span>
           </div>
         </div>
 
         <p className="np-success-up mt-6 text-center font-display text-base font-semibold text-white/90">
-          Listo · vamos a tus pases…
+          {successText}
         </p>
       </div>
     </div>,

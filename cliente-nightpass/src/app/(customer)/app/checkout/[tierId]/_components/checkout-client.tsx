@@ -201,6 +201,8 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
   const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
   // Destino a Pases retenido mientras corre la animación de "boleto sellado".
   const [stampTarget, setStampTarget] = useState<string | null>(null);
+  // Dispara el sello "RESERVADO" al apartar lugar con pago en efectivo.
+  const [reservedStamp, setReservedStamp] = useState(false);
   // Teléfono/WhatsApp para pago en efectivo. Si el usuario ya tiene uno
   // guardado lo reusamos; si no, se lo pedimos esta primera vez.
   const [phone, setPhone] = useState('');
@@ -335,7 +337,8 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
           ...(selection?.pickupAt ? { pickupAt: selection.pickupAt } : {}),
         },
       });
-      setPhase('cash_done');
+      // Lugar apartado: corre el sello RESERVADO; al terminar, pantalla cash_done.
+      setReservedStamp(true);
     } catch (error) {
       const info = readApiError(error);
       setPhase('error');
@@ -1006,6 +1009,17 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
         <TicketStampOverlay
           eventTitle={initialTier?.event?.title}
           onComplete={() => router.replace(stampTarget as never)}
+        />
+      )}
+
+      {reservedStamp && (
+        <TicketStampOverlay
+          tone="reserved"
+          eventTitle={initialTier?.event?.title}
+          onComplete={() => {
+            setReservedStamp(false);
+            setPhase('cash_done');
+          }}
         />
       )}
 
