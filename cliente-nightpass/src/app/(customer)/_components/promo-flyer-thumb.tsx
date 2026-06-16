@@ -72,17 +72,25 @@ export function PromoFlyerThumb({ src, alt }: Props) {
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-[100] flex flex-col overflow-hidden bg-background"
           >
-            {/* Fondo lava morado (mismo lenguaje que login/landing), opaco. */}
+            {/* Fondo ambiental: la propia imagen difuminada llena la pantalla
+                (tipo Apple Music) → los colores del flyer bañan todo el fondo. */}
             <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-              <div className="lava-aurora" />
-              <div className="lava-blob lava-blob-1" />
-              <div className="lava-blob lava-blob-2" />
-              <div className="lava-blob lava-blob-3" />
-              <div className="lava-blob lava-blob-4" />
-              <div className="lava-spark lava-spark-1" />
-              <div className="lava-spark lava-spark-2" />
-              <div className="lava-spark lava-spark-3" />
-              <div className="lava-vignette" />
+              <Image
+                src={src}
+                alt=""
+                fill
+                sizes="100vw"
+                className="scale-125 object-cover opacity-55 blur-3xl saturate-150"
+              />
+              {/* Capa de contraste + viñeta para que la foto nítida resalte. */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-black/70" />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    'radial-gradient(ellipse 80% 60% at 50% 45%, transparent 30%, rgba(0,0,0,0.55) 100%)',
+                }}
+              />
             </div>
 
             {/* Banda superior con la X — fuera de la foto, respeta el notch. */}
