@@ -429,7 +429,11 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
               }
             }
 
-            if (cancelled) return;
+            // OJO: NO abortar por `cancelled` aquí. Nuestro propio setPhase
+            // ('success') dispara el cleanup de este efecto (cancelled=true)
+            // durante el await de la promo; abortar dejaría la pantalla atorada
+            // en "success" sin navegar. La orden ya está COMPLETED y el
+            // componente sigue montado → siempre disparamos el sello/redirect.
             if (promo) {
               setBulkPromo(promo);
               setPendingRedirect(target);
