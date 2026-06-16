@@ -72,25 +72,17 @@ export function PromoFlyerThumb({ src, alt }: Props) {
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-[100] flex flex-col overflow-hidden bg-background"
           >
-            {/* Fondo ambiental: la propia imagen difuminada llena la pantalla
-                (tipo Apple Music) → los colores del flyer bañan todo el fondo. */}
+            {/* Fondo lava morado (mismo lenguaje que login/landing), opaco. */}
             <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-              <Image
-                src={src}
-                alt=""
-                fill
-                sizes="100vw"
-                className="scale-125 object-cover opacity-55 blur-3xl saturate-150"
-              />
-              {/* Capa de contraste + viñeta para que la foto nítida resalte. */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-black/70" />
-              <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    'radial-gradient(ellipse 80% 60% at 50% 45%, transparent 30%, rgba(0,0,0,0.55) 100%)',
-                }}
-              />
+              <div className="lava-aurora" />
+              <div className="lava-blob lava-blob-1" />
+              <div className="lava-blob lava-blob-2" />
+              <div className="lava-blob lava-blob-3" />
+              <div className="lava-blob lava-blob-4" />
+              <div className="lava-spark lava-spark-1" />
+              <div className="lava-spark lava-spark-2" />
+              <div className="lava-spark lava-spark-3" />
+              <div className="lava-vignette" />
             </div>
 
             {/* Banda superior con la X — fuera de la foto, respeta el notch. */}
@@ -108,8 +100,17 @@ export function PromoFlyerThumb({ src, alt }: Props) {
               </button>
             </div>
 
-            {/* Foto centrada en el espacio restante. */}
+            {/* Foto centrada en el espacio restante, con halo morado detrás. */}
             <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+              {/* Halo: bloom morado que despega la foto del fondo lava. */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute size-[78vmin] rounded-full blur-3xl"
+                style={{
+                  background:
+                    'radial-gradient(circle, rgba(168,85,247,0.45) 0%, rgba(147,51,234,0.18) 45%, rgba(147,51,234,0) 70%)',
+                }}
+              />
               <Image
                 src={src}
                 alt={alt}
@@ -117,7 +118,7 @@ export function PromoFlyerThumb({ src, alt }: Props) {
                 height={1920}
                 sizes="100vw"
                 onClick={(e) => e.stopPropagation()}
-                className="max-h-full w-auto max-w-full rounded-2xl object-contain shadow-2xl shadow-black/50"
+                className="relative max-h-full w-auto max-w-full rounded-2xl object-contain ring-1 ring-white/10 shadow-[0_0_120px_-20px_rgba(168,85,247,0.7)]"
               />
             </div>
           </div>,
