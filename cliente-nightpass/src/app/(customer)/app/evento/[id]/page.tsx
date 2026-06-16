@@ -16,6 +16,7 @@ import { BuyCta } from '@/app/(customer)/_components/buy-cta';
 import { EventPromoBanner } from '@/app/(customer)/_components/event-promo-banner';
 import { BuyTierButton } from '@/app/(customer)/_components/buy-tier-button';
 import { WhatsappJoinLink } from '@/app/(customer)/_components/whatsapp-join-link';
+import { EventFlyer } from '@/app/(customer)/_components/event-flyer';
 import { EventDescription } from '@/core/components/event-description';
 
 interface Props {
@@ -144,7 +145,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
     new Date(event.startsAt).toDateString() === new Date(event.endsAt).toDateString();
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 py-6 sm:px-8 sm:py-10">
+    <div className="mx-auto w-full max-w-3xl px-5 pt-6 pb-28 sm:px-8 sm:pt-10 sm:pb-32">
       <JsonLd
         data={eventLd({
           name: event.title,
@@ -363,19 +364,12 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
       </section>
 
       {event.flyerImageUrl && (
-        <section
-          className="np-rise mt-5 overflow-hidden rounded-[22px] border border-white/14 bg-white/[0.05]"
+        <EventFlyer
+          src={event.flyerImageUrl}
+          title={event.title}
+          className="mt-5"
           style={{ animationDelay: '360ms' }}
-        >
-          <Image
-            src={event.flyerImageUrl}
-            alt={`Flyer — ${event.title}`}
-            width={1080}
-            height={1920}
-            sizes="(max-width: 768px) 100vw, 768px"
-            className="h-auto w-full object-contain"
-          />
-        </section>
+        />
       )}
 
       <EventStoriesSection eventId={event.id} />

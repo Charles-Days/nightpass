@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import { Gift, Sparkles } from 'lucide-react';
 import { type CatalogEventPromo } from '@/core/types/api';
+import { PromoFlyerThumb } from '@/app/(customer)/_components/promo-flyer-thumb';
 
 interface Props {
   promos: CatalogEventPromo[];
@@ -10,7 +10,8 @@ interface Props {
 
 /**
  * Banner de "promo por volumen" (BULK_PROMO) en la página del evento.
- * Si el promo tiene `imageUrl` se muestra la imagen como banner; si no, una
+ * Si el promo tiene `imageUrl` se muestra una card horizontal compacta con la
+ * imagen como miniatura a la izquierda y el texto a la derecha; si no, una
  * card de solo texto con icono de regalo. Sin promos → no renderiza nada.
  */
 export function EventPromoBanner({ promos, className, style }: Props) {
@@ -49,18 +50,11 @@ export function EventPromoBanner({ promos, className, style }: Props) {
           return (
             <div
               key={promo.id}
-              className="overflow-hidden rounded-[22px] border border-white/14 bg-gradient-to-br from-purple-900/40 to-purple-600/10"
+              className="flex items-start gap-4 rounded-[22px] border border-white/14 bg-gradient-to-br from-purple-900/40 to-purple-600/10 p-4 sm:p-5"
             >
-              {/* Flyer completo a todo el ancho (como el flyer del evento). */}
-              <Image
-                src={promo.imageUrl}
-                alt={promo.title}
-                width={1080}
-                height={1920}
-                sizes="(max-width: 768px) 100vw, 768px"
-                className="h-auto w-full object-contain"
-              />
-              <div className="p-5 sm:p-6">
+              {/* Miniatura del flyer a la izquierda; tap → lightbox a pantalla completa. */}
+              <PromoFlyerThumb src={promo.imageUrl} alt={promo.title} />
+              <div className="min-w-0 flex-1">
                 {eyebrow}
                 <h2 className="mt-2 font-display text-lg font-bold leading-tight tracking-tight text-white">
                   {promo.title}
