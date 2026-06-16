@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, Check, Loader2, Lock, Mail, User as UserIcon } from 'lucide-react';
+import { ArrowRight, Check, Loader2, Mail, User as UserIcon } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
 import { Input } from '@/core/components/ui/input';
 import { Field } from '@/core/components/ui/field';
@@ -11,6 +11,8 @@ import { signupSchema, type SignupInput } from '../schemas/signup.schema';
 import { useCustomerSignup } from '../hooks/use-customer-signup';
 import { OrDivider, SocialButtons } from './_social-buttons';
 import { PasswordStrength } from './_password-strength';
+import { PasswordChecklist } from './_password-checklist';
+import { PasswordInput } from './_password-input';
 
 interface CustomerSignupFormProps {
   onNameChange?: (name: string) => void;
@@ -26,6 +28,7 @@ export function CustomerSignupForm({ onNameChange }: CustomerSignupFormProps) {
     formState: { errors },
   } = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
+    mode: 'onTouched',
     defaultValues: { name: '', email: '', password: '' },
   });
 
@@ -56,7 +59,7 @@ export function CustomerSignupForm({ onNameChange }: CustomerSignupFormProps) {
                 className={`h-12 rounded-[12px] border-white/14 bg-white/[0.07] pl-10 pr-10 text-base transition-colors focus:border-primary/40 ${nameValue ? 'border-primary/40' : ''} ${errors.name ? 'border-destructive/60' : ''}`}
                 {...register('name')}
               />
-              {nameValue && (
+              {nameValue && !errors.name && (
                 <Check className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-emerald-400 np-pop-in transform-gpu" />
               )}
             </div>
@@ -84,18 +87,15 @@ export function CustomerSignupForm({ onNameChange }: CustomerSignupFormProps) {
 
         <div className={`np-rise transform-gpu ${errors.password ? 'np-shake' : ''}`} style={{ animationDelay: '160ms' }}>
           <Field label="Contraseña" htmlFor="password" error={errors.password?.message}>
-            <div className="relative">
-              <Lock className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-white/40 transition-colors" />
-              <Input
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                placeholder="Mínimo 10 caracteres"
-                className={`h-12 rounded-[12px] border-white/14 bg-white/[0.07] pl-10 pr-3.5 text-base transition-colors focus:border-primary/40 ${passwordValue ? 'border-primary/40' : ''} ${errors.password ? 'border-destructive/60' : ''}`}
-                {...register('password')}
-              />
-            </div>
+            <PasswordInput
+              id="password"
+              autoComplete="new-password"
+              placeholder="Mínimo 10 caracteres"
+              className={`h-12 rounded-[12px] border-white/14 bg-white/[0.07] text-base transition-colors focus:border-primary/40 ${passwordValue ? 'border-primary/40' : ''} ${errors.password ? 'border-destructive/60' : ''}`}
+              {...register('password')}
+            />
             <PasswordStrength value={passwordValue ?? ''} />
+            <PasswordChecklist value={passwordValue ?? ''} />
           </Field>
         </div>
 

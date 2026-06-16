@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { absoluteUrl } from '@/core/config/env';
 import { SearchClient } from '../buscar/_components/search-client';
+import BuscarLoading from '../buscar/loading';
 
 const title = 'Eventos — NightPass';
 const description =
@@ -25,7 +26,7 @@ export default function EventosPage() {
         esta semana?
       </h1>
 
-      <Suspense>
+      <Suspense fallback={<BuscarLoading />}>
         <SearchClient mode="events" />
       </Suspense>
     </div>

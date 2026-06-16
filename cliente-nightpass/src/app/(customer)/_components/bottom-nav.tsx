@@ -60,8 +60,10 @@ function BottomNavImpl() {
               <Link
                 href={href}
                 className={cn(
-                  'flex h-16 min-h-[44px] flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium transition-colors duration-200 active:scale-95',
-                  active ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+                  'flex h-16 min-h-[44px] flex-col items-center justify-center gap-1 px-1 text-[11px] transition-colors duration-200 active:scale-95',
+                  active
+                    ? 'font-semibold text-primary'
+                    : 'font-medium text-white/70 hover:text-white/90',
                 )}
                 aria-current={active ? 'page' : undefined}
               >

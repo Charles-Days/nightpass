@@ -67,6 +67,11 @@ function formatMoney(cents: number, currency: string): string {
   return `${symbol}${value.toFixed(2)} ${code}`;
 }
 
+/** Valida un teléfono mexicano: al menos 10 dígitos (ignorando espacios/guiones). */
+function isValidMxPhone(value: string): boolean {
+  return value.replace(/\D/g, '').length >= 10;
+}
+
 function formatEventDate(iso: string): string {
   try {
     return new Intl.DateTimeFormat('es-MX', {
@@ -197,6 +202,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
   // guardado lo reusamos; si no, se lo pedimos esta primera vez.
   const [phone, setPhone] = useState('');
   const [hasSavedPhone, setHasSavedPhone] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   // Ubicación del cliente — para enrutar la solicitud al RP de su zona. Se pide
   // la primera vez (si no la tenemos) y se reutiliza.
@@ -261,7 +267,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
       if (!stripeState) {
         setPhase('no_stripe');
         setErrorMessage(
-          'Stripe no está configurado. Falta NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY o publishableKey del backend.',
+          'No pudimos iniciar el pago en línea. Vuelve a intentar en un momento o paga en efectivo si está disponible.',
         );
         return;
       }
@@ -518,6 +524,19 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
   const displayTotalCents = showCashPrice ? cashTotalCents! : onlineTotalCents;
   const cashSavingsCents = summary.totalCents - (cashTotalCents ?? summary.totalCents);
 
+  // Motivo por el que el CTA de efectivo está deshabilitado — se muestra debajo
+  // del botón para que el usuario sepa qué falta (en vez de un botón muerto).
+  const cashBlockReason =
+    method === 'cash'
+      ? !isValidMxPhone(phone)
+        ? 'Ingresa tu WhatsApp (10 dígitos) para continuar'
+        : stateName.trim() === ''
+          ? 'Elige tu estado'
+          : city.trim() === ''
+            ? 'Elige tu ciudad'
+            : null
+      : null;
+
   const backToEvent = initialTier
     ? `${paths.evento}/${initialTier.event.id}`
     : paths.appHome;
@@ -593,7 +612,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
         </div>
         {showCashPrice && cashSavingsCents > 0 && (
           <p className="mt-1.5 text-right text-[11px] text-emerald-400/90">
-            Precio en efectivo — sin comisión de Stripe
+            Precio especial pagando en efectivo
           </p>
         )}
 
@@ -697,11 +716,26 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                       id="cash-phone"
                       type="tel"
                       inputMode="tel"
+                      autoComplete="tel"
                       placeholder="Ej. 55 1234 5678"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="h-10 w-full rounded-xl border border-white/14 bg-black/40 px-3 text-sm text-white placeholder-white/30 focus:border-primary/50 focus:outline-none"
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        if (phoneError) setPhoneError(null);
+                      }}
+                      onBlur={(e) =>
+                        setPhoneError(
+                          e.target.value.trim() === '' || isValidMxPhone(e.target.value)
+                            ? null
+                            : 'Ingresa un número válido de 10 dígitos',
+                        )
+                      }
+                      aria-invalid={!!phoneError}
+                      className={`h-10 w-full rounded-xl border bg-black/40 px-3 text-sm text-white placeholder-white/30 focus:outline-none ${phoneError ? 'border-rose-400/60 focus:border-rose-400/60' : 'border-white/14 focus:border-primary/50'}`}
                     />
+                    {phoneError && (
+                      <p className="text-[11px] text-rose-300">{phoneError}</p>
+                    )}
                   </div>
                 )}
                 {method === 'cash' && !hasSavedLocation && (
@@ -786,12 +820,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
             </p>
             <Button
               type="button"
-              disabled={
-                method === 'cash' &&
-                (phone.trim().length < 8 ||
-                  stateName.trim() === '' ||
-                  city.trim() === '')
-              }
+              disabled={!!cashBlockReason}
               onClick={() => (method === 'cash' ? setPickupOpen(true) : void createOrder())}
               className="w-full mt-2 h-11 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 font-semibold text-white shadow-[0_4px_18px_-4px_rgba(124,58,237,0.5)] transition-transform hover:brightness-110 active:scale-95 transform-gpu disabled:opacity-50 disabled:active:scale-100"
             >
@@ -799,6 +828,11 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
                 ? `Solicitar pago en efectivo (${formatMoney(displayTotalCents, summary.currency)})`
                 : `Continuar al pago (${formatMoney(displayTotalCents, summary.currency)})`}
             </Button>
+            {cashBlockReason && (
+              <p className="text-center text-[11px] font-medium text-amber-300">
+                {cashBlockReason}
+              </p>
+            )}
           </div>
         )}
 
@@ -949,10 +983,12 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
         )}
       </section>
 
-      <p className="mt-5 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
-        <ShieldCheck className="size-3" />
-        Pago procesado de forma segura por Stripe.
-      </p>
+      {method !== 'cash' && (
+        <p className="mt-5 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+          <ShieldCheck className="size-3" />
+          Pago procesado de forma segura por Stripe.
+        </p>
+      )}
 
       <BulkChooseDialog
         item={bulkPromo}

@@ -2,7 +2,7 @@
 
 import { defaultCache } from '@serwist/next/worker';
 import type { PrecacheEntry, SerwistGlobalConfig } from 'serwist';
-import { NetworkOnly, Serwist } from 'serwist';
+import { ExpirationPlugin, NetworkFirst, NetworkOnly, Serwist } from 'serwist';
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -25,6 +25,27 @@ const serwist = new Serwist({
       matcher: ({ url }) =>
         url.hostname === 'js.stripe.com' || url.hostname.endsWith('.stripe.com'),
       handler: new NetworkOnly(),
+    },
+    {
+      // Detalle del pase: documento HTML de /app/pases/<id>. Es lo único de
+      // /app/* que SÍ cacheamos — el QR vive en el HTML y debe abrir SIN red
+      // (en la puerta del antro casi nunca hay señal). NetworkFirst: online
+      // trae fresco y actualiza la cache; offline cae al último render guardado.
+      // Solo navegaciones de documento (request.mode === 'navigate') para no
+      // colisionar con los payloads RSC del mismo URL (esos siguen NetworkOnly).
+      matcher: ({ url, request }) =>
+        request.mode === 'navigate' &&
+        /^\/app\/pases\/[^/]+$/.test(url.pathname),
+      handler: new NetworkFirst({
+        cacheName: 'np-pass-detail',
+        networkTimeoutSeconds: 4,
+        plugins: [
+          new ExpirationPlugin({
+            maxEntries: 12,
+            maxAgeSeconds: 60 * 60 * 24,
+          }),
+        ],
+      }),
     },
     {
       // Rutas vivas: API, proxy backend y todo /app/* (auth-gated, cacheable

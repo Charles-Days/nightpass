@@ -5,6 +5,7 @@ import { ArrowLeft, Calendar, Gift, LogIn, MapPin } from 'lucide-react';
 import { ServerApiError, publicFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import { ACCESS_COOKIE } from '@/core/config/cookies';
+import { formatMoney } from '@/core/lib/format';
 import type { PassClaimPreview } from '@/core/types/api';
 import { ClaimAccept } from '../../../_components/claim-accept';
 
@@ -27,8 +28,6 @@ function formatDate(iso: string) {
   }).format(new Date(iso));
 }
 
-const money = (cents: number, currency: string) =>
-  `$${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`;
 
 /** Motivo por el que NO se puede reclamar (+ nota explicativa cuando aplica). */
 function blockReason(
@@ -117,7 +116,7 @@ export default async function ReclamarValePage({ params }: Props) {
               </p>
             ) : (
               <p className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/[0.07] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/80">
-                {money(preview.amountCents, preview.currency)}
+                {formatMoney(preview.amountCents, { currency: preview.currency })}
               </p>
             )}
           </div>

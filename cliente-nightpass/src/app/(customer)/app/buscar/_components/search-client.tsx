@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ArrowRight, Calendar, Loader2, MapPin, Search, Sparkles } from 'lucide-react';
+import { ArrowRight, Calendar, MapPin, Search, Sparkles, X } from 'lucide-react';
 import { clientFetch } from '@/core/lib/api/client-client';
 import { Input } from '@/core/components/ui/input';
 import { paths } from '@/core/config/paths';
@@ -95,11 +96,12 @@ function FeaturedVenueCard({ venue }: { venue: CatalogVenueSummary }) {
     >
       <div className="relative aspect-[16/10] overflow-hidden sm:aspect-auto sm:min-h-[270px]">
         {venue.coverImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={venue.coverImageUrl}
-            alt={venue.name}
-            className="np-kenburns absolute inset-0 size-full object-cover"
+            alt=""
+            fill
+            sizes="(max-width: 640px) 100vw, 50vw"
+            className="np-kenburns object-cover"
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 to-purple-600/10" />
@@ -170,11 +172,12 @@ function FeaturedEventCard({ ev }: { ev: EventFeed }) {
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-600/10 sm:aspect-auto sm:min-h-[270px]">
         {ev.coverImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={ev.coverImageUrl}
-            alt={ev.title}
-            className="np-kenburns absolute inset-0 size-full object-cover"
+            alt=""
+            fill
+            sizes="(max-width: 640px) 100vw, 50vw"
+            className="np-kenburns object-cover"
           />
         ) : (
           <div className="absolute inset-0 grid place-items-center text-5xl text-white/30">★</div>
@@ -215,6 +218,24 @@ function FeaturedEventCard({ ev }: { ev: EventFeed }) {
   );
 }
 
+// Skeleton grid shown while loading (reuses the shape from buscar/loading.tsx).
+function SearchSkeleton() {
+  return (
+    <div className="mt-4">
+      <div className="aspect-[16/10] w-full animate-pulse rounded-[24px] bg-white/[0.07]" />
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div
+            key={i}
+            className="aspect-[16/10] animate-pulse rounded-[20px] bg-white/[0.07]"
+            style={{ animationDelay: `${i * 50}ms` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function SearchClient({ mode }: { mode?: Tab } = {}) {
   const searchParams = useSearchParams();
   const initialQ = searchParams.get('q') ?? '';
@@ -228,6 +249,11 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
   const [venues, setVenues] = useState<CatalogVenueSummary[]>([]);
   const [events, setEvents] = useState<EventFeed[]>([]);
   const [loading, setLoading] = useState(false);
+  // Stable category list: captured from the first full (unfiltered) fetch and
+  // never mutated on subsequent filtered fetches — so the selected chip never
+  // disappears from the UI when it's the active filter (#4).
+  const [stableCategories, setStableCategories] = useState<string[]>([]);
+  const categoriesBootstrapped = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -240,7 +266,19 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
           if (query.trim()) params.set('search', query.trim());
           if (category) params.set('category', category);
           const res = await clientFetch<CatalogResponse>(`/api/catalog/venues?${params.toString()}`);
-          if (!cancelled) setVenues(res.items ?? []);
+          if (!cancelled) {
+            setVenues(res.items ?? []);
+            // Build stable category list from the first UNFILTERED fetch only.
+            if (!categoriesBootstrapped.current && !query.trim() && !category) {
+              const set = new Set<string>();
+              (res.items ?? []).forEach((v) => v.categories?.forEach((c) => set.add(c)));
+              const list = Array.from(set).slice(0, 8);
+              if (list.length > 0) {
+                setStableCategories(list);
+                categoriesBootstrapped.current = true;
+              }
+            }
+          }
         } else {
           const params = new URLSearchParams();
           params.set('limit', '30');
@@ -264,14 +302,22 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
     };
   }, [query, category, tab, eventDate]);
 
-  const categories = useMemo(() => {
-    const set = new Set<string>();
-    venues.forEach((v) => v.categories?.forEach((c) => set.add(c)));
-    return Array.from(set).slice(0, 8);
-  }, [venues]);
+  // Reset stable categories when switching tabs so they re-bootstrap on re-entry.
+  useEffect(() => {
+    categoriesBootstrapped.current = false;
+    setStableCategories([]);
+  }, [tab]);
+
+  function clearFilters() {
+    setQuery('');
+    setCategory(null);
+    setEventDate('all');
+  }
+
+  const hasActiveFilters = query.trim().length > 0 || category !== null || eventDate !== 'all';
 
   const resultCount = tab === 'venues' ? venues.length : events.length;
-  const showChips = tab === 'events' || (tab === 'venues' && categories.length > 0);
+  const showChips = tab === 'events' || (tab === 'venues' && stableCategories.length > 0);
 
   return (
     <div>
@@ -314,39 +360,39 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
               placeholder={tab === 'venues' ? 'Bar, ciudad, género…' : 'Evento, organizador…'}
               className="h-11 rounded-full border-white/18 bg-white/[0.07] pl-11 pr-11 text-sm transition focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/40"
             />
-            {loading && query.trim().length > 0 ? (
-              <Loader2
-                aria-hidden
-                className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 animate-spin text-primary"
-              />
-            ) : null}
           </div>
         </div>
 
         {/* Filter chips — single-row horizontal scroll on mobile */}
         {showChips && (
-          <div className="-mx-5 mt-3 flex gap-2 overflow-x-auto px-5 pb-0.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div
+            role="group"
+            aria-label={tab === 'venues' ? 'Filtros de categoría' : 'Filtros de fecha'}
+            className="-mx-5 mt-3 flex gap-2 overflow-x-auto px-5 pb-0.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {tab === 'venues' ? (
               <>
                 <button
                   type="button"
+                  aria-pressed={category === null}
                   onClick={() => setCategory(null)}
                   className={`shrink-0 whitespace-nowrap transform-gpu rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 active:scale-95 ${
                     category === null
-                      ? 'border-primary/40 bg-primary/15 text-primary'
+                      ? 'border-primary bg-primary text-white shadow-[0_2px_12px_-3px_rgba(168,85,247,0.7)]'
                       : 'border-white/14 bg-white/[0.05] text-muted-foreground hover:bg-white/[0.10] hover:text-foreground'
                   }`}
                 >
                   Todos
                 </button>
-                {categories.map((c) => (
+                {stableCategories.map((c) => (
                   <button
                     key={c}
                     type="button"
+                    aria-pressed={category === c}
                     onClick={() => setCategory(c === category ? null : c)}
                     className={`shrink-0 whitespace-nowrap transform-gpu rounded-full border px-3 py-1.5 text-xs font-semibold capitalize transition-all duration-200 active:scale-95 ${
                       category === c
-                        ? 'border-primary/40 bg-primary/15 text-primary'
+                        ? 'border-primary bg-primary text-white shadow-[0_2px_12px_-3px_rgba(168,85,247,0.7)]'
                         : 'border-white/14 bg-white/[0.05] text-muted-foreground hover:bg-white/[0.10] hover:text-foreground'
                     }`}
                   >
@@ -359,10 +405,11 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
                 <button
                   key={d.value}
                   type="button"
+                  aria-pressed={eventDate === d.value}
                   onClick={() => setEventDate(d.value)}
                   className={`shrink-0 whitespace-nowrap transform-gpu rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 active:scale-95 ${
                     eventDate === d.value
-                      ? 'border-primary/40 bg-primary/15 text-primary'
+                      ? 'border-primary bg-primary text-white shadow-[0_2px_12px_-3px_rgba(168,85,247,0.7)]'
                       : 'border-white/14 bg-white/[0.05] text-muted-foreground hover:bg-white/[0.10] hover:text-foreground'
                   }`}
                 >
@@ -386,14 +433,23 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
       <div className="mt-4">
         {tab === 'venues' ? (
           loading && venues.length === 0 ? (
-            <div className="np-fade-in flex flex-col items-center justify-center gap-3 py-12 text-center text-sm text-muted-foreground">
-              <Loader2 className="size-5 animate-spin text-primary" />
-              <span>Buscando…</span>
-            </div>
+            <SearchSkeleton />
           ) : venues.length === 0 ? (
-            <p className="np-fade-in py-12 text-center text-sm text-muted-foreground">
-              No encontramos resultados. Prueba con otra búsqueda.
-            </p>
+            <div className="np-fade-in flex flex-col items-center gap-3 py-12 text-center">
+              <p className="text-sm text-muted-foreground">
+                No encontramos resultados. Prueba con otra búsqueda.
+              </p>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/[0.07] px-4 py-2 text-xs font-semibold text-foreground transition hover:bg-white/[0.11] active:scale-95"
+                >
+                  <X className="size-3.5" />
+                  Limpiar filtros
+                </button>
+              )}
+            </div>
           ) : (
             <>
               <FeaturedVenueCard venue={venues[0]} />
@@ -409,14 +465,36 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
             </>
           )
         ) : loading && events.length === 0 ? (
-          <div className="np-fade-in flex flex-col items-center justify-center gap-3 py-12 text-center text-sm text-muted-foreground">
-            <Loader2 className="size-5 animate-spin text-primary" />
-            <span>Buscando eventos…</span>
-          </div>
+          <SearchSkeleton />
         ) : events.length === 0 ? (
-          <p className="np-fade-in py-12 text-center text-sm text-muted-foreground">
-            Sin eventos publicados ahora. Vuelve pronto.
-          </p>
+          <div className="np-fade-in flex flex-col items-center gap-3 py-12 text-center">
+            <p className="text-sm text-muted-foreground">
+              Sin eventos publicados ahora.{' '}
+              {tab === 'events' && !mode && (
+                <span>¿Buscabas un bar? </span>
+              )}
+              Vuelve pronto.
+            </p>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/[0.07] px-4 py-2 text-xs font-semibold text-foreground transition hover:bg-white/[0.11] active:scale-95"
+              >
+                <X className="size-3.5" />
+                Limpiar filtros
+              </button>
+            )}
+            {!mode && (
+              <button
+                type="button"
+                onClick={() => { setTab('venues'); setQuery(''); setEventDate('all'); }}
+                className="text-xs font-semibold text-primary transition hover:underline"
+              >
+                Ver bares
+              </button>
+            )}
+          </div>
         ) : (
           <>
             <FeaturedEventCard ev={events[0]} />
@@ -438,11 +516,12 @@ export function SearchClient({ mode }: { mode?: Tab } = {}) {
                 >
                   <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-600/10">
                     {ev.coverImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={ev.coverImageUrl}
-                        alt={ev.title}
-                        className="absolute inset-0 size-full object-cover transform-gpu transition-transform duration-[600ms] ease-out group-hover:scale-[1.05]"
+                        alt=""
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover transform-gpu transition-transform duration-[600ms] ease-out group-hover:scale-[1.05]"
                       />
                     ) : (
                       <div className="absolute inset-0 grid place-items-center text-3xl text-white/30">★</div>

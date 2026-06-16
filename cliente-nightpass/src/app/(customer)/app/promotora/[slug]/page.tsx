@@ -6,6 +6,7 @@ import { ServerApiError, publicFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
 import { absoluteUrl } from '@/core/config/env';
 import { JsonLd, breadcrumbLd } from '@/core/seo/json-ld';
+import { formatMoney } from '@/core/lib/format';
 import type { CatalogPromoterDetail } from '@/core/types/api';
 
 interface Props {
@@ -42,11 +43,6 @@ function formatDate(iso: string) {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(iso));
-}
-
-function formatPrice(cents: number, currency: string) {
-  const sym = currency.toLowerCase() === 'mxn' ? '$' : currency.toLowerCase() === 'eur' ? '€' : '$';
-  return `${sym}${(cents / 100).toFixed(0)}${currency.toLowerCase() === 'mxn' ? ' MXN' : ''}`;
 }
 
 function instagramUrl(handle: string) {
@@ -165,8 +161,14 @@ export default async function PromoterDetailPage({ params }: Props) {
       <section className="np-rise mt-8" style={{ animationDelay: '380ms' }}>
         <h2 className="mb-4 font-display text-xl font-bold tracking-tight">Próximos eventos</h2>
         {promoter.events.length === 0 ? (
-          <div className="rounded-[22px] border border-white/14 bg-white/[0.05] p-8 text-center text-sm text-muted-foreground">
-            Aún no hay eventos publicados.
+          <div className="flex flex-col items-center gap-4 rounded-[22px] border border-white/14 bg-white/[0.05] p-8 text-center">
+            <p className="text-sm text-muted-foreground">Aún no hay eventos publicados.</p>
+            <Link
+              href={paths.eventos}
+              className="inline-flex items-center gap-2 rounded-full border border-white/18 bg-white/[0.07] px-5 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/[0.11] active:scale-95"
+            >
+              Ver otros eventos
+            </Link>
           </div>
         ) : (
           <ul className="space-y-3">
@@ -219,7 +221,7 @@ export default async function PromoterDetailPage({ params }: Props) {
                         <p className="text-xs text-muted-foreground">
                           Desde{' '}
                           <span className="font-semibold text-foreground">
-                            {formatPrice(cheapest.priceCents, cheapest.currency)}
+                            {formatMoney(cheapest.priceCents, { currency: cheapest.currency })}
                           </span>
                         </p>
                       )}

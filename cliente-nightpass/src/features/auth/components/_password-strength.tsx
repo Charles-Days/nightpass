@@ -1,16 +1,19 @@
 'use client';
 
+import { PASSWORD_MIN_LENGTH } from '../schemas/password';
+
 interface PasswordStrengthProps {
   value: string;
 }
 
+/** Puntúa contra las reglas reales del schema (`strongPassword`): largo + mayús + minús + número. */
 function score(value: string): number {
   if (!value) return 0;
   let s = 0;
-  if (value.length >= 8) s += 1;
-  if (/[A-Z]/.test(value) && /[a-z]/.test(value)) s += 1;
-  if (/\d/.test(value)) s += 1;
-  if (/[^A-Za-z0-9]/.test(value)) s += 1;
+  if (value.length >= PASSWORD_MIN_LENGTH) s += 1;
+  if (/[A-Z]/.test(value)) s += 1;
+  if (/[a-z]/.test(value)) s += 1;
+  if (/[0-9]/.test(value)) s += 1;
   return Math.min(s, 4);
 }
 

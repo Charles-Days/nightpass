@@ -186,7 +186,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
           {event.coverImageUrl ? (
             <Image
               src={event.coverImageUrl}
-              alt={event.title}
+              alt=""
               fill
               priority
               sizes="(max-width: 768px) 100vw, 768px"

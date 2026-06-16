@@ -23,6 +23,9 @@ export const metadata = {
   title: 'Ajustes — NightPass',
 };
 
+// TODO: número real de soporte — reemplazar antes de producción
+const SOPORTE_WA = '5210000000000';
+
 export default async function AjustesPage() {
   let user: User;
   try {
@@ -135,12 +138,15 @@ export default async function AjustesPage() {
           NightPass
         </p>
         <p className="text-[11px] text-muted-foreground/70">v1.0.0</p>
-        <button
-          type="button"
+        {/* TODO: reemplazar con el número real de soporte de NightPass */}
+        <a
+          href={`https://wa.me/${SOPORTE_WA}?text=${encodeURIComponent('Hola, necesito ayuda con NightPass.')}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="mt-2 text-xs text-muted-foreground transition hover:text-primary"
         >
           Soporte
-        </button>
+        </a>
       </footer>
     </div>
   );

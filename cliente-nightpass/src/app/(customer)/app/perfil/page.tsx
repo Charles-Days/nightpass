@@ -7,12 +7,12 @@ import {
   MapPin,
   Settings,
   Sparkles,
-  Star,
   Ticket,
   TicketCheck,
 } from 'lucide-react';
 import { ServerApiError, serverFetch } from '@/core/lib/api/server-client';
 import { paths } from '@/core/config/paths';
+import { formatMoney } from '@/core/lib/format';
 import type { User } from '@/core/types/api';
 import { LoyaltyCard } from '@/features/loyalty';
 import { InviteDialog } from '@/features/invite';
@@ -60,18 +60,23 @@ export default async function PerfilPage() {
   }
 
   const isCustomer = user.role === 'CUSTOMER';
-  const firstName = getFirstName(user) ?? 'Insider';
+  const firstName = getFirstName(user) ?? 'Tú';
   const memberSince = formatMemberSince(user.createdAt);
   const serial = makeSerial(user.id);
-  const isInsider = user.role === 'CUSTOMER';
 
   // TODO Fase 4/5: conectar a backend cuando existan endpoints /me/stats, /me/recent-activity, /me/next-pass
+  // Mientras no existan los endpoints, los stats son todos 0/null — se oculta la sección completa.
   const stats = {
-    pases: '—',
-    noches: '—',
-    bares: '—',
-    ahorrado: '—',
+    pases: null as number | null,
+    noches: null as number | null,
+    bares: null as number | null,
+    ahorradoCents: null as number | null,
   };
+  const hasStats =
+    stats.pases !== null ||
+    stats.noches !== null ||
+    stats.bares !== null ||
+    stats.ahorradoCents !== null;
   type RecentActivityItem = { date: string; venue: string; note: string };
   type NextPass = { venue: string; city: string; time: string; serial: string; price: string };
   const recentActivity: RecentActivityItem[] = [];
@@ -124,12 +129,6 @@ export default async function PerfilPage() {
 
         <div className="relative grid items-center gap-8 sm:grid-cols-[1.4fr_1fr]">
           <div className="min-w-0">
-            {isInsider && (
-              <span className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-amber-300/35 bg-amber-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">
-                <Star className="size-3 fill-current" />
-                Insider
-              </span>
-            )}
             <h2 className="font-display text-2xl font-bold tracking-[-0.025em] sm:text-[34px]">
               {user.name?.trim() || 'NightPass member'}
             </h2>
@@ -196,32 +195,35 @@ export default async function PerfilPage() {
         </section>
       ) : null}
 
-      {/* STATS GRID */}
-      <section className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { k: stats.pases, l: 'Pases comprados', icon: Ticket },
-          { k: stats.noches, l: 'Noches', icon: Sparkles },
-          { k: stats.bares, l: 'Bares visitados', icon: MapPin },
-          { k: stats.ahorrado === '—' ? '—' : `S/ ${stats.ahorrado}`, l: 'Ahorrado en filas', icon: TicketCheck },
-        ].map((s, i) => (
-          <div
-            key={s.l}
-            className="rounded-[18px] border border-white/14 bg-white/[0.05] p-5 transition-colors hover:bg-white/[0.07] np-rise transform-gpu"
-            style={{ animationDelay: `${160 + i * 60}ms` }}
-          >
-            <div className="mb-4 flex items-start justify-between">
-              <s.icon className="size-5 text-primary" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">
-                Total
-              </span>
+      {/* STATS GRID — solo se muestra cuando hay datos reales del backend */}
+      {hasStats && (
+        <section className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { k: String(stats.pases ?? 0), l: 'Pases comprados', icon: Ticket },
+            { k: String(stats.noches ?? 0), l: 'Noches', icon: Sparkles },
+            { k: String(stats.bares ?? 0), l: 'Bares visitados', icon: MapPin },
+            {
+              k: stats.ahorradoCents !== null ? formatMoney(stats.ahorradoCents) : '$0',
+              l: 'Ahorrado en filas',
+              icon: TicketCheck,
+            },
+          ].map((s, i) => (
+            <div
+              key={s.l}
+              className="rounded-[18px] border border-white/14 bg-white/[0.05] p-5 transition-colors hover:bg-white/[0.07] np-rise transform-gpu"
+              style={{ animationDelay: `${160 + i * 60}ms` }}
+            >
+              <div className="mb-4">
+                <s.icon className="size-5 text-primary" />
+              </div>
+              <p className="font-display text-3xl font-bold leading-none tracking-[-0.03em] sm:text-4xl">
+                {s.k}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">{s.l}</p>
             </div>
-            <p className="font-display text-3xl font-bold leading-none tracking-[-0.03em] sm:text-4xl">
-              {s.k}
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">{s.l}</p>
-          </div>
-        ))}
-      </section>
+          ))}
+        </section>
+      )}
 
       {/* UPCOMING PASS + RECENT ACTIVITY */}
       <section className="mt-5 grid gap-4 lg:grid-cols-[1.2fr_1fr]">

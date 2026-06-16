@@ -3,15 +3,17 @@
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, Loader2, Lock } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/core/components/ui/button';
-import { Input } from '@/core/components/ui/input';
 import { Field } from '@/core/components/ui/field';
 import {
   resetPasswordSchema,
   type ResetPasswordInput,
 } from '../schemas/reset-password.schema';
 import { useResetPassword } from '../hooks/use-reset-password';
+import { PasswordStrength } from './_password-strength';
+import { PasswordChecklist } from './_password-checklist';
+import { PasswordInput } from './_password-input';
 
 interface ResetPasswordFormProps {
   token: string;
@@ -24,11 +26,15 @@ export function ResetPasswordForm({ token, variant = 'admin' }: ResetPasswordFor
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
+    mode: 'onTouched',
     defaultValues: { token, newPassword: '', confirmPassword: '' },
   });
+
+  const newPasswordValue = watch('newPassword');
 
   const onSubmit = handleSubmit((values) => {
     mutate({ token: values.token, newPassword: values.newPassword });
@@ -43,19 +49,16 @@ export function ResetPasswordForm({ token, variant = 'admin' }: ResetPasswordFor
           label="Nueva contraseña"
           htmlFor="newPassword"
           error={errors.newPassword?.message}
-          description="Mínimo 8 caracteres"
         >
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors" />
-            <Input
-              id="newPassword"
-              type="password"
-              autoComplete="new-password"
-              placeholder="••••••••"
-              className={`h-12 pl-9 text-base transition-colors ${errors.newPassword ? 'border-destructive/60' : ''}`}
-              {...register('newPassword')}
-            />
-          </div>
+          <PasswordInput
+            id="newPassword"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            className={`h-12 text-base transition-colors ${errors.newPassword ? 'border-destructive/60' : ''}`}
+            {...register('newPassword')}
+          />
+          <PasswordStrength value={newPasswordValue ?? ''} />
+          <PasswordChecklist value={newPasswordValue ?? ''} />
         </Field>
       </div>
 
@@ -65,17 +68,13 @@ export function ResetPasswordForm({ token, variant = 'admin' }: ResetPasswordFor
           htmlFor="confirmPassword"
           error={errors.confirmPassword?.message}
         >
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors" />
-            <Input
-              id="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              placeholder="••••••••"
-              className={`h-12 pl-9 text-base transition-colors ${errors.confirmPassword ? 'border-destructive/60' : ''}`}
-              {...register('confirmPassword')}
-            />
-          </div>
+          <PasswordInput
+            id="confirmPassword"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            className={`h-12 text-base transition-colors ${errors.confirmPassword ? 'border-destructive/60' : ''}`}
+            {...register('confirmPassword')}
+          />
         </Field>
       </div>
 
