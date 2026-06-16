@@ -69,11 +69,24 @@ export function PromoFlyerThumb({ src, alt }: Props) {
             role="dialog"
             aria-modal="true"
             onClick={() => setOpen(false)}
-            className="fixed inset-0 z-[100] flex flex-col bg-black"
+            className="fixed inset-0 z-[100] flex flex-col overflow-hidden bg-background"
           >
+            {/* Fondo lava morado (mismo lenguaje que login/landing), opaco. */}
+            <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div className="lava-aurora" />
+              <div className="lava-blob lava-blob-1" />
+              <div className="lava-blob lava-blob-2" />
+              <div className="lava-blob lava-blob-3" />
+              <div className="lava-blob lava-blob-4" />
+              <div className="lava-spark lava-spark-1" />
+              <div className="lava-spark lava-spark-2" />
+              <div className="lava-spark lava-spark-3" />
+              <div className="lava-vignette" />
+            </div>
+
             {/* Banda superior con la X — fuera de la foto, respeta el notch. */}
             <div
-              className="flex shrink-0 justify-end px-4"
+              className="relative z-10 flex shrink-0 justify-end px-4"
               style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)', paddingBottom: '0.5rem' }}
             >
               <button
@@ -87,7 +100,7 @@ export function PromoFlyerThumb({ src, alt }: Props) {
             </div>
 
             {/* Foto centrada en el espacio restante. */}
-            <div className="flex min-h-0 flex-1 items-center justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+            <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
               <Image
                 src={src}
                 alt={alt}
@@ -95,7 +108,7 @@ export function PromoFlyerThumb({ src, alt }: Props) {
                 height={1920}
                 sizes="100vw"
                 onClick={(e) => e.stopPropagation()}
-                className="max-h-full w-auto max-w-full rounded-2xl object-contain"
+                className="max-h-full w-auto max-w-full rounded-2xl object-contain shadow-2xl shadow-black/50"
               />
             </div>
           </div>,
