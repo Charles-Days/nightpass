@@ -1,9 +1,16 @@
+'use client';
+
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 /**
  * Renderiza la descripción de un evento como Markdown (negrita, cursiva,
  * títulos, listas, citas, links) con el estilo dark de NightPass.
+ *
+ * Es colapsable: por defecto se muestra recortada (~11rem) con un degradado
+ * de desvanecido abajo y un toggle "Ver más / Ver menos".
  *
  * Seguridad: react-markdown NO renderiza HTML crudo por defecto (no usamos
  * rehype-raw), así que no hay riesgo de XSS aunque el texto venga de un
@@ -17,9 +24,16 @@ export function EventDescription({
   text: string;
   className?: string;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
   return (
     <div className={className}>
-      <ReactMarkdown
+      <div
+        className={`relative overflow-hidden transition-[max-height] ${
+          expanded ? 'max-h-none' : 'max-h-44'
+        }`}
+      >
+        <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }) => (
@@ -84,9 +98,30 @@ export function EventDescription({
             </code>
           ),
         }}
+        >
+          {text}
+        </ReactMarkdown>
+        {!expanded && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0A0A0F] to-transparent" />
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary transition hover:text-primary/80 active:scale-95"
       >
-        {text}
-      </ReactMarkdown>
+        {expanded ? (
+          <>
+            Ver menos
+            <ChevronUp className="size-3.5" />
+          </>
+        ) : (
+          <>
+            Ver más
+            <ChevronDown className="size-3.5" />
+          </>
+        )}
+      </button>
     </div>
   );
 }

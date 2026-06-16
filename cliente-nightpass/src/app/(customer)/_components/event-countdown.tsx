@@ -35,23 +35,19 @@ function compute(startsAt: number, endsAt: number, now: number): State {
   };
 }
 
-function Segment({ value, label }: { value: number; label: string }) {
+function Unit({ value, unit }: { value: number; unit: string }) {
   const padded = String(value).padStart(2, '0');
   return (
-    <div className="flex flex-col items-center">
+    <span className="inline-flex items-baseline tabular-nums">
       {/* key={padded} remonta el span → dispara np-digit-pop en cada cambio. */}
-      <div className="overflow-hidden rounded-xl border border-white/14 bg-white/[0.07] px-2.5 py-1.5 tabular-nums sm:px-3.5 sm:py-2">
-        <span
-          key={padded}
-          className="np-digit-pop block font-display text-2xl font-bold leading-none text-white sm:text-3xl"
-        >
-          {padded}
-        </span>
-      </div>
-      <span className="mt-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/45 sm:text-[10px]">
-        {label}
+      <span
+        key={padded}
+        className="np-digit-pop font-display text-base font-bold leading-none text-white sm:text-lg"
+      >
+        {padded}
       </span>
-    </div>
+      <span className="ml-0.5 text-xs text-white/50">{unit}</span>
+    </span>
   );
 }
 
@@ -75,7 +71,7 @@ export function EventCountdown({ startsAt, endsAt, className, style }: Props) {
     return (
       <section
         className={cn(
-          'np-rise flex items-center gap-3 rounded-[22px] border border-white/14 bg-white/[0.05] px-5 py-4',
+          'np-rise flex items-center gap-3 rounded-[22px] border border-white/14 bg-white/[0.05] px-5 py-3',
           className,
         )}
         style={style}
@@ -90,7 +86,7 @@ export function EventCountdown({ startsAt, endsAt, className, style }: Props) {
     return (
       <section
         className={cn(
-          'np-countdown-glow relative overflow-hidden rounded-[22px] border border-rose-400/30 bg-gradient-to-r from-rose-500/15 via-fuchsia-500/10 to-purple-500/15 px-5 py-4',
+          'np-countdown-glow relative overflow-hidden rounded-[22px] border border-rose-400/30 bg-gradient-to-r from-rose-500/15 via-fuchsia-500/10 to-purple-500/15 px-5 py-3',
           className,
         )}
         style={style}
@@ -114,35 +110,27 @@ export function EventCountdown({ startsAt, endsAt, className, style }: Props) {
   return (
     <section
       className={cn(
-        'np-countdown-glow relative overflow-hidden rounded-[22px] border border-primary/25 bg-gradient-to-r from-primary/12 via-fuchsia-500/8 to-transparent px-5 py-4',
+        'np-countdown-glow relative flex items-center justify-between gap-3 overflow-hidden rounded-[22px] border border-primary/25 bg-gradient-to-r from-primary/12 via-fuchsia-500/8 to-transparent px-5 py-3',
         className,
       )}
       style={style}
     >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2.5">
-          <CalendarClock className="size-5 shrink-0 text-primary" />
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
-              Empieza en
-            </p>
-            <p className="text-xs text-white/60">No te quedes fuera</p>
-          </div>
-        </div>
-        <div
-          className={cn(
-            'flex items-start gap-2 transition-opacity duration-500 sm:gap-3',
-            ready ? 'opacity-100' : 'opacity-40',
-          )}
-        >
-          <Segment value={show.d} label="Días" />
-          <span className="pt-1.5 font-display text-2xl font-bold text-white/25 sm:text-3xl">:</span>
-          <Segment value={show.h} label="Hrs" />
-          <span className="pt-1.5 font-display text-2xl font-bold text-white/25 sm:text-3xl">:</span>
-          <Segment value={show.m} label="Min" />
-          <span className="pt-1.5 font-display text-2xl font-bold text-white/25 sm:text-3xl">:</span>
-          <Segment value={show.s} label="Seg" />
-        </div>
+      <div className="flex items-center gap-2">
+        <CalendarClock className="size-4 shrink-0 text-primary" />
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
+          Empieza en
+        </p>
+      </div>
+      <div
+        className={cn(
+          'flex items-baseline gap-2 transition-opacity duration-500 sm:gap-2.5',
+          ready ? 'opacity-100' : 'opacity-40',
+        )}
+      >
+        <Unit value={show.d} unit="d" />
+        <Unit value={show.h} unit="h" />
+        <Unit value={show.m} unit="m" />
+        <Unit value={show.s} unit="s" />
       </div>
     </section>
   );
