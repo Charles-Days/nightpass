@@ -415,10 +415,15 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
             let promo: BulkPendingItem | null = null;
             if (orderId) {
               try {
-                const pending = await clientFetch<BulkPendingResponse>(
-                  '/api/rewards/bulk/pending',
-                );
-                promo = pending.items.find((it) => it.orderId === orderId) ?? null;
+                // Race con timeout: si el chequeo de promo se cuelga, NO bloquea
+                // el redirect a Pases (mejor sin regalo que atorado en "success").
+                const pending = await Promise.race([
+                  clientFetch<BulkPendingResponse>('/api/rewards/bulk/pending'),
+                  new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+                ]);
+                if (pending) {
+                  promo = pending.items.find((it) => it.orderId === orderId) ?? null;
+                }
               } catch {
                 // sin promo / error de red → seguimos con el flujo normal
               }
