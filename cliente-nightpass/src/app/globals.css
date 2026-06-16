@@ -1016,3 +1016,39 @@
     animation-timing-function: ease !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   FOIL — brillo holográfico tipo boleto/carta que barre la card de promo.
+   Una franja diagonal cruza en loop, con descanso entre pasadas.
+   ════════════════════════════════════════════════════════════════════════ */
+@keyframes np-foil-sweep {
+  0% { transform: translateX(-160%) skewX(-18deg); }
+  55%, 100% { transform: translateX(260%) skewX(-18deg); }
+}
+.np-foil {
+  overflow: hidden;
+}
+.np-foil::after {
+  content: '';
+  position: absolute;
+  top: -12%;
+  bottom: -12%;
+  left: 0;
+  width: 42%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.14),
+    rgba(216, 180, 254, 0.26),
+    rgba(255, 255, 255, 0.14),
+    transparent
+  );
+  transform: translateX(-160%) skewX(-18deg);
+  animation: np-foil-sweep 4.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .np-foil::after {
+    animation: none;
+    opacity: 0;
+  }
+}
