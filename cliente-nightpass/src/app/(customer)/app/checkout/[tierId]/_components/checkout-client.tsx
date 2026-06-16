@@ -26,6 +26,7 @@ import {
   type BulkPendingResponse,
 } from '@/features/rewards';
 import { PickupModal } from './pickup-modal';
+import { TicketStampOverlay } from '@/app/(customer)/_components/ticket-stamp-overlay';
 
 type Phase =
   | 'select_quantity'
@@ -198,6 +199,8 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
   // Destino del redirect post-compra, retenido mientras el modal de promo está
   // abierto. Cuando el usuario cierra el cupón, navegamos aquí.
   const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
+  // Destino a Pases retenido mientras corre la animación de "boleto sellado".
+  const [stampTarget, setStampTarget] = useState<string | null>(null);
   // Teléfono/WhatsApp para pago en efectivo. Si el usuario ya tiene uno
   // guardado lo reusamos; si no, se lo pedimos esta primera vez.
   const [phone, setPhone] = useState('');
@@ -426,7 +429,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
               setBulkPromo(promo);
               setPendingRedirect(target);
             } else {
-              router.replace(target);
+              setStampTarget(target);
             }
             return;
           }
@@ -990,6 +993,13 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
         </p>
       )}
 
+      {stampTarget && (
+        <TicketStampOverlay
+          eventTitle={initialTier?.event?.title}
+          onComplete={() => router.replace(stampTarget as never)}
+        />
+      )}
+
       <BulkChooseDialog
         item={bulkPromo}
         onClose={() => {
@@ -999,7 +1009,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
           if (pendingRedirect) {
             const target = pendingRedirect;
             setPendingRedirect(null);
-            router.replace(target as never);
+            setStampTarget(target);
           }
         }}
       />

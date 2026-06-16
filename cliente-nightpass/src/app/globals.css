@@ -1052,3 +1052,60 @@
     opacity: 0;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   STAMP — "boleto sellado" al confirmar la compra (antes de ir a Pases).
+   El boleto entra, el sello PAGADO se estampa con golpe + sacudida, y aparece
+   la frase. ~2.2s. Ver ticket-stamp-overlay.tsx.
+   ════════════════════════════════════════════════════════════════════════ */
+@keyframes np-ticket-in {
+  0% { transform: translateY(-48px) rotate(-7deg) scale(0.9); opacity: 0; }
+  100% { transform: translateY(0) rotate(0) scale(1); opacity: 1; }
+}
+@keyframes np-ticket-shake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  20% { transform: translateX(-7px) rotate(-1deg); }
+  40% { transform: translateX(7px) rotate(1deg); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+}
+@keyframes np-stamp-slam {
+  0% { transform: rotate(-12deg) scale(2.6); opacity: 0; }
+  60% { opacity: 1; }
+  78% { transform: rotate(-12deg) scale(0.9); }
+  100% { transform: rotate(-12deg) scale(1); opacity: 1; }
+}
+@keyframes np-stamp-ring {
+  0% { transform: rotate(-12deg) scale(0.6); opacity: 0; }
+  12% { opacity: 0.55; }
+  100% { transform: rotate(-12deg) scale(2.3); opacity: 0; }
+}
+@keyframes np-success-up {
+  0% { transform: translateY(12px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.np-ticket {
+  animation:
+    np-ticket-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    np-ticket-shake 0.4s ease 0.5s both;
+}
+.np-stamp {
+  animation: np-stamp-slam 0.5s cubic-bezier(0.3, 1.5, 0.5, 1) 0.5s both;
+}
+.np-stamp-ring {
+  animation: np-stamp-ring 0.6s ease-out 0.55s both;
+}
+.np-success-up {
+  animation: np-success-up 0.5s ease-out 1s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .np-ticket,
+  .np-stamp,
+  .np-stamp-ring,
+  .np-success-up {
+    animation-duration: 0.3s !important;
+    animation-delay: 0s !important;
+  }
+}
