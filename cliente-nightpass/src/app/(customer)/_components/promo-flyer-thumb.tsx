@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { Expand, X } from 'lucide-react';
+import { StarfieldAmbient } from '@/app/(customer)/_components/starfield-ambient';
 
 interface Props {
   src: string;
@@ -72,18 +73,8 @@ export function PromoFlyerThumb({ src, alt }: Props) {
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-[100] flex flex-col overflow-hidden bg-background"
           >
-            {/* Fondo lava morado (mismo lenguaje que login/landing), opaco. */}
-            <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-              <div className="lava-aurora" />
-              <div className="lava-blob lava-blob-1" />
-              <div className="lava-blob lava-blob-2" />
-              <div className="lava-blob lava-blob-3" />
-              <div className="lava-blob lava-blob-4" />
-              <div className="lava-spark lava-spark-1" />
-              <div className="lava-spark lava-spark-2" />
-              <div className="lava-spark lava-spark-3" />
-              <div className="lava-vignette" />
-            </div>
+            {/* Fondo espacial animado: estrellas que titilan + nebulosa morada. */}
+            <StarfieldAmbient />
 
             {/* Banda superior con la X — fuera de la foto, respeta el notch. */}
             <div
@@ -109,7 +100,7 @@ export function PromoFlyerThumb({ src, alt }: Props) {
                 height={1920}
                 sizes="100vw"
                 onClick={(e) => e.stopPropagation()}
-                className="max-h-full w-auto max-w-full rounded-2xl object-contain shadow-2xl shadow-black/50"
+                className="max-h-full w-auto max-w-full rounded-2xl object-contain shadow-2xl shadow-black/60 ring-1 ring-white/10"
               />
             </div>
           </div>,

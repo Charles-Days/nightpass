@@ -26,6 +26,7 @@ import {
   type BulkPendingResponse,
 } from '@/features/rewards';
 import { PickupModal } from './pickup-modal';
+import { TicketStampOverlay } from '@/app/(customer)/_components/ticket-stamp-overlay';
 
 type Phase =
   | 'select_quantity'
@@ -198,6 +199,10 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
   // Destino del redirect post-compra, retenido mientras el modal de promo está
   // abierto. Cuando el usuario cierra el cupón, navegamos aquí.
   const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
+  // Destino a Pases retenido mientras corre la animación de "boleto sellado".
+  const [stampTarget, setStampTarget] = useState<string | null>(null);
+  // Dispara el sello "RESERVADO" al apartar lugar con pago en efectivo.
+  const [reservedStamp, setReservedStamp] = useState(false);
   // Teléfono/WhatsApp para pago en efectivo. Si el usuario ya tiene uno
   // guardado lo reusamos; si no, se lo pedimos esta primera vez.
   const [phone, setPhone] = useState('');
@@ -332,7 +337,8 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
           ...(selection?.pickupAt ? { pickupAt: selection.pickupAt } : {}),
         },
       });
-      setPhase('cash_done');
+      // Lugar apartado: corre el sello RESERVADO; al terminar, pantalla cash_done.
+      setReservedStamp(true);
     } catch (error) {
       const info = readApiError(error);
       setPhase('error');
@@ -412,21 +418,30 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
             let promo: BulkPendingItem | null = null;
             if (orderId) {
               try {
-                const pending = await clientFetch<BulkPendingResponse>(
-                  '/api/rewards/bulk/pending',
-                );
-                promo = pending.items.find((it) => it.orderId === orderId) ?? null;
+                // Race con timeout: si el chequeo de promo se cuelga, NO bloquea
+                // el redirect a Pases (mejor sin regalo que atorado en "success").
+                const pending = await Promise.race([
+                  clientFetch<BulkPendingResponse>('/api/rewards/bulk/pending'),
+                  new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+                ]);
+                if (pending) {
+                  promo = pending.items.find((it) => it.orderId === orderId) ?? null;
+                }
               } catch {
                 // sin promo / error de red → seguimos con el flujo normal
               }
             }
 
-            if (cancelled) return;
+            // OJO: NO abortar por `cancelled` aquí. Nuestro propio setPhase
+            // ('success') dispara el cleanup de este efecto (cancelled=true)
+            // durante el await de la promo; abortar dejaría la pantalla atorada
+            // en "success" sin navegar. La orden ya está COMPLETED y el
+            // componente sigue montado → siempre disparamos el sello/redirect.
             if (promo) {
               setBulkPromo(promo);
               setPendingRedirect(target);
             } else {
-              router.replace(target);
+              setStampTarget(target);
             }
             return;
           }
@@ -990,6 +1005,24 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
         </p>
       )}
 
+      {stampTarget && (
+        <TicketStampOverlay
+          eventTitle={initialTier?.event?.title}
+          onComplete={() => router.replace(stampTarget as never)}
+        />
+      )}
+
+      {reservedStamp && (
+        <TicketStampOverlay
+          tone="reserved"
+          eventTitle={initialTier?.event?.title}
+          onComplete={() => {
+            setReservedStamp(false);
+            setPhase('cash_done');
+          }}
+        />
+      )}
+
       <BulkChooseDialog
         item={bulkPromo}
         onClose={() => {
@@ -999,7 +1032,7 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
           if (pendingRedirect) {
             const target = pendingRedirect;
             setPendingRedirect(null);
-            router.replace(target as never);
+            setStampTarget(target);
           }
         }}
       />
