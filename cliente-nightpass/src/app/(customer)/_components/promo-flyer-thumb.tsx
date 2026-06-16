@@ -69,7 +69,7 @@ export function PromoFlyerThumb({ src, alt }: Props) {
             role="dialog"
             aria-modal="true"
             onClick={() => setOpen(false)}
-            className="np-rise fixed inset-0 z-[100] flex flex-col bg-black/95"
+            className="fixed inset-0 z-[100] flex flex-col bg-black"
           >
             {/* Banda superior con la X — fuera de la foto, respeta el notch. */}
             <div
