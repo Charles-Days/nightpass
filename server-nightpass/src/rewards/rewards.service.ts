@@ -547,16 +547,21 @@ export class RewardsService {
       where: {
         eventId,
         active: true,
-        kind: RewardKind.BULK_PROMO,
+        // Promos visibles en la página del evento: por volumen (BULK_PROMO) y
+        // perks por compra en ventana de fechas (PURCHASE_PERK). Ambas son
+        // marketing previo a la compra.
+        kind: { in: [RewardKind.BULK_PROMO, RewardKind.PURCHASE_PERK] },
         ...this.withinWindowWhere(now),
       },
       orderBy: { minQuantity: 'asc' },
       select: {
         id: true,
+        kind: true,
         title: true,
         description: true,
         imageUrl: true,
         minQuantity: true,
+        endsAt: true,
         options: {
           orderBy: { position: 'asc' },
           select: { label: true, description: true },
@@ -567,10 +572,12 @@ export class RewardsService {
     return {
       promos: promos.map((p) => ({
         id: p.id,
+        kind: p.kind,
         title: p.title,
         description: p.description,
         imageUrl: p.imageUrl,
         minQuantity: p.minQuantity,
+        endsAt: p.endsAt,
         options: p.options.map((o) => ({
           label: o.label,
           description: o.description,
