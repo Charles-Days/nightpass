@@ -630,10 +630,15 @@ export interface CatalogEventDetail {
 /** Promo por volumen (BULK_PROMO) activa de un evento — banner público. */
 export interface CatalogEventPromo {
   id: string;
+  /** BULK_PROMO = compra N boletos y elige; PURCHASE_PERK = compra en ventana
+   *  de fechas y recibes el perk. */
+  kind: 'BULK_PROMO' | 'PURCHASE_PERK';
   title: string;
   description: string | null;
   imageUrl: string | null;
-  minQuantity: number;
+  minQuantity: number | null;
+  /** Fin de la ventana (PURCHASE_PERK la usa para "válida hasta"). */
+  endsAt: string | null;
   options: Array<{ label: string; description: string | null }>;
 }
 

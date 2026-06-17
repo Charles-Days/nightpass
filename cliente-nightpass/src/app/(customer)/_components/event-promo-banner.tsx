@@ -8,6 +8,11 @@ interface Props {
   style?: React.CSSProperties;
 }
 
+const fmtDay = (iso: string) =>
+  new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'long' }).format(
+    new Date(iso),
+  );
+
 /**
  * Banner de "promo por volumen" (BULK_PROMO) en la página del evento.
  * Si el promo tiene `imageUrl` se muestra una card horizontal compacta con la
@@ -20,18 +25,22 @@ export function EventPromoBanner({ promos, className, style }: Props) {
   return (
     <section className={`np-rise space-y-4 ${className ?? ''}`} style={style}>
       {promos.map((promo) => {
-        const optionChips = (
-          <ul className="mt-3 flex flex-wrap gap-1.5">
-            {promo.options.map((opt, i) => (
-              <li
-                key={`${promo.id}-opt-${i}`}
-                className="inline-flex items-center rounded-full border border-white/18 bg-white/[0.08] px-2.5 py-1 text-[11px] font-semibold text-white/85 backdrop-blur"
-              >
-                {opt.label}
-              </li>
-            ))}
-          </ul>
-        );
+        const isPerk = promo.kind === 'PURCHASE_PERK';
+
+        // El perk por compra no tiene opciones a elegir; la promo por volumen sí.
+        const optionChips =
+          isPerk || promo.options.length === 0 ? null : (
+            <ul className="mt-3 flex flex-wrap gap-1.5">
+              {promo.options.map((opt, i) => (
+                <li
+                  key={`${promo.id}-opt-${i}`}
+                  className="inline-flex items-center rounded-full border border-white/18 bg-white/[0.08] px-2.5 py-1 text-[11px] font-semibold text-white/85 backdrop-blur"
+                >
+                  {opt.label}
+                </li>
+              ))}
+            </ul>
+          );
 
         const eyebrow = (
           <p className="inline-flex items-center gap-1 rounded-full border border-purple-300/30 bg-purple-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-purple-200">
@@ -40,7 +49,13 @@ export function EventPromoBanner({ promos, className, style }: Props) {
           </p>
         );
 
-        const headline = (
+        const headline = isPerk ? (
+          <p className="mt-2 text-sm font-semibold text-white">
+            {promo.endsAt
+              ? `Compra tu boleto antes del ${fmtDay(promo.endsAt)} y es tuyo`
+              : 'Compra tu boleto y es tuyo'}
+          </p>
+        ) : (
           <p className="mt-2 text-sm font-semibold text-white">
             Compra {promo.minQuantity} boletos y elige tu regalo
           </p>
