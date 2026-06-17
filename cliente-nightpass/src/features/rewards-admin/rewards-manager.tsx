@@ -10,6 +10,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Sparkles,
   Ticket,
   Trash2,
   X,
@@ -71,6 +72,12 @@ const KIND_META: Record<
     short: 'NPP dobles',
     desc: 'NPP extra al pagar en efectivo con RP.',
     Icon: Coins,
+  },
+  PURCHASE_PERK: {
+    label: 'Perk por compra (fechas)',
+    short: 'Perk compra',
+    desc: 'Comprar en la ventana de fechas otorga un perk que se muestra en el boleto.',
+    Icon: Sparkles,
   },
 };
 
@@ -394,6 +401,8 @@ function rewardSubtitle(r: OwnerReward): string {
       return `${r.minQuantity ?? '?'} boletos · ${r.options?.length ?? 0} opciones`;
     case 'PHYSICAL_BONUS_NPP':
       return `+${r.bonusNpp ?? 0} NPP al pagar en efectivo`;
+    case 'PURCHASE_PERK':
+      return `Perk por compra${r.description ? ` · ${r.description}` : ''}`;
     default:
       return r.description ?? '';
   }
@@ -607,6 +616,20 @@ function CreateRewardDialog({
         return;
       }
       payload = { ...base, costNpp: 0, eventId, bonusNpp };
+    } else if (kind === 'PURCHASE_PERK') {
+      if (!eventId) {
+        toast.error('Selecciona un evento');
+        return;
+      }
+      if (!description.trim()) {
+        toast.error('Describe el perk que se otorga al comprar');
+        return;
+      }
+      if (!startsAtISO && !endsAtISO) {
+        toast.error('Define al menos una fecha de la ventana (Desde o Hasta)');
+        return;
+      }
+      payload = { ...base, costNpp: 0, eventId, tierId: tierId || undefined };
     } else {
       return;
     }
@@ -614,7 +637,10 @@ function CreateRewardDialog({
     if (isEdit) {
       // En edición: dueño, kind y evento son inmutables (el backend los ignora).
       // imageUrl/startsAt/endsAt usan null para limpiar.
-      const isFree = kind === 'BULK_PROMO' || kind === 'PHYSICAL_BONUS_NPP';
+      const isFree =
+        kind === 'BULK_PROMO' ||
+        kind === 'PHYSICAL_BONUS_NPP' ||
+        kind === 'PURCHASE_PERK';
       const editBody: UpdateRewardBody = {
         title: payload.title,
         description: payload.description ?? '',
@@ -900,6 +926,53 @@ function CreateRewardDialog({
                     Se otorgan al confirmar el RP el pago en efectivo.
                   </p>
                 </div>
+              </>
+            )}
+
+            {kind === 'PURCHASE_PERK' && (
+              <>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Evento
+                  </label>
+                  <EventSelect
+                    value={eventId}
+                    onChange={(v) => {
+                      setEventId(v);
+                      setTierId('');
+                    }}
+                    loading={events.isLoading}
+                    options={events.data ?? []}
+                    placeholder="Selecciona un evento"
+                    disabled={isEdit}
+                  />
+                </div>
+                {eventId && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Tier (opcional)
+                    </label>
+                    <select
+                      className={SELECT_CLASS}
+                      value={tierId}
+                      onChange={(e) => setTierId(e.target.value)}
+                      disabled={tiers.isLoading || isEdit}
+                    >
+                      <option value="">Cualquier tier</option>
+                      {(tiers.data ?? []).map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <p className="rounded-lg border border-primary/20 bg-primary/[0.06] px-3 py-2 text-[11px] text-muted-foreground">
+                  Comprar 1+ boleto dentro de la ventana de fechas (abajo) otorga
+                  este perk. La <strong className="text-white/80">Descripción</strong>{' '}
+                  y el <strong className="text-white/80">Banner</strong> se muestran
+                  en el boleto del cliente. Define la vigencia abajo.
+                </p>
               </>
             )}
 

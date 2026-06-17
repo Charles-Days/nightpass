@@ -406,12 +406,14 @@ export class OrdersService {
         }
       }
 
-      // Promo por volumen: cash/bypass también la desbloquea (best-effort).
+      // Promos automáticas al completar (best-effort): por volumen (BULK) y
+      // perks por compra en ventana de fechas (PURCHASE_PERK).
       try {
         await this.rewards.maybeUnlockBulkPromo(this.prisma, order);
+        await this.rewards.maybeUnlockPurchasePerk(this.prisma, order);
       } catch (err) {
         this.logger.error(
-          `[DEV BYPASS] maybeUnlockBulkPromo falló para Order ${order.id}: ${(err as Error).message}`,
+          `[DEV BYPASS] desbloqueo de promos falló para Order ${order.id}: ${(err as Error).message}`,
         );
       }
 

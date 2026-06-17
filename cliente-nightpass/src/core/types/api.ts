@@ -452,6 +452,32 @@ export interface Pass {
   canTransfer?: boolean;
   /** Motivo por el que no se puede transferir (ej. último boleto del evento). */
   transferBlockedReason?: string;
+  /** Promos aplicadas a la orden de este pase (perks por compra, volumen,
+   *  descuentos). Se muestran al pie del boleto. */
+  appliedPromos?: AppliedPromo[];
+}
+
+export type RewardKind =
+  | 'VENUE_PERK'
+  | 'TICKET_DISCOUNT'
+  | 'BULK_PROMO'
+  | 'PHYSICAL_BONUS_NPP'
+  | 'PURCHASE_PERK';
+
+export interface AppliedPromo {
+  id: string;
+  kind: RewardKind;
+  title: string;
+  description: string | null;
+  imageUrl: string | null;
+  /** Código del cupón/perk que el cliente presenta en barra/puerta. */
+  code: string;
+  status: 'PENDING' | 'USED' | 'EXPIRED' | 'REVERSED';
+  /** Solo BULK_PROMO: opción elegida. */
+  optionLabel: string | null;
+  /** Solo TICKET_DISCOUNT: centavos descontados. */
+  appliedCents: number | null;
+  expiresAt: string;
 }
 
 export type TransferStatus = 'PENDING' | 'CLAIMED' | 'CANCELLED' | 'EXPIRED';

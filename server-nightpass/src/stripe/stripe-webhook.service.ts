@@ -129,9 +129,10 @@ export class StripeWebhookService {
       // NUNCA tumbe el cierre de una orden ya pagada ni la emisión de pases.
       try {
         await this.rewards.maybeUnlockBulkPromo(tx, updated);
+        await this.rewards.maybeUnlockPurchasePerk(tx, updated);
       } catch (err) {
         this.logger.error(
-          `maybeUnlockBulkPromo falló para Order ${order.id}: ${err instanceof Error ? err.message : err}`,
+          `desbloqueo de promos falló para Order ${order.id}: ${err instanceof Error ? err.message : err}`,
         );
       }
     });
