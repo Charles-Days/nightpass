@@ -14,7 +14,7 @@ import {
 import { Button } from '@/core/components/ui/button';
 import { ClientApiError } from '@/core/lib/api/client-client';
 import { paths } from '@/core/config/paths';
-import { useEventTiers, useIssueRpPass, type IssuedPass } from '../hooks/use-rp';
+import { useEventTiers, useIssueRpPass, type IssuedPass, type PassChannel } from '../hooks/use-rp';
 
 const money = (cents: number) => `$${(cents / 100).toFixed(2)} MXN`;
 
@@ -35,6 +35,7 @@ interface Props {
 export function IssuePassDialog({ events }: Props) {
   const [open, setOpen] = React.useState(false);
   const [eventId, setEventId] = React.useState<string | null>(null);
+  const [channel, setChannel] = React.useState<PassChannel>('QR');
   const [issued, setIssued] = React.useState<IssuedPass | null>(null);
 
   const tiersQ = useEventTiers(eventId);
@@ -43,6 +44,7 @@ export function IssuePassDialog({ events }: Props) {
 
   const reset = () => {
     setEventId(null);
+    setChannel('QR');
     setIssued(null);
     issue.reset();
   };
@@ -50,7 +52,7 @@ export function IssuePassDialog({ events }: Props) {
   const onPickTier = async (tierId: string) => {
     if (!eventId) return;
     try {
-      const res = await issue.mutateAsync({ eventId, tierId });
+      const res = await issue.mutateAsync({ eventId, tierId, channel });
       setIssued(res);
     } catch {
       /* el error se muestra desde issue.error */
@@ -115,6 +117,41 @@ export function IssuePassDialog({ events }: Props) {
               <ArrowLeft className="size-3.5" /> {selectedEvent?.eventName}
             </button>
 
+            {/* Forma de compartir: define la vigencia del vale. */}
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground">¿Cómo lo vas a entregar?</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setChannel('QR')}
+                  className={`flex flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-left transition ${
+                    channel === 'QR'
+                      ? 'border-primary/60 bg-primary/10'
+                      : 'border-white/14 bg-white/[0.04] hover:bg-white/[0.07]'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-white">
+                    <QrCode className="size-4 text-primary" /> QR presencial
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">Lo escanea ahí mismo · expira en 10 min</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChannel('LINK')}
+                  className={`flex flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-left transition ${
+                    channel === 'LINK'
+                      ? 'border-primary/60 bg-primary/10'
+                      : 'border-white/14 bg-white/[0.04] hover:bg-white/[0.07]'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-white">
+                    <LinkIcon className="size-4 text-primary" /> Link para enviar
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">Lo abre cuando pueda · no expira hasta el evento</span>
+                </button>
+              </div>
+            </div>
+
             {tiersQ.isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="size-5 animate-spin text-primary" />
@@ -167,8 +204,17 @@ function SuccessView({ issued, onAnother }: { issued: IssuedPass; onAnother: () 
   // registra (o entra) y el boleto se le guarda. No es el token crudo.
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const claimUrl = `${origin}${paths.reclamarVale}/${issued.token}`;
+  const isLink = issued.channel === 'LINK';
   return (
     <div className="space-y-4 text-center">
+      <span
+        className={`mx-auto inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold ${
+          isLink ? 'bg-sky-500/15 text-sky-300' : 'bg-primary/15 text-primary'
+        }`}
+      >
+        {isLink ? <LinkIcon className="size-3.5" /> : <QrCode className="size-3.5" />}
+        {isLink ? 'Vale por link' : 'Vale QR presencial'}
+      </span>
       <div className="mx-auto w-full max-w-[240px] rounded-[20px] bg-white p-4 shadow-[0_20px_60px_-10px_rgba(168,85,247,0.4)]">
         <QRCodeSVG value={claimUrl} level="H" marginSize={2} fgColor="#0A0A0F" bgColor="#FFFFFF" className="size-full" />
       </div>
@@ -179,7 +225,8 @@ function SuccessView({ issued, onAnother }: { issued: IssuedPass; onAnother: () 
         </p>
       </div>
       <p className="flex items-center justify-center gap-1.5 text-xs text-amber-300">
-        <Clock className="size-3.5" /> Válido hasta {expires}
+        <Clock className="size-3.5" />
+        {isLink ? `No expira · válido hasta ${expires}` : `Válido hasta ${expires}`}
       </p>
       <p className="flex items-center justify-center gap-1.5 text-xs text-emerald-300">
         <CheckCircle2 className="size-3.5" /> Cualquier cámara lo escanea → se registra y el boleto se guarda.

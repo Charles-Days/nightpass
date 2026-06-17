@@ -6,7 +6,14 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { EventStatus, PassClaimStatus, Prisma, Role, RpCommissionType } from '@prisma/client';
+import {
+  EventStatus,
+  PassClaimChannel,
+  PassClaimStatus,
+  Prisma,
+  Role,
+  RpCommissionType,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailerService } from '../mailer/mailer.service';
 import { resolveTierPrice } from '../events/tier-pricing';
@@ -26,6 +33,10 @@ import { randomBytes } from 'crypto';
 // Ventana corta para reclamar un vale: si nadie lo reclama, expira solo (un cron
 // lo marca EXPIRED y libera el aforo). Evita vales emitidos varados en PENDING.
 const CLAIM_TTL_MINUTES = 10;
+
+// Gracia de un vale tipo LINK: sigue reclamable hasta esta cantidad de días
+// después del FIN del evento. Pasado eso, expira (ya no tiene sentido canjearlo).
+const LINK_GRACE_DAYS = 7;
 
 const ARGON2_OPTS = {
   type: argon2.argon2id,
@@ -257,7 +268,7 @@ export class RpService {
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
-    const [assignments, rules, orders, cashReqs] = await Promise.all([
+    const [assignments, rules, orders, cashReqs, vouchers] = await Promise.all([
       this.prisma.eventRp.findMany({
         where: { eventId },
         select: { rpProfileId: true },
@@ -278,6 +289,18 @@ export class RpService {
         where: { eventId, assignedRpId: { not: null } },
         select: { assignedRpId: true, status: true, amountCents: true },
       }),
+      // Vales que el RP emitió (QR/link). Permite ver, por RP, cuántos generó por
+      // cada forma y cuántos ya reclamó un cliente (venta real). Excluimos los
+      // EXPIRED de QR para no inflar (vale presencial que nadie reclamó); los de
+      // link no expiran a los 10 min, así que sus PENDING siguen vivos.
+      this.prisma.passClaim.findMany({
+        where: {
+          eventId,
+          issuedByRpId: { not: null },
+          status: { in: [PassClaimStatus.PENDING, PassClaimStatus.CLAIMED] },
+        },
+        select: { issuedByRpId: true, channel: true, status: true },
+      }),
     ]);
 
     // RPs relevantes: asignados, con regla específica, con ventas, o con
@@ -289,6 +312,7 @@ export class RpService {
       .forEach((r) => rpIds.add(r.rpProfileId));
     orders.forEach((o) => o.referredByRpId && rpIds.add(o.referredByRpId));
     cashReqs.forEach((r) => r.assignedRpId && rpIds.add(r.assignedRpId));
+    vouchers.forEach((v) => v.issuedByRpId && rpIds.add(v.issuedByRpId));
 
     if (rpIds.size === 0) {
       return {
@@ -358,6 +382,21 @@ export class RpService {
           confirmedAmountCents: cashConfirmedAmountCents,
         };
 
+        // Vales que este RP emitió, separados por forma (link/QR). `emitted` =
+        // generados (vivos); `claimed` = ya reclamados por un cliente.
+        const myVouchers = vouchers.filter((v) => v.issuedByRpId === id);
+        const tally = (ch: PassClaimChannel) => {
+          const ofCh = myVouchers.filter((v) => v.channel === ch);
+          return {
+            emitted: ofCh.length,
+            claimed: ofCh.filter((v) => v.status === 'CLAIMED').length,
+          };
+        };
+        const passes = {
+          link: tally(PassClaimChannel.LINK),
+          qr: tally(PassClaimChannel.QR),
+        };
+
         totalSales += sales;
         totalEarningsCents += earningsCents;
         totalCashConfirmedCents += cashConfirmedAmountCents;
@@ -383,6 +422,7 @@ export class RpService {
           sales,
           earningsCents,
           cash,
+          passes,
         };
       })
       .sort(
@@ -887,10 +927,22 @@ export class RpService {
     const amountCents = resolveTierPrice(tier.priceCents, tier.prices, event.startsAt)
       .currentCents;
 
+    const channel = dto.channel ?? PassClaimChannel.QR;
+
     const token = `npc_${randomBytes(24).toString('hex')}`;
-    // Vale efímero: TTL corto (10 min), nunca más allá del inicio del evento.
-    const ttl = new Date(Date.now() + CLAIM_TTL_MINUTES * 60 * 1000);
-    const expiresAt = ttl < event.startsAt ? ttl : event.startsAt;
+    // Vigencia según la forma de compartir:
+    // - QR (presencial): TTL corto (10 min), nunca más allá del inicio del
+    //   evento. Si nadie lo reclama, expira y libera el aforo.
+    // - LINK (a distancia): el cliente lo abre cuando puede, así que NO expira a
+    //   los 10 min. Vive hasta una semana después del fin del evento; pasado eso
+    //   ya no tiene sentido reclamarlo.
+    let expiresAt: Date;
+    if (channel === PassClaimChannel.LINK) {
+      expiresAt = new Date(event.endsAt.getTime() + LINK_GRACE_DAYS * 24 * 60 * 60 * 1000);
+    } else {
+      const ttl = new Date(Date.now() + CLAIM_TTL_MINUTES * 60 * 1000);
+      expiresAt = ttl < event.startsAt ? ttl : event.startsAt;
+    }
 
     const claim = await this.prisma.passClaim.create({
       data: {
@@ -900,6 +952,7 @@ export class RpService {
         issuedByRpId: rp.id,
         amountCents,
         currency: tier.currency,
+        channel,
         expiresAt,
       },
     });
@@ -908,6 +961,7 @@ export class RpService {
       id: claim.id,
       token: claim.token,
       status: claim.status,
+      channel: claim.channel,
       amountCents: claim.amountCents,
       currency: claim.currency,
       expiresAt: claim.expiresAt,
@@ -933,6 +987,7 @@ export class RpService {
       id: c.id,
       token: c.token,
       status: c.status,
+      channel: c.channel,
       amountCents: c.amountCents,
       currency: c.currency,
       expiresAt: c.expiresAt,

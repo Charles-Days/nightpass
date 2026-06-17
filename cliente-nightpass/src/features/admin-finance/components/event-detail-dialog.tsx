@@ -383,18 +383,31 @@ export function EventDetailDialog({
                         return (
                           <div
                             key={rp.rpId}
-                            className="flex items-center justify-between rounded-xl border border-white/14 bg-white/[0.05] px-4 py-2.5"
+                            className="flex items-center justify-between gap-3 rounded-xl border border-white/14 bg-white/[0.05] px-4 py-2.5"
                           >
-                            <div className="flex items-center gap-3">
-                              <span className="flex size-6 items-center justify-center rounded-full bg-amber-500/15 text-[11px] font-bold text-amber-300">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-[11px] font-bold text-amber-300">
                                 {i + 1}
                               </span>
-                              <div>
+                              <div className="min-w-0">
                                 <p className="text-sm font-medium">{rp.name}</p>
                                 <p className="text-[11px] text-muted-foreground">{rp.rpCode}</p>
+                                {/* Forma de los vales: link vs QR presencial. */}
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  {rp.link.emitted > 0 && (
+                                    <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300">
+                                      Link {rp.link.claimed}/{rp.link.emitted}
+                                    </span>
+                                  )}
+                                  {rp.qr.emitted > 0 && (
+                                    <span className="rounded-full border border-purple-500/30 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-purple-300">
+                                      QR {rp.qr.claimed}/{rp.qr.emitted}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            <div className="text-right">
+                            <div className="shrink-0 text-right">
                               <p className="text-sm font-semibold">
                                 <span className="text-foreground">{rp.count} emitidos</span>
                                 <span className="text-muted-foreground"> · </span>

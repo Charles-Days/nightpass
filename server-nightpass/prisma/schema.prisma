@@ -64,6 +64,16 @@ enum PassClaimStatus {
   CANCELLED
 }
 
+// Forma en que el RP comparte el vale.
+// QR   = presencial: lo muestra y el cliente lo escanea ahí mismo → TTL corto
+//        (10 min); si nadie lo reclama, expira y libera el aforo.
+// LINK = a distancia (WhatsApp, etc.): el cliente lo abre cuando puede → NO
+//        expira a los 10 min; vive hasta una semana después del evento.
+enum PassClaimChannel {
+  QR
+  LINK
+}
+
 // Cómo se aplica la comisión NightPass al PRECIO en efectivo de un tier.
 // SUBTRACT = el cliente paga el precio base (efectivo no paga Stripe) y la
 // organización absorbe la comisión vía el wallet prepagado (comportamiento
@@ -862,6 +872,9 @@ model PassClaim {
   amountCents        Int
   currency           String          @default("MXN")
   status             PassClaimStatus @default(PENDING)
+  // Cómo se compartió el vale. Define su vigencia (ver enum PassClaimChannel) y
+  // permite clasificar en los paneles cuántas ventas vinieron por link vs QR.
+  channel            PassClaimChannel @default(QR)
   claimedByUserId    String?         @db.Uuid
   claimedAt          DateTime?
   orderId            String?         @unique @db.Uuid
