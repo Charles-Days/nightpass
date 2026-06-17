@@ -102,7 +102,7 @@ export function PromoFlyerThumb({ src, alt }: Props) {
               {/* Móvil */}
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="relative aspect-[3/5] max-h-full w-full max-w-sm overflow-hidden rounded-2xl bg-black/40 shadow-2xl shadow-black/60 ring-1 ring-white/10 md:hidden"
+                className="relative aspect-[9/16] max-h-full w-full max-w-sm overflow-hidden rounded-2xl bg-black/40 shadow-2xl shadow-black/60 ring-1 ring-white/10 md:hidden"
               >
                 <Image src={src} alt={alt} fill sizes="100vw" className="object-contain" />
               </div>
