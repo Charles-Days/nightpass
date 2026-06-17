@@ -16,6 +16,8 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailerService } from '../mailer/mailer.service';
+import { StripeService } from '../stripe/stripe.service';
+import { computeCashUnitPrice } from '../common/cash-pricing';
 import { resolveTierPrice } from '../events/tier-pricing';
 import { resolveMapsCoords } from '../common/maps';
 import { CreateRpDto } from './dto/create-rp.dto';
@@ -52,6 +54,7 @@ export class RpService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailer: MailerService,
+    private readonly stripe: StripeService,
   ) {}
 
   async create(dto: CreateRpDto) {
@@ -896,7 +899,15 @@ export class RpService {
 
     const tier = await this.prisma.eventTier.findUnique({
       where: { id: dto.tierId },
-      include: { prices: true, event: true },
+      include: {
+        prices: true,
+        event: {
+          include: {
+            venue: { select: { platformFeePct: true, cashCommissionExempt: true } },
+            promoter: { select: { platformFeePct: true, cashCommissionExempt: true } },
+          },
+        },
+      },
     });
     if (!tier || tier.eventId !== dto.eventId) {
       throw new NotFoundException('Tier no encontrado para este evento');
@@ -924,8 +935,31 @@ export class RpService {
       throw new ForbiddenException('No tienes este evento asignado');
     }
 
-    const amountCents = resolveTierPrice(tier.priceCents, tier.prices, event.startsAt)
-      .currentCents;
+    // El vale del RP siempre es venta en EFECTIVO, así que el monto NO es el
+    // bruto online: hay que convertirlo con la misma fórmula que el catálogo y
+    // las solicitudes físicas (bruto − Stripe [− NP si exento]), respetando los
+    // overrides por-tier. Antes guardaba el bruto (110) y los paneles contaban
+    // de más; ahora guarda el precio real en efectivo (≈100).
+    const singleGrossCents = resolveTierPrice(
+      tier.priceCents,
+      tier.prices,
+      event.startsAt,
+    ).currentCents;
+    const owner = event.venue ?? event.promoter ?? null;
+    const ownerFeePct =
+      owner?.platformFeePct != null
+        ? owner.platformFeePct
+        : this.stripe.getPlatformFeePct();
+    const feePctEff = tier.cashFeePctOverride ?? ownerFeePct;
+    const exemptEff = tier.cashExemptOverride ?? owner?.cashCommissionExempt ?? true;
+    const modeEff = tier.cashFeeMode ?? 'SUBTRACT';
+    const amountCents = computeCashUnitPrice(
+      singleGrossCents,
+      feePctEff,
+      exemptEff,
+      modeEff,
+      tier.cashPriceCents,
+    );
 
     const channel = dto.channel ?? PassClaimChannel.QR;
 
