@@ -27,6 +27,7 @@ import { Button } from '@/core/components/ui/button';
 import { Input } from '@/core/components/ui/input';
 import { ConfirmDialog } from '@/core/components/ui/confirm-dialog';
 import { ImageUploader } from '@/core/components/image-uploader';
+import { DateTimeField } from '@/core/components/datetime-field';
 import {
   type CreateRewardBody,
   type OwnerReward,
@@ -1001,22 +1002,22 @@ function CreateRewardDialog({
                     <label className="text-[11px] font-medium text-muted-foreground">
                       Desde
                     </label>
-                    <input
-                      type="datetime-local"
-                      className={SELECT_CLASS}
+                    <DateTimeField
+                      mode="datetime"
                       value={startsAt}
-                      onChange={(e) => setStartsAt(e.target.value)}
+                      onChange={setStartsAt}
+                      placeholder="Sin inicio"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-medium text-muted-foreground">
                       Hasta
                     </label>
-                    <input
-                      type="datetime-local"
-                      className={SELECT_CLASS}
+                    <DateTimeField
+                      mode="datetime"
                       value={endsAt}
-                      onChange={(e) => setEndsAt(e.target.value)}
+                      onChange={setEndsAt}
+                      placeholder="Sin fin"
                     />
                   </div>
                 </div>

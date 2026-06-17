@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/core/lib/utils/cn';
+import { DateTimeField } from '@/core/components/datetime-field';
 
 type PresetId = 'hoy' | '7d' | '30d' | 'mes' | 'todo' | 'custom';
 
@@ -139,19 +140,25 @@ export function DatePresets() {
 
       {showCustom ? (
         <div className="flex items-center gap-2">
-          <input
-            type="date"
-            value={isoToInputDate(from)}
-            onChange={(e) => applyCustom(inputDateToIso(e.target.value, false), to ?? '')}
-            className="h-8 rounded-md border border-white/14 bg-white/[0.07] px-2 text-xs text-white/90 outline-none focus:border-primary/40"
-          />
+          <div className="w-40">
+            <DateTimeField
+              mode="date"
+              value={isoToInputDate(from)}
+              onChange={(v) => applyCustom(inputDateToIso(v, false), to ?? '')}
+              placeholder="Desde"
+              clearable={false}
+            />
+          </div>
           <span className="text-xs text-muted-foreground">a</span>
-          <input
-            type="date"
-            value={isoToInputDate(to)}
-            onChange={(e) => applyCustom(from ?? '', inputDateToIso(e.target.value, true))}
-            className="h-8 rounded-md border border-white/14 bg-white/[0.07] px-2 text-xs text-white/90 outline-none focus:border-primary/40"
-          />
+          <div className="w-40">
+            <DateTimeField
+              mode="date"
+              value={isoToInputDate(to)}
+              onChange={(v) => applyCustom(from ?? '', inputDateToIso(v, true))}
+              placeholder="Hasta"
+              clearable={false}
+            />
+          </div>
         </div>
       ) : null}
     </div>
