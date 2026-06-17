@@ -444,6 +444,7 @@ export class AdminFinanceService {
           tierId: true,
           amountCents: true,
           status: true,
+          channel: true,
           createdAt: true,
           issuedByRp: {
             select: { id: true, rpCode: true, displayName: true },
@@ -521,6 +522,7 @@ export class AdminFinanceService {
     // ── Por RP (vales en efectivo) ───────────────────────────────────────────
     // `count`/`revenueCents` = EMITIDOS (PENDING + CLAIMED). `claimedCount`/
     // `claimedRevenueCents` = los que un cliente ya RECLAMÓ (venta real).
+    // `link`/`qr` desglosan los mismos emitidos/reclamados por forma de compartir.
     const rpAgg = new Map<
       string,
       {
@@ -531,6 +533,8 @@ export class AdminFinanceService {
         revenueCents: number;
         claimedCount: number;
         claimedRevenueCents: number;
+        link: { emitted: number; claimed: number };
+        qr: { emitted: number; claimed: number };
       }
     >();
     for (const c of claims) {
@@ -545,12 +549,17 @@ export class AdminFinanceService {
           revenueCents: 0,
           claimedCount: 0,
           claimedRevenueCents: 0,
+          link: { emitted: 0, claimed: 0 },
+          qr: { emitted: 0, claimed: 0 },
         };
       prev.count += 1;
       prev.revenueCents += c.amountCents;
+      const bucket = c.channel === 'LINK' ? prev.link : prev.qr;
+      bucket.emitted += 1;
       if (c.status === 'CLAIMED') {
         prev.claimedCount += 1;
         prev.claimedRevenueCents += c.amountCents;
+        bucket.claimed += 1;
       }
       rpAgg.set(key, prev);
     }

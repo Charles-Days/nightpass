@@ -174,6 +174,34 @@ export function EventRpBreakdown({
                 )}
               </div>
             )}
+
+            {/* Vales que generó, por forma. Muestra si usó link o QR y cuántos
+                reclamaron. */}
+            {(() => {
+              const link = rp.passes?.link ?? { emitted: 0, claimed: 0 };
+              const qr = rp.passes?.qr ?? { emitted: 0, claimed: 0 };
+              if (link.emitted === 0 && qr.emitted === 0) return null;
+              return (
+                <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-white/8 pt-2">
+                  <span className="text-muted-foreground text-[10px] uppercase tracking-wider">
+                    Vales:
+                  </span>
+                  {link.emitted > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold text-sky-300">
+                      Link {link.claimed}/{link.emitted} reclamados
+                    </span>
+                  )}
+                  {qr.emitted > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                      QR {qr.claimed}/{qr.emitted} reclamados
+                    </span>
+                  )}
+                  {link.emitted === 0 && (
+                    <span className="text-[11px] text-white/40">sin link</span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         ))}
       </div>

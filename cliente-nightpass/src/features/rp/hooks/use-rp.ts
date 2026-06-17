@@ -153,6 +153,12 @@ export interface EventRpBreakdownRow {
     cancelled: number;
     confirmedAmountCents: number;
   };
+  /** Vales que el RP emitió, por forma. `emitted` = generados (vivos);
+   *  `claimed` = ya reclamados por un cliente (venta real). */
+  passes: {
+    link: { emitted: number; claimed: number };
+    qr: { emitted: number; claimed: number };
+  };
 }
 
 export interface EventRpBreakdown {
@@ -182,10 +188,13 @@ export function useEventRpBreakdown(
   });
 }
 
+export type PassChannel = 'QR' | 'LINK';
+
 export interface IssuedPass {
   id: string;
   token: string;
   status: 'PENDING' | 'CLAIMED' | 'EXPIRED' | 'CANCELLED';
+  channel: PassChannel;
   amountCents: number;
   currency: string;
   expiresAt: string;
@@ -217,7 +226,7 @@ export function useEventTiers(eventId: string | null) {
 export function useIssueRpPass() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { eventId: string; tierId: string }) =>
+    mutationFn: (input: { eventId: string; tierId: string; channel?: PassChannel }) =>
       clientFetch<IssuedPass>('/api/rp/passes/issue', { method: 'POST', body: input }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rp-me', 'issued'] });

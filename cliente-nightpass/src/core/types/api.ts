@@ -881,6 +881,9 @@ export interface AdminEventDetail {
     /** Reclamados (venta real). */
     claimedCount: number;
     claimedRevenueCents: number;
+    /** Desglose de los mismos vales por forma de compartir. */
+    link: { emitted: number; claimed: number };
+    qr: { emitted: number; claimed: number };
   }>;
   daily: Array<{ day: string; card: number; cash: number; revenueCents: number }>;
   recentOrders: Array<{
