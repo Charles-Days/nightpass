@@ -1093,6 +1093,7 @@ enum RewardKind {
   TICKET_DISCOUNT // se aplica en el checkout online (Fase 2)
   BULK_PROMO // GRATIS: por comprar minQuantity boletos, el cliente elige 1 opción
   PHYSICAL_BONUS_NPP // NPP extra cuando un RP confirma un pago físico (por evento)
+  PURCHASE_PERK // GRATIS e informativo: comprar 1+ boleto dentro de la ventana de fechas otorga un perk (texto + imagen) que se muestra en el boleto del cliente
 }
 
 enum RewardFunder {

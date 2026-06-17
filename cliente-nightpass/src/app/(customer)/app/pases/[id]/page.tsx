@@ -6,6 +6,7 @@ import { paths } from '@/core/config/paths';
 import type { Pass } from '@/core/types/api';
 import { PassQRWithGeoPing } from '../../../_components/pass-qr-with-geo-ping';
 import { PassTransferActions } from '../../../_components/pass-transfer-actions';
+import { PassAppliedPromos } from '../../../_components/pass-applied-promos';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -169,6 +170,9 @@ export default async function PassDetailPage({ params }: Props) {
           <p className="mt-0.5 truncate font-mono text-[11px] text-white/55">{pass.id}</p>
         </div>
       </section>
+
+      {/* Promos aplicadas a la compra: perks por compra, volumen, descuentos. */}
+      <PassAppliedPromos promos={pass.appliedPromos ?? []} />
 
       {!used && pass.canTransfer && (
         <PassTransferActions

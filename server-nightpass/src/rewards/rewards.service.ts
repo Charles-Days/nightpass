@@ -57,7 +57,8 @@ export class RewardsService {
     const isEventScoped =
       dto.kind === RewardKind.BULK_PROMO ||
       dto.kind === RewardKind.PHYSICAL_BONUS_NPP ||
-      dto.kind === RewardKind.TICKET_DISCOUNT;
+      dto.kind === RewardKind.TICKET_DISCOUNT ||
+      dto.kind === RewardKind.PURCHASE_PERK;
 
     return this.prisma.reward.create({
       data: {
@@ -75,9 +76,16 @@ export class RewardsService {
         perUserLimit: dto.perUserLimit ?? null,
         expiresInH: dto.expiresInH ?? 72,
         eventId: isEventScoped ? (dto.eventId ?? null) : null,
-        tierId: dto.kind === RewardKind.BULK_PROMO ? (dto.tierId ?? null) : null,
+        tierId:
+          dto.kind === RewardKind.BULK_PROMO ||
+          dto.kind === RewardKind.PURCHASE_PERK
+            ? (dto.tierId ?? null)
+            : null,
         minQuantity:
-          dto.kind === RewardKind.BULK_PROMO ? (dto.minQuantity ?? null) : null,
+          dto.kind === RewardKind.BULK_PROMO ||
+          dto.kind === RewardKind.PURCHASE_PERK
+            ? (dto.minQuantity ?? null)
+            : null,
         bonusNpp:
           dto.kind === RewardKind.PHYSICAL_BONUS_NPP
             ? (dto.bonusNpp ?? null)
@@ -423,6 +431,63 @@ export class RewardsService {
         expiresAt,
       },
     });
+  }
+
+  /**
+   * Perks por compra (PURCHASE_PERK): al completarse una orden dentro de la
+   * ventana de fechas de la promo, otorga el perk (informativo) atado a la orden.
+   * A diferencia de BULK, NO hay opción a elegir y puede haber VARIOS perks
+   * vigentes para el mismo evento — se otorgan todos los que apliquen. Idempotente
+   * por (reward, orden). Best-effort: el caller lo envuelve en try/catch.
+   */
+  async maybeUnlockPurchasePerk(
+    tx: Prisma.TransactionClient,
+    order: {
+      id: string;
+      userId: string;
+      eventId: string;
+      tierId: string;
+      quantity: number;
+    },
+  ): Promise<void> {
+    const now = new Date();
+    const candidates = await tx.reward.findMany({
+      where: {
+        active: true,
+        kind: RewardKind.PURCHASE_PERK,
+        eventId: order.eventId,
+        // minQuantity null = basta 1 boleto.
+        OR: [{ minQuantity: null }, { minQuantity: { lte: order.quantity } }],
+        AND: [
+          { OR: [{ tierId: null }, { tierId: order.tierId }] },
+          this.withinWindowWhere(now),
+        ],
+      },
+    });
+    if (candidates.length === 0) return;
+
+    for (const reward of candidates) {
+      const existing = await tx.rewardRedemption.findFirst({
+        where: { rewardId: reward.id, orderId: order.id },
+        select: { id: true },
+      });
+      if (existing) continue;
+
+      const expiresAt = new Date(Date.now() + reward.expiresInH * 3_600_000);
+      const code = await this.uniqueCode(tx);
+      await tx.rewardRedemption.create({
+        data: {
+          rewardId: reward.id,
+          userId: order.userId,
+          orderId: order.id,
+          costNpp: 0,
+          status: RedemptionStatus.PENDING,
+          selectedOptionId: null,
+          code,
+          expiresAt,
+        },
+      });
+    }
   }
 
   /**
@@ -793,6 +858,30 @@ export class RewardsService {
         }
         await this.ensureEventScope(dto.eventId, undefined, owner);
         return 0; // no se canjea con NPP; otorga NPP en otra fase
+      }
+
+      case RewardKind.PURCHASE_PERK: {
+        // Promo informativa: comprar en la ventana de fechas otorga un perk que
+        // se muestra en el boleto. Requiere evento, una descripción (el "algo")
+        // y una ventana con al menos una fecha (si no, sería permanente).
+        if (!dto.eventId) {
+          throw new BadRequestException('Un perk por compra requiere eventId');
+        }
+        if (!dto.description || !dto.description.trim()) {
+          throw new BadRequestException(
+            'Un perk por compra requiere una descripción de lo que se otorga',
+          );
+        }
+        if (!dto.startsAt && !dto.endsAt) {
+          throw new BadRequestException(
+            'Un perk por compra requiere al menos una fecha (inicio o fin) de la ventana',
+          );
+        }
+        if (dto.minQuantity != null && dto.minQuantity < 1) {
+          throw new BadRequestException('minQuantity debe ser >= 1');
+        }
+        await this.ensureEventScope(dto.eventId, dto.tierId, owner);
+        return 0; // gratis: no cuesta NPP
       }
 
       default:

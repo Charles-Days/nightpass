@@ -14,6 +14,7 @@ import {
   OrderStatus,
   PassClaimStatus,
   PaymentMethod,
+  RedemptionStatus,
   Role,
   TransferStatus,
   VenueStaffStatus,
@@ -638,7 +639,37 @@ export class PassesService {
           'Conserva al menos un boleto de este evento — no puedes transferirlo.';
       }
     }
-    return { ...pass, canTransfer, transferBlockedReason };
+
+    // Promos aplicadas a la orden de este pase (perks por compra, promos por
+    // volumen, descuentos). Se muestran al pie del boleto. La RewardRedemption
+    // no tiene relación directa con Order, así que se consulta por orderId.
+    const redemptions = await this.prisma.rewardRedemption.findMany({
+      where: {
+        orderId: pass.orderId,
+        status: { in: [RedemptionStatus.PENDING, RedemptionStatus.USED] },
+      },
+      orderBy: { redeemedAt: 'desc' },
+      include: {
+        reward: {
+          select: { kind: true, title: true, description: true, imageUrl: true },
+        },
+        selectedOption: { select: { label: true } },
+      },
+    });
+    const appliedPromos = redemptions.map((r) => ({
+      id: r.id,
+      kind: r.reward.kind,
+      title: r.reward.title,
+      description: r.reward.description,
+      imageUrl: r.reward.imageUrl,
+      code: r.code,
+      status: r.status,
+      optionLabel: r.selectedOption?.label ?? null,
+      appliedCents: r.appliedCents,
+      expiresAt: r.expiresAt,
+    }));
+
+    return { ...pass, canTransfer, transferBlockedReason, appliedPromos };
   }
 
   // ── Escaneo (STAFF / ADMIN) ──────────────────────────────────────────────

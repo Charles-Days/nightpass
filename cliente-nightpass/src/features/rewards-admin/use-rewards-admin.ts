@@ -8,7 +8,8 @@ export type RewardKind =
   | 'VENUE_PERK'
   | 'TICKET_DISCOUNT'
   | 'BULK_PROMO'
-  | 'PHYSICAL_BONUS_NPP';
+  | 'PHYSICAL_BONUS_NPP'
+  | 'PURCHASE_PERK';
 
 export interface RewardOption {
   id: string;

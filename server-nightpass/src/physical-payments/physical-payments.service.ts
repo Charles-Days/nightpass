@@ -540,9 +540,10 @@ export class PhysicalPaymentsService {
       // tumbar la confirmación de un pago ya cobrado en efectivo.
       try {
         await this.rewards.maybeUnlockBulkPromo(tx, order);
+        await this.rewards.maybeUnlockPurchasePerk(tx, order);
       } catch (err) {
         this.logger.error(
-          `maybeUnlockBulkPromo falló para Order ${order.id}: ${err instanceof Error ? err.message : err}`,
+          `desbloqueo de promos falló para Order ${order.id}: ${err instanceof Error ? err.message : err}`,
         );
       }
 
