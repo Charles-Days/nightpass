@@ -91,17 +91,24 @@ export function PromoFlyerThumb({ src, alt }: Props) {
               </button>
             </div>
 
-            {/* Foto centrada en el espacio restante. */}
+            {/* Foto centrada en el espacio restante. Marco de proporción FIJA
+                (4:5) para que cualquier flyer —portrait 9:16 o casi cuadrado—
+                se muestre en una caja del MISMO tamaño. El flyer va `contain`
+                (no se recorta, no corta texto) centrado sobre un panel oscuro;
+                las barras quedan dentro de la tarjeta, no como huecos sueltos. */}
             <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
-              <Image
-                src={src}
-                alt={alt}
-                width={1080}
-                height={1920}
-                sizes="100vw"
+              <div
                 onClick={(e) => e.stopPropagation()}
-                className="max-h-full w-auto max-w-full rounded-2xl object-contain shadow-2xl shadow-black/60 ring-1 ring-white/10"
-              />
+                className="relative aspect-[4/5] max-h-full w-full max-w-sm overflow-hidden rounded-2xl bg-black/40 shadow-2xl shadow-black/60 ring-1 ring-white/10"
+              >
+                <Image
+                  src={src}
+                  alt={alt}
+                  fill
+                  sizes="(max-width: 640px) 100vw, 384px"
+                  className="object-contain"
+                />
+              </div>
             </div>
           </div>,
           document.body,
