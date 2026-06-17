@@ -91,24 +91,31 @@ export function PromoFlyerThumb({ src, alt }: Props) {
               </button>
             </div>
 
-            {/* Foto centrada en el espacio restante. Marco de proporción FIJA
-                (4:5) para que cualquier flyer —portrait 9:16 o casi cuadrado—
-                se muestre en una caja del MISMO tamaño. El flyer va `contain`
-                (no se recorta, no corta texto) centrado sobre un panel oscuro;
-                las barras quedan dentro de la tarjeta, no como huecos sueltos. */}
+            {/* Foto centrada en el espacio restante.
+                MÓVIL: marco de proporción FIJA y alargada (2:3) para que cualquier
+                flyer (portrait 9:16 o casi cuadrado) se muestre en una caja del
+                MISMO tamaño, ocupando buena parte de la pantalla. El flyer va
+                `contain` (sin recortar texto) sobre un panel oscuro.
+                WEB (md+): natural — el flyer se muestra grande llenando la altura,
+                sin el marco fijo (en desktop el marco chico se veía diminuto). */}
             <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+              {/* Móvil */}
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="relative aspect-[4/5] max-h-full w-full max-w-sm overflow-hidden rounded-2xl bg-black/40 shadow-2xl shadow-black/60 ring-1 ring-white/10"
+                className="relative aspect-[2/3] max-h-full w-full max-w-sm overflow-hidden rounded-2xl bg-black/40 shadow-2xl shadow-black/60 ring-1 ring-white/10 md:hidden"
               >
-                <Image
-                  src={src}
-                  alt={alt}
-                  fill
-                  sizes="(max-width: 640px) 100vw, 384px"
-                  className="object-contain"
-                />
+                <Image src={src} alt={alt} fill sizes="100vw" className="object-contain" />
               </div>
+              {/* Web */}
+              <Image
+                src={src}
+                alt={alt}
+                width={1080}
+                height={1920}
+                sizes="100vw"
+                onClick={(e) => e.stopPropagation()}
+                className="hidden max-h-full w-auto max-w-full rounded-2xl object-contain shadow-2xl shadow-black/60 ring-1 ring-white/10 md:block"
+              />
             </div>
           </div>,
           document.body,
