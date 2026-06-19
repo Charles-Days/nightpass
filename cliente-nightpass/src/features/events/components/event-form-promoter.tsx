@@ -13,6 +13,7 @@ import { ImageUploader } from '@/core/components/image-uploader';
 import { clientFetch } from '@/core/lib/api/client-client';
 import { resolveAndParseGoogleMapsUrl } from '@/features/venues/lib/parse-google-maps-url';
 import { DateTimePicker } from '@/core/components/ui/datetime-picker';
+import { CashPaymentSection } from './cash-payment-section';
 import type { CatalogVenueSummary, Event } from '@/core/types/api';
 
 // ---------------------------------------------------------------------------
@@ -239,6 +240,12 @@ interface Props {
   onSubmit: (payload: Record<string, unknown>) => void | Promise<void>;
   isPending: boolean;
   submitLabel?: string;
+  /** Renderiza la sección de métodos de pago al pie. Default true. El admin la
+   *  pone en false porque ya la muestra en una card aparte. */
+  showPayments?: boolean;
+  /** Endpoint del selector de RPs para la sección de pago. Default los RPs del
+   *  propio organizador. */
+  rpListPath?: string | null;
 }
 
 export function EventFormPromoter({
@@ -249,6 +256,8 @@ export function EventFormPromoter({
   onSubmit,
   isPending,
   submitLabel,
+  showPayments = true,
+  rpListPath = '/api/rp/promoter/mine',
 }: Props) {
   const {
     register,
@@ -688,6 +697,14 @@ export function EventFormPromoter({
         </Button>
       </div>
 
+      {eventId && showPayments ? (
+        <div className="space-y-3 border-t border-white/10 pt-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+            Métodos de pago
+          </p>
+          <CashPaymentSection eventId={eventId} rpListPath={rpListPath} />
+        </div>
+      ) : null}
     </form>
   );
 }

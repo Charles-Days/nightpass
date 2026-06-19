@@ -11,6 +11,7 @@ import { createEventSchema, type CreateEventInput } from '../schemas/event.schem
 import { useCreateEvent } from '../hooks/use-create-event';
 import { useUpdateEvent } from '../hooks/use-update-event';
 import { TiersSection } from './tiers-section';
+import { CashPaymentSection } from './cash-payment-section';
 
 interface EventFormProps {
   venueId: string;
@@ -20,6 +21,9 @@ interface EventFormProps {
   /** Renderiza la sección de tiers al pie del form. Default true. El admin la
    *  pone en false porque ya muestra los tiers en una card aparte. */
   showTiers?: boolean;
+  /** Renderiza la sección de métodos de pago al pie. Default true. El admin la
+   *  pone en false porque ya la muestra en una card aparte. */
+  showPayments?: boolean;
 }
 
 export function EventForm({
@@ -28,6 +32,7 @@ export function EventForm({
   defaultValues,
   eventId,
   showTiers = true,
+  showPayments = true,
 }: EventFormProps) {
   const create = useCreateEvent(venueId);
   const update = useUpdateEvent(venueId);
@@ -185,6 +190,15 @@ export function EventForm({
       </div>
 
       {eventId && showTiers ? <TiersSection eventId={eventId} /> : null}
+
+      {eventId && showPayments ? (
+        <div className="space-y-3 border-t border-white/10 pt-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+            Métodos de pago
+          </p>
+          <CashPaymentSection eventId={eventId} rpListPath={null} />
+        </div>
+      ) : null}
     </form>
   );
 }

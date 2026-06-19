@@ -495,6 +495,11 @@ model Event {
   // Habilita el flujo de PAGO EN EFECTIVO (boleto digital, pago físico vía RP).
   // Si es false, la app no ofrece la opción y el backend rechaza solicitudes.
   allowCashPayment Boolean     @default(false)
+  // Habilita el PAGO EN LÍNEA (Stripe). Si es false, el evento es solo-efectivo:
+  // la app oculta la tarjeta y el backend rechaza crear órdenes online. Junto con
+  // allowCashPayment define el modo de venta (solo efectivo / solo línea / ambas).
+  // Al menos uno debe estar activo (se valida en el service).
+  allowOnlinePayment Boolean   @default(true)
   isFeatured       Boolean     @default(false)
   featuredAt       DateTime?
   featuredReason   String?

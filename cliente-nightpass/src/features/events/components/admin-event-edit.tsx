@@ -75,6 +75,7 @@ export function AdminEventEdit({ event, onDone }: { event: Event; onDone: () => 
             onSubmit={(payload) => patch.mutate(payload)}
             isPending={patch.isPending}
             submitLabel="Guardar cambios"
+            showPayments={false}
           />
         ) : (
           <EventForm
@@ -82,6 +83,7 @@ export function AdminEventEdit({ event, onDone }: { event: Event; onDone: () => 
             eventId={event.id}
             defaultValues={venueDefaults(event)}
             showTiers={false}
+            showPayments={false}
             onSuccess={() => {
               qc.invalidateQueries({ queryKey: ['events'] });
               onDone();
@@ -99,7 +101,7 @@ export function AdminEventEdit({ event, onDone }: { event: Event; onDone: () => 
 
       <CollapsibleCard
         icon={<Banknote className="size-4 text-primary" />}
-        title="Pago en efectivo (RP)"
+        title="Métodos de pago"
       >
         <CashPaymentSection eventId={event.id} />
       </CollapsibleCard>

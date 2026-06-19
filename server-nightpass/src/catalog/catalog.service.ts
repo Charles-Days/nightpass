@@ -199,6 +199,7 @@ export class CatalogService {
             coverImageUrl: true,
             capacity: true,
             allowCashPayment: true,
+            allowOnlinePayment: true,
             tiers: {
               orderBy: { position: 'asc' },
               select: {
@@ -252,6 +253,7 @@ export class CatalogService {
             coverImageUrl: true,
             capacity: true,
             allowCashPayment: true,
+            allowOnlinePayment: true,
             externalVenueName: true,
             externalVenueCity: true,
             venue: {
@@ -589,6 +591,7 @@ export class CatalogService {
             coverImageUrl: true,
             status: true,
             allowCashPayment: true,
+            allowOnlinePayment: true,
             externalVenueName: true,
             externalVenueCity: true,
             venue: {

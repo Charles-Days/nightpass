@@ -57,6 +57,9 @@ export class CreateEventDto {
   @IsOptional() @IsBoolean()
   allowCashPayment?: boolean;
 
+  @IsOptional() @IsBoolean()
+  allowOnlinePayment?: boolean;
+
   @IsOptional() @IsString() @MaxLength(120)
   externalVenueName?: string;
 

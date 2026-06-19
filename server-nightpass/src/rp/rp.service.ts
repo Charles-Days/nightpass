@@ -237,6 +237,90 @@ export class RpService {
     return this.list({ ...query, promoterId } as ListRpQuery);
   }
 
+  /**
+   * Solicitudes de pago en efectivo que han LLEGADO (se rutearon) a cada RP del
+   * organizador. Agrupadas por RP con conteos por estado + el detalle de cada
+   * solicitud. Alimenta el tab "Solicitudes" del panel del organizador.
+   */
+  async listRequestsForPromoter(userId: string) {
+    const promoterId = await this.resolvePromoterId(userId);
+
+    const rps = await this.prisma.rpProfile.findMany({
+      where: { promoterId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        displayName: true,
+        rpCode: true,
+        isActive: true,
+        user: { select: { email: true } },
+      },
+    });
+    if (rps.length === 0) return { items: [] };
+
+    const rpIds = rps.map((r) => r.id);
+    const requests = await this.prisma.physicalPaymentRequest.findMany({
+      where: { assignedRpId: { in: rpIds } },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        assignedRpId: true,
+        status: true,
+        quantity: true,
+        amountCents: true,
+        currency: true,
+        contactPhone: true,
+        createdAt: true,
+        pickupAt: true,
+        event: { select: { title: true } },
+        tier: { select: { name: true } },
+        user: { select: { name: true, email: true } },
+      },
+    });
+
+    const byRp = new Map<string, typeof requests>();
+    for (const req of requests) {
+      if (!req.assignedRpId) continue;
+      const list = byRp.get(req.assignedRpId) ?? [];
+      list.push(req);
+      byRp.set(req.assignedRpId, list);
+    }
+
+    const items = rps.map((rp) => {
+      const reqs = byRp.get(rp.id) ?? [];
+      return {
+        rpProfileId: rp.id,
+        displayName: rp.displayName,
+        rpCode: rp.rpCode,
+        isActive: rp.isActive,
+        email: rp.user.email,
+        counts: {
+          total: reqs.length,
+          pending: reqs.filter((r) => r.status === 'PENDING').length,
+          confirmed: reqs.filter((r) => r.status === 'CONFIRMED').length,
+          cancelled: reqs.filter((r) => r.status === 'CANCELLED').length,
+          expired: reqs.filter((r) => r.status === 'EXPIRED').length,
+        },
+        requests: reqs.map((r) => ({
+          id: r.id,
+          status: r.status,
+          quantity: r.quantity,
+          amountCents: r.amountCents,
+          currency: r.currency,
+          contactPhone: r.contactPhone,
+          eventTitle: r.event.title,
+          tierName: r.tier.name,
+          customerName: r.user?.name ?? null,
+          customerEmail: r.user?.email ?? null,
+          createdAt: r.createdAt,
+          pickupAt: r.pickupAt,
+        })),
+      };
+    });
+
+    return { items };
+  }
+
   async createForPromoter(userId: string, dto: CreateRpDto) {
     const promoterId = await this.resolvePromoterId(userId);
     if (dto.eventId) {
