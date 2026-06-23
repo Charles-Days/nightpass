@@ -179,6 +179,7 @@ model User {
   createdStories          Story[]                  @relation("StoryAuthor")
   forumPosts              EventForumPost[]
   pushSubscriptions       PushSubscription[]
+  notifications           Notification[]
   rpProfile               RpProfile?
   claimedPasses           PassClaim[]              @relation("UserClaimedPasses")
   adminGeneratedClaims    PassClaim[]              @relation("AdminGeneratedClaims")
@@ -202,6 +203,36 @@ model PushSubscription {
 
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+// Notificación persistida en el panel (campana del topbar). A diferencia del
+// web-push (transitorio, a nivel OS), estas se guardan y tienen estado leído.
+// Una fila por destinatario: la misma solicitud genera N notificaciones (RP
+// asignado + organizador + dueño del local + admins). `data` lleva el detalle
+// completo del cliente para renderizar inline sin otra consulta.
+enum NotificationType {
+  PHYSICAL_REQUEST_CREATED
+  PHYSICAL_REQUEST_CONFIRMED
+  PHYSICAL_REQUEST_CANCELLED
+  PHYSICAL_REQUEST_EXPIRED
+}
+
+model Notification {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  userId    String           @db.Uuid // destinatario
+  type      NotificationType
+  title     String
+  body      String
+  url       String? // ruta del panel a la que lleva al hacer click (según rol)
+  data      Json? // payload extra: { requestId, eventId, customer, ... }
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 
 model RefreshToken {

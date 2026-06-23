@@ -270,11 +270,20 @@ export class RpService {
         amountCents: true,
         currency: true,
         contactPhone: true,
+        note: true,
         createdAt: true,
         pickupAt: true,
         event: { select: { title: true } },
         tier: { select: { name: true } },
-        user: { select: { name: true, email: true } },
+        user: {
+          select: {
+            name: true,
+            email: true,
+            phone: true,
+            city: true,
+            state: true,
+          },
+        },
       },
     });
 
@@ -308,10 +317,16 @@ export class RpService {
           amountCents: r.amountCents,
           currency: r.currency,
           contactPhone: r.contactPhone,
+          note: r.note,
           eventTitle: r.event.title,
           tierName: r.tier.name,
           customerName: r.user?.name ?? null,
           customerEmail: r.user?.email ?? null,
+          // Teléfono guardado del perfil (puede diferir del contacto de la
+          // solicitud) + ubicación declarada del cliente.
+          customerPhone: r.user?.phone ?? null,
+          customerCity: r.user?.city ?? null,
+          customerState: r.user?.state ?? null,
           createdAt: r.createdAt,
           pickupAt: r.pickupAt,
         })),
@@ -372,9 +387,31 @@ export class RpService {
         select: { referredByRpId: true, totalCents: true },
       }),
       // Solicitudes de pago en efectivo (físico) asignadas a un RP en el evento.
+      // Trae el detalle del cliente para mostrarlo en el desglose (quién pidió).
       this.prisma.physicalPaymentRequest.findMany({
         where: { eventId, assignedRpId: { not: null } },
-        select: { assignedRpId: true, status: true, amountCents: true },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          assignedRpId: true,
+          status: true,
+          quantity: true,
+          amountCents: true,
+          currency: true,
+          contactPhone: true,
+          note: true,
+          createdAt: true,
+          tier: { select: { name: true } },
+          user: {
+            select: {
+              name: true,
+              email: true,
+              phone: true,
+              city: true,
+              state: true,
+            },
+          },
+        },
       }),
       // Vales que el RP emitió (QR/link). Permite ver, por RP, cuántos generó por
       // cada forma y cuántos ya reclamó un cliente (venta real). Excluimos los
@@ -469,6 +506,37 @@ export class RpService {
           confirmedAmountCents: cashConfirmedAmountCents,
         };
 
+        // Detalle de cada solicitud con la info del cliente que la hizo. Orden:
+        // pendientes primero (lo accionable), luego confirmadas, resto al final.
+        const STATUS_ORDER: Record<string, number> = {
+          PENDING: 0,
+          CONFIRMED: 1,
+          EXPIRED: 2,
+          CANCELLED: 3,
+        };
+        const cashRequests = [...myCash]
+          .sort(
+            (a, b) =>
+              (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9) ||
+              b.createdAt.getTime() - a.createdAt.getTime(),
+          )
+          .map((r) => ({
+            id: r.id,
+            status: r.status,
+            quantity: r.quantity,
+            amountCents: r.amountCents,
+            currency: r.currency,
+            contactPhone: r.contactPhone,
+            note: r.note,
+            tierName: r.tier?.name ?? null,
+            createdAt: r.createdAt,
+            customerName: r.user?.name ?? null,
+            customerEmail: r.user?.email ?? null,
+            customerPhone: r.user?.phone ?? null,
+            customerCity: r.user?.city ?? null,
+            customerState: r.user?.state ?? null,
+          }));
+
         // Vales que este RP emitió, separados por forma (link/QR). `emitted` =
         // generados (vivos); `claimed` = ya reclamados por un cliente.
         const myVouchers = vouchers.filter((v) => v.issuedByRpId === id);
@@ -509,6 +577,7 @@ export class RpService {
           sales,
           earningsCents,
           cash,
+          cashRequests,
           passes,
         };
       })

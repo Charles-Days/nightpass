@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useLogout } from '@/features/auth';
 import { EnableNotificationsBanner } from '@/features/push';
+import { NotificationBell } from '@/features/notifications';
 import { Button } from '@/core/components/ui/button';
 import {
   Sheet,
@@ -209,11 +210,14 @@ function SidebarBody({
   const header = sidebarHeader(user.role, contextName);
   return (
     <div className="flex h-full flex-col px-4 py-6">
-      <div className="mb-8 px-2">
-        <span className="block truncate bg-gradient-to-r from-white to-purple-300 bg-clip-text font-display text-lg font-bold tracking-tight text-transparent">
-          {header.title}
-        </span>
-        <p className="text-xs text-primary/70 mt-0.5">{header.subtitle}</p>
+      <div className="mb-8 flex items-start justify-between gap-2 px-2">
+        <div className="min-w-0">
+          <span className="block truncate bg-gradient-to-r from-white to-purple-300 bg-clip-text font-display text-lg font-bold tracking-tight text-transparent">
+            {header.title}
+          </span>
+          <p className="text-xs text-primary/70 mt-0.5">{header.subtitle}</p>
+        </div>
+        <NotificationBell />
       </div>
       <nav className="flex-1 space-y-6 overflow-y-auto">
         <NavSection
@@ -359,6 +363,7 @@ export function AppShell({ user, contextName = null, children }: { user: User; c
           >
             {sidebarHeader(user.role, contextName).title}
           </Link>
+          <NotificationBell />
           <Link
             href={paths.appHome}
             aria-label="Ir a la app"

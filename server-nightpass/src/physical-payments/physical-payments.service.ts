@@ -9,6 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import {
   EventStatus,
+  NotificationType,
   OrderStatus,
   PassClaimStatus,
   PaymentMethod,
@@ -34,6 +35,7 @@ import { haversineMeters } from '../common/geo';
 import { issuePasses } from '../passes/issue-passes';
 import { requirePassSecret } from '../common/pass-secret';
 import { PushService } from '../push/push.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreatePhysicalPaymentDto } from './dto/create-physical-payment.dto';
 
 @Injectable()
@@ -47,6 +49,7 @@ export class PhysicalPaymentsService {
     private readonly stripe: StripeService,
     private readonly cashWallet: CashWalletService,
     private readonly push: PushService,
+    private readonly notifications: NotificationsService,
     private readonly loyalty: LoyaltyService,
     private readonly rewards: RewardsService,
   ) {}
@@ -331,6 +334,15 @@ export class PhysicalPaymentsService {
         );
     }
 
+    // Notificación persistida en el panel (campana) para RP asignado +
+    // organizador + dueño del local + admins. Fire-and-forget.
+    this.notifications
+      .notifyPhysicalRequestEvent(
+        request.id,
+        NotificationType.PHYSICAL_REQUEST_CREATED,
+      )
+      .catch(() => undefined);
+
     this.logger.log(
       `Solicitud de pago en efectivo ${request.id} creada por ${userId} → RP asignado ${routedRpId ?? 'ninguno'} (${effectiveCity}, ${effectiveState})`,
     );
@@ -442,6 +454,12 @@ export class PhysicalPaymentsService {
         where: { id: request.id },
         data: { status: PhysicalPaymentRequestStatus.EXPIRED },
       });
+      this.notifications
+        .notifyPhysicalRequestEvent(
+          request.id,
+          NotificationType.PHYSICAL_REQUEST_EXPIRED,
+        )
+        .catch(() => undefined);
       throw new ConflictException('El evento ya comenzó — solicitud vencida');
     }
 
@@ -589,6 +607,15 @@ export class PhysicalPaymentsService {
       );
     }
 
+    // Notifica al organizador + dueño del local + admins (no al RP que confirmó).
+    this.notifications
+      .notifyPhysicalRequestEvent(
+        request.id,
+        NotificationType.PHYSICAL_REQUEST_CONFIRMED,
+        { excludeUserId: rpUserId },
+      )
+      .catch(() => undefined);
+
     this.logger.log(
       `Solicitud ${request.id} confirmada por RP ${rp.id} → ${request.quantity} pase(s) emitido(s)`,
     );
@@ -640,6 +667,16 @@ export class PhysicalPaymentsService {
       where: { id: request.id },
       data: { status: PhysicalPaymentRequestStatus.CANCELLED },
     });
+
+    // Notifica a la audiencia (no al actor que canceló).
+    this.notifications
+      .notifyPhysicalRequestEvent(
+        request.id,
+        NotificationType.PHYSICAL_REQUEST_CANCELLED,
+        { excludeUserId: user.id },
+      )
+      .catch(() => undefined);
+
     return { ok: true };
   }
 
