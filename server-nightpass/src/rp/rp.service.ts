@@ -270,11 +270,20 @@ export class RpService {
         amountCents: true,
         currency: true,
         contactPhone: true,
+        note: true,
         createdAt: true,
         pickupAt: true,
         event: { select: { title: true } },
         tier: { select: { name: true } },
-        user: { select: { name: true, email: true } },
+        user: {
+          select: {
+            name: true,
+            email: true,
+            phone: true,
+            city: true,
+            state: true,
+          },
+        },
       },
     });
 
@@ -308,10 +317,16 @@ export class RpService {
           amountCents: r.amountCents,
           currency: r.currency,
           contactPhone: r.contactPhone,
+          note: r.note,
           eventTitle: r.event.title,
           tierName: r.tier.name,
           customerName: r.user?.name ?? null,
           customerEmail: r.user?.email ?? null,
+          // Teléfono guardado del perfil (puede diferir del contacto de la
+          // solicitud) + ubicación declarada del cliente.
+          customerPhone: r.user?.phone ?? null,
+          customerCity: r.user?.city ?? null,
+          customerState: r.user?.state ?? null,
           createdAt: r.createdAt,
           pickupAt: r.pickupAt,
         })),

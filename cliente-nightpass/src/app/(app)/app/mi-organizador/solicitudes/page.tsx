@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Inbox, Loader2, Phone, User } from 'lucide-react';
+import { Inbox, Loader2, MapPin, Mail, Phone, StickyNote, User } from 'lucide-react';
 import { clientFetch } from '@/core/lib/api/client-client';
 import { formatCents } from '@/core/lib/utils/fees';
 
@@ -16,10 +16,14 @@ interface RpRequest {
   amountCents: number;
   currency: string;
   contactPhone: string | null;
+  note: string | null;
   eventTitle: string;
   tierName: string;
   customerName: string | null;
   customerEmail: string | null;
+  customerPhone: string | null;
+  customerCity: string | null;
+  customerState: string | null;
   createdAt: string;
   pickupAt: string | null;
 }
@@ -157,26 +161,47 @@ export default function MiOrganizadorSolicitudesPage() {
                       key={req.id}
                       className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 hover:bg-white/[0.03]"
                     >
-                      <div className="min-w-0 space-y-1">
+                      <div className="min-w-0 flex-1 space-y-1.5">
                         <p className="truncate text-sm font-medium text-white">
                           {req.eventTitle}
                           <span className="ml-2 text-xs font-normal text-muted-foreground">
                             {req.tierName} · {req.quantity}×
                           </span>
                         </p>
+                        {/* Info completa del cliente que pidió los boletos */}
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                          <span className="inline-flex items-center gap-1">
+                          <span className="inline-flex items-center gap-1 font-medium text-white/90">
                             <User className="size-3" />
-                            {req.customerName || req.customerEmail || 'Cliente'}
+                            {req.customerName || 'Cliente sin nombre'}
                           </span>
-                          {req.contactPhone && (
+                          {req.customerEmail && (
+                            <span className="inline-flex items-center gap-1">
+                              <Mail className="size-3" />
+                              {req.customerEmail}
+                            </span>
+                          )}
+                          {(req.contactPhone || req.customerPhone) && (
                             <span className="inline-flex items-center gap-1">
                               <Phone className="size-3" />
-                              {req.contactPhone}
+                              {req.contactPhone || req.customerPhone}
+                            </span>
+                          )}
+                          {(req.customerCity || req.customerState) && (
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="size-3" />
+                              {[req.customerCity, req.customerState]
+                                .filter(Boolean)
+                                .join(', ')}
                             </span>
                           )}
                           <span>{formatDate(req.createdAt)}</span>
                         </div>
+                        {req.note && (
+                          <p className="inline-flex max-w-full items-start gap-1 text-[11px] italic text-muted-foreground/80">
+                            <StickyNote className="mt-0.5 size-3 shrink-0" />
+                            <span className="min-w-0">{req.note}</span>
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-semibold text-white">
