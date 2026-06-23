@@ -191,6 +191,15 @@ export class RpController {
     return this.service.listForPromoter(user.id, query);
   }
 
+  // Solicitudes de pago en efectivo ruteadas a cada RP del organizador (tab
+  // "Solicitudes"). Ruta estática — antes del param `:id`.
+  @Get('promoter/requests')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROMOTER)
+  listMineRequests(@CurrentUser() user: AuthUser) {
+    return this.service.listRequestsForPromoter(user.id);
+  }
+
   @Post('promoter/mine')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROMOTER)

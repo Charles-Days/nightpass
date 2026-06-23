@@ -78,6 +78,7 @@ const PROMOTER_NAV: NavItem[] = [
   { href: paths.miOrganizadorEventos, label: 'Eventos', icon: Calendar, enabled: true, roles: ['PROMOTER', 'PROMOTER_STAFF'] },
   { href: paths.miOrganizadorPagos, label: 'Pagos', icon: CreditCard, enabled: true, roles: ['PROMOTER'] },
   { href: paths.miOrganizadorRps, label: 'RPs', icon: Users, enabled: true, roles: ['PROMOTER'] },
+  { href: paths.miOrganizadorSolicitudes, label: 'Solicitudes RP', icon: Inbox, enabled: true, roles: ['PROMOTER'] },
   { href: paths.miOrganizadorRecompensas, label: 'Recompensas', icon: Gift, enabled: true, roles: ['PROMOTER'] },
   { href: paths.miOrganizadorScanner, label: 'Escanear pase', icon: QrCode, enabled: true, roles: ['PROMOTER', 'PROMOTER_STAFF'] },
   { href: paths.miOrganizadorHistorias, label: 'Historias', icon: Radio, enabled: true, roles: ['PROMOTER', 'PROMOTER_STAFF'] },

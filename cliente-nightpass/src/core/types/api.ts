@@ -416,6 +416,7 @@ export interface CatalogTierDetail {
     endsAt: string;
     coverImageUrl: string | null;
     allowCashPayment?: boolean;
+    allowOnlinePayment?: boolean;
     venue: {
       id: string;
       slug: string;

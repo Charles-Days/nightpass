@@ -41,6 +41,7 @@ export const paths = {
   miOrganizadorStaff: '/app/mi-organizador/staff',
   miOrganizadorPagos: '/app/mi-organizador/pagos',
   miOrganizadorRps: '/app/mi-organizador/rps',
+  miOrganizadorSolicitudes: '/app/mi-organizador/solicitudes',
   miOrganizadorRecompensas: '/app/mi-organizador/recompensas',
   miOrganizadorHistorias: '/app/mi-organizador/historias',
   appHome: '/app',

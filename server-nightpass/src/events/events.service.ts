@@ -130,6 +130,13 @@ export class EventsService {
       }
     }
 
+    // Modo de venta: al menos un método de pago debe quedar activo.
+    if (dto.allowCashPayment === false && dto.allowOnlinePayment === false) {
+      throw new BadRequestException(
+        'El evento debe permitir al menos un método de pago (efectivo o en línea)',
+      );
+    }
+
     await this.ensureEventOwner(
       { venueId: dto.venueId, promoterId: dto.promoterId },
       user.id,
@@ -172,6 +179,7 @@ export class EventsService {
       // Boost de aforo: solo ADMIN puede definirlo (es marketing, no dato real).
       aforoBoostPct: user.role === 'ADMIN' ? dto.aforoBoostPct ?? 0 : 0,
       allowCashPayment: dto.allowCashPayment ?? false,
+      allowOnlinePayment: dto.allowOnlinePayment ?? true,
       externalVenueName: externalAllowed ? dto.externalVenueName ?? null : null,
       externalVenueAddress: externalAllowed ? dto.externalVenueAddress ?? null : null,
       externalVenueCity: externalAllowed ? dto.externalVenueCity ?? null : null,
@@ -294,6 +302,8 @@ export class EventsService {
         promoterId: true,
         coverImageUrl: true,
         flyerImageUrl: true,
+        allowCashPayment: true,
+        allowOnlinePayment: true,
       },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
@@ -354,7 +364,17 @@ export class EventsService {
     if (dto.aforoBoostPct !== undefined && user.role === 'ADMIN') {
       data.aforoBoostPct = dto.aforoBoostPct;
     }
+    // Modo de venta: validar el estado RESULTANTE (merge dto + actual) — al
+    // menos un método de pago debe quedar activo.
+    const nextCash = dto.allowCashPayment ?? event.allowCashPayment;
+    const nextOnline = dto.allowOnlinePayment ?? event.allowOnlinePayment;
+    if (!nextCash && !nextOnline) {
+      throw new BadRequestException(
+        'El evento debe permitir al menos un método de pago (efectivo o en línea)',
+      );
+    }
     if (dto.allowCashPayment !== undefined) data.allowCashPayment = dto.allowCashPayment;
+    if (dto.allowOnlinePayment !== undefined) data.allowOnlinePayment = dto.allowOnlinePayment;
     if (dto.whatsappGroups !== undefined) {
       data.whatsappGroups = dto.whatsappGroups as unknown as Prisma.InputJsonValue;
     }
@@ -641,7 +661,12 @@ export class EventsService {
   async listCashRps(eventId: string, user: AuthUser) {
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
-      select: { venueId: true, promoterId: true, allowCashPayment: true },
+      select: {
+        venueId: true,
+        promoterId: true,
+        allowCashPayment: true,
+        allowOnlinePayment: true,
+      },
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
@@ -669,6 +694,7 @@ export class EventsService {
 
     return {
       allowCashPayment: event.allowCashPayment,
+      allowOnlinePayment: event.allowOnlinePayment,
       items: assignments.map((a) => ({
         rpProfileId: a.rpProfile.id,
         displayName: a.rpProfile.displayName,

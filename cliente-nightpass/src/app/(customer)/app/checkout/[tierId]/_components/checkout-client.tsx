@@ -159,10 +159,16 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
 
   // Pago en efectivo (boleto digital, cobro físico vía RP) habilitado por evento.
   const allowCash = initialTier?.event?.allowCashPayment === true;
+  // Pago en línea habilitado por el organizador para este evento. Si es false
+  // el evento es solo-efectivo (la tarjeta no se ofrece). Default true cuando el
+  // backend no manda el flag (eventos viejos).
+  const allowOnline = initialTier?.event?.allowOnlinePayment !== false;
   // Stripe no configurado para este evento. Con efectivo disponible NO bloquea:
   // el cliente igual puede solicitar pago en efectivo.
   const paymentsOff = !!initialTier && initialTier.paymentsEnabled === false;
-  const onlineUnavailable = paymentsOff;
+  // Online no disponible: por config del evento (solo-efectivo) o Stripe sin
+  // configurar.
+  const onlineUnavailable = paymentsOff || !allowOnline;
 
   const [phase, setPhase] = useState<Phase>(
     paymentsOff && !allowCash
@@ -684,34 +690,44 @@ export function CheckoutClient({ tierId, initialTier, alreadyOwned = 0 }: Checko
           <div className="space-y-4 py-2">
             {allowCash && (
               <div className="space-y-2">
-                <p className="text-center text-sm font-medium text-neutral-300">
-                  ¿Cómo quieres pagar?
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    disabled={onlineUnavailable}
-                    onClick={() => setMethod('online')}
-                    className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
-                      method === 'online'
-                        ? 'border-primary/50 bg-primary/15 text-white'
-                        : 'border-white/14 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.08]'
-                    } ${onlineUnavailable ? 'cursor-not-allowed opacity-40' : ''}`}
-                  >
-                    En línea
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMethod('cash')}
-                    className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
-                      method === 'cash'
-                        ? 'border-primary/50 bg-primary/15 text-white'
-                        : 'border-white/14 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.08]'
-                    }`}
-                  >
-                    En efectivo
-                  </button>
-                </div>
+                {/* Selector de método: solo si el evento permite ambos. En modo
+                    solo-efectivo no hay elección — se va directo al flujo cash. */}
+                {allowOnline ? (
+                  <>
+                    <p className="text-center text-sm font-medium text-neutral-300">
+                      ¿Cómo quieres pagar?
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        disabled={onlineUnavailable}
+                        onClick={() => setMethod('online')}
+                        className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+                          method === 'online'
+                            ? 'border-primary/50 bg-primary/15 text-white'
+                            : 'border-white/14 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.08]'
+                        } ${onlineUnavailable ? 'cursor-not-allowed opacity-40' : ''}`}
+                      >
+                        En línea
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMethod('cash')}
+                        className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+                          method === 'cash'
+                            ? 'border-primary/50 bg-primary/15 text-white'
+                            : 'border-white/14 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        En efectivo
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-center text-sm font-medium text-neutral-300">
+                    Pago en efectivo
+                  </p>
+                )}
                 {method === 'cash' && (
                   <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
                     Boleto digital, pago físico. Un vendedor (RP) te contactará para cobrarte; tu pase se emite cuando confirme.

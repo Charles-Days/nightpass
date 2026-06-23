@@ -31,6 +31,7 @@ export class UpdateEventDto {
   // para otros roles). 0–100.
   @IsOptional() @IsInt() @Min(0) @Max(100) aforoBoostPct?: number;
   @IsOptional() @IsBoolean() allowCashPayment?: boolean;
+  @IsOptional() @IsBoolean() allowOnlinePayment?: boolean;
 
   @IsOptional() @IsString() @MaxLength(120) externalVenueName?: string;
   @IsOptional() @IsString() @MaxLength(200) externalVenueAddress?: string;

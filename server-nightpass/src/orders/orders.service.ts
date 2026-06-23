@@ -135,6 +135,16 @@ export class OrdersService {
         HttpStatus.CONFLICT,
       );
     }
+    // Evento solo-efectivo: el pago en línea (Stripe) está deshabilitado.
+    if (!event.allowOnlinePayment) {
+      throw new HttpException(
+        {
+          message: 'Este evento solo acepta pago en efectivo',
+          errorCode: 'ONLINE_PAYMENT_DISABLED',
+        },
+        HttpStatus.CONFLICT,
+      );
+    }
     if (event.startsAt.getTime() <= Date.now() && !isDevBypassEnabled()) {
       throw new HttpException(
         { message: 'El evento ya comenzó', errorCode: 'EVENT_STARTED' },
