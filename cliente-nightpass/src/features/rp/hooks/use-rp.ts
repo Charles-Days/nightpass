@@ -153,6 +153,23 @@ export interface EventRpBreakdownRow {
     cancelled: number;
     confirmedAmountCents: number;
   };
+  /** Detalle de cada solicitud de efectivo con la info del cliente que la hizo. */
+  cashRequests: Array<{
+    id: string;
+    status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED';
+    quantity: number;
+    amountCents: number;
+    currency: string;
+    contactPhone: string | null;
+    note: string | null;
+    tierName: string | null;
+    createdAt: string;
+    customerName: string | null;
+    customerEmail: string | null;
+    customerPhone: string | null;
+    customerCity: string | null;
+    customerState: string | null;
+  }>;
   /** Vales que el RP emitió, por forma. `emitted` = generados (vivos);
    *  `claimed` = ya reclamados por un cliente (venta real). */
   passes: {
