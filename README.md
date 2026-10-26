@@ -226,12 +226,3 @@ PASS_HMAC_SECRET=<openssl rand -hex 32>
 ```
 
 Sin estas vars el modulo Stripe arranca en modo no-op y los endpoints de pago devuelven 503. El resto del sistema (auth, catalogo, eventos) sigue funcionando.
-
-
---------
-
-sojiw44318@inraud.com
-CBdiazcarlos123@
-
-
-gtwv-gxip-jybm-jgwj-qzef
