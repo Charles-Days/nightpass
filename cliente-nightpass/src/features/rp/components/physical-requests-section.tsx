@@ -77,7 +77,10 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
  * confirmar, el backend emite el/los pase(s) directo a la cuenta del cliente.
  */
 export function PhysicalRequestsSection() {
-  const { data, isLoading } = useRpPhysicalRequests();
+  // Solo PENDING: la cola del RP es accionable. Al confirmar el cobro o
+  // cancelar, el estado cambia y el item sale de la lista (refetch tras
+  // invalidar) — confirmadas/canceladas/vencidas no se quedan aquí.
+  const { data, isLoading } = useRpPhysicalRequests('PENDING');
   const confirm = useConfirmPhysicalRequest();
   const cancel = useCancelPhysicalRequest();
   const [busyId, setBusyId] = React.useState<string | null>(null);
